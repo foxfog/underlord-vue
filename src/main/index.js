@@ -59,9 +59,42 @@ ipcMain.on('set-fullscreen', (event, flag) => {
 // Пример: список файлов в папке
 ipcMain.handle('list-files', async (_event, folderPath) => {
   try {
-    const files = await fs.readdir(folderPath)
-    return files
+    const audioFiles = []
+    
+    // Функция для рекурсивного сканирования папки
+    async function scanDirectory(dirPath, relativePath = '') {
+      const entries = await fs.readdir(dirPath, { withFileTypes: true })
+      
+      for (const entry of entries) {
+        const fullPath = join(dirPath, entry.name)
+        const relativeFilePath = join(relativePath, entry.name)
+        
+        if (entry.isDirectory()) {
+          // Рекурсивно сканируем подпапки
+          await scanDirectory(fullPath, relativeFilePath)
+        } else if (entry.isFile()) {
+          // Проверяем, является ли файл аудиофайлом
+          const ext = entry.name.toLowerCase().split('.').pop()
+          if (ext && ['mp3', 'wav', 'ogg', 'flac', 'm4a'].includes(ext)) {
+            // Возвращаем путь относительно public папки для правильной работы с Vite dev server
+            const relativeToPubic = folderPath + relativeFilePath.replace(/\\/g, '/')
+            audioFiles.push(relativeToPubic)
+          }
+        }
+      }
+    }
+    
+    // Строим абсолютный путь к папке с файлами
+    const fullPath = is.dev 
+      ? join(__dirname, '../../src/renderer/public', folderPath)
+      : join(process.resourcesPath, 'app', 'out', 'renderer', folderPath)
+    
+    console.log(`Scanning audio directory: ${fullPath}`)
+    await scanDirectory(fullPath)
+    console.log(`Found ${audioFiles.length} audio files:`, audioFiles)
+    return audioFiles
   } catch (e) {
+    console.error('Error scanning audio directory:', e)
     return []
   }
 })

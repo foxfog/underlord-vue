@@ -38,7 +38,7 @@
 
 		<audio
 			ref="audioPlayer"
-			:src="src"
+			:src="randomMode ? currentSrc : src"
 			:autoplay="autoplay"
 			@ended="handleAudioEnded"
 			@timeupdate="handleTimeUpdate"
@@ -56,7 +56,9 @@ const props = defineProps({
 	volumeType: { type: String, default: 'music' }, // common, music, sound, voice
 	autoplay: { type: Boolean, default: false },
 	audioLook: { type: Number, default: 1 },
-	resetOnStop: { type: Boolean, default: false } // Reset timer to beginning when stopping
+	resetOnStop: { type: Boolean, default: false }, // Reset timer to beginning when stopping
+	randomMode: { type: Boolean, default: false }, // Enable random file selection mode
+	audioFolder: { type: String, default: '' } // Folder path for random mode
 })
 
 const store = useSettingsStore()
@@ -67,6 +69,9 @@ const currentTime = ref(0)
 const audioDuration = ref(0)
 const durationObtained = ref(false)
 const volume = ref(1)
+const currentSrc = ref('')
+const audioFileCache = ref([])
+const isLoadingNewFile = ref(false)
 
 /**
  * Привязка громкости к store по типу
@@ -108,10 +113,37 @@ const formattedEndTime = computed(() => {
 })
 
 /**
+ * Загрузка списка файлов из папки (только для random режима)
+ */
+async function loadAudioFiles() {
+	if (!props.randomMode || !props.audioFolder) return
+	
+	try {
+		const files = await window.electronAPI.listFiles(props.audioFolder)
+		audioFileCache.value = files
+		console.log(`Loaded ${files.length} files for ${props.volumeType}:`, files)
+	} catch (error) {
+		console.error(`Error loading ${props.volumeType} files:`, error)
+		audioFileCache.value = []
+	}
+}
+
+/**
+ * Получение случайного аудио файла
+ */
+function getRandomAudioFile() {
+	const files = audioFileCache.value
+	if (!files || files.length === 0) return ''
+	const randomIndex = Math.floor(Math.random() * files.length)
+	return files[randomIndex]
+}
+
+/**
  * Управление плеером
  */
-function togglePlay() {
+async function togglePlay() {
 	if (!audioPlayer.value) return
+	
 	if (isPlaying.value) {
 		audioPlayer.value.pause()
 		// Reset timer to beginning if resetOnStop prop is true
@@ -121,12 +153,67 @@ function togglePlay() {
 		}
 		// Notify that test audio stopped
 		store.setTestAudioPlaying(false)
+		isPlaying.value = false
 	} else {
-		audioPlayer.value.play()
-		// Notify that test audio started
-		store.setTestAudioPlaying(true)
+		// Для random режима - выбираем новый файл перед воспроизведением
+		if (props.randomMode && props.audioFolder) {
+			// Если файлы ещё не загружены - загружаем
+			if (audioFileCache.value.length === 0) {
+				await loadAudioFiles()
+			}
+			
+			// Выбираем случайный файл
+			const randomFile = getRandomAudioFile()
+			if (randomFile) {
+				currentSrc.value = randomFile
+				audioPlayer.value.src = randomFile
+				
+				// Ждём загрузки и сразу воспроизводим
+				isLoadingNewFile.value = true
+				
+				try {
+					await new Promise((resolve, reject) => {
+						const onCanPlay = () => {
+							audioPlayer.value.removeEventListener('canplaythrough', onCanPlay)
+							audioPlayer.value.removeEventListener('error', onError)
+							resolve()
+						}
+						
+						const onError = (e) => {
+							audioPlayer.value.removeEventListener('canplaythrough', onCanPlay)
+							audioPlayer.value.removeEventListener('error', onError)
+							reject(e)
+						}
+						
+						audioPlayer.value.addEventListener('canplaythrough', onCanPlay, { once: true })
+						audioPlayer.value.addEventListener('error', onError, { once: true })
+						
+						// Принудительно загружаем
+						audioPlayer.value.load()
+					})
+					
+					// Файл загружен, можем воспроизводить
+					await audioPlayer.value.play()
+					isPlaying.value = true
+					store.setTestAudioPlaying(true)
+					
+				} catch (error) {
+					console.error('Error playing random audio:', error)
+				} finally {
+					isLoadingNewFile.value = false
+				}
+			}
+		} else {
+			// Обычный режим
+			try {
+				await audioPlayer.value.play()
+				isPlaying.value = true
+				store.setTestAudioPlaying(true)
+			} catch (error) {
+				console.error('Error playing audio:', error)
+			}
+		}
 	}
-	isPlaying.value = !isPlaying.value
 }
 
 function handleAudioEnded() {

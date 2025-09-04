@@ -4,34 +4,44 @@
 		<div class="option">
 			<label>Общая громкость: {{ store.audio.commonVolume }}%</label>
 			<input type="range" min="0" max="100" v-model.number="store.audio.commonVolume" />
-			<UiPlayerAudio :src="testAudio.music" volumeType="common" :resetOnStop="true" />
+			<UiPlayerAudio :key="'common-' + audioKeys.music" :src="''" volumeType="common" :resetOnStop="true" :randomMode="true" :audioFolder="audioFolders.music" />
 		</div>
 		<div class="option">
 			<label>Музыка: {{ store.audio.musicVolume }}%</label>
 			<input type="range" min="0" max="100" v-model.number="store.audio.musicVolume" />
-			<UiPlayerAudio :src="testAudio.music" volumeType="music" :resetOnStop="true" />
+			<UiPlayerAudio :key="'music-' + audioKeys.music" :src="''" volumeType="music" :resetOnStop="true" :randomMode="true" :audioFolder="audioFolders.music" />
 		</div>
 		<div class="option">
 			<label>Звуки: {{ store.audio.soundVolume }}%</label>
 			<input type="range" min="0" max="100" v-model.number="store.audio.soundVolume" />
-			<UiPlayerAudio :src="testAudio.sound" volumeType="sound" :resetOnStop="true" />
+			<UiPlayerAudio :key="'sound-' + audioKeys.sound" :src="''" volumeType="sound" :resetOnStop="true" :randomMode="true" :audioFolder="audioFolders.sound" />
 		</div>
 		<div class="option">
 			<label>Голос: {{ store.audio.voiceVolume }}%</label>
 			<input type="range" min="0" max="100" v-model.number="store.audio.voiceVolume" />
-			<UiPlayerAudio :src="testAudio.voice" volumeType="voice" :resetOnStop="true" />
+			<UiPlayerAudio :key="'voice-' + audioKeys.voice" :src="''" volumeType="voice" :resetOnStop="true" :randomMode="true" :audioFolder="audioFolders.voice" />
 		</div>
 	</section>
 </template>
 
 <script setup>
+	import { reactive } from 'vue'
 	import { useSettingsStore } from '@/stores/settings'
 	import UiPlayerAudio from '@/components/UI/UiPlayerAudio.vue'
 
 	const store = useSettingsStore()
-	const testAudio = {
-		music: 'audio/test/music/Bella Poarch - Build a Bitch (mp3cut.net).mp3',
-		sound: 'audio/test/sound/1-108.mp3',
-		voice: 'audio/test/voice/tuturu_1.mp3'
+	
+	// Папки для каждого типа аудио (hardcoded configuration)
+	const audioFolders = {
+		music: 'audio/test/music/',
+		sound: 'audio/test/sound/',
+		voice: 'audio/test/voice/'
 	}
+	
+	// Ключи для принудительного обновления компонентов
+	const audioKeys = reactive({
+		music: 0,
+		sound: 0,
+		voice: 0
+	})
 </script>
