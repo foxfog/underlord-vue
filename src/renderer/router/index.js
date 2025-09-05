@@ -24,6 +24,12 @@ const router = createRouter({
 		path: '/settings',
 		component: () => import('@/views/Settings.vue')
 	},
+	{
+		id: 3,
+		name: 'playground',
+		path: '/playground',
+		component: () => import('@/views/Playground.vue')
+	},
 	]
 })
 

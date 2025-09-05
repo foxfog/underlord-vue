@@ -8,7 +8,8 @@
 		"about": "About",
 		"close": "Exit",
 		"test": "Test",
-		"splash": "Splach"
+		"splash": "Splach",
+		"playground": "Playground"
 	},
 	"settings": {
 		"generals": "Generals",

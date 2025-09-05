@@ -51,6 +51,10 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useSettingsStore } from '@/stores/settings'
 
+defineOptions({
+	name: 'uiPlayerAudio'
+})
+
 const props = defineProps({
 	src: { type: String, default: '' },
 	volumeType: { type: String, default: 'music' }, // common, music, sound, voice
@@ -58,7 +62,8 @@ const props = defineProps({
 	audioLook: { type: Number, default: 1 },
 	resetOnStop: { type: Boolean, default: false }, // Reset timer to beginning when stopping
 	randomMode: { type: Boolean, default: false }, // Enable random file selection mode
-	audioFolder: { type: String, default: '' } // Folder path for random mode
+	audioFolder: { type: String, default: '' }, // Folder path for random mode
+	stopBgMusic: { type: Boolean, default: false } // Stop background music during playback
 })
 
 const store = useSettingsStore()
@@ -151,8 +156,10 @@ async function togglePlay() {
 			audioPlayer.value.currentTime = 0
 			currentTime.value = 0
 		}
-		// Notify that test audio stopped
-		store.setTestAudioPlaying(false)
+		// Notify that test audio stopped only if stopBgMusic is enabled
+		if (props.stopBgMusic) {
+			store.setTestAudioPlaying(false)
+		}
 		isPlaying.value = false
 	} else {
 		// Для random режима - выбираем новый файл перед воспроизведением
@@ -195,7 +202,10 @@ async function togglePlay() {
 					// Файл загружен, можем воспроизводить
 					await audioPlayer.value.play()
 					isPlaying.value = true
-					store.setTestAudioPlaying(true)
+					// Notify that test audio started only if stopBgMusic is enabled
+					if (props.stopBgMusic) {
+						store.setTestAudioPlaying(true)
+					}
 					
 				} catch (error) {
 					console.error('Error playing random audio:', error)
@@ -208,7 +218,10 @@ async function togglePlay() {
 			try {
 				await audioPlayer.value.play()
 				isPlaying.value = true
-				store.setTestAudioPlaying(true)
+				// Notify that test audio started only if stopBgMusic is enabled
+				if (props.stopBgMusic) {
+					store.setTestAudioPlaying(true)
+				}
 			} catch (error) {
 				console.error('Error playing audio:', error)
 			}
@@ -223,8 +236,10 @@ function handleAudioEnded() {
 		audioPlayer.value.currentTime = 0
 		currentTime.value = 0
 	}
-	// Notify that test audio stopped
-	store.setTestAudioPlaying(false)
+	// Notify that test audio stopped only if stopBgMusic is enabled
+	if (props.stopBgMusic) {
+		store.setTestAudioPlaying(false)
+	}
 }
 
 function handleTimeUpdate() {

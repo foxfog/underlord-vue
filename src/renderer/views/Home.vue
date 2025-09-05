@@ -1,7 +1,12 @@
 <template>
 	<div class="page-area __dark">
 		<div class="content-area">
-			<div class="page-title">Главная</div>
+			<div class="page-header">
+				<div class="page-title">Главная</div>
+			</div>
+			<div class="page-content">
+				
+			</div>
 		</div>
 		<div class="menu-area __static">
 			<MainMenu />
