@@ -1,0 +1,19 @@
+.ui-player {
+	display: flex;
+	flex-direction: column;
+	.ui-player-controls {
+		display: flex;
+		flex-direction: column;
+		.ui-player-bot {
+			display: flex;
+			.ui-player-time {
+				display: flex;
+			}
+			.ui-player-volume {
+				max-width: 100%;
+				width: 8em;
+			}
+		}
+	}
+}
+

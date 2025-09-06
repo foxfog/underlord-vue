@@ -13,6 +13,7 @@
 		.ui-tabs-label {
 			text-transform: uppercase;
 			color: color-mix(in srgb, var(--color-base), transparent 80%);
+			background: none;
 			position: relative;
 			border-width: 1px;
 			border-color: transparent;

@@ -3,7 +3,7 @@
 <template>
 	<div class="page-area __dark">
 		<div class="content-area">
-			<div class="settings-panel">
+			<div class="page-content">
 				<div class="ui-tabs">
 					<div class="ui-tabs-header">
 						<button 
