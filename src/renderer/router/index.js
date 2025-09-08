@@ -28,7 +28,19 @@ const router = createRouter({
 		id: 3,
 		name: 'playground',
 		path: '/playground',
-		component: () => import('@/views/Playground.vue')
+		component: () => import('@/views/Playground.vue'),
+		children: [
+			{
+				path: 'sound',
+				name: 'playground-sound',
+				component: () => import('@/views/PlaygroundSound.vue')
+			},
+			{
+				path: 'map',
+				name: 'playground-map',
+				component: () => import('@/views/PlaygroundMap.vue')
+			}
+		]
 	},
 	]
 })

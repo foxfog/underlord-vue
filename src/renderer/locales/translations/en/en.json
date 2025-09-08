@@ -11,6 +11,10 @@
 		"splash": "Splach",
 		"playground": "Playground"
 	},
+	"playground": {
+		"sound": "Sound",
+		"map": "Map"
+	},
 	"settings": {
 		"generals": "Generals",
 		"video": "Video",

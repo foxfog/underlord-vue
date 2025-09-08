@@ -1,6 +1,6 @@
 // src/renderer/renderer.js
 
-import './public/styles/main.css'
+import './public/styles/main.scss'
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
