@@ -1,5 +1,5 @@
 <template>
-	<div class="ui-range" :class="{ 'ui-range--disabled': disabled, 'ui-range--no-thumb': !showThumb }">
+	<div class="ui-range" :class="{ '_disabled': disabled, '_nothumb': !showThumb }">
 		<div 
 			class="ui-range-body" 
 			@mousedown="startDrag"

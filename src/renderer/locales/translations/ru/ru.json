@@ -11,6 +11,10 @@
 		"splash": "Заставка",
 		"playground": "Площадка"
 	},
+	"playground": {
+		"sound": "Звук",
+		"map": "Карта"
+	},
 	"settings": {
 		"generals": "Общие",
 		"video": "Видео",
