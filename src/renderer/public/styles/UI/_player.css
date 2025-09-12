@@ -6,13 +6,43 @@
 		flex-direction: column;
 		.ui-player-bot {
 			display: flex;
-			.ui-player-time {
+			column-gap: 1em;
+			.right {
+				margin-left: auto;
+				.ui-player-time {
+					display: flex;
+				}
+			}
+			.left {
 				display: flex;
+				align-items: center;
+				column-gap: 1em;
+				.ui-player-volume {
+					max-width: 100%;
+					width: 8em;
+					display: flex;
+                    align-items: center;
+				}
 			}
-			.ui-player-volume {
-				max-width: 100%;
-				width: 8em;
-			}
+		}
+	}
+	.ui-player-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border: 0;
+		border-radius: 100%;
+		background: var(--color-primary);
+		width: calc(var(--size) * 2);
+		height: calc(var(--size) * 2);
+		cursor: pointer;
+		font-size: 1em;
+		&:hover {
+			box-shadow: 0 0 0.5em var(--color-primary-light);
+		}
+		&:active {
+			transform: scale(0.9);
+			box-shadow: 0 0 0.25em var(--color-primary-light);
 		}
 	}
 }

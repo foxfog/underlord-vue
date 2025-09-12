@@ -16,22 +16,26 @@
 				</div>
 			</div>
 			<div class="ui-player-bot">
-				<button class="ui-player-playbtn" @click="togglePlay">
-					<template v-if="isPlaying">⏸</template>
-					<template v-else>▶</template>
-				</button>
-				<div class="ui-player-time">
-					<div>{{ formattedTime }}</div>/<div>{{ formattedEndTime }}</div>
+				<div class="left">
+					<button class="ui-player-btn ui-player-playbtn" @click="togglePlay">
+						<template v-if="isPlaying"><i class="icon-pause-fill"></i></template>
+						<template v-else><i class="icon-play-fill"></i></template>
+					</button>
+					<div class="ui-player-volume">
+						<UiRange
+							v-model="personalVolume"
+							:min="0"
+							:max="1"
+							:step="0.01"
+							:showThumb="showThumb"
+							@input="changeVolume"
+						/>
+					</div>
 				</div>
-				<div class="ui-player-volume">
-					<UiRange
-						v-model="personalVolume"
-						:min="0"
-						:max="1"
-						:step="0.01"
-						:showThumb="showThumb"
-						@input="changeVolume"
-					/>
+				<div class="right">
+					<div class="ui-player-time">
+						<div>{{ formattedTime }}</div>/<div>{{ formattedEndTime }}</div>
+					</div>
 				</div>
 			</div>
 		</div>
