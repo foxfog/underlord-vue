@@ -1,4 +1,7 @@
 .ui-tabs {
+	display: flex;
+	flex-direction: column;
+	max-height: 100%;
 	.ui-tabs-header {
 		display: flex;
 		align-items: end;
@@ -39,7 +42,7 @@
 				}
 			}
 			&.__active {
-				color: var(--colorBaseOne);
+				color: var(--color-primary);
 				border-left-color: var(--color-border);
 				border-right-color: var(--color-border);
 				border-top-color: var(--color-border);
@@ -47,10 +50,25 @@
 		}
 	}
 	.ui-tabs-content {
-		padding-top: 2rem;
+		max-height: 100%;
+		border-color: var(--color-border);
+		border-style: solid;
+		border-top-width: 0;
+		border-left-width: 1px;
+		border-right-width: 1px;
+		border-bottom-width: 1px;
+		padding: 2em;
 		.ui-tab {
 			&:not(.__active) {
 				display: none;
+			}
+		}
+		&.ui-scrollable {
+			&.ui-scrollable-y {
+				overflow-y: auto;
+			}
+			&.ui-scrollable-x {
+				overflow-x: auto;
 			}
 		}
 	}

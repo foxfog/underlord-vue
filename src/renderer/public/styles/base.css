@@ -16,6 +16,36 @@
 	box-sizing: border-box;
 }
 
+
+::-webkit-scrollbar {
+	width: calc(0.8 * var(--size));
+	height: calc(0.8 * var(--size));
+}
+
+::-webkit-scrollbar-track {
+	background: rgba(0, 0, 0, 0.1);
+	border-radius: calc(0.4 * var(--size));
+}
+
+::-webkit-scrollbar-thumb {
+	background: rgba(255, 255, 255, 0.3);
+	border-radius: calc(0.4 * var(--size));
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	transition: background 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: rgba(255, 255, 255, 0.5);
+}
+
+::-webkit-scrollbar-thumb:active {
+	background: rgba(255, 255, 255, 0.7);
+}
+
+::-webkit-scrollbar-corner {
+	background: rgba(0, 0, 0, 0.1);
+}
+
 body {
 	--color-base: var(--color-white);
 	--color-back: var(--color-black);
@@ -28,6 +58,12 @@ body {
 	color: var(--color-base);
 	background: var(--color-back);
 	user-select: none;
+}
+
+button {
+	font-size: 1em;
+	font-family: Kurale;
+	color: var(--color-base);
 }
 
 a {
@@ -71,10 +107,10 @@ h3 {
 	display: flex;
 	flex-direction: column;
 	.page-header {
+		margin-bottom: 0.5em;
 		.page-title {
-			font-size: 2.5rem;
+			font-size: 2.5em;
 			color: var(--color-primary, #fff);
-			margin-bottom: 0.5rem;
 			font-family: Overlord;
 		}
 	}
@@ -100,4 +136,17 @@ h3 {
 		height: 100%;
 		object-fit: cover;
 	}
+}
+
+
+.page-area.__dark ::-webkit-scrollbar-thumb {
+	background: rgba(255, 255, 255, 0.2);
+}
+
+.page-area.__dark ::-webkit-scrollbar-thumb:hover {
+	background: rgba(255, 255, 255, 0.4);
+}
+
+.page-area.__dark ::-webkit-scrollbar-thumb:active {
+	background: rgba(255, 255, 255, 0.6);
 }

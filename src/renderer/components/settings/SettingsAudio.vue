@@ -1,27 +1,46 @@
 <template>
-	<section>
-		<h3>Audio</h3>
-		<div class="option">
-			<label>Общая громкость: {{ store.audio.commonVolume }}%</label>
-			<UiRange v-model="store.audio.commonVolume" :min="0" :max="100" :step="1" />
-			<uiPlayerAudio :key="'common-' + audioKeys.music" :src="''" volumeType="common" :resetOnStop="true" :randomMode="true" :audioFolder="audioFolders.music" :stopBgMusic="true" />
+	<div class="settings-list">
+		<div class="settings-item">
+			<div class="left">
+				<div class="settings-item-label">Общая громкость</div>
+			</div>
+			<div class="right">
+				<UiRange v-model="store.audio.commonVolume" :min="0" :max="100" :step="1" />
+				<div class="settings-item-value">{{ store.audio.commonVolume }}%</div>
+				<uiPlayerAudio :key="'common-' + audioKeys.music" :src="''" volumeType="common" :resetOnStop="true" :randomMode="true" :audioFolder="audioFolders.music" :stopBgMusic="true" class="_btn" />
+			</div>
 		</div>
-		<div class="option">
-			<label>Музыка: {{ store.audio.musicVolume }}%</label>
-			<UiRange v-model="store.audio.musicVolume" :min="0" :max="100" :step="1" />
-			<uiPlayerAudio :key="'music-' + audioKeys.music" :src="''" volumeType="music" :resetOnStop="true" :randomMode="true" :audioFolder="audioFolders.music" :stopBgMusic="true" />
+		<div class="settings-item">
+			<div class="left">
+				<div class="settings-item-label">Музыка</div>
+			</div>
+			<div class="right">
+				<UiRange v-model="store.audio.musicVolume" :min="0" :max="100" :step="1" />
+				<div class="settings-item-value">{{ store.audio.musicVolume }}%</div>
+				<uiPlayerAudio :key="'music-' + audioKeys.music" :src="''" volumeType="music" :resetOnStop="true" :randomMode="true" :audioFolder="audioFolders.music" :stopBgMusic="true" class="_btn" />
+			</div>
 		</div>
-		<div class="option">
-			<label>Звуки: {{ store.audio.soundVolume }}%</label>
-			<UiRange v-model="store.audio.soundVolume" :min="0" :max="100" :step="1" />
-			<uiPlayerAudio :key="'sound-' + audioKeys.sound" :src="''" volumeType="sound" :resetOnStop="true" :randomMode="true" :audioFolder="audioFolders.sound" :stopBgMusic="true" />
+		<div class="settings-item">
+			<div class="left">
+				<div class="settings-item-label">Звуки</div>
+			</div>
+			<div class="right">
+				<UiRange v-model="store.audio.soundVolume" :min="0" :max="100" :step="1" />
+				<div class="settings-item-value">{{ store.audio.soundVolume }}%</div>
+				<uiPlayerAudio :key="'sound-' + audioKeys.sound" :src="''" volumeType="sound" :resetOnStop="true" :randomMode="true" :audioFolder="audioFolders.sound" :stopBgMusic="true" class="_btn" />
+			</div>
 		</div>
-		<div class="option">
-			<label>Голос: {{ store.audio.voiceVolume }}%</label>
-			<UiRange v-model="store.audio.voiceVolume" :min="0" :max="100" :step="1" />
-			<uiPlayerAudio :key="'voice-' + audioKeys.voice" :src="''" volumeType="voice" :resetOnStop="true" :randomMode="true" :audioFolder="audioFolders.voice" :stopBgMusic="true" />
+		<div class="settings-item">
+			<div class="left">
+				<div class="settings-item-label">Голос</div>
+			</div>
+			<div class="right">
+				<UiRange v-model="store.audio.voiceVolume" :min="0" :max="100" :step="1" />
+				<div class="settings-item-value">{{ store.audio.voiceVolume }}%</div>
+				<uiPlayerAudio :key="'voice-' + audioKeys.voice" :src="''" volumeType="voice" :resetOnStop="true" :randomMode="true" :audioFolder="audioFolders.voice" :stopBgMusic="true" class="_btn" />
+			</div>
 		</div>
-	</section>
+	</div>
 </template>
 
 <script setup>

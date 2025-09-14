@@ -14,5 +14,5 @@
 	--color-base: var(--color-black);
 	--color-back: var(--color-white);
 
-	--color-border: var(--color-base);
+	--color-border: color-mix(in srgb, var(--color-white), transparent 75%);
 }

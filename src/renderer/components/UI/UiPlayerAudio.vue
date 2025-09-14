@@ -1,5 +1,5 @@
 <template>
-	<div class="ui-player _audio">
+	<div class="ui-player _audio" v-bind="$attrs">
 		<div v-if="audioLook === 1" class="ui-player-controls">
 			<div class="ui-player-top">
 				<div class="ui-player-timeline">
@@ -57,7 +57,8 @@
 	import UiRange from './UiRange.vue'
 
 	defineOptions({
-		name: 'uiPlayerAudio'
+		name: 'uiPlayerAudio',
+		inheritAttrs: false
 	})
 
 	const props = defineProps({

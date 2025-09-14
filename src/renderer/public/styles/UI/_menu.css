@@ -5,6 +5,7 @@
 	flex-direction: column;
 	&.__static {
 		position: relative;
+		padding-left: 1em;
 	}
 	.mainmenu {
 		margin-top: auto;

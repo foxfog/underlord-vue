@@ -5,7 +5,7 @@
 			class="section section-0"
 			:class="{ '__show': currentSection === 0 }"
 		>
-			<div class="_box fp-poscen">
+			<div class="_box ui-poscen">
 				<div class="_title">
 					<h3>Дисклеймер</h3>
 				</div>
@@ -23,7 +23,7 @@
 			class="section section-1"
 			:class="{ '__show': currentSection === 1 }"
 		>
-			<div class="_box fp-poscen">
+			<div class="_box ui-poscen">
 				<div class="_title">
 					<div class="_name">DarkiFox</div>
 				</div>
@@ -35,7 +35,7 @@
 			class="section section-2"
 			:class="{ '__show': currentSection === 2 }"
 		>
-			<div class="_box fp-poscen">
+			<div class="_box ui-poscen">
 				<div class="_title">
 					<div class="_name">Underlord</div>
 					<div class="_version">0.1</div>

@@ -22,7 +22,7 @@
 							{{ $t('playground.map') }}
 						</router-link>
 					</div>
-					<div class="ui-tabs-content">
+					<div class="ui-tabs-content ui-scrollable">
 						<router-view />
 					</div>
 				</div>

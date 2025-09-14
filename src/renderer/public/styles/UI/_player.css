@@ -1,6 +1,13 @@
 .ui-player {
 	display: flex;
 	flex-direction: column;
+	.ui-player-top {
+		.ui-player-timeline {
+			.ui-range {
+				width: 100%;
+			}
+		}
+	}
 	.ui-player-controls {
 		display: flex;
 		flex-direction: column;
@@ -37,12 +44,28 @@
 		height: calc(var(--size) * 2);
 		cursor: pointer;
 		font-size: 1em;
+		flex: none;
 		&:hover {
 			box-shadow: 0 0 0.5em var(--color-primary-light);
 		}
 		&:active {
 			transform: scale(0.9);
 			box-shadow: 0 0 0.25em var(--color-primary-light);
+		}
+	}
+	&._btn {
+		.ui-player-controls {
+			.ui-player-top {
+				display: none;
+			}
+			.ui-player-bot {
+				.ui-player-volume {
+					display: none;
+				}
+				.ui-player-time {
+					display: none;
+				}
+			}
 		}
 	}
 }

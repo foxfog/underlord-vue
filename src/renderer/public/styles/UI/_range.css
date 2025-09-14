@@ -10,19 +10,7 @@
 		position: relative;
 		width: 100%;
 		height: calc(0.3 * var(--size));
-		border-radius: calc(0.15 * var(--size));
-		background: rgba(255, 255, 255, 0.2);
-		border: 1px solid var(--color-border);
-		transition: all 0.2s ease;
-		outline: none;
-
-		&:hover {
-			background-color: rgba(255, 255, 255, 0.3);
-		}
-
-		&:focus {
-			box-shadow: 0 0 0 2px var(--color-primary);
-		}
+		
 	}
 
 	.ui-range-track {
@@ -33,6 +21,18 @@
 		height: 100%;
 		border-radius: inherit;
 		overflow: hidden;
+		border-radius: calc(0.15 * var(--size));
+		background: rgba(255, 255, 255, 0.2);
+		transition: all 0.2s ease;
+		outline: none;
+
+		&:hover {
+			background-color: rgba(255, 255, 255, 0.3);
+		}
+
+		&:focus {
+			box-shadow: 0 0 0 2px var(--color-primary);
+		}
 	}
 
 	.ui-range-progress {
@@ -180,18 +180,9 @@ input[type="range"] {
 /* Dark theme adjustments */
 .page-area {
 	&.__dark {
-		.ui-range-body {
-			background: rgba(0, 0, 0, 0.3);
-			border-color: var(--color-white);
-
-			&:hover {
-				background: rgba(0, 0, 0, 0.4);
-			}
-		}
 
 		.ui-range-thumb {
 			background: var(--color-black);
-			border-color: var(--color-white);
 		}
 	}
 }

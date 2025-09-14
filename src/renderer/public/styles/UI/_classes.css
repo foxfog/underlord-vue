@@ -1,4 +1,4 @@
-.fp-poscen {
+.ui-poscen {
 	position: absolute;
 	top: 0;
 	bottom: 0;
@@ -7,4 +7,15 @@
 	margin: auto;
 	width: fit-content;
     height: fit-content;
+}
+
+
+.ui-scrollable {
+	&.ui-scrollable-y {
+		padding-right: calc(1 * var(--size));
+	}
+
+	&.ui-scrollable-x {
+		padding-bottom: calc(1 * var(--size));
+	}
 }

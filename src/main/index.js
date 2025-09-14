@@ -4,7 +4,11 @@ import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import fs from 'fs/promises'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import { parse } from 'path'
+
+// Import icon path
+const icon = is.dev 
+  ? join(__dirname, '../../build/icon.png')
+  : join(process.resourcesPath, 'icon.png')
 
 
 // Проверка и создание settings.json
@@ -134,7 +138,7 @@ async function createWindow() {
     fullscreen,
     show: false,
     autoHideMenuBar: true,
-    ...(process.platform === 'linux' ? { icon } : {}),
+    icon: icon, // Use icon on all platforms
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false
