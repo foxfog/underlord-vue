@@ -46,6 +46,7 @@
 				border-left-color: var(--color-border);
 				border-right-color: var(--color-border);
 				border-top-color: var(--color-border);
+				backdrop-filter: blur(0.5em);
 			}
 		}
 	}
@@ -58,6 +59,7 @@
 		border-right-width: 1px;
 		border-bottom-width: 1px;
 		padding: 2em;
+		backdrop-filter: blur(0.5em);
 		.ui-tab {
 			&:not(.__active) {
 				display: none;

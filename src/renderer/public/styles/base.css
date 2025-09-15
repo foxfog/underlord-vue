@@ -53,7 +53,7 @@ body {
 	overflow: hidden;
 	margin: 0;
 	padding: 0;
-	font-size: calc(1* var(--size));
+	font-size: calc(1 * var(--size));
 	font-family: Kurale;
 	color: var(--color-base);
 	background: var(--color-back);
@@ -61,9 +61,14 @@ body {
 }
 
 button {
-	font-size: 1em;
+	font-size: calc(1 * var(--size));
 	font-family: Kurale;
 	color: var(--color-base);
+}
+
+select {
+	font-size: calc(1 * var(--size));
+	font-family: Kurale;
 }
 
 a {

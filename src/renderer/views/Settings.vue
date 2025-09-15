@@ -43,9 +43,9 @@
 						</div>
 					</div>
 				</div>
-				<div class="buttons">
-					<button @click="saveSettings">💾 Сохранить</button>
-					<button @click="resetToDefault">🔄 Сбросить по умолчанию</button>
+				<div class="buttons buttons-list">
+					<button class="btn btn-primary" @click="saveSettings">Сохранить</button>
+					<button class="btn btn-primary" @click="resetToDefault">Сбросить</button>
 				</div>
 			</div>
 		</div>

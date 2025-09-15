@@ -1,0 +1,21 @@
+.btn {
+	cursor: pointer;
+	&.btn-primary {
+		background-color: var(--color-primary);
+		border-color: var(--color-primary);
+		border-width: 1px;
+		border-style: solid;
+		border-radius: 0.2em;
+		padding: 0.5em 1.5em;
+		&:hover {
+			background-color: var(--color-primary-dark);
+			border-color: var(--color-primary-dark);
+		}
+	}
+}
+.buttons-list {
+	display: flex;
+	column-gap: 1em;
+	padding-top: 1em;
+	padding-bottom: 1em;
+}
