@@ -8,11 +8,11 @@
 				<div class="ui-tabs">
 					<div class="ui-tabs-header">
 						<router-link 
-							to="/playground/sound" 
+							to="/playground/ui" 
 							class="ui-tabs-label" 
-							:class="{ '__active': $route.path === '/playground/sound' || $route.path === '/playground' }"
+							:class="{ '__active': $route.path === '/playground/ui' || $route.path === '/playground' }"
 						>
-							{{ $t('playground.sound') }}
+							{{ $t('playground.ui') }}
 						</router-link>
 						<router-link 
 							to="/playground/map" 
@@ -45,7 +45,7 @@
 	// Redirect to sound page if on base playground route
 	onMounted(() => {
 		if (route.path === '/playground') {
-			router.replace('/playground/sound')
+			router.replace('/playground/ui')
 		}
 	})
 </script>

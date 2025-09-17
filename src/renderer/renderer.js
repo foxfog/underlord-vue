@@ -13,10 +13,17 @@ import uiCompontents from './components/UI'
 async function main() {
 	const settings = await window.electronAPI.getSettings() // получить настройки из userData/settings.json
 	initSettingsStore(settings) // обязательно перед первым useSettingsStore()
+	
+	// Синхронизируем i18n locale с настройками
+	if (settings?.general?.language) {
+		i18n.global.locale.value = settings.general.language
+	}
+	
 	// Синхронизируем fullscreen с настройками
 	if (settings?.video?.fullscreen !== undefined) {
 		window.electronAPI.setFullscreen(settings.video.fullscreen)
 	}
+	
 	const app = createApp(App)
 	const pinia = createPinia()
 

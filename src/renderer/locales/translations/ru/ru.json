@@ -12,7 +12,7 @@
 		"playground": "Площадка"
 	},
 	"playground": {
-		"sound": "Звук",
+		"ui": "UI",
 		"map": "Карта"
 	},
 	"settings": {

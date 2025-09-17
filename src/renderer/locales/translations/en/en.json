@@ -12,7 +12,7 @@
 		"playground": "Playground"
 	},
 	"playground": {
-		"sound": "Sound",
+		"ui": "UI",
 		"map": "Map"
 	},
 	"settings": {

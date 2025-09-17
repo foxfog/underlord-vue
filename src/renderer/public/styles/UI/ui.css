@@ -5,5 +5,7 @@
 @import './_menu.css';
 @import './_tab.css';
 @import './_range.css';
+@import './_dropdown.css';
+@import './_select.css';
 @import './_player.css';
 @import './_settings.css';

@@ -14,21 +14,21 @@
 							:class="{ '__active': activeSection === 'audio' }" 
 							@click="activeSection = 'audio'"
 						>
-							Audio
+							{{ $t('settings.audio') }}
 						</button>
 						<button 
 							class="ui-tabs-label" 
 							:class="{ '__active': activeSection === 'general' }" 
 							@click="activeSection = 'general'"
 						>
-							General
+							{{ $t('settings.generals') }}
 						</button>
 						<button 
 							class="ui-tabs-label" 
 							:class="{ '__active': activeSection === 'video' }" 
 							@click="activeSection = 'video'"
 						>
-							Video
+							{{ $t('settings.video') }}
 						</button>
 					</div>
 					<div class="ui-tabs-content">
@@ -44,8 +44,8 @@
 					</div>
 				</div>
 				<div class="buttons buttons-list">
-					<button class="btn btn-primary" @click="saveSettings">Сохранить</button>
-					<button class="btn btn-primary" @click="resetToDefault">Сбросить</button>
+					<button class="btn btn-primary" @click="saveSettings">{{ $t('settings.save') }}</button>
+					<button class="btn btn-primary" @click="resetToDefault">{{ $t('settings.resetToDefoult') }}</button>
 				</div>
 			</div>
 		</div>

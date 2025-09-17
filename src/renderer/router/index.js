@@ -31,9 +31,9 @@ const router = createRouter({
 		component: () => import('@/views/Playground.vue'),
 		children: [
 			{
-				path: 'sound',
-				name: 'playground-sound',
-				component: () => import('@/views/PlaygroundSound.vue')
+				path: 'ui',
+				name: 'playground-ui',
+				component: () => import('@/views/PlaygroundUI.vue')
 			},
 			{
 				path: 'map',
