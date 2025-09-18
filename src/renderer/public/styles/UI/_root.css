@@ -3,6 +3,7 @@
 	--color-primary: #4CAF50;
 	--color-primary-light: #8BC34A;
 	--color-primary-dark: #388E3C;
+	--color-primary-alpha: color-mix(in srgb, #4CAF50, transparent 90%);
 	
 	--color-secondary: #FF9800;
 	--color-secondary-light: #FFC107;
@@ -14,5 +15,35 @@
 	--color-base: var(--color-black);
 	--color-back: var(--color-white);
 
+	/* Border colors - using color-mix */
 	--color-border: color-mix(in srgb, var(--color-white), transparent 75%);
+	--color-border-alpha: color-mix(in srgb, var(--color-white), transparent 80%);
+	--color-border-light: color-mix(in srgb, var(--color-white), transparent 90%);
+
+	/* Background colors - using color-mix */
+	--color-bg-transparent: transparent;
+	--color-bg-overlay-dark: color-mix(in srgb, var(--color-black), transparent 80%);
+	--color-bg-overlay: color-mix(in srgb, var(--color-white), transparent 90%);
+	--color-bg-overlay-medium: color-mix(in srgb, var(--color-white), transparent 80%);
+	--color-bg-panel: color-mix(in srgb, #1e1e1e, transparent 5%);
+	--color-bg-panel-dark: color-mix(in srgb, #141414, transparent 5%);
+
+	/* Shadow colors - using color-mix */
+	--color-shadow: color-mix(in srgb, var(--color-black), transparent 80%);
+	--color-shadow-medium: color-mix(in srgb, var(--color-black), transparent 70%);
+	--color-shadow-strong: color-mix(in srgb, var(--color-black), transparent 50%);
+
+	/* Specialized colors - using color-mix */
+	--color-scrollbar: color-mix(in srgb, var(--color-white), transparent 70%);
+	--color-text-muted: color-mix(in srgb, var(--color-white), transparent 30%);
+	--color-text-placeholder: color-mix(in srgb, var(--color-white), transparent 50%);
+	--color-text-disabled: color-mix(in srgb, var(--color-base), transparent 80%);
+
+	/* Button colors - using color-mix */
+	--color-btn-secondary: color-mix(in srgb, #646464, transparent 70%);
+	--color-btn-secondary-border: color-mix(in srgb, #969696, transparent 60%);
+
+	/* Range colors - reusing existing */
+	--color-range-disabled-bg: #ccc;
+	--color-range-disabled-border: #999;
 }

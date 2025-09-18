@@ -1,152 +1,148 @@
-/* UiSelect component specific styles */
-/* Main dropdown styles are in _dropdown.css */
-
-/* Additional select-specific enhancements */
 .ui-select {
-  /* Component-specific overrides and additions can go here */
-}
+	.ui-dropdown {
+		&:focus-within {
+			outline: none;
+		}
+	}
 
-/* Focus and accessibility improvements */
-.ui-select .ui-dropdown:focus-within {
-  outline: none;
-}
+	.ui-select-checkbox,
+	.ui-select-radio {
+		position: relative;
+		appearance: none;
+		-webkit-appearance: none;
+		-moz-appearance: none;
+		width: 1.2rem;
+		height: 1.2rem;
+		border: 2px solid var(--color-border-alpha);
+		border-radius: 3px;
+		background: var(--color-bg-transparent);
+		cursor: pointer;
+		transition: all 0.2s ease;
+		margin: 0;
+		flex-shrink: 0;
 
-.ui-select .ui-dropdown-toggle:focus {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
+		&:checked {
+			background: var(--color-primary);
+			border-color: var(--color-primary);
+		}
 
-/* Custom checkbox and radio styling */
-.ui-select-checkbox,
-.ui-select-radio {
-  position: relative;
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  width: 1.2rem;
-  height: 1.2rem;
-  border: 2px solid rgba(255, 255, 255, 0.4);
-  border-radius: 3px;
-  background: transparent;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  margin: 0;
-  flex-shrink: 0;
-}
+		&:hover {
+			border-color: var(--color-primary);
+			background: var(--color-primary-alpha);
+		}
 
-.ui-select-radio {
-  border-radius: 50%;
-}
+		&:disabled {
+			opacity: 0.5;
+			cursor: not-allowed;
+		}
+	}
 
-.ui-select-checkbox:checked,
-.ui-select-radio:checked {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-}
+	.ui-select-radio {
+		border-radius: 50%;
 
-.ui-select-checkbox:checked::after {
-  content: '✓';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: var(--color-black);
-  font-size: 0.8rem;
-  font-weight: bold;
-  line-height: 1;
-}
+		&:checked::after {
+			content: '';
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			width: 6px;
+			height: 6px;
+			border-radius: 50%;
+			background: var(--color-black);
+		}
+	}
 
-.ui-select-radio:checked::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--color-black);
-}
+	.ui-select-checkbox {
+		&:checked::after {
+			content: '✓';
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			color: var(--color-black);
+			font-size: 0.8rem;
+			font-weight: bold;
+			line-height: 1;
+		}
+	}
 
-.ui-select-checkbox:hover,
-.ui-select-radio:hover {
-  border-color: var(--color-primary);
-  background: rgba(76, 175, 80, 0.1);
-}
+	.ui-dropdown-item {
+		position: relative;
+		overflow: hidden;
 
-.ui-select-checkbox:disabled,
-.ui-select-radio:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+		&::before {
+			content: '';
+			position: absolute;
+			top: 0;
+			left: -100%;
+			width: 100%;
+			height: 100%;
+			background: linear-gradient(
+				90deg,
+				transparent,
+				var(--color-bg-glass),
+				transparent
+			);
+			transition: left 0.5s ease;
+		}
 
-/* Animation for option selection */
-.ui-dropdown-item {
-  position: relative;
-  overflow: hidden;
-}
+		&:hover::before {
+			left: 100%;
+		}
+	}
 
-.ui-dropdown-item::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-  transition: left 0.5s ease;
-}
+	&._loading {
+		.ui-dropdown-toggle {
+			position: relative;
 
-.ui-dropdown-item:hover::before {
-  left: 100%;
-}
+			&::after {
+				content: '';
+				position: absolute;
+				right: 2rem;
+				top: 50%;
+				transform: translateY(-50%);
+				width: 1rem;
+				height: 1rem;
+				border: 2px solid var(--color-scrollbar);
+				border-top: 2px solid var(--color-primary);
+				border-radius: 50%;
+				animation: spin 1s linear infinite;
+			}
+		}
+	}
 
-/* Loading state for async options */
-.ui-select._loading .ui-dropdown-toggle {
-  position: relative;
-}
+	.ui-select-search {
+		padding: 0.5rem;
+		border-bottom: 1px solid var(--color-border-light);
+		background: var(--color-bg-overlay-dark);
 
-.ui-select._loading .ui-dropdown-toggle::after {
-  content: '';
-  position: absolute;
-  right: 2rem;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 1rem;
-  height: 1rem;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top: 2px solid var(--color-primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+		input {
+			width: 100%;
+			padding: 0.5rem;
+			background: var(--color-bg-transparent);
+			border: 1px solid var(--color-border-alpha);
+			border-radius: 4px;
+			color: var(--color-white);
+			font-size: 0.9rem;
+
+			&:focus {
+				outline: none;
+				border-color: var(--color-primary);
+			}
+
+			&::placeholder {
+				color: var(--color-text-placeholder);
+			}
+		}
+	}
 }
 
 @keyframes spin {
-  0% { transform: translateY(-50%) rotate(0deg); }
-  100% { transform: translateY(-50%) rotate(360deg); }
-}
-
-/* Search functionality styling (if implemented in future) */
-.ui-select-search {
-  padding: 0.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(0, 0, 0, 0.2);
-}
-
-.ui-select-search input {
-  width: 100%;
-  padding: 0.5rem;
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
-  color: var(--color-white);
-  font-size: 0.9rem;
-}
-
-.ui-select-search input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
-.ui-select-search input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
+	0% {
+		transform: translateY(-50%) rotate(0deg);
+	}
+	100% {
+		transform: translateY(-50%) rotate(360deg);
+	}
 }
