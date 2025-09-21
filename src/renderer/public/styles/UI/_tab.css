@@ -15,7 +15,7 @@
 		}
 		.ui-tabs-label {
 			text-transform: uppercase;
-			color: var(--color-text-disabled);
+			color: var(--color-base);
 			background: none;
 			position: relative;
 			border-width: 1px;

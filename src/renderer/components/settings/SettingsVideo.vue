@@ -32,16 +32,6 @@
 				/>
 			</div>
 		</div>
-		<div class="settings-item">
-			<div class="left">
-				<div class="settings-item-label">Полноэкранный режим:</div>
-			</div>
-			<div class="right">
-				<button class="btn btn-secondary" @click="toggleFullscreenBtn">
-					{{ store.video.fullscreen ? 'Выйти из полноэкранного' : 'Перейти в полноэкранный' }}
-				</button>
-			</div>
-		</div>
 	</div>
 </template>
 
@@ -72,28 +62,10 @@
 	const resolutionOptions = computed(() => {
 		return availableResolutions.map(res => {
 			const [width, height] = res.split('x')
-			let description = ''
-			
-			switch (res) {
-				case '800x600':
-					description = 'SVGA'
-					break
-				case '1280x720':
-					description = 'HD 720p'
-					break
-				case '1920x1080':
-					description = 'Full HD 1080p'
-					break
-				case '2560x1440':
-					description = 'QHD 1440p'
-					break
-				default:
-					description = res
-			}
 			
 			return {
 				value: res,
-				label: `${res} (${description})`
+				label: `${res}`
 			}
 		})
 	})
@@ -115,10 +87,5 @@
 		if (!store.video.fullscreen) {
 			window.electronAPI.setResolution(store.video.resolution)
 		}
-	}
-
-	function toggleFullscreenBtn() {
-		store.video.fullscreen = !store.video.fullscreen
-		onFullscreenModeChange()
 	}
 </script>

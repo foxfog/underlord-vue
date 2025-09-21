@@ -42,6 +42,18 @@ const router = createRouter({
 			}
 		]
 	},
+	{
+		id: 4,
+		name: 'game-new',
+		path: '/game/new',
+		component: () => import('@/views/game/GameNew.vue')
+	},
+	{
+		id: 5,
+		name: 'game-saves',
+		path: '/game/saves',
+		component: () => import('@/views/game/GameSaves.vue')
+	},
 	]
 })
 
