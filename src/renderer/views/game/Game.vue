@@ -1,6 +1,6 @@
 <template>
 	<div class="game-area">
-		123
+		1233
 	</div>
 </template>
 
