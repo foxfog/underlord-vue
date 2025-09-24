@@ -13,6 +13,13 @@
 		"splash": "Splach",
 		"playground": "Playground"
 	},
+	"ageVerification": {
+		"title": "Age Verification",
+		"message": "You must be at least 18 years old to play this game.",
+		"question": "Are you 18 or older?",
+		"yes": "Yes",
+		"no": "No"
+	},
 	"playground": {
 		"ui": "UI",
 		"map": "Map"
