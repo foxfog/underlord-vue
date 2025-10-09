@@ -70,7 +70,7 @@
 	const props = defineProps({
 		// v-model value - single value or array for multiple
 		modelValue: {
-			type: [String, Number, Array, Object],
+			type: [String, Number, Array, Object, Boolean],
 			default: null
 		},
 		// Options array - can be strings, numbers, or objects

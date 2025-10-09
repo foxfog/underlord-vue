@@ -114,6 +114,46 @@ ipcMain.on('set-resolution', (event, resolution) => {
   }
 })
 
+// IPC handler for saving game data
+ipcMain.handle('save-game', async (_event, McName) => {
+  try {
+    const userDataPath = app.getPath('userData')
+    const savesDir = join(userDataPath, 'saves')
+    
+    // Find the next available save slot
+    let saveSlot = 0
+    let saveDir = join(savesDir, String(saveSlot))
+    while (true) {
+      try {
+        await fs.access(saveDir)
+        saveSlot++
+        saveDir = join(savesDir, String(saveSlot))
+      } catch {
+        // Directory doesn't exist, use this slot
+        break
+      }
+    }
+    
+    // Create the save directory
+    await fs.mkdir(saveDir, { recursive: true })
+    
+    // Create the autosave.json file
+    const autosaveData = {
+      mc: {
+        name: McName
+      }
+    }
+    
+    const autosavePath = join(saveDir, 'autosave.json')
+    await fs.writeFile(autosavePath, JSON.stringify(autosaveData, null, 2), 'utf-8')
+    
+    return { success: true, saveSlot }
+  } catch (error) {
+    console.error('Error saving game:', error)
+    return { success: false, error: error.message }
+  }
+})
+
 async function getInitialSettings() {
   const file = join(app.getPath('userData'), 'settings.json')
   const text = await fs.readFile(file, 'utf-8')

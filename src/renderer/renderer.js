@@ -7,12 +7,14 @@ import App from './App.vue'
 import i18n from './locales'
 import router from './router'
 import { initSettingsStore } from './stores/settings'
+import { initGameStore } from './stores/game'
 import uiCompontents from './components/UI'
 
 
 async function main() {
 	const settings = await window.electronAPI.getSettings() // получить настройки из userData/settings.json
 	initSettingsStore(settings) // обязательно перед первым useSettingsStore()
+	initGameStore() // initialize game store
 	
 	// Синхронизируем i18n locale с настройками
 	if (settings?.general?.language) {

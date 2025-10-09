@@ -51,4 +51,3 @@
 		routers.filter(r => !(r.name === 'home' && route.path === '/'))
 	)
 </script>
-  

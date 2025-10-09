@@ -11,6 +11,7 @@ const api = {
     saveSettings: (data) => ipcRenderer.send('save-settings', data),
     listFiles: (folderPath) => ipcRenderer.invoke('list-files', folderPath),
     setResolution: (res) => ipcRenderer.send('set-resolution', res),
+    saveGame: (mcName) => ipcRenderer.invoke('save-game', mcName),
     ...electronAPI
 }
 
