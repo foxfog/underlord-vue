@@ -9,32 +9,49 @@
 					<h2>{{ $t('mainmenu.game-saves') }}</h2>
 					<p>Manage your saved games here.</p>
 					
-					<div class="saves-list" v-if="saves.length > 0">
+					<div v-if="loading" class="loading">
+						<p>Loading saves...</p>
+					</div>
+					
+					<div class="saves-list" v-else-if="saveGroups.length > 0">
 						<div 
-							v-for="save in saves" 
-							:key="save.id" 
-							class="save-item"
-							@click="loadSave(save)"
+							v-for="group in saveGroups" 
+							:key="group.id" 
+							class="save-group"
 						>
-							<div class="save-info">
-								<h3>{{ save.name }}</h3>
-								<p>{{ save.date }}</p>
-								<p>Level: {{ save.level }}</p>
-							</div>
-							<div class="save-actions">
-								<button class="btn btn-small btn-primary" @click.stop="loadSave(save)">Load</button>
-								<button class="btn btn-small btn-danger" @click.stop="deleteSave(save.id)">Delete</button>
+							<h3 class="save-group-title">{{ group.name }} (Slot {{ group.slot }})</h3>
+							<div class="save-group-content">
+								<div 
+									v-for="save in group.saveFiles" 
+									:key="save.name" 
+									class="save-item"
+									@click="loadSave(group, save)"
+								>
+									<div class="save-info">
+										<h4>{{ save.name }}</h4>
+										<p>{{ formatDate(save.date) }}</p>
+										<p>Size: {{ formatFileSize(save.size) }}</p>
+									</div>
+									<div class="save-actions">
+										<button class="btn btn-small btn-primary" @click.stop="loadSave(group, save)">Load</button>
+										<button class="btn btn-small btn-danger" @click.stop="deleteSave(group, save)">Delete</button>
+									</div>
+								</div>
+								<div v-if="group.saveFiles.length === 0" class="no-saves-in-group">
+									<p>No save files in this group.</p>
+								</div>
 							</div>
 						</div>
 					</div>
 					
-					<div class="no-saves" v-else>
+					<div class="no-saves" v-else-if="!loading">
 						<p>No saved games found.</p>
 						<button class="btn btn-primary" @click="createNewGame">Start New Game</button>
 					</div>
 					
 					<div class="buttons buttons-list">
 						<button class="btn btn-secondary" @click="goBack">Back to Menu</button>
+						<button class="btn btn-primary" @click="refreshSaves">Refresh</button>
 					</div>
 				</div>
 			</div>
@@ -54,44 +71,56 @@
 	import MainMenu from '@/components/MainMenu.vue'
 
 	const router = useRouter()
-	const saves = ref([])
+	const saveGroups = ref([])
+	const loading = ref(true)
 
-	// Mock data for demonstration
-	onMounted(() => {
-		// TODO: Load actual save data from storage
-		saves.value = [
-			{
-				id: 1,
-				name: 'Save Game 1',
-				date: '2024-12-19 14:30',
-				level: 5
-			},
-			{
-				id: 2,
-				name: 'Save Game 2',
-				date: '2024-12-18 09:15',
-				level: 3
-			},
-			{
-				id: 3,
-				name: 'Auto Save',
-				date: '2024-12-17 21:45',
-				level: 8
+	// Load save data from storage
+	async function loadSaveData() {
+		loading.value = true
+		try {
+			if (window.api && typeof window.api.loadSaves === 'function') {
+				const saves = await window.api.loadSaves()
+				saveGroups.value = saves
+				console.log('Loaded saves:', saves) // For debugging
+			} else {
+				console.warn('API not available or loadSaves function not found')
+				saveGroups.value = []
 			}
-		]
+		} catch (error) {
+			console.error('Error loading saves:', error)
+			saveGroups.value = []
+		} finally {
+			loading.value = false
+		}
+	}
+
+	onMounted(() => {
+		loadSaveData()
 	})
 
-	function loadSave(save) {
+	function formatDate(dateString) {
+		const date = new Date(dateString)
+		return date.toLocaleString()
+	}
+
+	function formatFileSize(bytes) {
+		if (bytes === 0) return '0 Bytes'
+		const k = 1024
+		const sizes = ['Bytes', 'KB', 'MB', 'GB']
+		const i = Math.floor(Math.log(bytes) / Math.log(k))
+		return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+	}
+
+	function loadSave(group, save) {
 		// TODO: Implement save loading logic
-		console.log('Loading save:', save)
+		console.log('Loading save:', group, save)
 		// router.push('/game/play', { query: { saveId: save.id } })
 	}
 
-	function deleteSave(saveId) {
-		if (confirm('Are you sure you want to delete this save?')) {
+	function deleteSave(group, save) {
+		if (confirm(`Are you sure you want to delete save "${save.name}"?`)) {
 			// TODO: Implement save deletion logic
-			saves.value = saves.value.filter(save => save.id !== saveId)
-			console.log('Deleted save:', saveId)
+			console.log('Deleted save:', group, save)
 		}
 	}
 
@@ -101,6 +130,10 @@
 
 	function goBack() {
 		router.push('/home')
+	}
+
+	function refreshSaves() {
+		loadSaveData()
 	}
 </script>
 
@@ -122,8 +155,33 @@
 	text-align: center;
 }
 
+.loading {
+	text-align: center;
+	color: #fff;
+	padding: 20px;
+}
+
 .saves-list {
 	margin-bottom: 30px;
+}
+
+.save-group {
+	margin-bottom: 30px;
+	background: rgba(0, 0, 0, 0.2);
+	border-radius: 8px;
+	padding: 15px;
+}
+
+.save-group-title {
+	color: #fff;
+	margin: 0 0 15px 0;
+	font-size: 20px;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+	padding-bottom: 10px;
+}
+
+.save-group-content {
+	padding-left: 15px;
 }
 
 .save-item {
@@ -143,10 +201,10 @@
 	background: rgba(255, 255, 255, 0.15);
 }
 
-.save-info h3 {
+.save-info h4 {
 	color: #fff;
 	margin: 0 0 5px 0;
-	font-size: 18px;
+	font-size: 16px;
 }
 
 .save-info p {
@@ -175,13 +233,18 @@
 	border-color: #bd2130;
 }
 
-.no-saves {
+.no-saves, .no-saves-in-group {
 	text-align: center;
-	margin-bottom: 30px;
 }
 
-.no-saves p {
+.no-saves p, .no-saves-in-group p {
 	color: #ccc;
 	margin-bottom: 20px;
+}
+
+.buttons {
+	display: flex;
+	justify-content: center;
+	gap: 15px;
 }
 </style>

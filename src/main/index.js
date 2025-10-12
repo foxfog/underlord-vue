@@ -116,42 +116,115 @@ ipcMain.on('set-resolution', (event, resolution) => {
 
 // IPC handler for saving game data
 ipcMain.handle('save-game', async (_event, McName) => {
-  try {
-    const userDataPath = app.getPath('userData')
-    const savesDir = join(userDataPath, 'saves')
-    
-    // Find the next available save slot
-    let saveSlot = 0
-    let saveDir = join(savesDir, String(saveSlot))
-    while (true) {
-      try {
-        await fs.access(saveDir)
-        saveSlot++
-        saveDir = join(savesDir, String(saveSlot))
-      } catch {
-        // Directory doesn't exist, use this slot
-        break
-      }
-    }
-    
-    // Create the save directory
-    await fs.mkdir(saveDir, { recursive: true })
-    
-    // Create the autosave.json file
-    const autosaveData = {
-      mc: {
-        name: McName
-      }
-    }
-    
-    const autosavePath = join(saveDir, 'autosave.json')
-    await fs.writeFile(autosavePath, JSON.stringify(autosaveData, null, 2), 'utf-8')
-    
-    return { success: true, saveSlot }
-  } catch (error) {
-    console.error('Error saving game:', error)
-    return { success: false, error: error.message }
-  }
+	try {
+		const userDataPath = app.getPath('userData')
+		const savesDir = join(userDataPath, 'saves')
+		
+		// Find the next available save slot
+		let saveSlot = 0
+		let saveDir = join(savesDir, String(saveSlot))
+		while (true) {
+			try {
+				await fs.access(saveDir)
+				saveSlot++
+				saveDir = join(savesDir, String(saveSlot))
+			} catch {
+				// Directory doesn't exist, use this slot
+				break
+			}
+		}
+		
+		// Create the save directory
+		await fs.mkdir(saveDir, { recursive: true })
+		
+		// Create the autosave.json file
+		const autosaveData = {
+			mc: {
+				name: McName
+			}
+		}
+		
+		const autosavePath = join(saveDir, 'autosave.json')
+		await fs.writeFile(autosavePath, JSON.stringify(autosaveData, null, 2), 'utf-8')
+		
+		return { success: true, saveSlot }
+	} catch (error) {
+		console.error('Error saving game:', error)
+		return { success: false, error: error.message }
+	}
+})
+
+// IPC handler for loading save data
+ipcMain.handle('load-saves', async () => {
+	try {
+		const userDataPath = app.getPath('userData')
+		const savesDir = join(userDataPath, 'saves')
+		
+		// Check if saves directory exists
+		try {
+			await fs.access(savesDir)
+		} catch {
+			// No saves directory, return empty array
+			return []
+		}
+		
+		// Read all directories in saves folder
+		const saveSlots = await fs.readdir(savesDir, { withFileTypes: true })
+		const saves = []
+		
+		// Process each save slot directory
+		for (const entry of saveSlots) {
+			if (entry.isDirectory()) {
+				const saveSlotDir = join(savesDir, entry.name)
+				const autosavePath = join(saveSlotDir, 'autosave.json')
+				
+				try {
+					// Check if autosave.json exists
+					await fs.access(autosavePath)
+					
+					// Read autosave.json
+					const autosaveData = await fs.readFile(autosavePath, 'utf-8')
+					const autosave = JSON.parse(autosaveData)
+					
+					// Get all save files in this directory (including autosave.json now)
+					const saveFiles = await fs.readdir(saveSlotDir, { withFileTypes: true })
+					const saveFileList = []
+					
+					for (const file of saveFiles) {
+						if (file.isFile() && file.name.endsWith('.json')) {
+							const fileName = file.name === 'autosave.json' 
+								? 'Auto Save' 
+								: file.name.replace('.json', '')
+							const filePath = join(saveSlotDir, file.name)
+							const stats = await fs.stat(filePath)
+							
+							saveFileList.push({
+								name: fileName,
+								date: stats.mtime.toISOString(),
+								size: stats.size
+							})
+						}
+					}
+					
+					// Add save group to list
+					saves.push({
+						id: entry.name,
+						slot: entry.name,
+						name: autosave.mc?.name || `Save Slot ${entry.name}`,
+						saveFiles: saveFileList
+					})
+				} catch (error) {
+					console.error(`Error reading save slot ${entry.name}:`, error)
+					// Continue with other save slots
+				}
+			}
+		}
+		
+		return saves
+	} catch (error) {
+		console.error('Error loading saves:', error)
+		return []
+	}
 })
 
 async function getInitialSettings() {

@@ -5,14 +5,15 @@ import { electronAPI } from '@electron-toolkit/preload'
 
 // Создаём объект API
 const api = {
-    getSettings: (type) => ipcRenderer.invoke('get-settings', type), // type: undefined | 'default'
-    closeWindow: () => ipcRenderer.send('close-window'), //закрыть окно
-    setFullscreen: (flag) => ipcRenderer.send('set-fullscreen', flag),
-    saveSettings: (data) => ipcRenderer.send('save-settings', data),
-    listFiles: (folderPath) => ipcRenderer.invoke('list-files', folderPath),
-    setResolution: (res) => ipcRenderer.send('set-resolution', res),
-    saveGame: (mcName) => ipcRenderer.invoke('save-game', mcName),
-    ...electronAPI
+	getSettings: (type) => ipcRenderer.invoke('get-settings', type), // type: undefined | 'default'
+	closeWindow: () => ipcRenderer.send('close-window'), //закрыть окно
+	setFullscreen: (flag) => ipcRenderer.send('set-fullscreen', flag),
+	saveSettings: (data) => ipcRenderer.send('save-settings', data),
+	listFiles: (folderPath) => ipcRenderer.invoke('list-files', folderPath),
+	setResolution: (res) => ipcRenderer.send('set-resolution', res),
+	saveGame: (mcName) => ipcRenderer.invoke('save-game', mcName),
+	loadSaves: () => ipcRenderer.invoke('load-saves'),
+	...electronAPI
 }
 
 if (process.contextIsolated) {

@@ -1,6 +1,10 @@
 <template>
     <div class="mainmenu">
         <nav class="nav">
+            <!-- Show Continue button only when in game context -->
+            <a v-if="inGameContext" class="nav-link continue-button" @click="handleContinueClick">
+                {{ t('mainmenu.continue') }}
+            </a>
             <router-link
                 v-for="route in filteredRouters"
                 :to="route.path"
@@ -9,6 +13,7 @@
             >
                 {{ translateRouteName(`mainmenu.${route.name}`) }}
             </router-link>
+            <!-- Show Close button only when not in game context -->
             <a class="nav-link" @click="handleButtonClick">
                 {{ t('mainmenu.close') }}
             </a>
@@ -22,10 +27,18 @@
 	import { useI18n } from 'vue-i18n'
 	import router from '@/router'
 
-	defineProps({
+	const props = defineProps({
 		enableMusic: {
 			type: Boolean,
 			default: false
+		},
+		inGameContext: {
+			type: Boolean,
+			default: false
+		},
+		onContinue: {
+			type: Function,
+			default: null
 		}
 	})
 
@@ -47,7 +60,29 @@
 		}
 	}
 
+	const handleContinueClick = () => {
+		// If a custom continue handler is provided, use it
+		if (props.onContinue) {
+			props.onContinue()
+		} else {
+			// Default behavior
+			if (window.electronAPI?.closeWindow) {
+				window.electronAPI.closeWindow()
+			} else {
+				window.close()
+			}
+		}
+	}
+
 	const filteredRouters = computed(() =>
-		routers.filter(r => !(r.name === 'home' && route.path === '/'))
+		routers.filter(r => !(r.name === 'home' && route.name === 'home'))
 	)
 </script>
+
+<style scoped>
+.continue-button {
+	position: absolute;
+	top: 20px;
+	right: 20px;
+}
+</style>
