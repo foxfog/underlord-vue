@@ -24,6 +24,25 @@ export function initGameStore() {
 				this.mc.name = name
 			},
 			
+			// Action to load save data into the store
+			loadSaveData(saveData) {
+				// Merge save data with current state
+				// For each property in the current state, use the saved value if it exists, otherwise keep current
+				const currentState = this.$state
+				const mergedState = {}
+				
+				for (const key in currentState) {
+					if (saveData[key] !== undefined) {
+						mergedState[key] = saveData[key]
+					} else {
+						mergedState[key] = currentState[key]
+					}
+				}
+				
+				// Update the store with merged data
+				this.$patch(mergedState)
+			},
+			
 			// Other game actions can be added here
 		}
 	})

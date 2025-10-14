@@ -17,7 +17,9 @@
 			<div v-if="showMainMenu" class="main-menu-modal" @keydown.esc="toggleMainMenu">
 				<div class="modal-backdrop" @click="toggleMainMenu"></div>
 				<div class="modal-container">
-					<MainMenu :in-game-context="true" :on-continue="toggleMainMenu" />
+					<div class="menu-area __static">
+						<MainMenu :in-game-context="true" :on-continue="toggleMainMenu" />
+					</div>
 				</div>
 			</div>
 		</div>

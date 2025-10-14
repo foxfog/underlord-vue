@@ -13,19 +13,20 @@ const api = {
 	setResolution: (res) => ipcRenderer.send('set-resolution', res),
 	saveGame: (mcName) => ipcRenderer.invoke('save-game', mcName),
 	loadSaves: () => ipcRenderer.invoke('load-saves'),
+	loadSaveFile: (filePath) => ipcRenderer.invoke('load-save-file', filePath),
 	...electronAPI
 }
 
 if (process.contextIsolated) {
-  try {
-    contextBridge.exposeInMainWorld('electron', electronAPI)
-    contextBridge.exposeInMainWorld('electronAPI', api)
-    contextBridge.exposeInMainWorld('api', api)
-  } catch (error) {
-    console.error('Preload bridge error:', error)
-  }
+	try {
+		contextBridge.exposeInMainWorld('electron', electronAPI)
+		contextBridge.exposeInMainWorld('electronAPI', api)
+		contextBridge.exposeInMainWorld('api', api)
+	} catch (error) {
+		console.error('Preload bridge error:', error)
+	}
 } else {
-  window.electron = electronAPI
-  window.electronAPI = api
-  window.api = api
+	window.electron = electronAPI
+	window.electronAPI = api
+	window.api = api
 }

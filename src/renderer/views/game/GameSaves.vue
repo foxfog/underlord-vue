@@ -69,6 +69,7 @@
 	import { ref, onMounted } from 'vue'
 	import { useRouter } from 'vue-router'
 	import MainMenu from '@/components/MainMenu.vue'
+	import { useGameStore } from '@/stores/game'
 
 	const router = useRouter()
 	const saveGroups = ref([])
@@ -111,10 +112,29 @@
 		return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 	}
 
-	function loadSave(group, save) {
-		// TODO: Implement save loading logic
+	async function loadSave(group, save) {
 		console.log('Loading save:', group, save)
-		// router.push('/game/play', { query: { saveId: save.id } })
+		
+		try {
+			// Load the save data from the file
+			const savePath = `saves/${group.slot}/${save.name === 'Auto Save' ? 'autosave.json' : save.name + '.json'}`
+			const saveData = await window.api.loadSaveFile(savePath)
+			
+			if (saveData) {
+				// Get the game store instance
+				const gameStore = useGameStore()
+				
+				// Load the save data into the store
+				gameStore.loadSaveData(saveData)
+				
+				// Navigate to the game view
+				router.push('/game')
+			} else {
+				console.error('Failed to load save data')
+			}
+		} catch (error) {
+			console.error('Error loading save:', error)
+		}
 	}
 
 	function deleteSave(group, save) {

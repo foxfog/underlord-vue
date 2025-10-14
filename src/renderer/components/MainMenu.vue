@@ -45,7 +45,7 @@
 	const route = useRoute()
 	const { t } = useI18n()
 
-	const routeNames = ['home', 'game-new', 'game-saves', 'splash', 'settings', 'playground', 'test']
+	const routeNames = ['home', 'game-new', 'game-saves', 'settings',]
 	const routers = routeNames
 		.map(name => router.options.routes.find(r => r.name === name))
 		.filter(Boolean)
@@ -78,11 +78,3 @@
 		routers.filter(r => !(r.name === 'home' && route.name === 'home'))
 	)
 </script>
-
-<style scoped>
-.continue-button {
-	position: absolute;
-	top: 20px;
-	right: 20px;
-}
-</style>
