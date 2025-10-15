@@ -1,0 +1,46 @@
+{
+  "id": "test_variables",
+  "title": {
+    "en": "Test Variables Dialog",
+    "ru": "Тестовый диалог переменных"
+  },
+  "nodes": {
+    "test_1": {
+      "id": "test_1",
+      "speaker": "momonga",
+      "text": {
+        "en": "Hello, {mc.name}! The current time is {world.cur_time}.",
+        "ru": "Привет, {mc.name}! Текущее время: {world.cur_time}."
+      },
+      "choices": [
+        {
+          "id": "choice_1",
+          "text": {
+            "en": "My name is {mc.name} and I'm from {mc.nicname}.",
+            "ru": "Меня зовут {mc.name}, и я из {mc.nicname}."
+          },
+          "nextNode": "test_2"
+        }
+      ]
+    },
+    "test_2": {
+      "id": "test_2",
+      "speaker": "momonga",
+      "text": {
+        "en": "Interesting, {mc.name}. I am {characters.momonga.title}, also known as {characters.momonga.name} {characters.momonga.surname}.",
+        "ru": "Интересно, {mc.name}. Я {characters.momonga.title}, также известный как {characters.momonga.name} {characters.momonga.surname}."
+      },
+      "choices": [
+        {
+          "id": "choice_2",
+          "text": {
+            "en": "Nice to meet you, {characters.momonga.title}!",
+            "ru": "Приятно познакомиться, {characters.momonga.title}!"
+          },
+          "nextNode": null
+        }
+      ]
+    }
+  },
+  "startNode": "test_1"
+}

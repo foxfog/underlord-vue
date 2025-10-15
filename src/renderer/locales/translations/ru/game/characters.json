@@ -1,0 +1,22 @@
+{
+	"characters": {
+		"momonga": {
+			"name": "Сатору Судзуки",
+			"surname": "Судзуки",
+			"title": "Аинз Уал Гоун",
+			"nickname": "Момонга"
+		},
+		"albedo": {
+			"name": "Альбедо",
+			"surname": "",
+			"title": "Альбедо",
+			"nickname": "Страж 1-го по 4-й этажей"
+		},
+		"mc": {
+			"name": "Главный герой",
+			"surname": "",
+			"title": "Игрок",
+			"nickname": "ГГ"
+		}
+	}
+}

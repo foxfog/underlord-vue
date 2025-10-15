@@ -9,10 +9,27 @@ export function initGameStore() {
 	_GameStore = defineStore('game', {
 		state: () => ({
 			mc: {
-				name: '',
-				// Other player properties can be added here
+				name: 'MC',
+				nicname: 'player',
+				title: 'player',
 			},
-			// Other game state properties can be added here
+			characters: {
+				momonga: {
+					name: 'Сатору',
+					surname: 'Судзуки',
+					nicname: 'Momonga',
+					title: 'Ainz',
+					stats: {
+						intelect: 100,
+						strength: 10,
+						agility: 10,
+						luck: 10
+					}
+				}
+			},
+			world: {
+				cur_time: 'day',
+			}
 		}),
 
 		getters: {

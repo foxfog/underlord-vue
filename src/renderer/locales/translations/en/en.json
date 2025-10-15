@@ -1,37 +1,4 @@
 {
-	"mainmenu": {
-		"home": "Main menu",
-		"newgame": "New game",
-		"game": "Game",
-		"game-new": "New Game",
-		"game-saves": "Saves",
-		"load": "Load",
-		"settings": "Settings",
-		"about": "About",
-		"close": "Exit",
-		"continue": "Continue",
-		"test": "Test",
-		"splash": "Splash",
-		"playground": "Playground"
-	},
-	"ageVerification": {
-		"title": "Age Verification",
-		"message": "You must be at least 18 years old to play this game.",
-		"question": "Are you 18 or older?",
-		"yes": "Yes",
-		"no": "No"
-	},
-	"playground": {
-		"ui": "UI",
-		"map": "Map"
-	},
-	"settings": {
-		"generals": "Generals",
-		"video": "Video",
-		"audio": "Audio",
-		"save": "Save settings",
-		"resetToDefoult": "Reset settings"
-	},
 	"about": "This is info. {user}",
 	"num_age": "Person {user} - not age | Person {user} - {n} year | Person {user} - {n} year"
 }

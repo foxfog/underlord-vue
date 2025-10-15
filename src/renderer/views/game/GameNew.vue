@@ -14,8 +14,8 @@
 					<div class="modal-body">
 						<p>{{ $t('ageVerification.message') }}</p>
 						<div class="btn-list _center">
-							<button class="btn btn-primary" @click="confirmAge(true)">{{ $t('ageVerification.yes') }}</button>
-							<button class="btn btn-primary" @click="confirmAge(false)">{{ $t('ageVerification.no') }}</button>
+							<button class="btn btn-primary" @click="confirmAge(true)">{{ $t('yes') }}</button>
+							<button class="btn btn-primary" @click="confirmAge(false)">{{ $t('no') }}</button>
 						</div>
 					</div>
 				</div>
@@ -36,7 +36,7 @@
 					</div>
 					<div class="modal-footer">
 						<div class="btn-list">
-							<button class="btn btn-primary" @click="startGame" :disabled="!g.mc.name.trim()">Начать новое приключение</button>
+							<button class="btn btn-primary" @click="startGame" :disabled="!g.mc.name.trim()">{{ $t('confirm') }}</button>
 						</div>
 					</div>
 				</div>
