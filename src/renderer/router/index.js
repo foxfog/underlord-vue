@@ -18,12 +18,7 @@ const router = createRouter({
 			path: '/home',
 			component: HomeView
 		},
-		{
-			id: 2,
-			name: 'settings',
-			path: '/settings',
-			component: () => import('@/views/Settings.vue')
-		},
+		// Removed settings and game-saves routes since they're now embedded
 		{
 			id: 3,
 			name: 'playground',
@@ -47,12 +42,6 @@ const router = createRouter({
 			name: 'game-new',
 			path: '/game/new',
 			component: () => import('@/views/game/GameNew.vue')
-		},
-		{
-			id: 5,
-			name: 'game-saves',
-			path: '/game/saves',
-			component: () => import('@/views/game/GameSaves.vue')
 		},
 		{
 			id: 6,

@@ -12,7 +12,8 @@
 		"continue": "Continue",
 		"test": "Test",
 		"splash": "Splash",
-		"playground": "Playground"
+		"playground": "Playground",
+		"back": "Back to Menu"
 	},
 	"ageVerification": {
 		"title": "Age Verification",
@@ -38,6 +39,5 @@
 	"previous": "Previous",
 	"confirm": "Confirm",
 	"apply": "Apply",
-	"back": "Back",
 	"close": "Close"
 }

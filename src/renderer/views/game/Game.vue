@@ -2,17 +2,16 @@
 	<div class="game-area">
 		<div class="game">
 			<div class="game-background"></div>
-			<div class="location _isometric">
-				<div v-if="g.mc.name">
-					Игра началась, {{ g.mc.name }}!
-				</div>
-				<div v-else>
-					Игра началась
-				</div>
-			</div>
+			<LocationIso />
 		</div>
 		<div class="game-ui">
 			<!-- Dialog triggers in game-ui -->
+			 <div v-if="g.mc.name">
+				Игра началась, {{ g.mc.name }}!
+			</div>
+			<div v-else>
+				Игра началась
+			</div>
 			<div class="dialog-triggers">
 				<button @click="startFirstDialog" class="dialog-trigger-button">
 					Начать первый диалог
@@ -47,8 +46,7 @@
 					</button>
 				</div>
 			</div>
-		</div>
-		<div class="game-modals">
+			
 			<!-- Dialog choices modal in center of screen without backdrop -->
 			<div v-if="showDialogChoices && dialogStore.getCurrentNode?.choices?.length > 0" 
 				 class="dialog-choices-modal">
@@ -65,12 +63,21 @@
 					</div>
 				</div>
 			</div>
-			
+		</div>
+		<div class="game-modals">
+			<!-- Main menu modal with dynamic content -->
 			<div v-if="showMainMenu" class="main-menu-modal" @keydown.esc="toggleMainMenu">
-				<div class="modal-backdrop" @click="toggleMainMenu"></div>
-				<div class="modal-container">
+				<div class="page-area __dark">
+					<div class="content-area">
+						<DynamicContentArea 
+							:current-view="currentView" 
+							@back-to-menu="showHomeContent"
+							@settings-saved="onSettingsSaved"
+							@settings-reset="onSettingsReset"
+						/>
+					</div>
 					<div class="menu-area __static">
-						<MainMenu :in-game-context="true" :on-continue="toggleMainMenu" />
+						<MainMenu :in-game-context="true" :on-continue="toggleMainMenu" show-back-to-main @navigate="handleNavigation" />
 					</div>
 				</div>
 			</div>
@@ -79,31 +86,67 @@
 </template>
 
 <script setup>
-	import { computed, ref, onMounted, onUnmounted } from 'vue'
+	import { ref, computed, onMounted, onUnmounted } from 'vue'
 	import { useI18n } from 'vue-i18n'
 	import { useGameStore } from '@/stores/game'
 	import { useDialogStore } from '@/stores/dialog'
 	import MainMenu from '@/components/MainMenu.vue'
+	import DynamicContentArea from '@/components/DynamicContentArea.vue'
+	import LocationIso from '@/components/game/LocationIso.vue'
 	
 	const { locale, t } = useI18n()
 	const g = useGameStore()
 	const dialogStore = useDialogStore()
 	const showMainMenu = ref(false)
 	const showDialogChoices = ref(false)
+	const currentView = ref('main-menu')
 	
 	// Toggle main menu visibility
 	const toggleMainMenu = () => {
 		showMainMenu.value = !showMainMenu.value
+		// Reset to main menu view when opening/closing
+		if (showMainMenu.value) {
+			currentView.value = 'main-menu'
+		}
+	}
+	
+	// Navigation handlers
+	const showHomeContent = () => {
+		currentView.value = 'main-menu'
+		showMainMenu.value = false
+	}
+	
+	const showSettings = () => {
+		currentView.value = 'settings'
+	}
+	
+	const showSaves = () => {
+		currentView.value = 'saves'
+	}
+	
+	const handleNavigation = (view) => {
+		if (view === 'settings') {
+			showSettings()
+		} else if (view === 'saves') {
+			showSaves()
+		} else {
+			showHomeContent()
+		}
+	}
+	
+	function onSettingsSaved() {
+		console.log('Settings saved')
+	}
+	
+	function onSettingsReset() {
+		console.log('Settings reset to default')
 	}
 	
 	// Handle ESC key press
 	const handleKeyDown = (event) => {
 		if (event.key === 'Escape') {
-			if (dialogStore.isDialogActive && showDialogChoices.value) {
-				showDialogChoices.value = false
-			} else {
-				toggleMainMenu()
-			}
+			// Always open the main menu when ESC is pressed, regardless of dialog state
+			toggleMainMenu()
 		}
 	}
 	

@@ -1,0 +1,48 @@
+{
+  "tiles": {
+    "0": {
+      "tags": ["empty", "void"],
+      "image": {
+        "url": "/images/tiles/empty.png"
+      },
+      "name": "Empty Tile"
+    },
+    "1": {
+      "tags": ["floor", "indoor", "stone"],
+      "image": {
+        "url": "/images/tiles/prototype/floor/slab.png",
+        "width": "100%",
+        "top": "0"
+      },
+      "name": "Stone Slab Floor"
+    },
+    "2": {
+      "tags": ["floor", "indoor", "stone", "dark"],
+      "image": {
+        "url": "/images/tiles/prototype/floor/slab-dark.png"
+      },
+      "name": "Dark Stone Slab Floor"
+    },
+    "3": {
+      "tags": ["outdoor", "grass", "nature"],
+      "image": {
+        "url": "/images/tiles/grass-01.png"
+      },
+      "name": "Grass Tile"
+    },
+    "4": {
+      "tags": ["outdoor", "water", "liquid"],
+      "image": {
+        "url": "/images/tiles/water-01.png"
+      },
+      "name": "Water Tile"
+    },
+    "5": {
+      "tags": ["wall", "indoor", "stone", "blocking"],
+      "image": {
+        "url": "/images/tiles/wall-stone-01.png"
+      },
+      "name": "Stone Wall"
+    }
+  }
+}

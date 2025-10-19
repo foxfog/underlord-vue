@@ -1,4 +1,8 @@
 {
 	"about": "This is info. {user}",
-	"num_age": "Person {user} - not age | Person {user} - {n} year | Person {user} - {n} year"
+	"num_age": "Person {user} - not age | Person {user} - {n} year | Person {user} - {n} year",
+	"app": {
+		"title": "Underlord",
+		"subtitle": "A dark fantasy strategy game"
+	}
 }

@@ -1,19 +1,38 @@
 <template>
     <div class="mainmenu">
         <nav class="nav">
-            <!-- Show Continue button only when in game context -->
+            <!-- Show Continue button only when in game context (moved to first position) -->
             <a v-if="inGameContext" class="nav-link continue-button" @click="handleContinueClick">
                 {{ t('mainmenu.continue') }}
             </a>
-            <router-link
-                v-for="route in filteredRouters"
-                :to="route.path"
-                :key="route.name"
-                class="nav-link"
-            >
-                {{ translateRouteName(`mainmenu.${route.name}`) }}
-            </router-link>
-            <!-- Show Close button only when not in game context -->
+            
+            <!-- Back to Main option when needed -->
+            <a v-if="showBackToMain" class="nav-link" @click="navigateToMainMenu">
+                {{ t('mainmenu.back') }}
+            </a>
+            
+            <!-- Navigation links for non-game context -->
+            <template v-if="!inGameContext">
+                <a class="nav-link" @click="navigateToNewGame">
+                    {{ t('mainmenu.game-new') }}
+                </a>
+                
+                <a class="nav-link" @click="navigateToSaves">
+                    {{ t('mainmenu.game-saves') }}
+                </a>
+            </template>
+            
+            <!-- Navigation links for game context -->
+            <a v-if="inGameContext" class="nav-link" @click="navigateToSaves">
+                {{ t('mainmenu.game-saves') }}
+            </a>
+            
+            <!-- Navigation links that emit events for component switching -->
+            <a class="nav-link" @click="navigateToSettings">
+                {{ t('mainmenu.settings') }}
+            </a>
+            
+            <!-- Show Close button -->
             <a class="nav-link" @click="handleButtonClick">
                 {{ t('mainmenu.close') }}
             </a>
@@ -22,10 +41,8 @@
 </template>
 
 <script setup>
-	import { computed } from 'vue'
-	import { RouterLink, useRoute } from 'vue-router'
 	import { useI18n } from 'vue-i18n'
-	import router from '@/router'
+	import { useRouter } from 'vue-router'
 
 	const props = defineProps({
 		enableMusic: {
@@ -39,18 +56,16 @@
 		onContinue: {
 			type: Function,
 			default: null
+		},
+		showBackToMain: {
+			type: Boolean,
+			default: false
 		}
 	})
-
-	const route = useRoute()
+	
+	const emit = defineEmits(['navigate'])
+	const router = useRouter()
 	const { t } = useI18n()
-
-	const routeNames = ['home', 'game-new', 'game-saves', 'settings',]
-	const routers = routeNames
-		.map(name => router.options.routes.find(r => r.name === name))
-		.filter(Boolean)
-
-	const translateRouteName = (name, data = {}) => t(name, data)
 
 	const handleButtonClick = () => {
 		if (window.electronAPI?.closeWindow) {
@@ -73,8 +88,22 @@
 			}
 		}
 	}
-
-	const filteredRouters = computed(() =>
-		routers.filter(r => !(r.name === 'home' && route.name === 'home'))
-	)
+	
+	// Navigation functions that emit events for component switching
+	const navigateToSettings = () => {
+		emit('navigate', 'settings')
+	}
+	
+	const navigateToSaves = () => {
+		emit('navigate', 'saves')
+	}
+	
+	const navigateToMainMenu = () => {
+		emit('navigate', 'main-menu')
+	}
+	
+	// Navigation functions that use router for page navigation
+	const navigateToNewGame = () => {
+		router.push('/game/new')
+	}
 </script>
