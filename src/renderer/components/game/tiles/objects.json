@@ -16,6 +16,62 @@
         "url": "/images/tiles/wall-stone-02.png"
       }
     },
+    "wall-3": {
+      "name": "Basic Wall East",
+      "type": "wall",
+      "tags": ["blocking", "stone", "indoor", "east"],
+      "image": {
+        "url": "/images/tiles/wall/wall-e.png"
+      }
+    },
+    "wall-4": {
+      "name": "Basic Wall South",
+      "type": "wall",
+      "tags": ["blocking", "stone", "indoor", "south"],
+      "image": {
+        "url": "/images/tiles/wall/wall-s.png"
+      }
+    },
+    "wall-5": {
+      "name": "Basic Wall West",
+      "type": "wall",
+      "tags": ["blocking", "stone", "indoor", "west"],
+      "image": {
+        "url": "/images/tiles/wall/wall-w.png"
+      }
+    },
+    "wall-6": {
+      "name": "Dark Wall",
+      "type": "wall",
+      "tags": ["blocking", "stone", "indoor", "dark"],
+      "image": {
+        "url": "/images/tiles/wall/wall-dark.png"
+      }
+    },
+    "wall-7": {
+      "name": "Dark Wall East",
+      "type": "wall",
+      "tags": ["blocking", "stone", "indoor", "dark", "east"],
+      "image": {
+        "url": "/images/tiles/wall/wall-dark-e.png"
+      }
+    },
+    "wall-8": {
+      "name": "Dark Wall South",
+      "type": "wall",
+      "tags": ["blocking", "stone", "indoor", "dark", "south"],
+      "image": {
+        "url": "/images/tiles/wall/wall-dark-s.png"
+      }
+    },
+    "wall-9": {
+      "name": "Dark Wall West",
+      "type": "wall",
+      "tags": ["blocking", "stone", "indoor", "dark", "west"],
+      "image": {
+        "url": "/images/tiles/wall/wall-dark-w.png"
+      }
+    },
     "door-1": {
       "name": "Wooden Door",
       "type": "door",

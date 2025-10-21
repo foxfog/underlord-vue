@@ -29,7 +29,9 @@ export function initGameStore() {
 			},
 			world: {
 				cur_time: 'day',
-			}
+			},
+			// Current location state
+			location: 'test-location' // default location
 		}),
 
 		getters: {
@@ -39,6 +41,11 @@ export function initGameStore() {
 		actions: {
 			updateMcName(name) {
 				this.mc.name = name
+			},
+			
+			// Action to update current location
+			updateLocation(locationId) {
+				this.location = locationId
 			},
 			
 			// Action to load save data into the store

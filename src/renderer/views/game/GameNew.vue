@@ -69,8 +69,16 @@
 		if (!g.mc.name.trim()) return
 		
 		try {
+			// Prepare game data to save
+			const gameData = {
+				mc: {
+					name: g.mc.name.trim()
+				},
+				location: g.location // Include current location
+			}
+			
 			// Save the game data
-			const result = await window.electronAPI.saveGame(g.mc.name.trim())
+			const result = await window.electronAPI.saveGame(gameData)
 			
 			if (result.success) {
 				// Set the player name in the game store

@@ -1,0 +1,77 @@
+{
+  "id": "second_scene",
+  "title": "Вторая сцена",
+  "nodes": {
+    "second_1": {
+      "id": "second_1",
+      "speaker": "albedo",
+      "text": "Теперь, когда вы понимаете ситуацию, {mc.name}, позвольте мне показать вам Назарик.",
+      "choices": [
+        {
+          "id": "choice_a",
+          "text": "Это было бы замечательно, спасибо.",
+          "nextNode": "second_2"
+        },
+        {
+          "id": "choice_b",
+          "text": "Я предпочитаю исследовать самостоятельно.",
+          "nextNode": "second_3"
+        }
+      ]
+    },
+    "second_2": {
+      "id": "second_2",
+      "speaker": "momonga",
+      "text": "{mc.name}, {characters.albedo.title} - одна из наших самых доверенных NPC. Она будет отличным гидом.",
+      "choices": [
+        {
+          "id": "choice_c",
+          "text": "NPC? Вы имеете в виду неигрового персонажа?",
+          "nextNode": "second_4"
+        }
+      ]
+    },
+    "second_3": {
+      "id": "second_3",
+      "speaker": "albedo",
+      "text": "Я понимаю ваше стремление к независимости, {mc.name}, но Назарик может быть опасным для новичков.",
+      "choices": [
+        {
+          "id": "choice_d",
+          "text": "Вы правы. Я возьму экскурсию с гидом.",
+          "nextNode": "second_2"
+        }
+      ]
+    },
+    "second_4": {
+      "id": "second_4",
+      "speaker": "albedo",
+      "text": "Да, мы NPC этого мира. Мы были запрограммированы служить гильдии, но теперь...",
+      "choices": [
+        {
+          "id": "choice_e",
+          "text": "А теперь что?",
+          "nextNode": "second_5"
+        }
+      ]
+    },
+    "second_5": {
+      "id": "second_5",
+      "speaker": "momonga",
+      "text": "Теперь у нас есть сознание и свободная воля. Это и благословение, и проклятие.",
+      "choices": [
+        {
+          "id": "choice_f",
+          "text": "Это звучит сложно.",
+          "nextNode": null
+        },
+        {
+          "id": "choice_g",
+          "text": "Я хочу узнать об этом больше.",
+          "nextNode": null
+        }
+      ]
+    }
+  },
+  "startNode": "second_1"
+}

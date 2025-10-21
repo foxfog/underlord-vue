@@ -10,7 +10,7 @@
     "1": {
       "tags": ["floor", "indoor", "stone"],
       "image": {
-        "url": "/images/tiles/prototype/floor/slab.png",
+        "url": "/images/tiles/bot/slab.png",
         "width": "100%",
         "top": "0"
       },
@@ -19,7 +19,7 @@
     "2": {
       "tags": ["floor", "indoor", "stone", "dark"],
       "image": {
-        "url": "/images/tiles/prototype/floor/slab-dark.png"
+        "url": "/images/tiles/bot/slab-dark.png"
       },
       "name": "Dark Stone Slab Floor"
     },

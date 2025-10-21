@@ -105,8 +105,15 @@
 				// Get the game store instance
 				const gameStore = useGameStore()
 				
+				// Log the loaded save data to console
+				console.log('Loaded save data:', saveData)
+				console.log('Current game store state before loading:', {...gameStore.$state})
+				
 				// Load the save data into the store
 				gameStore.loadSaveData(saveData)
+				
+				// Log the game store state after loading
+				console.log('Game store state after loading:', {...gameStore.$state})
 				
 				// Navigate to the game view
 				router.push('/game')

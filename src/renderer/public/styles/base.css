@@ -58,6 +58,7 @@ body {
 	color: var(--color-base);
 	background: var(--color-back);
 	user-select: none;
+	image-rendering: pixelated;
 }
 
 button {

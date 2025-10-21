@@ -11,7 +11,12 @@ const api = {
 	saveSettings: (data) => ipcRenderer.send('save-settings', data),
 	listFiles: (folderPath) => ipcRenderer.invoke('list-files', folderPath),
 	setResolution: (res) => ipcRenderer.send('set-resolution', res),
-	saveGame: (mcName) => ipcRenderer.invoke('save-game', mcName),
+	saveGame: (gameData) => ipcRenderer.invoke('save-game', gameData),
+	saveLocation: (locationId, locationData) => {
+		// Ensure data is serializable by creating a clean copy
+		const cleanData = JSON.parse(JSON.stringify(locationData));
+		return ipcRenderer.invoke('save-location', locationId, cleanData);
+	},
 	loadSaves: () => ipcRenderer.invoke('load-saves'),
 	loadSaveFile: (filePath) => ipcRenderer.invoke('load-save-file', filePath),
 	...electronAPI

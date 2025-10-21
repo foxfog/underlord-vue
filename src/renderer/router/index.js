@@ -49,6 +49,12 @@ const router = createRouter({
 			path: '/game',
 			component: () => import('@/views/game/Game.vue')
 		},
+		{
+			id: 7,
+			name: 'location-editor',
+			path: '/game/location-editor',
+			component: () => import('@/views/game/LocationEditor.vue')
+		},
 	]
 })
 

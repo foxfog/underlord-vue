@@ -1,0 +1,51 @@
+{
+  "id": "third_scene",
+  "title": "Sequential Dialog Scene",
+  "sequence": [
+    {
+      "id": "seq_1",
+      "speaker": "momonga",
+      "text": "Let me tell you about the history of Nazarick, {mc.name}."
+    },
+    {
+      "id": "seq_2",
+      "speaker": "momonga",
+      "text": "It was created by the guild {characters.momonga.name} as our base of operations."
+    },
+    {
+      "id": "seq_3",
+      "speaker": "mc",
+      "text": "That's impressive. How many floors does it have?"
+    },
+    {
+      "id": "seq_4",
+      "speaker": "momonga",
+      "text": "Nazarick has ten floors, each with its own unique characteristics and guardians."
+    },
+    {
+      "id": "seq_5",
+      "speaker": "mc",
+      "text": "Guardians? You mean like {characters.albedo.title}?"
+    },
+    {
+      "id": "seq_6",
+      "speaker": "momonga",
+      "text": "Precisely. Each floor has a guardian who protects it and maintains its functions."
+    },
+    {
+      "id": "seq_7",
+      "speaker": "albedo",
+      "text": "And I, {characters.albedo.title}, am the Supreme Guardian of the 1st to 4th floors!"
+    },
+    {
+      "id": "seq_8",
+      "speaker": "mc",
+      "text": "It's fascinating to learn about this place. Thank you for sharing, {characters.momonga.title}."
+    },
+    {
+      "id": "seq_9",
+      "speaker": "momonga",
+      "text": "You're welcome, {mc.name}. There's much more to discover about our world."
+    }
+  ]
+}

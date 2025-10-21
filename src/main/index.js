@@ -1,7 +1,7 @@
 // src/main/index.js
 
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
-import { join } from 'path'
+import { join, dirname } from 'path'
 import fs from 'fs/promises'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 
@@ -114,8 +114,44 @@ ipcMain.on('set-resolution', (event, resolution) => {
 	}
 })
 
+// IPC handler for saving location data
+ipcMain.handle('save-location', async (_event, locationId, locationData) => {
+	try {
+		if (!locationId) {
+			throw new Error('Location ID is required')
+		}
+		
+		if (!locationData) {
+			throw new Error('Location data is required')
+		}
+		
+		// In development mode, save to src directory
+		// In production mode, save to resources directory
+		const locationPath = is.dev
+			? join(__dirname, '../../src/renderer/components/game/locations', `${locationId}.json`)
+			: join(process.resourcesPath, 'app', 'out', 'renderer', 'components', 'game', 'locations', `${locationId}.json`)
+		
+		// Ensure directory exists
+		const dirPath = dirname(locationPath)
+		try {
+			await fs.access(dirPath)
+		} catch {
+			await fs.mkdir(dirPath, { recursive: true })
+		}
+		
+		// Write the location data to file
+		const jsonData = JSON.stringify(locationData, null, 2)
+		await fs.writeFile(locationPath, jsonData, 'utf-8')
+		
+		return { success: true }
+	} catch (error) {
+		console.error('Error saving location:', error)
+		return { success: false, error: error.message || error.toString() }
+	}
+})
+
 // IPC handler for saving game data
-ipcMain.handle('save-game', async (_event, McName) => {
+ipcMain.handle('save-game', async (_event, gameData) => {
 	try {
 		const userDataPath = app.getPath('userData')
 		const savesDir = join(userDataPath, 'saves')
@@ -137,15 +173,9 @@ ipcMain.handle('save-game', async (_event, McName) => {
 		// Create the save directory
 		await fs.mkdir(saveDir, { recursive: true })
 		
-		// Create the autosave.json file
-		const autosaveData = {
-			mc: {
-				name: McName
-			}
-		}
-		
+		// Create the autosave.json file with game data
 		const autosavePath = join(saveDir, 'autosave.json')
-		await fs.writeFile(autosavePath, JSON.stringify(autosaveData, null, 2), 'utf-8')
+		await fs.writeFile(autosavePath, JSON.stringify(gameData, null, 2), 'utf-8')
 		
 		return { success: true, saveSlot }
 	} catch (error) {
