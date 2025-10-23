@@ -32,3 +32,12 @@ $ npm run build:mac
 # For Linux
 $ npm run build:linux
 ```
+
+## Data Structure
+
+The project uses JSON files for tile and object definitions:
+- Tile data: `src/renderer/components/game/tiles/tiles.json`
+- Object data: `src/renderer/components/game/tiles/objects.json`
+
+Each tile and object now includes explicit `id`, `type`, and `tags` fields for better data management and CSS manipulation.
+See `src/renderer/components/game/tiles/README.md` for detailed documentation.

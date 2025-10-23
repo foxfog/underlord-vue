@@ -66,10 +66,34 @@ export function getTileDimensions(id) {
   };
 }
 
+/**
+ * Get tile type by ID
+ * @param {string|number} id - The ID of the tile
+ * @returns {string|null} The type of the tile or null if not found
+ */
+export function getTileType(id) {
+  const stringId = typeof id === 'number' ? id.toString() : id;
+  const tile = getTileById(stringId);
+  return tile ? tile.type : null;
+}
+
+/**
+ * Get tile tags by ID
+ * @param {string|number} id - The ID of the tile
+ * @returns {Array|null} The tags of the tile or null if not found
+ */
+export function getTileTags(id) {
+  const stringId = typeof id === 'number' ? id.toString() : id;
+  const tile = getTileById(stringId);
+  return tile ? tile.tags : null;
+}
+
 export default {
   getTileById,
   getTilesByTag,
   getAllTiles,
   getTileImageUrl,
-  getTileDimensions
+  getTileDimensions,
+  getTileType,
+  getTileTags
 }

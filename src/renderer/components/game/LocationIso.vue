@@ -16,7 +16,11 @@
 				:style="getTilePosition(tile.cord[0], tile.cord[1])"
 				:data-coords="`${tile.cord[0]},${tile.cord[1]}`"
 				:data-id="tile.id"
-				:class="{ 'empty-tile': tile.id === 0 }"
+				:data-type="getTileType(tile.id)"
+				:data-tags="getTileTags(tile.id)?.join(' ')"
+				:class="[
+					'tile-object'
+				]"
 				@click="handleTileClick(tile)"
 			>
 				<div class="tile-content">
@@ -38,6 +42,9 @@
 						:key="`${tile.cord[0]},${tile.cord[1]},${index}`"
 						class="tile-object"
 						:style="getObjectPositionStyle(obj)"
+						:data-id="obj.id"
+						:data-type="getObjectType(obj.id)"
+						:data-tags="getObjectTags(obj.id)?.join(' ')"
 					>
 						<img 
 							:src="getObjectImage(obj.id)" 
@@ -46,17 +53,11 @@
 						/>
 						<!-- Display contained objects recursively -->
 						<template v-if="obj.containedObjects && obj.containedObjects.length > 0">
-							<div 
-								v-for="(containedObj, containedIndex) in getAllContainedObjects(obj.containedObjects)" 
+							<NestedObjectRenderer 
+								v-for="(containedObj, containedIndex) in obj.containedObjects" 
 								:key="`${tile.cord[0]},${tile.cord[1]},${index},${containedIndex}`"
-								class="contained-object"
-							>
-								<img 
-									:src="getObjectImage(containedObj.id)" 
-									:alt="getObjectAltText(containedObj.id)"
-									class="contained-object-img"
-								/>
-							</div>
+								:object="containedObj"
+							/>
 						</template>
 					</div>
 				</div>
@@ -68,9 +69,12 @@
 <script setup>
 	import { ref, computed, onMounted, watch } from 'vue'
 	import { useGameStore } from '@/stores/game'
-	import { getTileById, getTileImageUrl } from '../../utils/tileLoader.js'
-	import { getObjectById, getObjectImageUrl } from '../../utils/objectLoader.js'
-	import { getLocationById, getLocationTiles } from '../../utils/locationLoader.js'
+	import { getTileById, getTileImageUrl, getTileType, getTileTags } from '@/utils/tileLoader.js'
+	import { getObjectById, getObjectImageUrl, getObjectsByType, getObjectsByTag, getObjectType, getObjectTags } from '@/utils/objectLoader.js'
+	import { getLocationById, getLocationTiles } from '@/utils/locationLoader.js'
+	
+	// Recursive component for rendering nested objects
+	import NestedObjectRenderer from './NestedObjectRenderer.vue'
 	
 	const props = defineProps({
 		locationData: {
@@ -292,25 +296,6 @@
 		return []
 	}
 	
-	// Get all contained objects recursively (flatten nested structure)
-	const getAllContainedObjects = (containedObjects) => {
-		const allObjects = []
-		
-		const traverse = (objects) => {
-			if (!objects || !Array.isArray(objects)) return
-			
-			objects.forEach(obj => {
-				allObjects.push(obj)
-				if (obj.containedObjects && Array.isArray(obj.containedObjects)) {
-					traverse(obj.containedObjects)
-				}
-			})
-		}
-		
-		traverse(containedObjects)
-		return allObjects
-	}
-	
 	// Calculate isometric position for a tile
 	function getTilePosition(x, y) {
 		// Isometric projection formulas
@@ -411,7 +396,8 @@
 				z-index: 1;
 				pointer-events: none;
 				&.empty-tile {
-					visibility: hidden;
+					visibility: visible; /* Changed from hidden to visible */
+					opacity: 0.3; /* Make empty tiles semi-transparent */
 				}
 				.tile-content {
 					position: absolute;
@@ -458,17 +444,6 @@
 							height: auto;
 							object-fit: contain;
 							display: block;
-						}
-						.contained-object {
-							position: absolute;
-							width: 100%;
-							height: 100%;
-							.contained-object-img {
-								width: 100%;
-								height: auto;
-								object-fit: contain;
-								display: block;
-							}
 						}
 					}
 				}

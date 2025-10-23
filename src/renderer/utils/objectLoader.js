@@ -55,10 +55,32 @@ export function getObjectImageUrl(id) {
   return object ? object.image.url : null
 }
 
+/**
+ * Get object type by ID
+ * @param {string} id - The ID of the object
+ * @returns {string|null} The type of the object or null if not found
+ */
+export function getObjectType(id) {
+  const object = getObjectById(id)
+  return object ? object.type : null
+}
+
+/**
+ * Get object tags by ID
+ * @param {string} id - The ID of the object
+ * @returns {Array|null} The tags of the object or null if not found
+ */
+export function getObjectTags(id) {
+  const object = getObjectById(id)
+  return object ? object.tags : null
+}
+
 export default {
   getObjectById,
   getAllObjects,
   getObjectsByType,
   getObjectsByTag,
-  getObjectImageUrl
+  getObjectImageUrl,
+  getObjectType,
+  getObjectTags
 }

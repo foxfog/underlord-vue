@@ -52,6 +52,27 @@
 								class="form-control"
 							/>
 						</div>
+						<!-- Add dimension fields -->
+						<div class="property-group">
+							<label for="location-width">Ширина:</label>
+							<input 
+								id="location-width" 
+								v-model.number="currentLocationData.dimensions.width" 
+								type="number" 
+								class="form-control"
+								min="1"
+							/>
+						</div>
+						<div class="property-group">
+							<label for="location-height">Высота:</label>
+							<input 
+								id="location-height" 
+								v-model.number="currentLocationData.dimensions.height" 
+								type="number" 
+								class="form-control"
+								min="1"
+							/>
+						</div>
 						<div class="property-group">
 							<label for="location-description">Описание:</label>
 							<textarea 
@@ -78,12 +99,41 @@
 							</div>
 						</div>
 						
+						<!-- Object filtering controls -->
+						<div class="object-filtering-controls">
+							<h4>Фильтрация объектов</h4>
+							
+							<!-- Object type filter -->
+							<div class="filter-section">
+								<label>Типы объектов:</label>
+								<UiSelect
+									v-model="selectedObjectTypes"
+									:options="objectTypes"
+									multiple
+									placeholder="Выберите типы объектов..."
+									class="object-type-filter"
+								/>
+							</div>
+							
+							<!-- Object tag filter -->
+							<div class="filter-section">
+								<label>Теги объектов:</label>
+								<UiSelect
+									v-model="selectedObjectTags"
+									:options="allObjectTags"
+									multiple
+									placeholder="Выберите теги для фильтрации..."
+									class="object-tag-filter"
+								/>
+							</div>
+						</div>
+						
 						<!-- Object selection panel -->
 						<div class="object-selection-panel">
 							<h4>Выбор объектов</h4>
 							<div class="object-types">
 								<div 
-									v-for="(object, id) in availableObjects" 
+									v-for="(object, id) in filteredObjects" 
 									:key="id"
 									class="object-type"
 									:class="{ 'selected': selectedObjectType == id }"
@@ -91,6 +141,21 @@
 								>
 									<img :src="object.image.url" :alt="object.name" class="object-preview" />
 									<span>{{ object.name }}</span>
+									<div class="object-meta">
+										<span class="object-type-badge">{{ object.type }}</span>
+										<div class="object-tags">
+											<span 
+												v-for="tag in object.tags.slice(0, 3)" 
+												:key="tag" 
+												class="object-tag"
+											>
+												{{ tag }}
+											</span>
+											<span v-if="object.tags.length > 3" class="object-tag more-tags">
+												+{{ object.tags.length - 3 }}
+											</span>
+										</div>
+									</div>
 								</div>
 							</div>
 						</div>
@@ -202,7 +267,7 @@
 </template>
 
 <script setup>
-	import { ref, computed } from 'vue'
+	import { ref, computed, watch } from 'vue'
 	import { useRouter } from 'vue-router'
 	import { useGameStore } from '@/stores/game'
 	import { getLocationById, getAllLocations } from '@/utils/locationLoader.js'
@@ -210,6 +275,7 @@
 	import { getAllObjects } from '@/utils/objectLoader.js'
 	import LocationIso from '@/components/game/LocationIso.vue'
 	import NestedObjectEditor from '@/components/game/NestedObjectEditor.vue'
+	import UiSelect from '@/components/UI/UiSelect.vue'
 	
 	const router = useRouter()
 	const gameStore = useGameStore()
@@ -220,6 +286,10 @@
 	const selectedTileForEditing = ref(null)
 	const selectedTileType = ref('1') // Default to stone slab floor
 	const selectedObjectType = ref(null) // Selected object type for placement
+	
+	// Filtering state
+	const selectedObjectTypes = ref([])
+	const selectedObjectTags = ref([])
 	
 	// Available locations, tiles and objects
 	const availableLocations = computed(() => {
@@ -234,6 +304,120 @@
 	const availableTiles = getAllTiles()
 	const availableObjects = getAllObjects()
 	
+	// Computed properties for object filtering
+	const objectTypes = computed(() => {
+		const types = new Set()
+		Object.values(availableObjects).forEach(obj => {
+			types.add(obj.type)
+		})
+		return Array.from(types).map(type => ({ value: type, label: type }))
+	})
+	
+	const allObjectTags = computed(() => {
+		const tags = new Set()
+		Object.values(availableObjects).forEach(obj => {
+			obj.tags.forEach(tag => tags.add(tag))
+		})
+		return Array.from(tags).map(tag => ({ value: tag, label: tag }))
+	})
+	
+	const filteredObjects = computed(() => {
+		// If no filters are selected, show all objects
+		if (selectedObjectTypes.value.length === 0 && selectedObjectTags.value.length === 0) {
+			return availableObjects
+		}
+		
+		const result = {}
+		
+		// Filter by object types
+		const typeFilteredObjects = selectedObjectTypes.value.length > 0 
+			? Object.fromEntries(
+				Object.entries(availableObjects).filter(
+					([id, obj]) => selectedObjectTypes.value.includes(obj.type)
+				)
+			)
+			: availableObjects
+		
+		// Filter by tags
+		if (selectedObjectTags.value.length > 0) {
+			Object.entries(typeFilteredObjects).forEach(([id, obj]) => {
+				// Check if object has any of the selected tags
+				const hasMatchingTag = obj.tags.some(tag => selectedObjectTags.value.includes(tag))
+				if (hasMatchingTag) {
+					result[id] = obj
+				}
+			})
+		} else {
+			// If no tags are selected, return type-filtered objects
+			return typeFilteredObjects
+		}
+		
+		return result
+	})
+	
+	// Watch for dimension changes and ensure all tiles exist
+	watch(() => currentLocationData.value?.dimensions, (newDimensions) => {
+		if (!currentLocationData.value || !newDimensions) return
+		
+		// Ensure dimensions object exists
+		if (!currentLocationData.value.dimensions) {
+			currentLocationData.value.dimensions = { width: 10, height: 10 }
+		}
+		
+		const width = newDimensions.width || 10
+		const height = newDimensions.height || 10
+		
+		// Ensure floor array exists
+		if (!currentLocationData.value.levels['level-1'].floor) {
+			currentLocationData.value.levels['level-1'].floor = []
+		}
+		
+		const floor = currentLocationData.value.levels['level-1'].floor
+		
+		// Create a map of existing tiles for quick lookup
+		const existingTiles = new Map()
+		floor.forEach(row => {
+			row.forEach(tile => {
+				if (tile.cord) {
+					const key = `${tile.cord[0]},${tile.cord[1]}`
+					existingTiles.set(key, tile)
+				}
+			})
+		})
+		
+		// Clear existing floor array
+		floor.length = 0
+		
+		// Calculate center offset for isometric grid
+		const centerX = Math.floor(width / 2)
+		const centerY = Math.floor(height / 2)
+		
+		// Generate new floor grid with proper coordinates
+		for (let y = 0; y < height; y++) {
+			const row = []
+			for (let x = 0; x < width; x++) {
+				// Convert to isometric coordinates (centered)
+				const isoX = x - centerX
+				const isoY = y - centerY
+				
+				const key = `${isoX},${isoY}`
+				const existingTile = existingTiles.get(key)
+				
+				if (existingTile) {
+					// Use existing tile data
+					row.push(existingTile)
+				} else {
+					// Create new empty tile
+					row.push({
+						id: 0, // Empty tile by default
+						cord: [isoX, isoY]
+					})
+				}
+			}
+			floor.push(row)
+		}
+	}, { deep: true })
+	
 	// Navigation
 	const goBack = () => {
 		router.push('/home')
@@ -244,6 +428,14 @@
 		selectedLocation.value = locationId
 		const locationData = getLocationById(locationId)
 		currentLocationData.value = JSON.parse(JSON.stringify(locationData))
+		
+		// Ensure dimensions exist
+		if (!currentLocationData.value.dimensions) {
+			currentLocationData.value.dimensions = { 
+				width: currentLocationData.value.levels['level-1'].floor[0]?.length || 10, 
+				height: currentLocationData.value.levels['level-1'].floor.length || 10 
+			}
+		}
 	}
 	
 	// Deselect current location
@@ -252,6 +444,8 @@
 		currentLocationData.value = null
 		selectedTileForEditing.value = null
 		selectedObjectType.value = null
+		selectedObjectTypes.value = []
+		selectedObjectTags.value = []
 	}
 	
 	// Handle tile click in the location visualization
@@ -421,9 +615,12 @@
 		if (!currentLocationData.value) return
 		
 		try {
+			// Create a deep clone of the location data to ensure it's serializable
+			const serializableLocationData = JSON.parse(JSON.stringify(currentLocationData.value))
+			
 			const result = await window.electronAPI.saveLocation(
-				currentLocationData.value.id, 
-				currentLocationData.value
+				serializableLocationData.id, 
+				serializableLocationData
 			)
 			
 			if (result && result.success) {
@@ -674,6 +871,37 @@
 	text-align: center;
 }
 
+/* Object filtering controls */
+.object-filtering-controls {
+	margin-top: 20px;
+	background: rgba(40, 40, 60, 0.7);
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	border-radius: 4px;
+	padding: 15px;
+}
+
+.object-filtering-controls h4 {
+	color: #fff;
+	margin-top: 0;
+	margin-bottom: 15px;
+}
+
+.filter-section {
+	margin-bottom: 15px;
+}
+
+.filter-section label {
+	display: block;
+	color: #ccc;
+	margin-bottom: 5px;
+	font-size: 0.9em;
+}
+
+.object-type-filter,
+.object-tag-filter {
+	width: 100%;
+}
+
 .object-selection-panel {
 	margin-top: 20px;
 }
@@ -700,6 +928,7 @@
 	border-radius: 4px;
 	cursor: pointer;
 	transition: all 0.2s ease;
+	position: relative;
 }
 
 .object-type:hover {
@@ -723,6 +952,40 @@
 	color: #fff;
 	font-size: 0.8em;
 	text-align: center;
+	margin-bottom: 5px;
+}
+
+.object-meta {
+	width: 100%;
+}
+
+.object-type-badge {
+	background: rgba(76, 175, 80, 0.3);
+	color: #fff;
+	padding: 2px 6px;
+	border-radius: 3px;
+	font-size: 0.7em;
+	margin-bottom: 3px;
+	display: inline-block;
+}
+
+.object-tags {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 3px;
+	justify-content: center;
+}
+
+.object-tag {
+	background: rgba(100, 100, 150, 0.5);
+	color: #ccc;
+	padding: 1px 4px;
+	border-radius: 2px;
+	font-size: 0.6em;
+}
+
+.object-tag.more-tags {
+	background: rgba(150, 150, 150, 0.5);
 }
 
 .location-visualization {
@@ -817,6 +1080,7 @@
 	border: 1px solid rgba(255, 255, 255, 0.2);
 	border-radius: 4px;
 	margin-bottom: 5px;
+	flex-wrap: wrap;
 }
 
 .tile-object span {
@@ -838,77 +1102,52 @@
 	font-size: 0.8em;
 }
 
-.nested-objects-management {
-	margin: 10px 0;
-	padding: 10px;
-	background: rgba(40, 40, 60, 0.5);
-	border-radius: 4px;
-}
-
-.nested-objects-management h6 {
-	color: #ddd;
-	margin: 0 0 5px 0;
-}
-
-.nested-objects-list {
-	margin: 5px 0;
-}
-
-.no-nested-objects {
-	color: #aaa;
-	font-style: italic;
+.form-control.small-input {
+	width: 60px;
+	display: inline-block;
+	margin-right: 10px;
+	padding: 3px;
 	font-size: 0.8em;
 }
 
-.remove-nested-object-button, .add-nested-object-button {
-	padding: 3px 6px;
+.remove-object-button, .add-object-button, .add-nested-object-button {
+	padding: 6px 12px;
 	background: linear-gradient(145deg, #6a4a4a, #4a2a2a);
 	color: #ffffff;
 	border: 1px solid rgba(255, 255, 255, 0.2);
-	border-radius: 3px;
-	font-size: 0.7em;
-	cursor: pointer;
-}
-
-.remove-nested-object-button:hover, .add-nested-object-button:hover {
-	background: linear-gradient(145deg, #8a5a5a, #6a3a3a);
-}
-
-.add-nested-object-button {
-	align-self: flex-start;
-	margin-top: 5px;
-	width: auto;
-}
-
-.remove-object-button {
-	align-self: flex-end;
-	padding: 4px 8px;
-	background: linear-gradient(145deg, #8a4a4a, #6a2a2a);
-	color: #ffffff;
-	border: 1px solid rgba(255, 255, 255, 0.2);
 	border-radius: 4px;
 	font-size: 0.8em;
 	cursor: pointer;
-	margin-top: 5px;
-}
-
-.remove-object-button:hover {
-	background: linear-gradient(145deg, #a55a5a, #8a3a3a);
+	transition: all 0.2s ease;
+	width: auto;
 }
 
 .add-object-button {
-	padding: 8px 16px;
 	background: linear-gradient(145deg, #4a8a4a, #2a6a2a);
-	color: #ffffff;
-	border: 1px solid rgba(255, 255, 255, 0.2);
-	border-radius: 6px;
-	font-size: 0.9em;
-	cursor: pointer;
-	transition: all 0.3s ease;
-	width: 100%;
+}
+
+.remove-object-button:hover, .add-object-button:hover, .add-nested-object-button:hover {
+	background: linear-gradient(145deg, #8a5a5a, #6a3a3a);
 }
 
 .add-object-button:hover {
 	background: linear-gradient(145deg, #5aa55a, #3a8a3a);
+}
+
+.nested-objects-management {
+	width: 100%;
+	margin-top: 10px;
+	padding-top: 10px;
+	border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.no-nested-objects {
+	color: #ccc;
+	font-style: italic;
+	font-size: 0.9em;
+}
+
+.nested-objects-list {
+	margin: 10px 0;
 }
 </style>
