@@ -4,30 +4,119 @@
 
 import { getObjectById } from './objectLoader.js'
 
-// Dynamically import location data
-const locationModules = import.meta.glob('../components/game/locations/*.json', { eager: true, import: 'default' })
+// Cache for loaded locations
+let locationCache = {}
+let allLocationsCache = {}
 
 /**
- * Get location data by ID
+ * Check if we're running in Electron
+ * @returns {boolean}
+ */
+function isElectron() {
+  return typeof window !== 'undefined' && window.electronAPI
+}
+
+/**
+ * Preload all location data
+ * @returns {Promise<void>}
+ */
+export async function preloadLocationData() {
+  try {
+    let locationIds = ['mc-apartment']; // Default location
+    
+    // In Electron, we can list available locations
+    if (isElectron()) {
+      try {
+        const locations = await window.electronAPI.listLocations()
+        if (locations && locations.length > 0) {
+          locationIds = locations
+        }
+      } catch (error) {
+        console.warn('Could not list locations, using default:', error)
+      }
+    }
+    
+    // Preload all known locations
+    const loadPromises = locationIds.map(id => loadLocationById(id))
+    await Promise.all(loadPromises)
+    
+    // Populate allLocationsCache with loaded locations
+    allLocationsCache = {}
+    for (const id of locationIds) {
+      if (locationCache[id]) {
+        allLocationsCache[id] = locationCache[id]
+      }
+    }
+  } catch (error) {
+    console.error('Failed to preload location data:', error)
+  }
+}
+
+/**
+ * Load a specific location by ID
+ * @param {string} id - The ID of the location to load
+ * @returns {Promise<Object|null>} The location data or null if not found
+ */
+export async function loadLocationById(id) {
+  try {
+    // Check if already cached
+    if (locationCache[id]) {
+      return locationCache[id]
+    }
+    
+    let locationData = null
+    
+    // In Electron, use IPC to read files directly
+    if (isElectron()) {
+      try {
+        locationData = await window.electronAPI.loadLocation(id)
+      } catch (error) {
+        console.error(`Failed to load location ${id} via IPC:`, error)
+      }
+    }
+    
+    // Fallback to fetch for web/dev environments
+    if (!locationData) {
+      const response = await fetch(`/data/locations/${id}.json`)
+      if (!response.ok) {
+        return null
+      }
+      locationData = await response.json()
+    }
+    
+    locationCache[id] = locationData
+    // Also add to allLocationsCache if it's not already there
+    if (!allLocationsCache[id]) {
+      allLocationsCache[id] = locationData
+    }
+    return locationData
+  } catch (error) {
+    console.error(`Failed to load location data for ${id}:`, error)
+    return null
+  }
+}
+
+/**
+ * Get location data by ID (synchronous access to cached data)
  * @param {string} id - The ID of the location to retrieve
  * @returns {Object|null} The location data or null if not found
  */
 export function getLocationById(id) {
-  const modulePath = `../components/game/locations/${id}.json`
-  return locationModules[modulePath] || null
+  // Return cached data if available
+  if (locationCache[id]) {
+    return locationCache[id]
+  }
+  
+  // If not cached, return null (data should have been preloaded)
+  return null
 }
 
 /**
- * Get all locations
+ * Get all locations (synchronous access to cached data)
  * @returns {Object} All location data keyed by ID
  */
 export function getAllLocations() {
-  const locations = {}
-  for (const [path, data] of Object.entries(locationModules)) {
-    const fileName = path.split('/').pop().replace('.json', '')
-    locations[fileName] = data
-  }
-  return locations
+  return allLocationsCache
 }
 
 /**
@@ -106,11 +195,41 @@ export function getLocationSpawnPoints(locationId) {
   return location ? location.spawnPoints : null
 }
 
+/**
+ * Get characters for a specific location
+ * @param {string} locationId - The ID of the location
+ * @returns {Array|null} Array of characters or null if location not found
+ */
+export function getLocationCharacters(locationId) {
+  const location = getLocationById(locationId)
+  return location ? location.characters : null
+}
+
+/**
+ * Get character by ID in a specific location
+ * @param {string} locationId - The ID of the location
+ * @param {string} characterId - The ID of the character
+ * @returns {Object|null} Character object or null if not found
+ */
+export function getLocationCharacterById(locationId, characterId) {
+  const location = getLocationById(locationId)
+  
+  if (!location || !location.characters) {
+    return null
+  }
+  
+  return location.characters.find(char => char.id === characterId) || null
+}
+
 export default {
   getLocationById,
   getAllLocations,
   getLocationTiles,
   getLocationObjects,
   getAllLocationObjects,
-  getLocationSpawnPoints
+  getLocationSpawnPoints,
+  getLocationCharacters,
+  getLocationCharacterById,
+  preloadLocationData,
+  loadLocationById
 }

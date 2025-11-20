@@ -6,7 +6,7 @@
     :data-tags="getObjectTags(object.id)?.join(' ')"
   >
     <img 
-      :src="getObjectImage(object.id)" 
+      :src="getObjectImage(object)" 
       :alt="getObjectAltText(object.id)"
       class="contained-object-img"
     />
@@ -31,10 +31,20 @@ const props = defineProps({
   }
 })
 
-// Get object image URL based on object ID
-function getObjectImage(objectId) {
-  const imageUrl = getObjectImageUrl(objectId)
-  return imageUrl || '/images/tiles/prototype/object/default.png' // fallback image
+// Get object image URL based on object ID and status
+function getObjectImage(obj) {
+  const object = getObjectById(obj.id)
+  if (!object) return '/images/tiles/prototype/object/default.png' // fallback image
+  
+  // For doors and windows, use the appropriate image based on status
+  if ((object.type === 'door' || object.type === 'window') && obj.status) {
+    if (obj.status === 'open' && object.image['url-open']) {
+      return object.image['url-open']
+    }
+  }
+  
+  // Default to the regular image
+  return object.image.url || '/images/tiles/prototype/object/default.png'
 }
 
 // Get alt text for object image

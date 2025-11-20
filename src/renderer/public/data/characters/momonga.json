@@ -1,0 +1,23 @@
+{
+	"momonga": {
+		"name": "{characters.momonga.name}",
+		"surname": "{characters.momonga.surname}",
+		"title": "{characters.momonga.title}",
+		"nickname": "{characters.momonga.nickname}",
+		"attributes": {
+			"strength": 4,
+			"dexterity": 2,
+			"constitution": 2,
+			"intelligence": 3,
+			"wisdom": 10,
+			"charisma": 5
+		},
+		"tile": {
+			"front": {
+				"body": {
+					"torso": "/images/char/momonga/tile/char.png"
+				}
+			}
+		}
+	}
+}

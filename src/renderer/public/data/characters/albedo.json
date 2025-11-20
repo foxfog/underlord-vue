@@ -1,0 +1,15 @@
+{
+	"albedo": {
+		"name": "{characters.albedo.name}",
+		"surname": "{characters.albedo.surname}",
+		"title": "{characters.albedo.title}",
+		"nickname": "{characters.albedo.nickname}",
+		"tile": {
+			"front": {
+				"body": {
+					"torso": "/images/char/default/tile/char.png"
+				}
+			}
+		}
+	}
+}

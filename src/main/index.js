@@ -128,8 +128,8 @@ ipcMain.handle('save-location', async (_event, locationId, locationData) => {
 		// In development mode, save to src directory
 		// In production mode, save to resources directory
 		const locationPath = is.dev
-			? join(__dirname, '../../src/renderer/components/game/locations', `${locationId}.json`)
-			: join(process.resourcesPath, 'app', 'out', 'renderer', 'components', 'game', 'locations', `${locationId}.json`)
+			? join(__dirname, '../../src/renderer/public/data/locations', `${locationId}.json`)
+			: join(process.resourcesPath, 'app', 'out', 'renderer', 'public', 'data', 'locations', `${locationId}.json`)
 		
 		// Ensure directory exists
 		const dirPath = dirname(locationPath)
@@ -139,15 +139,213 @@ ipcMain.handle('save-location', async (_event, locationId, locationData) => {
 			await fs.mkdir(dirPath, { recursive: true })
 		}
 		
-		// Write the location data to file
-		const jsonData = JSON.stringify(locationData, null, 2)
-		await fs.writeFile(locationPath, jsonData, 'utf-8')
+		// Custom JSON formatting to keep coordinates compact
+		const jsonStringifyCompact = (obj) => {
+			// First, convert to standard JSON
+			const json = JSON.stringify(obj, null, 2);
+			
+			// Manual approach to make coordinate arrays compact
+			const lines = json.split('\n');
+			const newLines = [];
+			let i = 0;
+			
+			while (i < lines.length) {
+				const line = lines[i];
+				
+				// Check if this line contains "cord": [
+				if (line.trim() === '"cord": [') {
+					// Next line should have the first coordinate
+					if (i + 1 < lines.length) {
+						const xLine = lines[i + 1];
+						const x = xLine.trim().replace(/,$/, ''); // Remove trailing comma if present
+						
+						// Next line should have the second coordinate
+						if (i + 2 < lines.length) {
+							const yLine = lines[i + 2];
+							const y = yLine.trim().replace(/,$/, ''); // Remove trailing comma if present
+							
+							// Next line should be the closing bracket
+							if (i + 3 < lines.length && lines[i + 3].trim() === ']') {
+								// Replace with compact format
+								newLines.push(line.replace('"cord": [', '"cord": [' + x + ', ' + y + ']'));
+								// Skip the next 3 lines
+								i += 4;
+								continue;
+							}
+						}
+					}
+				}
+				
+				// Check if this line contains "position": {
+				if (line.trim() === '"position": {') {
+					// Next line should be "cord": [
+					if (i + 1 < lines.length && lines[i + 1].trim() === '"cord": [') {
+						// Next line should have the first coordinate
+						if (i + 2 < lines.length) {
+							const xLine = lines[i + 2];
+							const x = xLine.trim().replace(/,$/, ''); // Remove trailing comma if present
+							
+							// Next line should have the second coordinate
+							if (i + 3 < lines.length) {
+								const yLine = lines[i + 3];
+								const y = yLine.trim().replace(/,$/, ''); // Remove trailing comma if present
+								
+								// Next line should be the closing bracket
+								if (i + 4 < lines.length && lines[i + 4].trim() === ']') {
+									// Next line should be the closing brace
+									if (i + 5 < lines.length && lines[i + 5].trim() === '}') {
+										// Get the indentation level of the "position": { line
+										const positionIndent = line.match(/^(\s*)/)[1];
+										// Replace with compact format using proper indentation
+										newLines.push(line); // "position": {
+										newLines.push(positionIndent + '  "cord": [' + x + ', ' + y + ']'); // Compact cord with proper indentation
+										newLines.push(positionIndent + '}'); // Closing brace with proper indentation
+										// Skip the next 5 lines
+										i += 6;
+										continue;
+									}
+								}
+							}
+						}
+					}
+				}
+				
+				newLines.push(line);
+				i++;
+			}
+			
+			return newLines.join('\n');
+		};
+		
+		// Write the location data to file with custom formatting
+		const jsonData = jsonStringifyCompact(locationData);
+		await fs.writeFile(locationPath, jsonData, 'utf-8');
 		
 		return { success: true }
 	} catch (error) {
 		console.error('Error saving location:', error)
 		return { success: false, error: error.message || error.toString() }
 	}
+})
+
+// IPC handler for reading location data
+ipcMain.handle('load-location', async (_event, locationId) => {
+  try {
+    if (!locationId) {
+      throw new Error('Location ID is required')
+    }
+    
+    // In development mode, read from src directory
+    // In production mode, read from resources directory
+    const locationPath = is.dev
+      ? join(__dirname, '../../src/renderer/public/data/locations', `${locationId}.json`)
+      : join(process.resourcesPath, 'app', 'out', 'renderer', 'public', 'data', 'locations', `${locationId}.json`)
+    
+    const data = await fs.readFile(locationPath, 'utf-8')
+    return JSON.parse(data)
+  } catch (error) {
+    console.error(`Failed to load location data for ${locationId}:`, error)
+    return null
+  }
+})
+
+// IPC handler for listing available locations
+ipcMain.handle('list-locations', async () => {
+  try {
+    // In development mode, read from src directory
+    // In production mode, read from resources directory
+    const locationsDir = is.dev
+      ? join(__dirname, '../../src/renderer/public/data/locations')
+      : join(process.resourcesPath, 'app', 'out', 'renderer', 'public', 'data', 'locations')
+    
+    const files = await fs.readdir(locationsDir)
+    const locations = files
+      .filter(file => file.endsWith('.json'))
+      .map(file => file.replace('.json', ''))
+    
+    return locations
+  } catch (error) {
+    console.error('Failed to list locations:', error)
+    return []
+  }
+})
+
+// IPC handler for reading tile data
+ipcMain.handle('load-tile-data', async (_event, fileName) => {
+  try {
+    // In development mode, read from src directory
+    // In production mode, read from resources directory
+    const tilePath = is.dev
+      ? join(__dirname, '../../src/renderer/public/data/tiles', fileName)
+      : join(process.resourcesPath, 'app', 'out', 'renderer', 'public', 'data', 'tiles', fileName)
+    
+    const data = await fs.readFile(tilePath, 'utf-8')
+    return JSON.parse(data)
+  } catch (error) {
+    console.error(`Failed to load tile data from ${fileName}:`, error)
+    return null
+  }
+})
+
+// IPC handler for listing available tile files
+ipcMain.handle('list-tile-files', async () => {
+  try {
+    // In development mode, read from src directory
+    // In production mode, read from resources directory
+    const tilesDir = is.dev
+      ? join(__dirname, '../../src/renderer/public/data/tiles')
+      : join(process.resourcesPath, 'app', 'out', 'renderer', 'public', 'data', 'tiles')
+    
+    const files = await fs.readdir(tilesDir)
+    return files.filter(file => file.endsWith('.json'))
+  } catch (error) {
+    console.error('Failed to list tile files:', error)
+    return []
+  }
+})
+
+// IPC handler for reading character data
+ipcMain.handle('load-character', async (_event, characterId) => {
+  try {
+    if (!characterId) {
+      throw new Error('Character ID is required')
+    }
+    
+    // In development mode, read from src directory
+    // In production mode, read from resources directory
+    const characterPath = is.dev
+      ? join(__dirname, '../../src/renderer/public/data/characters', `${characterId}.json`)
+      : join(process.resourcesPath, 'app', 'out', 'renderer', 'public', 'data', 'characters', `${characterId}.json`)
+    
+    const data = await fs.readFile(characterPath, 'utf-8')
+    const jsonData = JSON.parse(data)
+    // Extract the character data (the JSON has the character ID as the key)
+    return jsonData[characterId] || jsonData
+  } catch (error) {
+    console.error(`Failed to load character data for ${characterId}:`, error)
+    return null
+  }
+})
+
+// IPC handler for listing available characters
+ipcMain.handle('list-characters', async () => {
+  try {
+    // In development mode, read from src directory
+    // In production mode, read from resources directory
+    const charactersDir = is.dev
+      ? join(__dirname, '../../src/renderer/public/data/characters')
+      : join(process.resourcesPath, 'app', 'out', 'renderer', 'public', 'data', 'characters')
+    
+    const files = await fs.readdir(charactersDir)
+    const characters = files
+      .filter(file => file.endsWith('.json'))
+      .map(file => file.replace('.json', ''))
+    
+    return characters
+  } catch (error) {
+    console.error('Failed to list characters:', error)
+    return []
+  }
 })
 
 // IPC handler for saving game data

@@ -1,0 +1,26 @@
+{
+	"mc": {
+		"name": "{characters.mc.name}",
+		"surname": "{characters.mc.surname}",
+		"title": "{characters.mc.title}",
+		"nickname": "{characters.mc.nickname}",
+		"attributes": {
+			"strength": 10,
+			"dexterity": 2,
+			"constitution": 6,
+			"intelligence": 3,
+			"wisdom": 10,
+			"charisma": 5
+		},
+		"tile": {
+			"front": {
+				"body": {
+					"torso": "/images/char/mc/tile/char.png"
+				},
+				"equipment": {
+					"head": "cap-green"
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,19 @@
+{
+	"cap-green": {
+		"name": "Cap Green",
+		"stats": {
+			"health": "+1",
+			"attack": "-1%"
+		},
+		"tile": {
+			"front": {
+				"texture": "images/tile/cap-green.png"
+			}
+		},
+		"2d": {
+			"front": {
+				"texture": "images/2d/cap-green.png"
+			}
+		}
+	}
+}

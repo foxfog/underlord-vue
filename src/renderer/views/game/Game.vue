@@ -5,6 +5,50 @@
 			<LocationIso />
 		</div>
 		<div class="game-ui">
+			<!-- Character cards button -->
+			<button @click="toggleCharacterCards" class="character-cards-btn">
+				Show Character Cards
+			</button>
+			
+			<!-- Character cards modal -->
+			<div v-if="showCharacterCards" class="character-cards-modal" @click="toggleCharacterCards">
+				<div class="modal-content" @click.stop>
+					<h2>Characters on Location</h2>
+					<div class="character-cards-container">
+						<div 
+							v-for="character in charactersOnLocation" 
+							:key="character.id" 
+							class="character-card"
+						>
+							<div class="character-card-header">
+								<h3>{{ getCharacterName(character.id) }}</h3>
+								<span v-if="getCharacterNickname(character.id)" class="character-nickname">
+									{{ getCharacterNickname(character.id) }}
+								</span>
+							</div>
+							<div class="character-card-body">
+								<div class="character-image">
+									<img 
+										:src="getCharacterImage(character.id)" 
+										:alt="getCharacterName(character.id)"
+										class="char-img"
+									/>
+								</div>
+								<div class="character-attributes">
+									<h4>Attributes:</h4>
+									<ul>
+										<li v-for="(value, key) in getCharacterAttributes(character.id)" :key="key">
+											<strong>{{ key }}:</strong> {{ value }}
+										</li>
+									</ul>
+								</div>
+							</div>
+						</div>
+					</div>
+					<button @click="toggleCharacterCards" class="close-btn">Close</button>
+				</div>
+			</div>
+			
 			<!-- Dialog triggers in game-ui -->
 			 <div v-if="g.mc.name">
 				Игра началась, {{ g.mc.name }}!
@@ -86,11 +130,14 @@
 </template>
 
 <script setup>
-	import { ref, computed, onMounted, onUnmounted } from 'vue'
+	import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 	import { useI18n } from 'vue-i18n'
 	import { useGameStore } from '@/stores/game'
 	import { useDialogStore } from '@/stores/dialog'
 	import { useRouter } from 'vue-router'
+	import { getLocationById, getLocationCharacters } from '@/utils/locationLoader.js'
+	import { getCharacterByIdAsync, getCharacterImagePath } from '@/utils/characterLoader.js'
+	import { resolveImagePath } from '@/utils/imageLoader.js'
 	import MainMenu from '@/components/MainMenu.vue'
 	import DynamicContentArea from '@/components/DynamicContentArea.vue'
 	import LocationIso from '@/components/game/LocationIso.vue'
@@ -101,7 +148,141 @@
 	const router = useRouter()
 	const showMainMenu = ref(false)
 	const showDialogChoices = ref(false)
+	const showCharacterCards = ref(false)
 	const currentView = ref('main-menu')
+	const characterDataCache = ref({})
+	
+	// Toggle character cards visibility
+	const toggleCharacterCards = () => {
+		showCharacterCards.value = !showCharacterCards.value
+	}
+	
+	// Get characters on current location
+	const charactersOnLocation = computed(() => {
+		const locationId = g.location || 'mc-apartment'
+		return getLocationCharacters(locationId) || []
+	})
+	
+	// Get character name with translation support
+	const getCharacterName = (characterId) => {
+		// First check if we have cached data
+		if (characterDataCache.value[characterId]) {
+			const data = characterDataCache.value[characterId]
+			if (data.name && data.name.startsWith('{') && data.name.endsWith('}')) {
+				const key = data.name.slice(1, -1)
+				const translated = t(key)
+				return translated.includes('characters.') ? characterId : translated
+			}
+			return data.name || characterId
+		}
+		
+		// Check game store for character data
+		if (g.characters && g.characters[characterId]) {
+			const charData = g.characters[characterId]
+			if (charData.name && charData.name.startsWith('{') && charData.name.endsWith('}')) {
+				const key = charData.name.slice(1, -1)
+				const translated = t(key)
+				return translated.includes('characters.') ? characterId : translated
+			}
+			return charData.name || characterId
+		}
+		
+		// Default to character ID
+		return characterId
+	}
+	
+	// Get character nickname with translation support
+	const getCharacterNickname = (characterId) => {
+		// First check if we have cached data
+		if (characterDataCache.value[characterId]) {
+			const data = characterDataCache.value[characterId]
+			if (data.nickname && data.nickname.startsWith('{') && data.nickname.endsWith('}')) {
+				const key = data.nickname.slice(1, -1)
+				const translated = t(key)
+				return translated.includes('characters.') ? '' : translated
+			}
+			return data.nickname || ''
+		}
+		
+		// Check game store for character data
+		if (g.characters && g.characters[characterId]) {
+			const charData = g.characters[characterId]
+			if (charData.nickname && charData.nickname.startsWith('{') && charData.nickname.endsWith('}')) {
+				const key = charData.nickname.slice(1, -1)
+				const translated = t(key)
+				return translated.includes('characters.') ? '' : translated
+			}
+			return charData.nickname || ''
+		}
+		
+		return ''
+	}
+	
+	// Get character image
+	const getCharacterImage = (characterId) => {
+		// Try to get from cached data
+		if (characterDataCache.value[characterId]) {
+			const data = characterDataCache.value[characterId]
+			if (data.tile && data.tile.front && data.tile.front.body && data.tile.front.body.torso) {
+				return resolveImagePath(data.tile.front.body.torso)
+			}
+		}
+		
+		// Try to get from character loader
+		const imagePath = getCharacterImagePath(characterId)
+		if (imagePath) {
+			return resolveImagePath(imagePath)
+		}
+		
+		// Fallback to default
+		return resolveImagePath('/images/char/default/tile/char.png')
+	}
+	
+	// Get character attributes
+	const getCharacterAttributes = (characterId) => {
+		// First check if we have cached data
+		if (characterDataCache.value[characterId]) {
+			return characterDataCache.value[characterId].attributes || {}
+		}
+		
+		// Check game store for character data
+		if (g.characters && g.characters[characterId]) {
+			return g.characters[characterId].stats || g.characters[characterId].attributes || {}
+		}
+		
+		return {}
+	}
+	
+	// Load character data and cache it
+	const loadCharacterData = async (characterId) => {
+		if (!characterDataCache.value[characterId]) {
+			try {
+				const data = await getCharacterByIdAsync(characterId)
+				if (data) {
+					characterDataCache.value[characterId] = data
+				}
+			} catch (error) {
+				console.error(`Error loading character data for ${characterId}:`, error)
+			}
+		}
+	}
+	
+	// Load all character data when showing character cards
+	const loadAllCharacterData = async () => {
+		const characters = charactersOnLocation.value
+		const loadPromises = characters.map(char => loadCharacterData(char.id))
+		await Promise.all(loadPromises)
+	}
+	
+	// Watch for character cards being shown
+	const unwatch = computed(() => showCharacterCards.value)
+	
+	// When character cards are shown, load all character data
+	watch(unwatch, async (newVal) => {
+		if (newVal) {
+			await loadAllCharacterData()
+		}
+	})
 	
 	// Toggle main menu visibility
 	const toggleMainMenu = () => {
@@ -401,126 +582,118 @@
 	z-index: 100;
 }
 
-.dialog-trigger-button {
-	padding: 8px 16px;
-	background: linear-gradient(145deg, #4a4a6a, #2a2a4a);
-	color: #ffffff;
-	border: 1px solid rgba(255, 255, 255, 0.2);
-	border-radius: 6px;
-	font-size: 0.9em;
-	cursor: pointer;
-	transition: all 0.3s ease;
-	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-}
-
-.dialog-trigger-button:hover {
-	background: linear-gradient(145deg, #5a5a8a, #3a3a6a);
-	transform: translateY(-1px);
-	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
-}
-
-.dialog-trigger-button:active {
-	transform: translateY(0);
-	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-}
-
-.dialog-display {
+.character-cards-btn {
 	position: absolute;
-	bottom: 20px;
-	left: 50%;
-	transform: translateX(-50%);
-	background: rgba(0, 0, 0, 0.7);
-	border: 1px solid rgba(255, 255, 255, 0.1);
+	top: 20px;
+	right: 20px;
+	z-index: 100;
+	padding: 8px 16px;
+	background-color: #4a4a4a;
+	color: white;
+	border: 1px solid #ccc;
+	border-radius: 4px;
+	cursor: pointer;
+}
+
+.character-cards-btn:hover {
+	background-color: #5a5a5a;
+}
+
+.character-cards-modal {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background-color: rgba(0, 0, 0, 0.7);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 2000;
+}
+
+.character-cards-modal .modal-content {
+	background-color: white;
+	padding: 20px;
 	border-radius: 8px;
-	padding: 15px 20px;
-	min-width: 300px;
-	max-width: 600px;
-	text-align: center;
-	backdrop-filter: blur(5px);
+	max-width: 800px;
+	width: 90%;
+	max-height: 80vh;
+	overflow-y: auto;
+	color: black;
 }
 
-.dialog-speaker {
-	font-size: 1.2em;
-	font-weight: bold;
-	color: #ffcc00;
-	margin-bottom: 8px;
+.character-cards-container {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+	gap: 20px;
+	margin: 20px 0;
 }
 
-.dialog-text {
-	font-size: 1em;
-	line-height: 1.4;
-	color: #ffffff;
+.character-card {
+	border: 1px solid #ddd;
+	border-radius: 8px;
+	padding: 15px;
+	background-color: #f9f9f9;
+}
+
+.character-card-header {
+	border-bottom: 1px solid #eee;
+	padding-bottom: 10px;
+	margin-bottom: 10px;
+}
+
+.character-card-header h3 {
+	margin: 0 0 5px 0;
+}
+
+.character-nickname {
+	background-color: #e0e0e0;
+	padding: 2px 6px;
+	border-radius: 4px;
+	font-size: 0.9em;
+}
+
+.character-card-body {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.character-image {
 	margin-bottom: 15px;
 }
 
-.dialog-controls {
-	display: flex;
-	justify-content: center;
-	gap: 10px;
+.character-image .char-img {
+	max-width: 100px;
+	height: auto;
 }
 
-.dialog-next-button {
+.character-attributes h4 {
+	margin: 10px 0 5px 0;
+}
+
+.character-attributes ul {
+	list-style-type: none;
+	padding: 0;
+	margin: 0;
+}
+
+.character-attributes li {
+	margin: 3px 0;
+}
+
+.close-btn {
+	margin-top: 20px;
 	padding: 8px 16px;
-	background: linear-gradient(145deg, #4a4a6a, #2a2a4a);
-	color: #ffffff;
-	border: 1px solid rgba(255, 255, 255, 0.2);
-	border-radius: 6px;
-	font-size: 0.9em;
+	background-color: #4a4a4a;
+	color: white;
+	border: none;
+	border-radius: 4px;
 	cursor: pointer;
-	transition: all 0.3s ease;
-	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-.dialog-next-button:hover {
-	background: linear-gradient(145deg, #5a5a8a, #3a3a6a);
-	transform: translateY(-1px);
-	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
-}
-
-.dialog-next-button:active {
-	transform: translateY(0);
-	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-}
-
-.dialog-choices-content {
-	width: 100%;
-	max-width: 500px;
-	background: linear-gradient(145deg, #2a2a3a, #1a1a2a);
-	border: 1px solid rgba(255, 255, 255, 0.1);
-	border-radius: 10px;
-	padding: 20px;
-	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-	pointer-events: auto; /* Enable pointer events for the content */
-}
-
-.dialog-choice-button {
-	display: block;
-	width: 100%;
-	padding: 12px 15px;
-	margin-bottom: 10px;
-	background: rgba(50, 50, 70, 0.7);
-	color: #ffffff;
-	border: 1px solid rgba(255, 255, 255, 0.2);
-	border-radius: 5px;
-	text-align: left;
-	cursor: pointer;
-	transition: all 0.2s ease;
-}
-
-.dialog-choice-button:last-child {
-	margin-bottom: 0;
-}
-
-.dialog-choice-button:hover {
-	background: rgba(70, 70, 100, 0.9);
-	border-color: rgba(255, 255, 255, 0.4);
-	transform: translateY(-2px);
-}
-
-.no-objects {
-	color: #ccc;
-	font-style: italic;
-	text-align: center;
-	padding: 10px;
+.close-btn:hover {
+	background-color: #5a5a5a;
 }
 </style>

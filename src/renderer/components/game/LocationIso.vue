@@ -18,6 +18,7 @@
 				:data-id="tile.id"
 				:data-type="getTileType(tile.id)"
 				:data-tags="getTileTags(tile.id)?.join(' ')"
+				:data-ud="tile.ud || null"
 				:class="[
 					'tile-object'
 				]"
@@ -35,6 +36,15 @@
 						class="tile-img"
 					/>
 				</div>
+				<!-- Display characters on the tile -->
+				<div v-if="getCharactersOnTile(tile.cord[0], tile.cord[1]).length > 0" class="tile-characters">
+					<TileChar 
+						v-for="(char, index) in getCharactersOnTile(tile.cord[0], tile.cord[1])" 
+						:key="`${tile.cord[0]},${tile.cord[1]},char-${index}`"
+						:character-id="char.id"
+						:character-name="char.name"
+					/>
+				</div>
 				<!-- Display objects on the tile -->
 				<div v-if="getObjectsOnTile(tile.cord[0], tile.cord[1]).length > 0" class="tile-objects">
 					<div 
@@ -47,9 +57,12 @@
 						:data-tags="getObjectTags(obj.id)?.join(' ')"
 					>
 						<img 
-							:src="getObjectImage(obj.id)" 
+							:src="getObjectImage(obj)" 
 							:alt="getObjectAltText(obj.id)"
 							class="object-img"
+							:data-type="getObjectType(obj.id)"
+							:data-tags="getObjectTags(obj.id)?.join(' ')"
+							:data-ud="obj.ud || null"
 						/>
 						<!-- Display contained objects recursively -->
 						<template v-if="obj.containedObjects && obj.containedObjects.length > 0">
@@ -71,7 +84,10 @@
 	import { useGameStore } from '@/stores/game'
 	import { getTileById, getTileImageUrl, getTileType, getTileTags } from '@/utils/tileLoader.js'
 	import { getObjectById, getObjectImageUrl, getObjectsByType, getObjectsByTag, getObjectType, getObjectTags } from '@/utils/objectLoader.js'
-	import { getLocationById, getLocationTiles } from '@/utils/locationLoader.js'
+	import { getLocationById, getLocationTiles, getLocationCharacters } from '@/utils/locationLoader.js'
+	
+	// Import the new TileChar component
+	import TileChar from './TileChar.vue'
 	
 	// Recursive component for rendering nested objects
 	import NestedObjectRenderer from './NestedObjectRenderer.vue'
@@ -266,6 +282,36 @@
 		return locationTiles.value
 	})
 	
+	// Get characters on a specific tile
+	const getCharactersOnTile = (x, y) => {
+		const locationId = gameStore.location || 'mc-apartment'
+		const locationData = getLocationById(locationId)
+		
+		// Check if location has character placement data
+		if (locationData && locationData.characters) {
+			// Filter characters that are on the specified tile
+			return locationData.characters.filter(char => 
+				char.cord && char.cord[0] === x && char.cord[1] === y
+			)
+		}
+		
+		// Fallback to spawn points if no character placement data exists
+		if (locationData && locationData.spawnPoints) {
+			const spawnPoint = locationData.spawnPoints.find(point => 
+				point.cord && point.cord[0] === x && point.cord[1] === y
+			)
+			
+			if (spawnPoint) {
+				return [{
+					id: spawnPoint.id,
+					name: spawnPoint.id
+				}]
+			}
+		}
+		
+		return []
+	}
+	
 	// Get objects on a specific tile
 	const getObjectsOnTile = (x, y) => {
 		// If we have edited location data, use that
@@ -274,7 +320,7 @@
 			if (level.objects) {
 				// Filter objects that are on the specified tile
 				return level.objects.filter(obj => 
-					obj.position && obj.position.cord && obj.position.cord[0] === x && obj.position.cord[1] === y
+					obj.cord && obj.cord[0] === x && obj.cord[1] === y
 				)
 			}
 		}
@@ -288,7 +334,7 @@
 			if (level.objects) {
 				// Filter objects that are on the specified tile
 				return level.objects.filter(obj => 
-					obj.position && obj.position.cord && obj.position.cord[0] === x && obj.position.cord[1] === y
+					obj.cord && obj.cord[0] === x && obj.cord[1] === y
 				)
 			}
 		}
@@ -327,10 +373,20 @@
 		return imageUrl || '/images/tiles/prototype/floor/slab.png' // fallback image
 	}
 	
-	// Get object image URL based on object ID
-	function getObjectImage(objectId) {
-		const imageUrl = getObjectImageUrl(objectId)
-		return imageUrl || '/images/tiles/prototype/object/default.png' // fallback image
+	// Get object image URL based on object ID and status
+	function getObjectImage(obj) {
+		const object = getObjectById(obj.id)
+		if (!object) return '/images/tiles/prototype/object/default.png' // fallback image
+		
+		// For doors and windows, use the appropriate image based on status
+		if ((object.type === 'door' || object.type === 'window') && obj.status) {
+			if (obj.status === 'open' && object.image['url-open']) {
+				return object.image['url-open']
+			}
+		}
+		
+		// Default to the regular image
+		return object.image.url || '/images/tiles/prototype/object/default.png'
 	}
 	
 	// Get alt text for tile image
@@ -429,6 +485,13 @@
 						display: block;
 					}
 				}
+				.tile-characters {
+					position: absolute;
+					width: 100%;
+					height: 100%;
+					z-index: 5; /* Characters should be above objects but below UI */
+					pointer-events: none;
+				}
 				.tile-objects {
 					position: absolute;
 					width: 100%;
@@ -444,7 +507,13 @@
 							height: auto;
 							object-fit: contain;
 							display: block;
+							position: absolute;
+							&[data-type="wall"],
+							&[data-type="door"] {
+								bottom: 0;
+							}
 						}
+						
 					}
 				}
 				&:has(.rhomb:hover) {

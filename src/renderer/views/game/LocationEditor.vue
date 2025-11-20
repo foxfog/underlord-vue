@@ -173,6 +173,18 @@
 								</button>
 							</div>
 							
+							<!-- UD field for tile -->
+							<div class="ud-field">
+								<label>UD (User Data):</label>
+								<input 
+									type="text" 
+									:value="getTileUD(selectedTileForEditing.cord[0], selectedTileForEditing.cord[1])" 
+									@change="updateTileUD(selectedTileForEditing.cord[0], selectedTileForEditing.cord[1], $event.target.value)"
+									class="form-control"
+									placeholder="Введите пользовательские данные"
+								/>
+							</div>
+							
 							<!-- Object management for selected tile -->
 							<div class="object-management">
 								<h5>Объекты на тайле:</h5>
@@ -202,6 +214,32 @@
 												@change="updateObjectPositionOffset(obj, selectedTileForEditing.cord[0], selectedTileForEditing.cord[1], 1, $event.target.value)"
 												class="form-control small-input"
 											/>
+										</div>
+										
+										<!-- UD field for object -->
+										<div class="ud-field">
+											<label>UD:</label>
+											<input 
+												type="text" 
+												:value="getObjectUD(obj, selectedTileForEditing.cord[0], selectedTileForEditing.cord[1])" 
+												@change="updateObjectUD(obj, selectedTileForEditing.cord[0], selectedTileForEditing.cord[1], $event.target.value)"
+												class="form-control small-input"
+												placeholder="UD"
+											/>
+										</div>
+										
+										<!-- Status selection for doors and windows -->
+										<div v-if="isDoorOrWindow(obj.id)" class="status-selection">
+											<label>Статус:</label>
+											<select 
+												:value="obj.status || 'close'" 
+												@change="updateObjectStatus(obj, selectedTileForEditing.cord[0], selectedTileForEditing.cord[1], $event.target.value)"
+												class="form-control small-input"
+											>
+												<option value="close">Закрыто</option>
+												<option value="open">Открыто</option>
+												<option value="lock">Заблокировано</option>
+											</select>
 										</div>
 										
 										<!-- Nested objects management -->
@@ -272,7 +310,7 @@
 	import { useGameStore } from '@/stores/game'
 	import { getLocationById, getAllLocations } from '@/utils/locationLoader.js'
 	import { getAllTiles } from '@/utils/tileLoader.js'
-	import { getAllObjects } from '@/utils/objectLoader.js'
+	import { getAllObjects, getObjectById } from '@/utils/objectLoader.js'
 	import LocationIso from '@/components/game/LocationIso.vue'
 	import NestedObjectEditor from '@/components/game/NestedObjectEditor.vue'
 	import UiSelect from '@/components/UI/UiSelect.vue'
@@ -475,6 +513,12 @@
 		return object ? object.name : `Object ${objectId}`
 	}
 	
+	// Check if object is a door or window
+	const isDoorOrWindow = (objectId) => {
+		const object = getObjectById(objectId)
+		return object && (object.type === 'door' || object.type === 'window')
+	}
+	
 	// Get objects on a specific tile
 	const getObjectsOnTile = (x, y) => {
 		if (!currentLocationData.value || !currentLocationData.value.levels['level-1']) return []
@@ -484,8 +528,89 @@
 		
 		// Filter objects that are on the specified tile
 		return level.objects.filter(obj => 
-			obj.position && obj.position.cord && obj.position.cord[0] === x && obj.position.cord[1] === y
+			obj.cord && obj.cord[0] === x && obj.cord[1] === y
 		)
+	}
+	
+	// Get tile UD
+	const getTileUD = (x, y) => {
+		if (!currentLocationData.value || !currentLocationData.value.levels['level-1']) return ''
+		
+		const level = currentLocationData.value.levels['level-1']
+		if (!level.floor) return ''
+		
+		// Find the tile at the specified coordinates
+		for (let row of level.floor) {
+			for (let tile of row) {
+				if (tile.cord && tile.cord[0] === x && tile.cord[1] === y) {
+					return tile.ud || ''
+				}
+			}
+		}
+		
+		return ''
+	}
+	
+	// Update tile UD
+	const updateTileUD = (x, y, ud) => {
+		if (!currentLocationData.value) return
+		
+		const level = currentLocationData.value.levels['level-1']
+		if (!level.floor) return
+		
+		// Find the tile at the specified coordinates
+		for (let row of level.floor) {
+			for (let tile of row) {
+				if (tile.cord && tile.cord[0] === x && tile.cord[1] === y) {
+					if (ud && ud.trim() !== '') {
+						tile.ud = ud.trim()
+					} else {
+						delete tile.ud
+					}
+					break
+				}
+			}
+		}
+		
+		// Update the selected tile reference if it matches
+		if (selectedTileForEditing.value && 
+			selectedTileForEditing.value.cord[0] === x && 
+			selectedTileForEditing.value.cord[1] === y) {
+			if (ud && ud.trim() !== '') {
+				selectedTileForEditing.value.ud = ud.trim()
+			} else {
+				delete selectedTileForEditing.value.ud
+			}
+		}
+	}
+	
+	// Get object UD
+	const getObjectUD = (obj, tileX, tileY) => {
+		return obj.ud || ''
+	}
+	
+	// Update object UD
+	const updateObjectUD = (obj, tileX, tileY, ud) => {
+		if (!currentLocationData.value) return
+		
+		const level = currentLocationData.value.levels['level-1']
+		if (!level.objects) return
+		
+		// Find the object
+		const objectIndex = level.objects.findIndex(o => 
+			o.id === obj.id && 
+			o.cord[0] === tileX && 
+			o.cord[1] === tileY
+		)
+		
+		if (objectIndex !== -1) {
+			const targetObject = level.objects[objectIndex]
+			if (ud && ud.trim() !== '') {
+				targetObject.ud = ud.trim()
+			} else {
+				delete targetObject.ud
+			}
+		}
 	}
 	
 	// Add object to tile
@@ -500,7 +625,13 @@
 		// Create a new object instance with a unique ID
 		const newObject = {
 			id: objectId,
-			position: { cord: [x, y] }
+			cord: [x, y]
+		}
+		
+		// Add default status for doors and windows
+		if (isDoorOrWindow(objectId)) {
+			const object = getObjectById(objectId)
+			newObject.status = object.status || 'close'
 		}
 		
 		level.objects.push(newObject)
@@ -516,8 +647,8 @@
 		// Find and remove the object
 		const objectIndex = level.objects.findIndex(obj => 
 			obj.id === objectId && 
-			obj.position.cord[0] === x && 
-			obj.position.cord[1] === y
+			obj.cord[0] === x && 
+			obj.cord[1] === y
 		)
 		
 		if (objectIndex !== -1) {
@@ -559,8 +690,8 @@
 		// Find the object
 		const objectIndex = level.objects.findIndex(o => 
 			o.id === obj.id && 
-			o.position.cord[0] === tileX && 
-			o.position.cord[1] === tileY
+			o.cord[0] === tileX && 
+			o.cord[1] === tileY
 		)
 		
 		if (objectIndex !== -1) {
@@ -578,6 +709,26 @@
 			if (targetObject.pos[0] === 0 && targetObject.pos[1] === 0) {
 				delete targetObject.pos
 			}
+		}
+	}
+	
+	// Update object status
+	const updateObjectStatus = (obj, tileX, tileY, status) => {
+		if (!currentLocationData.value) return
+		
+		const level = currentLocationData.value.levels['level-1']
+		if (!level.objects) return
+		
+		// Find the object
+		const objectIndex = level.objects.findIndex(o => 
+			o.id === obj.id && 
+			o.cord[0] === tileX && 
+			o.cord[1] === tileY
+		)
+		
+		if (objectIndex !== -1) {
+			const targetObject = level.objects[objectIndex]
+			targetObject.status = status
 		}
 	}
 	
@@ -818,6 +969,21 @@
 	width: 60px;
 	display: inline-block;
 	margin-right: 10px;
+}
+
+.ud-field {
+	margin: 10px 0;
+}
+
+.ud-field label {
+	display: block;
+	color: #ccc;
+	margin-bottom: 5px;
+	font-size: 0.9em;
+}
+
+.ud-field input {
+	width: 100%;
 }
 
 .tile-selection-panel {

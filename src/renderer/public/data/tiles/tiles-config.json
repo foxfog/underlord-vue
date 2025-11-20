@@ -1,0 +1,8 @@
+{
+  "objectFiles": [
+    "walls.json",
+    "doors.json",
+    "windows.json",
+    "objects.json"
+  ]
+}

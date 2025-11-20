@@ -1,0 +1,24 @@
+{
+  "objects": {
+    "window-1": {
+      "name": "Small Window",
+      "type": "window",
+      "tags": ["transparent", "glass", "indoor"],
+      "status": "close",
+      "image": {
+        "url": "/images/tiles/window/window-small-01.png",
+        "url-open": "/images/tiles/window/window-small-01-open.png"
+      }
+    },
+    "window-2": {
+      "name": "Large Window",
+      "type": "window",
+      "tags": ["transparent", "glass", "indoor", "bright"],
+      "status": "close",
+      "image": {
+        "url": "/images/tiles/window/window-large-01.png",
+        "url-open": "/images/tiles/window/window-large-01-open.png"
+      }
+    }
+  }
+}

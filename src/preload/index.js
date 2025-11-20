@@ -17,6 +17,12 @@ const api = {
 		const cleanData = JSON.parse(JSON.stringify(locationData));
 		return ipcRenderer.invoke('save-location', locationId, cleanData);
 	},
+	loadLocation: (locationId) => ipcRenderer.invoke('load-location', locationId),
+	listLocations: () => ipcRenderer.invoke('list-locations'),
+	loadTileData: (fileName) => ipcRenderer.invoke('load-tile-data', fileName),
+	listTileFiles: () => ipcRenderer.invoke('list-tile-files'),
+	loadCharacter: (characterId) => ipcRenderer.invoke('load-character', characterId),
+	listCharacters: () => ipcRenderer.invoke('list-characters'),
 	loadSaves: () => ipcRenderer.invoke('load-saves'),
 	loadSaveFile: (filePath) => ipcRenderer.invoke('load-save-file', filePath),
 	...electronAPI

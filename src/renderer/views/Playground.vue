@@ -21,6 +21,20 @@
 						>
 							{{ $t('playground.map') }}
 						</router-link>
+						<router-link 
+							to="/playground/door-status" 
+							class="ui-tabs-label" 
+							:class="{ '__active': $route.path === '/playground/door-status' }"
+						>
+							Door Status Test
+						</router-link>
+						<router-link 
+							to="/playground/object-loading" 
+							class="ui-tabs-label" 
+							:class="{ '__active': $route.path === '/playground/object-loading' }"
+						>
+							Object Loading Test
+						</router-link>
 					</div>
 					<div class="ui-tabs-content ui-scrollable">
 						<router-view />
