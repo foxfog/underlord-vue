@@ -26,21 +26,21 @@
     "3": {
       "tags": ["outdoor", "grass", "nature"],
       "image": {
-        "url": "/images/tiles/grass-01.png"
+        "url": "/images/tiles/bot/grass.png"
       },
       "name": "Grass Tile"
     },
     "4": {
       "tags": ["outdoor", "water", "liquid"],
       "image": {
-        "url": "/images/tiles/water-01.png"
+        "url": "/images/tiles/bot/water.png"
       },
       "name": "Water Tile"
     },
     "5": {
       "tags": ["wall", "indoor", "stone", "blocking"],
       "image": {
-        "url": "/images/tiles/wall-stone-01.png"
+        "url": "/images/tiles/wall-stone.png"
       },
       "name": "Stone Wall"
     },

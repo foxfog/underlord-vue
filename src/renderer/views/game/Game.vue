@@ -525,7 +525,7 @@
 	})
 </script>
 
-<style scoped>
+<style>
 .main-menu-modal {
 	position: fixed;
 	top: 0;
@@ -549,6 +549,15 @@
 	justify-content: center;
 	align-items: center;
 	pointer-events: none; /* Allow clicking through the overlay */
+}
+
+.dialog-display {
+	position: absolute;
+	bottom: 0;
+}
+
+.dialog-choices-content {
+	pointer-events: auto;
 }
 
 .modal-container {
