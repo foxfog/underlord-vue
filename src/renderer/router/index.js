@@ -30,11 +30,6 @@ const router = createRouter({
 					name: 'playground-ui',
 					component: () => import('@/views/PlaygroundUI.vue')
 				},
-				{
-					path: 'map',
-					name: 'playground-map',
-					component: () => import('@/views/PlaygroundMap.vue')
-				},
 			]
 		},
 		{
@@ -48,12 +43,6 @@ const router = createRouter({
 			name: 'game',
 			path: '/game',
 			component: () => import('@/views/game/Game.vue')
-		},
-		{
-			id: 7,
-			name: 'location-editor',
-			path: '/game/location-editor',
-			component: () => import('@/views/game/LocationEditor.vue')
 		},
 	]
 })

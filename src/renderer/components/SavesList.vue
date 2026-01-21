@@ -52,9 +52,11 @@
 <script setup>
 	import { ref, onMounted } from 'vue'
 	import { useRouter } from 'vue-router'
+	import { useI18n } from 'vue-i18n'
 	import { useGameStore } from '@/stores/game'
 
 	const router = useRouter()
+	const { locale } = useI18n()
 	const saveGroups = ref([])
 	const loading = ref(true)
 	const emit = defineEmits(['back'])
@@ -97,28 +99,37 @@
 
 	async function loadSave(group, save) {
 		try {
-			// Load the save data from the file
+			// Load the checkpoint data from the file
 			const savePath = `saves/${group.slot}/${save.name === 'Auto Save' ? 'autosave.json' : save.name + '.json'}`
-			const saveData = await window.api.loadSaveFile(savePath)
+			const checkpoint = await window.api.loadSaveFile(savePath)
 			
-			if (saveData) {
+			if (checkpoint) {
 				// Get the game store instance
 				const gameStore = useGameStore()
 				
-				// Log the loaded save data to console
-				console.log('Loaded save data:', saveData)
-				console.log('Current game store state before loading:', {...gameStore.$state})
+				// Restore the checkpoint state
+				gameStore.restoreCheckpoint(checkpoint)
 				
-				// Load the save data into the store
-				gameStore.loadSaveData(saveData)
-				
-				// Log the game store state after loading
-				console.log('Game store state after loading:', {...gameStore.$state})
+				// If there's a scene in the checkpoint, load it
+				if (checkpoint.currentScene) {
+					// Determine language (could be saved in checkpoint or use default)
+					const locale = checkpoint.locale || 'en'
+					try {
+						await gameStore.loadScene(checkpoint.currentScene, locale)
+						// Restore the specific label and command index
+						if (checkpoint.currentLabel) {
+							gameStore.jumpToLabel(checkpoint.currentLabel)
+							gameStore.currentCommandIndex = checkpoint.currentCommandIndex || 0
+						}
+					} catch (error) {
+						console.error('Error loading scene:', error)
+					}
+				}
 				
 				// Navigate to the game view
 				router.push('/game')
 			} else {
-				console.error('Failed to load save data')
+				console.error('Failed to load checkpoint data')
 			}
 		} catch (error) {
 			console.error('Error loading save:', error)

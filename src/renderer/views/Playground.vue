@@ -15,13 +15,6 @@
 							{{ $t('playground.ui') }}
 						</router-link>
 						<router-link 
-							to="/playground/map" 
-							class="ui-tabs-label" 
-							:class="{ '__active': $route.path === '/playground/map' }"
-						>
-							{{ $t('playground.map') }}
-						</router-link>
-						<router-link 
 							to="/playground/door-status" 
 							class="ui-tabs-label" 
 							:class="{ '__active': $route.path === '/playground/door-status' }"

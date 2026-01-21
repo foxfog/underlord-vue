@@ -10,8 +10,6 @@ import { initSettingsStore } from './stores/settings'
 import { initGameStore } from './stores/game'
 import uiCompontents from './components/UI'
 import { preloadLocationData, loadLocationById } from './utils/locationLoader.js'
-import { preloadObjectData } from './utils/objectLoader.js'
-import { preloadTileData } from './utils/tileLoader.js'
 import { initCharacterData } from './utils/characterLoader.js'
 
 
@@ -23,8 +21,6 @@ async function main() {
   // Preload game data
   await Promise.all([
     preloadLocationData(),
-    preloadObjectData(),
-    preloadTileData(),
     initCharacterData()
   ])
   
