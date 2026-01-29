@@ -7,25 +7,13 @@ import App from './App.vue'
 import i18n from './locales'
 import router from './router'
 import { initSettingsStore } from './stores/settings'
-import { initGameStore } from './stores/game'
 import uiCompontents from './components/UI'
-import { preloadLocationData, loadLocationById } from './utils/locationLoader.js'
-import { initCharacterData } from './utils/characterLoader.js'
 
 
 async function main() {
   const settings = await window.electronAPI.getSettings() // получить настройки из userData/settings.json
   initSettingsStore(settings) // обязательно перед первым useSettingsStore()
-  initGameStore() // initialize game store
   
-  // Preload game data
-  await Promise.all([
-    preloadLocationData(),
-    initCharacterData()
-  ])
-  
-  // Load the default location (mc-apartment) to ensure it's available
-  await loadLocationById('mc-apartment')
   
   // Синхронизируем i18n locale с настройками
   if (settings?.general?.language) {

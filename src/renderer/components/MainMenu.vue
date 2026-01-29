@@ -20,17 +20,8 @@
                 <a class="nav-link" @click="navigateToSaves">
                     {{ t('mainmenu.game-saves') }}
                 </a>
-                
-                <!-- Location Editor link in main menu -->
-                <a class="nav-link" @click="navigateToLocationEditor">
-                    Редактор локаций
-                </a>
             </template>
             
-            <!-- Navigation links for game context -->
-            <a v-if="inGameContext" class="nav-link" @click="navigateToSaves">
-                {{ t('mainmenu.game-saves') }}
-            </a>
             
             <!-- Navigation links that emit events for component switching -->
             <a class="nav-link" @click="navigateToSettings">
@@ -105,11 +96,6 @@
 	
 	const navigateToMainMenu = () => {
 		emit('navigate', 'main-menu')
-	}
-	
-	// New navigation function for location editor
-	const navigateToLocationEditor = () => {
-		router.push('/game/location-editor')
 	}
 	
 	// Navigation functions that use router for page navigation

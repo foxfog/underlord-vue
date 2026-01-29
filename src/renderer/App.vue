@@ -1,5 +1,3 @@
-<!-- src/rendere/App.vue -->
-
 <template>
 	<router-view />
 	<BgMusic />

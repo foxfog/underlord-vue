@@ -13,14 +13,6 @@
 			<SettingsContent @saved="onSettingsSaved" @reset="onSettingsReset" />
 		</div>
 		
-		<!-- Saves content -->
-		<div v-else-if="currentView === 'saves'" class="saves-content">
-			<div class="page-header">
-				<div class="page-title">{{ $t('mainmenu.game-saves') }}</div>
-			</div>
-			<SavesList @back="onBackToMenu" />
-		</div>
-		
 		<!-- Additional content can be added here -->
 		<slot></slot>
 	</div>
@@ -30,7 +22,6 @@
 	import { defineProps, defineEmits } from 'vue'
 	import HomeContent from '@/components/HomeContent.vue'
 	import SettingsContent from '@/components/SettingsContent.vue'
-	import SavesList from '@/components/SavesList.vue'
 	
 	const props = defineProps({
 		currentView: {

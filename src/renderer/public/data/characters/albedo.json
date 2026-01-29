@@ -1,15 +1,70 @@
 {
-	"albedo": {
-		"name": "{characters.albedo.name}",
-		"surname": "{characters.albedo.surname}",
-		"title": "{characters.albedo.title}",
-		"nickname": "{characters.albedo.nickname}",
-		"tile": {
-			"front": {
-				"body": {
-					"torso": "/images/char/default/tile/char.png"
-				}
-			}
-		}
+	"id": "albedo",
+	"name": "Альбедо",
+	"stats": {
+		"hp": 10,
+		"attack": 2,
+		"defense": 1
+	},
+	"sprites": {
+		"body": {
+            "image": "/images/sprites/characters/char/body.png"
+        },
+		"head": {
+            "image": "/images/sprites/characters/char/head.png",
+            "parent": "body",
+            "offset": {
+                "x": 5,
+                "y": -10
+            }
+        },
+        "arm_left": {
+            "image": "/images/sprites/characters/char/arm left.png",
+            "parent": "body",
+            "offset": {
+                "x": 10,
+                "y": -10
+            }
+        },
+        "arm2_left": {
+            "image": "/images/sprites/characters/char/arm2 left.png",
+            "parent": "arm_left",
+            "offset": {
+                "x": 10,
+                "y": -10
+            }
+        },
+        "arm3_left": {
+            "image": "/images/sprites/characters/char/arm3 left.png",
+            "parent": "arm2_left",
+            "offset": {
+                "x": 10,
+                "y": -10
+            }
+        },
+        "arm_right": {
+            "image": "/images/sprites/characters/char/arm right.png",
+            "parent": "body",
+            "offset": {
+                "x": -10,
+                "y": -10
+            }
+        },
+        "arm2_right": {
+            "image": "/images/sprites/characters/char/arm2 right.png",
+            "parent": "arm_right",
+            "offset": {
+                "x": 10,
+                "y": -10
+            }
+        },
+        "arm3_right": {
+            "image": "/images/sprites/characters/char/arm3 right.png",
+            "parent": "arm2_right",
+            "offset": {
+                "x": 10,
+                "y": -10
+            }
+        }
 	}
 }

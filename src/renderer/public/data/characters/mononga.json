@@ -1,6 +1,6 @@
 {
-	"id": "mc",
-	"name": "Игрок",
+	"id": "mononga",
+	"name": "Момонга",
 	"stats": {
 		"hp": 10,
 		"attack": 2,

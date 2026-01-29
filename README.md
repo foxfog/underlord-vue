@@ -12,14 +12,7 @@ Underlord is a 2D isometric RPG game built with Electron, Vue 3, and Vite.
 - Save/load functionality
 - Multi-language support (English/Russian)
 
-## Data Structure
 
-The project uses JSON files for tile and object definitions:
-- Tile data: `src/renderer/public/data/tiles/tiles.json`
-- Object data: `src/renderer/public/data/tiles/objects.json`
-
-Each tile and object now includes explicit `id`, `type`, and `tags` fields for better data management and CSS manipulation.
-See `src/renderer/public/data/tiles/README.md` for detailed documentation.
 
 ## Development
 
