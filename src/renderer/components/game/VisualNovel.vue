@@ -19,8 +19,8 @@
     <!-- Dialogue Box -->
     <div class="dialogue-box" v-if="currentDialogue || currentNarration">
       <div class="speaker" v-if="currentSpeaker">{{ currentSpeaker }}</div>
-      <div class="text" v-if="currentDialogue">{{ currentDialogue }}</div>
-      <div class="narration" v-if="currentNarration">{{ currentNarration }}</div>
+      <div class="dialogue-text" v-if="currentDialogue">{{ currentDialogue }}</div>
+      <div class="narration-text" v-if="currentNarration">{{ currentNarration }}</div>
       
       <!-- Choices -->
       <div class="choices" v-if="currentChoices.length > 0">
@@ -43,11 +43,25 @@
         Продолжить
       </button>
     </div>
+    
+    <!-- Text Input Modal -->
+    <TextInputModal
+      :is-visible="showTextInputModal"
+      :title="currentInputStep?.text || 'Введите значение'"
+      :description="currentInputStep?.text || 'Пожалуйста, введите требуемое значение:'"
+      :initial-value="getInitialValue(currentInputStep?.variable)"
+      :show-close-button="currentInputStep?.showCloseButton !== false"
+      :show-cancel-button="currentInputStep?.showCancelButton !== false"
+      :confirm-button-text="currentInputStep?.confirmButtonText || 'Подтвердить'"
+      @close="showTextInputModal = false"
+      @confirm="onTextInputConfirm"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import TextInputModal from './TextInputModal.vue'
 
 // Props
 const props = defineProps({
@@ -58,13 +72,13 @@ const props = defineProps({
 })
 
 // Emits
-const emit = defineEmits(['end'])
+const emit = defineEmits(['end', 'character-loaded'])
 
 // State
 const currentScene = ref(null)
 const visibleCharacters = ref([])
 const currentDialogue = ref('')
-const currentNarration = ref('')
+const currentNarration = ref('') // Text without speaker (used for narration-style display)
 const currentSpeaker = ref('')
 const currentChoices = ref([])
 const storyData = ref(null)
@@ -72,6 +86,13 @@ const stepIndex = ref(0)
 const characterData = ref({})
 const sceneData = ref({})
 let advanceStoryOverride = null
+
+// Call stack for tracking story navigation (for 'continue' functionality)
+const callStack = ref([])
+
+// Text input modal state
+const showTextInputModal = ref(false)
+const currentInputStep = ref(null)
 
 // Helper function to load data files from public directory
 async function loadDataFromPublic(path) {
@@ -116,6 +137,9 @@ async function loadStory() {
     characterData.value[albedoModule.id] = albedoModule;
     characterData.value[momongaModule.id] = momongaModule;
     
+    // Emit character data for parent components
+    emit('character-loaded', characterData.value);
+    
     // Load scene data
     const scenesModule = await loadDataFromPublic('/data/scenes/scenes.json');
     scenesModule.scenes.forEach(scene => {
@@ -137,7 +161,8 @@ function processStep() {
   }
   
   const step = storyData.value.steps[stepIndex.value]
-  console.log(`Processing step ${stepIndex.value} of type: ${step.type}`); // Debug log
+  console.log(`Processing step ${stepIndex.value} of type: ${step.type} in story: ${storyData.value.id}`); // Debug log
+  console.log('Current step details:', step); // Debug log
   
   try {
     switch (step.type) {
@@ -157,10 +182,14 @@ function processStep() {
         processStep()
         break
       case 'dialogue':
-        showDialogue(step.character, step.text)
+        if (step.character) {
+          showDialogue(step.character, step.text)
+        } else {
+          showNarration(step.text)
+        }
         break
-      case 'narration':
-        showNarration(step.text)
+      case 'inputtext':
+        showTextInput(step)
         break
       case 'choice':
         showChoices(step)
@@ -168,8 +197,16 @@ function processStep() {
       case 'goto':
         goToLabel(step.target)
         break
+      case 'continue':
+        handleContinue()
+        break
       case 'end':
-        emit('end')
+        // If there's a story in the call stack, return to it instead of ending
+        if (callStack.value.length > 0) {
+          handleContinue()
+        } else {
+          emit('end')
+        }
         break
       default:
         stepIndex.value++
@@ -205,24 +242,143 @@ function hideCharacter(characterId) {
 function showDialogue(characterId, text) {
   const character = characterData.value[characterId]
   currentSpeaker.value = character ? character.name : ''
-  currentDialogue.value = text
+  currentDialogue.value = substituteVariables(text)
 }
 
-// Show narration
+// Show text without speaker (narration-style display)
 function showNarration(text) {
-  currentNarration.value = text
+  currentNarration.value = substituteVariables(text)
   currentSpeaker.value = ''
   currentDialogue.value = ''
+}
+
+// Show text input modal
+function showTextInput(step) {
+  // Clear any existing dialogue when showing text input
+  currentDialogue.value = ''
+  currentNarration.value = ''
+  currentSpeaker.value = ''
+  currentChoices.value = []
+  
+  currentInputStep.value = step
+  showTextInputModal.value = true
+}
+
+// Update character data based on variable path
+function updateCharacterData(variablePath, value) {
+  // Parse the variable path (e.g., "character.mc.name")
+  const parts = variablePath.split('.')
+  
+  if (parts[0] === 'character' && parts.length >= 3) {
+    const characterId = parts[1]
+    const propertyPath = parts.slice(2)
+    
+    if (characterData.value[characterId]) {
+      let target = characterData.value[characterId]
+      
+      // Navigate to the target property (support nested properties)
+      for (let i = 0; i < propertyPath.length - 1; i++) {
+        if (!target[propertyPath[i]]) {
+          target[propertyPath[i]] = {}
+        }
+        target = target[propertyPath[i]]
+      }
+      
+      // Set the final property value
+      const finalProperty = propertyPath[propertyPath.length - 1]
+      target[finalProperty] = value
+      
+      console.log(`Updated ${variablePath} to:`, value)
+      console.log('Character data now:', characterData.value[characterId])
+    }
+  }
+}
+
+// Substitute variables in text
+function substituteVariables(text) {
+  if (!text) return ''
+  
+  // Match patterns like {character.mc.name}
+  return text.replace(/\{([^}]+)\}/g, (match, variablePath) => {
+    const parts = variablePath.split('.')
+    
+    if (parts[0] === 'character' && parts.length >= 3) {
+      const characterId = parts[1]
+      const propertyPath = parts.slice(2)
+      
+      if (characterData.value[characterId]) {
+        let target = characterData.value[characterId]
+        
+        // Navigate to the target property
+        for (let i = 0; i < propertyPath.length; i++) {
+          if (target[propertyPath[i]] === undefined) {
+            return match // Return original placeholder if not found
+          }
+          target = target[propertyPath[i]]
+        }
+        
+        return target || ''
+      }
+    }
+    
+    return match // Return original placeholder if not matched
+  })
+}
+
+// Get initial value for input based on variable path
+function getInitialValue(variablePath) {
+  if (!variablePath) return ''
+  
+  const parts = variablePath.split('.')
+  
+  if (parts[0] === 'character' && parts.length >= 3) {
+    const characterId = parts[1]
+    const propertyPath = parts.slice(2)
+    
+    if (characterData.value[characterId]) {
+      let target = characterData.value[characterId]
+      
+      // Navigate to the target property
+      for (let i = 0; i < propertyPath.length; i++) {
+        if (target[propertyPath[i]] === undefined) {
+          return ''
+        }
+        target = target[propertyPath[i]]
+      }
+      
+      return target || ''
+    }
+  }
+  
+  return ''
+}
+
+// Handle text input confirmation
+function onTextInputConfirm(value) {
+  if (currentInputStep.value?.variable) {
+    updateCharacterData(currentInputStep.value.variable, value)
+  }
+  
+  showTextInputModal.value = false
+  currentInputStep.value = null
+  
+  // Continue with the story
+  stepIndex.value++
+  processStep()
 }
 
 // Show choices
 function showChoices(choiceStep) {
   console.log('Showing choices:', choiceStep); // Debug log
-  currentChoices.value = choiceStep.options
+  // Apply variable substitution to choice options text
+  currentChoices.value = choiceStep.options.map(option => ({
+    ...option,
+    text: substituteVariables(option.text)
+  }))
   currentSpeaker.value = choiceStep.speaker ? characterData.value[choiceStep.speaker]?.name : ''
   // Set the choice text as dialogue to ensure the dialogue box appears
   if (choiceStep.text) {
-    currentDialogue.value = choiceStep.text
+    currentDialogue.value = substituteVariables(choiceStep.text)
   }
   console.log('Current choices set to:', currentChoices.value); // Debug log
 }
@@ -232,14 +388,22 @@ function selectChoice(index) {
   console.log('Selected choice index:', index); // Debug log
   const choice = currentChoices.value[index]
   console.log('Selected choice:', choice); // Debug log
+  console.log('Choice text:', choice.text); // Debug log
   if (choice.actions) {
     // Process the actions for this choice
     console.log('Processing choice actions:', choice.actions); // Debug log
     processChoiceActions(choice.actions)
+  } else {
+    // No actions, advance to next step
+    console.log('No actions for this choice, advancing to next step'); // Debug log
+    // Clear choices and dialogue text
+    currentChoices.value = []
+    currentDialogue.value = ''
+    currentNarration.value = ''
+    // Advance to next step
+    stepIndex.value++
+    processStep()
   }
-  
-  // Clear choices
-  currentChoices.value = []
 }
 
 // Process actions from a choice
@@ -267,7 +431,11 @@ function processChoiceActions(actions) {
         console.log('Processing dialogue action'); // Debug log
         // Store the remaining actions to process after user interaction
         const remainingActionsForOverride = actions.slice(tempIndex)
-        showDialogue(action.character, action.text)
+        if (action.character) {
+          showDialogue(action.character, action.text)
+        } else {
+          showNarration(action.text)
+        }
         // We'll advance after user interaction, but need to continue processing remaining actions
         // Temporarily override advanceStory to continue processing choice actions
         advanceStoryOverride = function() {
@@ -276,28 +444,6 @@ function processChoiceActions(actions) {
           // Process remaining choice actions
           if (remainingActionsForOverride.length > 0) {
             processChoiceActions(remainingActionsForOverride)
-          } else {
-            // No more choice actions, continue with main story
-            stepIndex.value++
-            processStep()
-          }
-          // Clear the override
-          advanceStoryOverride = null
-        }
-        break
-      case 'narration':
-        console.log('Processing narration action'); // Debug log
-        // Store the remaining actions to process after user interaction
-        const remainingActions = actions.slice(tempIndex)
-        showNarration(action.text)
-        // We'll advance after user interaction, but need to continue processing remaining actions
-        // Temporarily override advanceStory to continue processing choice actions
-        advanceStoryOverride = function() {
-          currentDialogue.value = ''
-          currentNarration.value = ''
-          // Process remaining choice actions
-          if (remainingActions.length > 0) {
-            processChoiceActions(remainingActions)
           } else {
             // No more choice actions, continue with main story
             stepIndex.value++
@@ -335,6 +481,13 @@ function processChoiceActions(actions) {
 // Go to a specific label/step
 function goToLabel(targetLabel) {
   console.log('Attempting to go to label:', targetLabel); // Debug log
+  
+  // Clear dialogue and narration when jumping to a new label
+  currentDialogue.value = ''
+  currentNarration.value = ''
+  currentSpeaker.value = ''
+  currentChoices.value = []
+  
   // Find the step with the matching id in the story
   const targetStepIndex = storyData.value.steps.findIndex(step => step.id === targetLabel)
   console.log('Target step index found:', targetStepIndex); // Debug log
@@ -344,9 +497,34 @@ function goToLabel(targetLabel) {
     processStep()
   } else {
     console.log('Target not found in current story, loading target story:', targetLabel); // Debug log
+    // Push current story position to call stack before navigating to new story
+    callStack.value.push({
+      storyId: storyData.value.id,
+      stepIndex: stepIndex.value + 1  // Next step after the goto
+    })
+    console.log('Call stack after push:', callStack.value); // Debug log
+    
     // If we can't find the exact step with id, look for a story with that name
     // Load the target story file
     loadTargetStory(targetLabel)
+  }
+}
+
+// Handle continue action - return to the calling story
+function handleContinue() {
+  console.log('Handling continue action'); // Debug log
+  console.log('Current call stack:', callStack.value); // Debug log
+  
+  if (callStack.value.length > 0) {
+    // Pop the last entry from call stack
+    const returnPosition = callStack.value.pop()
+    console.log('Returning to:', returnPosition); // Debug log
+    
+    // Load the calling story
+    loadReturnStory(returnPosition.storyId, returnPosition.stepIndex)
+  } else {
+    console.log('No calling story in stack, ending story'); // Debug log
+    emit('end')
   }
 }
 
@@ -357,10 +535,40 @@ async function loadTargetStory(storyName) {
     const module = await loadDataFromPublic(`/data/story/ru/${storyName}.json`)
     console.log('Loaded story data:', module); // Debug log
     storyData.value = module
+    
+    // Clear dialogue and narration when loading new story
+    currentDialogue.value = ''
+    currentNarration.value = ''
+    currentSpeaker.value = ''
+    currentChoices.value = []
+    
     stepIndex.value = 0
     processStep()
   } catch (error) {
     console.error('Error loading target story:', error)
+    emit('end')
+  }
+}
+
+// Load a story to return to (from call stack)
+async function loadReturnStory(storyName, returnStepIndex) {
+  console.log('Loading return story:', storyName, 'at step:', returnStepIndex); // Debug log
+  try {
+    const module = await loadDataFromPublic(`/data/story/ru/${storyName}.json`)
+    console.log('Loaded return story data:', module); // Debug log
+    storyData.value = module
+    
+    // Clear dialogue and narration when loading return story
+    currentDialogue.value = ''
+    currentNarration.value = ''
+    currentSpeaker.value = ''
+    currentChoices.value = []
+    
+    // Set to the return step index
+    stepIndex.value = returnStepIndex
+    processStep()
+  } catch (error) {
+    console.error('Error loading return story:', error)
     emit('end')
   }
 }
@@ -372,7 +580,19 @@ function advanceStory() {
   // Check if there's a temporary override for choice action processing
   if (advanceStoryOverride) {
     console.log('Using temporary advance story override for choice actions');
-    advanceStoryOverride();
+    try {
+      advanceStoryOverride();
+    } catch (error) {
+      console.error('Error in advanceStoryOverride:', error);
+      // Clear the override to prevent infinite loops
+      advanceStoryOverride = null;
+      // Reset dialogue and narration
+      currentDialogue.value = '';
+      currentNarration.value = '';
+      // Continue with normal story advancement
+      stepIndex.value++;
+      processStep();
+    }
     return;
   }
   
@@ -453,7 +673,7 @@ onMounted(() => {
   line-height: 1.4;
 }
 
-.narration {
+.narration-text {
   font-style: italic;
   color: #ccc;
   margin-bottom: 10px;

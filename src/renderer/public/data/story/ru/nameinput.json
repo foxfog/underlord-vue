@@ -1,0 +1,29 @@
+{
+	"id": "nameinput",
+	"steps": [
+		{
+			"type": "inputtext",
+			"text": "Введите свое имя",
+			"variable": "character.mc.name",
+			"showCloseButton": false,
+			"showCancelButton": false,
+			"confirmButtonText": "Продолжить"
+		},
+		{
+			"type": "choice",
+			"text": "Ваше имя {character.mc.name}?",
+			"options": [
+				{
+					"text": "Да"
+				},
+				{
+					"text": "Нет",
+					"actions": [
+						{ "type": "goto", "target": "nameinput" }
+					]
+				}
+			]
+		},
+		{ "type": "continue" }
+	]
+}

@@ -3,15 +3,24 @@
 	"steps": [
 		{ "type": "scene", "id": "mc_apartment" },
 
-		{ "type": "narration", "text": "Вы находитесь в своей квартире." },
-		{ "type": "narration", "text": "Вы видите свою квартиру." },
+		{ "type": "dialogue", "text": "Вы находитесь в своей квартире." },
+		{ "type": "dialogue", "text": "Вы видите свою квартиру." },
 
 		{ "type": "show", "character": "momonga" },
+
 		{
 			"type": "dialogue",
 			"character": "momonga",
 			"text": "Вы создали новую игру."
 		},
+
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "ЭТО Я"
+		},
+
+		{ "type": "goto", "target": "nameinput" },
 
 		{ "type": "show", "character": "albedo" },
 		{

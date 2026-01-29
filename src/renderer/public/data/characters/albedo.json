@@ -2,7 +2,10 @@
 	"id": "albedo",
 	"name": "Альбедо",
 	"stats": {
+        "hpmax": 10,
 		"hp": 10,
+        "mpmax": 10,
+		"mp": 10,
 		"attack": 2,
 		"defense": 1
 	},
