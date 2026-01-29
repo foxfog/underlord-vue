@@ -1,21 +1,20 @@
 <template>
 	<div class="game-area">
 		<div class="game">
-			
+			<VisualNovel src="/data/story/ru/start.json" @end="onEnd" />
 		</div>
 	</div>
 </template>
 
 <script setup>
-	import { ref, computed, onMounted, onUnmounted } from 'vue'
-	import { useI18n } from 'vue-i18n'
-	import { useRouter, useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
+import VisualNovel from '../components/game/VisualNovel.vue'
 
-	const router = useRouter()
-	const route = useRoute()
-	const { t } = useI18n()
+const router = useRouter()
 
-	
+function onEnd() {
+	router.push('/home')
+}
 </script>
 
 <style scoped>

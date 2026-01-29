@@ -1,0 +1,73 @@
+{
+	"id": "start",
+	"steps": [
+		{ "type": "scene", "id": "mc_apartment" },
+
+		{ "type": "narration", "text": "Вы находитесь в своей квартире." },
+		{ "type": "narration", "text": "Вы видите свою квартиру." },
+
+		{ "type": "show", "character": "momonga" },
+		{
+			"type": "dialogue",
+			"character": "momonga",
+			"text": "Вы создали новую игру."
+		},
+
+		{ "type": "show", "character": "albedo" },
+		{
+			"type": "dialogue",
+			"character": "albedo",
+			"text": "Добавьте сюжет, изображения и музыку и отправьте её в мир!"
+		},
+
+		{ "type": "hide", "character": "albedo" },
+		{ "type": "hide", "character": "momonga" },
+
+		{ "type": "scene", "id": "mc_apartment_door" },
+
+		{ "type": "show", "character": "albedo" },
+
+		{
+			"type": "dialogue",
+			"character": "albedo",
+			"text": "Сейчас начнется диалог"
+		},
+
+		{
+			"type": "choice",
+			"speaker": "albedo",
+			"text": "Вы хотите продолжить?",
+			"options": [
+				{
+					"text": "Да",
+					"actions": [
+						{
+							"type": "dialogue",
+							"character": "mc",
+							"text": "Хорошо"
+						},
+						{ "type": "goto", "target": "second" }
+					]
+				},
+				{
+					"text": "Нет",
+					"actions": [
+						{
+							"type": "dialogue",
+							"character": "mc",
+							"text": "Нехорошо"
+						}
+					]
+				}
+			]
+		},
+
+		{
+			"type": "dialogue",
+			"character": "momonga",
+			"text": "Спасибо за игру!"
+		},
+
+		{ "type": "end" }
+	]
+}

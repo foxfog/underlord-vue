@@ -1,0 +1,16 @@
+{
+    "scenes": [
+        {
+            "id": "mc_apartment",
+            "bg": "images/sprites/backgrounds/mc-apartment/default.jpg"
+        },
+        {
+            "id": "mc_apartment_door",
+            "bg": "images/sprites/backgrounds/mc-apartment/door.png"
+        },
+        {
+            "id": "mc_apartment_door_open",
+            "bg": "images/sprites/backgrounds/mc-apartment/door-open.png"
+        }
+    ]
+}

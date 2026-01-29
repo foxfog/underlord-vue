@@ -1,0 +1,50 @@
+{
+	"id": "second",
+
+	"steps": [
+		{
+			"type": "choice",
+			"speaker": "albedo",
+			"text": "Вернуться к старту?",
+			"options": [
+				{
+					"text": "Да",
+					"actions": [
+						{
+							"type": "dialogue",
+							"character": "mc",
+							"text": "Хорошо"
+						},
+						{ "type": "goto", "target": "start" }
+					]
+				},
+				{
+					"text": "Нет",
+					"actions": [
+						{
+							"type": "dialogue",
+							"character": "mc",
+							"text": "Нехорошо"
+						}
+					]
+				}
+			]
+		},
+
+        {
+			"type": "dialogue",
+			"character": "albedo",
+			"text": "Сейчас открою"
+		},
+
+        { "type": "scene", "id": "mc_apartment_door_open" },
+
+        {
+			"type": "dialogue",
+			"character": "albedo",
+			"text": "Открываем дверь"
+		},
+
+		{ "type": "end" }
+	]
+}
