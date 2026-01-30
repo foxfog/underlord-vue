@@ -62,6 +62,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import TextInputModal from './TextInputModal.vue'
+import { useSavesStore } from '../../stores/saves'
 
 // Props
 const props = defineProps({
@@ -95,6 +96,12 @@ const callStack = ref([])
 const showTextInputModal = ref(false)
 const currentInputStep = ref(null)
 
+// Flag to skip scene/show restoration when loading from save
+const isRestoringGameState = ref(false)
+// Loading state for story/scene/character data
+let loadingPromise = null
+const isLoaded = ref(false)
+
 // Helper function to load data files from public directory
 async function loadDataFromPublic(path) {
   console.log('Attempting to load data from path:', path); // Debug log
@@ -122,36 +129,47 @@ async function loadDataFromPublic(path) {
   }
 }
 
-// Load story data
+// Load story data (singleton promise to avoid duplicate loads)
 async function loadStory() {
-  try {
-    // Load story data
-    const storyModule = await loadDataFromPublic(props.src);
-    storyData.value = storyModule;
-    
-    // Load character data
-    const mcModule = await loadDataFromPublic('/data/characters/mc.json');
-    const albedoModule = await loadDataFromPublic('/data/characters/albedo.json');
-    const momongaModule = await loadDataFromPublic('/data/characters/momonga.json');
-    
-    characterData.value[mcModule.id] = mcModule;
-    characterData.value[albedoModule.id] = albedoModule;
-    characterData.value[momongaModule.id] = momongaModule;
-    
-    // Emit character data for parent components
-    emit('character-loaded', characterData.value);
-    
-    // Load scene data
-    const scenesModule = await loadDataFromPublic('/data/scenes/scenes.json');
-    scenesModule.scenes.forEach(scene => {
-      sceneData.value[scene.id] = scene;
-    });
-    
-    // Start the story
-    processStep();
-  } catch (error) {
-    console.error('Error loading story:', error);
-  }
+  if (loadingPromise) return loadingPromise
+
+  loadingPromise = (async () => {
+    try {
+      // Load story data
+      const storyModule = await loadDataFromPublic(props.src);
+      storyData.value = storyModule;
+
+      // Load character data
+      const mcModule = await loadDataFromPublic('/data/characters/mc.json');
+      const albedoModule = await loadDataFromPublic('/data/characters/albedo.json');
+      const momongaModule = await loadDataFromPublic('/data/characters/momonga.json');
+
+      characterData.value[mcModule.id] = mcModule;
+      characterData.value[albedoModule.id] = albedoModule;
+      characterData.value[momongaModule.id] = momongaModule;
+
+      // Emit character data for parent components
+      emit('character-loaded', characterData.value);
+
+      // Load scene data
+      const scenesModule = await loadDataFromPublic('/data/scenes/scenes.json');
+      scenesModule.scenes.forEach(scene => {
+        sceneData.value[scene.id] = scene;
+      });
+
+      isLoaded.value = true
+      console.log('✔ All story data loaded, ready to start')
+      // Don't start the story here - will be started by Game.vue or restoreGameState
+    } catch (error) {
+      console.error('Error loading story:', error);
+      throw error
+    } finally {
+      // keep loadingPromise null so future calls can reload if necessary
+      loadingPromise = null
+    }
+  })()
+
+  return loadingPromise
 }
 
 // Process current step
@@ -162,23 +180,32 @@ function processStep() {
   }
   
   const step = storyData.value.steps[stepIndex.value]
-  console.log(`Processing step ${stepIndex.value} of type: ${step.type} in story: ${storyData.value.id}`); // Debug log
+  console.log(`[processStep] Story: "${storyData.value.id}" | Step ${stepIndex.value}/${storyData.value.steps.length} | Type: ${step.type}`, { callStackDepth: callStack.value.length, isRestoring: isRestoringGameState.value }); // Debug log
   console.log('Current step details:', step); // Debug log
   
   try {
     switch (step.type) {
       case 'scene':
-        changeScene(step.id)
+        // Skip scene changes when restoring game state - use restored scene instead
+        if (!isRestoringGameState.value) {
+          changeScene(step.id)
+        }
         stepIndex.value++
         processStep()
         break
       case 'show':
-        showCharacter(step.character)
+        // Skip character shows when restoring game state - use restored visible characters instead
+        if (!isRestoringGameState.value) {
+          showCharacter(step.character)
+        }
         stepIndex.value++
         processStep()
         break
       case 'hide':
-        hideCharacter(step.character)
+        // Skip character hides when restoring game state - use restored visible characters instead
+        if (!isRestoringGameState.value) {
+          hideCharacter(step.character)
+        }
         stepIndex.value++
         processStep()
         break
@@ -190,12 +217,18 @@ function processStep() {
             } else {
               showNarration(step.text)
             }
+            // Reset restoration flag after first interactive element is shown
+            isRestoringGameState.value = false
         break
       case 'inputtext':
         showTextInput(step)
+        // Reset restoration flag after first interactive element is shown
+        isRestoringGameState.value = false
         break
       case 'choice':
         showChoices(step)
+        // Reset restoration flag after first interactive element is shown
+        isRestoringGameState.value = false
         break
       case 'goto':
         goToLabel(step.target)
@@ -210,6 +243,8 @@ function processStep() {
         } else {
           emit('end')
         }
+        // Reset restoration flag
+        isRestoringGameState.value = false
         break
       default:
         stepIndex.value++
@@ -245,6 +280,8 @@ function hideCharacter(characterId) {
 function showDialogue(characterId, text) {
   const character = characterData.value[characterId]
   currentSpeaker.value = character ? character.name : ''
+  // Clear narration when showing dialogue to avoid overlapping texts
+  currentNarration.value = ''
   currentDialogue.value = substituteVariables(text)
 }
 
@@ -726,6 +763,8 @@ function advanceStory() {
   
   currentDialogue.value = ''
   currentNarration.value = ''
+  // Reset restoration flag when user advances the story
+  isRestoringGameState.value = false
   stepIndex.value++
   processStep()
 }
@@ -746,10 +785,17 @@ function getGameState() {
 // Restore game state from save file
 async function restoreGameState(saveData) {
   try {
-    // Restore story position
-    storyData.value = saveData.storyData
-    stepIndex.value = saveData.stepIndex
-    callStack.value = saveData.callStack
+    // Ensure data (characters/scenes) is loaded before restoring
+    if (!isLoaded.value) {
+      if (loadingPromise) {
+        await loadingPromise
+      } else {
+        await loadStory()
+      }
+    }
+    // Set flag to skip scene/show restoration during processStep
+    isRestoringGameState.value = true
+    
     globalData.value = saveData.globalData
     
     // Restore character data (merge with loaded characters)
@@ -772,30 +818,82 @@ async function restoreGameState(saveData) {
         }
       })
     }
+    console.log('✔ Restored visible characters:', visibleCharacters.value.map(c => c.id))
     
     // Restore current scene
     if (saveData.currentScene && sceneData.value[saveData.currentScene]) {
       currentScene.value = sceneData.value[saveData.currentScene]
+      console.log('✔ Restored current scene:', currentScene.value.id)
+    } else {
+      console.log('⚠ Warning: Could not restore scene. saveData.currentScene:', saveData.currentScene, 'sceneData keys:', Object.keys(sceneData.value))
+    }
+        // Clear any previous dialogue/narration to avoid leftover text from prior story
+        currentDialogue.value = ''
+        currentNarration.value = ''
+        currentSpeaker.value = ''
+        currentChoices.value = []
+    
+    // Restore call stack
+    callStack.value = saveData.callStack || []
+
+    // Load story from disk by ID (instead of restoring full storyData from save)
+    const storyId = saveData.storyId || 'start'
+    console.log('Loading story from disk:', storyId)
+    try {
+      const loadedStory = await loadDataFromPublic(`/data/story/ru/${storyId}.json`)
+      storyData.value = loadedStory
+      stepIndex.value = saveData.stepIndex || 0
+    } catch (err) {
+      console.error('Failed to load story file:', err)
+      throw new Error(`Could not load story file: ${storyId}`)
     }
     
     console.log('✔ Game state restored successfully')
+    console.log('Restored story:', storyData.value.id, 'at step:', stepIndex.value, 'callStack length:', callStack.value.length)
+    
     // Process the current step to display the saved state
+    // Flag isRestoringGameState will be reset when the first interactive element is shown
     processStep()
   } catch (error) {
     console.error('Error restoring game state:', error)
+    isRestoringGameState.value = false
     throw error
   }
 }
 
+// Reset game state (for starting a new game)
+function resetGameState() {
+  stepIndex.value = 0
+  callStack.value = []
+  currentDialogue.value = ''
+  currentNarration.value = ''
+  currentSpeaker.value = ''
+  currentChoices.value = []
+  visibleCharacters.value = []
+  currentScene.value = null
+  globalData.value = {}
+  console.log('✔ Game state reset')
+}
+
 // Lifecycle
-onMounted(() => {
-  loadStory()
+onMounted(async () => {
+  await loadStory()
+  
+  // Check if there's a pending save to restore - if not, start new game
+  const savesStore = useSavesStore()
+  if (!savesStore.getPendingLoad()) {
+    // No pending save, start new game
+    console.log('✔ Starting new game')
+    processStep()
+  }
 })
 
 // Expose methods for parent components
 defineExpose({
   getGameState,
   restoreGameState,
+  resetGameState,
+  startStory: () => processStep(), // Expose method to start/continue story
 })
 </script>
 

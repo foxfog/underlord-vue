@@ -4,6 +4,7 @@ import { ref, computed } from 'vue'
 export const useSavesStore = defineStore('saves', () => {
   const saves = ref(new Map()) // Map<slotNumber, saveData>
   const currentSlotNumber = ref(null)
+  const pendingLoad = ref(null)
 
   // Format timestamp as YYYY-MM-DD_HHMMSS
   const formatTimestamp = (date) => {
@@ -16,24 +17,34 @@ export const useSavesStore = defineStore('saves', () => {
     return `${year}-${month}-${day}_${hours}${minutes}${seconds}`
   }
 
-  // Serialize game state for saving
+  // Deep clone an object ensuring it's JSON-serializable
+  const deepClone = (obj) => {
+    try {
+      return JSON.parse(JSON.stringify(obj))
+    } catch (err) {
+      console.warn('Failed to deep clone object:', err)
+      return obj
+    }
+  }
+
+  // Serialize game state for saving (store only essential data, load story from disk on restore)
   const serializeGameState = (gameState) => {
     return {
-      storyData: gameState.storyData,
+      storyId: gameState.storyData?.id || 'start',  // Only store story ID, not full data
       stepIndex: gameState.stepIndex,
-      callStack: gameState.callStack,
-      globalData: gameState.globalData,
-      characterData: gameState.characterData,
-      visibleCharacters: gameState.visibleCharacters,
+      callStack: deepClone(gameState.callStack),
+      globalData: deepClone(gameState.globalData),
+      characterData: deepClone(gameState.characterData),
+      visibleCharacters: deepClone(gameState.visibleCharacters),
       currentScene: gameState.currentScene,
     }
   }
 
   // Create a save file with metadata
-  const createSaveFile = (gameState, mcName) => {
+  const createSaveFile = (slotNumber, gameState, mcName) => {
     const now = new Date()
     return {
-      slot: currentSlotNumber.value,
+      slot: slotNumber,
       timestamp: now.getTime(),
       timestampFormatted: formatTimestamp(now),
       mcName: mcName || 'Unknown',
@@ -44,12 +55,14 @@ export const useSavesStore = defineStore('saves', () => {
   // Save game state to slot
   const saveGame = async (slotNumber, gameState, mcName) => {
     try {
-      const saveFile = createSaveFile(gameState, mcName)
+      const saveFile = createSaveFile(slotNumber, gameState, mcName)
       const result = await window.api.saveGame(slotNumber, saveFile)
 
       if (result.success) {
         saves.value.set(slotNumber, saveFile)
         currentSlotNumber.value = slotNumber
+        console.log('✔ Save added to store, slot:', slotNumber)
+        console.log('✔ Saves map now contains:', Array.from(saves.value.keys()))
         return { success: true, data: saveFile }
       } else {
         return { success: false, error: result.error }
@@ -69,6 +82,8 @@ export const useSavesStore = defineStore('saves', () => {
         const saveFile = result.data
         saves.value.set(slotNumber, saveFile)
         currentSlotNumber.value = slotNumber
+        // update pendingLoad for consumers that navigate to game
+        pendingLoad.value = saveFile
         return { success: true, data: saveFile }
       } else {
         return { success: false, error: result.error }
@@ -103,12 +118,16 @@ export const useSavesStore = defineStore('saves', () => {
   const listSaves = async () => {
     try {
       const result = await window.api.listSaves()
+      console.log('listSaves IPC result:', result)
 
       if (result.success) {
         saves.value.clear()
         result.data.forEach((saveFile) => {
+          console.log('Loading save from disk - slot:', saveFile.slot, 'mcName:', saveFile.mcName)
           saves.value.set(saveFile.slot, saveFile)
         })
+        console.log('✔ Saves list updated, total:', saves.value.size)
+        console.log('✔ Saves map keys:', Array.from(saves.value.keys()))
         return { success: true, data: Array.from(saves.value.values()) }
       } else {
         return { success: false, error: result.error }
@@ -134,6 +153,13 @@ export const useSavesStore = defineStore('saves', () => {
     return saves.value.has(slotNumber)
   }
 
+  const getPendingLoad = () => pendingLoad.value
+  const takePendingLoad = () => {
+    const val = pendingLoad.value
+    pendingLoad.value = null
+    return val
+  }
+
   return {
     saves,
     currentSlotNumber,
@@ -146,5 +172,8 @@ export const useSavesStore = defineStore('saves', () => {
     hasSave,
     serializeGameState,
     createSaveFile,
+    pendingLoad,
+    getPendingLoad,
+    takePendingLoad,
   }
 })

@@ -42,5 +42,8 @@
 	"close": "Close",
 	"save": "Save",
 	"load": "Load",
-	"empty": "Empty"
+	"empty": "Empty",
+	"slot_empty": "This slot is empty",
+	"overwrite_confirm": "Slot {slot} is occupied (\"{mcName}\" — {timestamp}). Overwrite?",
+	"load_confirm_loss": "All unsaved progress will be lost. Load this save?"
 }

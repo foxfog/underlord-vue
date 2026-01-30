@@ -130,6 +130,27 @@ ipcMain.handle('save-game', async (_event, slotNumber, saveFile) => {
 	try {
 		const savesDir = await getSavesDirectory()
 		const { mcName, timestamp } = saveFile
+		// Remove any existing files for this slot to avoid duplicates
+		try {
+			const existing = await fs.readdir(savesDir, { withFileTypes: true })
+			for (const entry of existing) {
+				if (entry.isFile()) {
+					const m = entry.name.match(/^(\d+)_/)
+					if (m && parseInt(m[1]) === slotNumber) {
+						const oldPath = join(savesDir, entry.name)
+						try {
+							await fs.unlink(oldPath)
+							console.log(`✔ Удалено старое сохранение: ${entry.name}`)
+						} catch (e) {
+							console.warn(`Не удалось удалить старое сохранение ${entry.name}:`, e)
+						}
+					}
+				}
+			}
+		} catch (err) {
+			console.warn('Ошибка при проверке/удалении старых сохранений:', err)
+		}
+
 		const fileName = `${slotNumber}_${mcName}_${saveFile.timestampFormatted}.json`
 		const filePath = join(savesDir, fileName)
 		
@@ -173,21 +194,39 @@ ipcMain.handle('list-saves', async (_event) => {
 	try {
 		const savesDir = await getSavesDirectory()
 		const entries = await fs.readdir(savesDir, { withFileTypes: true })
-		const saves = []
+		const savesMap = new Map() // Map to track latest save per slot
 		
 		for (const entry of entries) {
 			if (entry.isFile() && entry.name.endsWith('.json')) {
 				try {
+					// Extract slot number from filename (format: {slot}_{mcName}_{timestamp}.json)
+					const nameMatch = entry.name.match(/^(\d+)_/)
+					if (!nameMatch) {
+						console.warn(`File doesn't match save pattern: ${entry.name}`)
+						continue
+					}
+					
+					const slot = parseInt(nameMatch[1])
 					const filePath = join(savesDir, entry.name)
 					const data = await fs.readFile(filePath, 'utf-8')
 					const saveData = JSON.parse(data)
-					saves.push(saveData)
+					
+					// Ensure slot number in data matches filename
+					saveData.slot = slot
+					
+					// Keep only the latest save for each slot (compare timestamps)
+					if (!savesMap.has(slot) || saveData.timestamp > savesMap.get(slot).timestamp) {
+						savesMap.set(slot, saveData)
+						console.log(`✔ Loaded save from disk - slot: ${slot}, file: ${entry.name}`)
+					}
 				} catch (err) {
 					console.warn(`Ошибка при чтении ${entry.name}:`, err)
 				}
 			}
 		}
 		
+		// Convert map to array
+		const saves = Array.from(savesMap.values()).sort((a, b) => a.slot - b.slot)
 		console.log(`✔ Найдено ${saves.length} сохранений`)
 		return { success: true, data: saves }
 	} catch (error) {

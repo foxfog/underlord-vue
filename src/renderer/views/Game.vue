@@ -27,9 +27,11 @@
 				<div class="content-area">
 					<DynamicContentArea
 						:current-view="currentView"
+						:in-game-context="true"
 						@back-to-menu="showMainMenu"
 						@settings-saved="onSettingsSaved"
 						@settings-reset="onSettingsReset"
+						@load-request="onLoadRequest"
 					/>
 				
 					<!-- Visual-only Save/Load modal (Ren'Py-like placeholders) -->
@@ -55,15 +57,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import VisualNovel from '../components/game/VisualNovel.vue'
 import CharacterStatsModal from '../components/game/CharacterStatsModal.vue'
 import DynamicContentArea from '@/components/DynamicContentArea.vue'
 import MainMenu from '@/components/MainMenu.vue'
 import SaveLoadModal from '@/components/SaveLoadModal.vue'
+import { useSavesStore } from '@/stores/saves'
 
 const router = useRouter()
+const route = useRoute()
 const visualNovel = ref(null)
 const showStatsModal = ref(false)
 const mcCharacter = ref(null)
@@ -139,6 +143,25 @@ function onSettingsReset() {
 	console.log('Settings reset to default')
 }
 
+async function onLoadRequest(saveData) {
+ 	try {
+ 		if (!visualNovel.value) {
+ 			console.warn('VisualNovel ref not ready')
+ 			return
+ 		}
+
+ 		console.log('Restoring game from save request', saveData)
+ 		await visualNovel.value.restoreGameState(saveData.gameState)
+
+ 		// Close menus and resume
+ 		menuVisible.value = false
+ 		currentView.value = 'main-menu'
+ 	} catch (err) {
+ 		console.error('Failed to restore save from saves list:', err)
+ 		alert(`Failed to restore save: ${err.message}`)
+ 	}
+}
+
 // Called from MainMenu "Continue" button — hide menu and resume
 const onContinue = () => {
 	menuVisible.value = false
@@ -153,6 +176,43 @@ const onKeyDown = (e) => {
 
 onMounted(() => {
 	window.addEventListener('keydown', onKeyDown)
+
+	// If this is a new game, reset the VisualNovel state
+	if (route.meta.newGame && visualNovel.value) {
+		console.log('Starting new game - resetting state')
+		visualNovel.value.resetGameState()
+	}
+
+	// If we have a pending load (navigated from main menu), wait for VisualNovel to be ready and restore
+	const savesStore = useSavesStore()
+	if (savesStore.getPendingLoad()) {
+		nextTick(async () => {
+			try {
+				// wait up to 5s for VisualNovel ref to mount
+				const maxWait = 5000
+				const interval = 100
+				let waited = 0
+				while (!visualNovel.value && waited < maxWait) {
+					await new Promise((r) => setTimeout(r, interval))
+					waited += interval
+				}
+				const pending = savesStore.getPendingLoad() ? savesStore.takePendingLoad() : null
+				if (!pending) return
+				if (!visualNovel.value) {
+					console.warn('VisualNovel not ready to restore save after waiting')
+					// put it back so user can try again (restore failed)
+					savesStore.pendingLoad = pending
+					return
+				}
+				await visualNovel.value.restoreGameState(pending.gameState)
+				menuVisible.value = false
+				currentView.value = 'main-menu'
+			} catch (err) {
+				console.error('Failed to restore pending save:', err)
+				alert(`Failed to restore save: ${err.message}`)
+			}
+		})
+	}
 })
 
 onUnmounted(() => {

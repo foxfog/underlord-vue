@@ -15,7 +15,7 @@
         
 		<!-- Saves content (visual placeholder) -->
 		<div v-else-if="currentView === 'saves'" class="saves-content">
-			<SavesContent />
+			<SavesContent :in-game="inGameContext" @load-request="(data) => emit('load-request', data)" />
 		</div>
 		
 		<!-- Additional content can be added here -->
@@ -33,10 +33,11 @@
 		currentView: {
 			type: String,
 			default: 'main-menu'
-		}
+		},
+		inGameContext: { type: Boolean, default: false }
 	})
 	
-	const emit = defineEmits(['back-to-menu', 'settings-saved', 'settings-reset'])
+	const emit = defineEmits(['back-to-menu', 'settings-saved', 'settings-reset', 'load-request'])
 	
 	// Event handlers
 	const onBackToMenu = () => {

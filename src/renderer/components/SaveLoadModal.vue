@@ -3,23 +3,14 @@
     <div class="modal-inner">
       <header class="modal-header">
         <div class="tabs">
-          <button :class="{active: mode === 'save'}" @click="mode = 'save'">{{ $t('ui.common.save') }}</button>
-          <button :class="{active: mode === 'load'}" @click="mode = 'load'">{{ $t('ui.common.load') }}</button>
+          <button :class="{active: mode === 'save'}" @click="mode = 'save'">{{ $t('save') }}</button>
+          <button :class="{active: mode === 'load'}" @click="mode = 'load'">{{ $t('load') }}</button>
         </div>
         <button class="close" @click="$emit('close')">×</button>
       </header>
 
       <div class="modal-body">
-        <div class="slots-grid">
-          <div v-for="slot in slotsForPage" :key="slot" class="slot" :class="{filled: hasSaveInSlot(slot)}" @click="onSlotClick(slot)">
-            <div class="thumb">{{ hasSaveInSlot(slot) ? saveMetadata(slot)?.timestampFormatted : 'Empty' }}</div>
-            <div class="slot-info">
-              <div class="slot-title">Слот {{ slot }}</div>
-              <div class="slot-meta" v-if="hasSaveInSlot(slot)">{{ saveMetadata(slot)?.mcName }}</div>
-              <div class="slot-meta" v-else>— пусто —</div>
-            </div>
-          </div>
-        </div>
+        <SaveSlotsGrid :slots="slotsForPage" @slot-click="onSlotClick" @delete="deleteSaveSlot" />
       </div>
 
       <footer class="modal-footer">
@@ -29,21 +20,26 @@
           <button @click="nextPage" :disabled="currentPage === totalPages">Next →</button>
         </div>
       </footer>
+      <ConfirmModal :visible="confirmState.visible" :message="confirmState.message" :title="confirmState.title" confirmText="OK" cancelText="Cancel" @confirm="onConfirm" @cancel="onCancelConfirm" />
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useSavesStore } from '../stores/saves'
+import SaveSlotsGrid from './SaveSlotsGrid.vue'
+import ConfirmModal from './ConfirmModal.vue'
 
 const props = defineProps({
   isVisible: { type: Boolean, default: false },
-  visualNovel: { type: Object, required: true }
+  visualNovel: { type: Object, default: null }
 })
 
 const emit = defineEmits(['close', 'slot-click', 'save-complete', 'load-complete'])
 const savesStore = useSavesStore()
+const { t } = useI18n()
 
 const mode = ref('save')
 const currentPage = ref(1)
@@ -53,12 +49,30 @@ const slotsPerPage = 6
 const totalPages = Math.ceil(totalSlots / slotsPerPage)
 
 const slotsForPage = computed(() => {
-  const start = (currentPage.value - 1) * slotsPerPage + 1
-  const end = Math.min(start + slotsPerPage - 1, totalSlots)
+  const start = (currentPage.value - 1) * slotsPerPage
+  const end = Math.min(start + slotsPerPage, totalSlots)
   const arr = []
-  for (let i = start; i <= end; i++) arr.push(i - 1) // Convert to 0-indexed
+  for (let i = start; i < end; i++) arr.push(i)
   return arr
 })
+
+// Confirm modal state and helper
+const confirmState = ref({ visible: false, title: '', message: '', resolve: null })
+function confirmDialog(message, title = '') {
+  return new Promise((resolve) => {
+    confirmState.value = { visible: true, title, message, resolve }
+  })
+}
+function onConfirm() {
+  const resolver = confirmState.value.resolve
+  confirmState.value = { visible: false, title: '', message: '', resolve: null }
+  if (resolver) resolver(true)
+}
+function onCancelConfirm() {
+  const resolver = confirmState.value.resolve
+  confirmState.value = { visible: false, title: '', message: '', resolve: null }
+  if (resolver) resolver(false)
+}
 
 function nextPage() {
   if (currentPage.value < totalPages) currentPage.value++
@@ -79,15 +93,33 @@ function saveMetadata(slot) {
 async function onSlotClick(slot) {
   try {
     if (mode.value === 'save') {
+      // If slot already has a save, ask for overwrite confirmation
+      if (hasSaveInSlot(slot)) {
+        const meta = saveMetadata(slot)
+        const message = t('overwrite_confirm', {
+          slot: slot + 1,
+          mcName: meta?.mcName || 'Unknown',
+          timestamp: meta?.timestampFormatted || ''
+        })
+        const ok = await confirmDialog(message)
+        if (!ok) return
+      }
+
       // Get current game state
+        if (!props.visualNovel) {
+          alert('VisualNovel not ready for saving')
+          return
+        }
       const gameState = props.visualNovel.getGameState()
       const mcName = gameState.characterData?.mc?.name || 'Unknown'
-      
+
       // Save the game
       const result = await savesStore.saveGame(slot, gameState, mcName)
-      
+
       if (result.success) {
         console.log('✔ Game saved to slot', slot)
+        // Refresh list from disk to ensure UI consistency
+        await savesStore.listSaves()
         emit('save-complete', { slot, save: result.data })
       } else {
         console.error('Failed to save:', result.error)
@@ -95,16 +127,24 @@ async function onSlotClick(slot) {
       }
     } else if (mode.value === 'load') {
       if (!hasSaveInSlot(slot)) {
-        alert('This slot is empty')
+        alert(t('slot_empty') || 'This slot is empty')
         return
       }
-      
+
+      // Confirm that unsaved progress will be lost
+      const okLoad = await confirmDialog(t('load_confirm_loss'))
+      if (!okLoad) return
+
+        // Restore the game state
+        if (!props.visualNovel) {
+          alert('VisualNovel not ready for loading')
+          return
+        }
       // Load the game
       const result = await savesStore.loadGame(slot)
-      
+
       if (result.success) {
         console.log('✔ Game loaded from slot', slot)
-        // Restore the game state
         await props.visualNovel.restoreGameState(result.data.gameState)
         emit('load-complete', { slot, save: result.data })
       } else {
@@ -121,11 +161,13 @@ async function onSlotClick(slot) {
 watch(() => props.isVisible, async (v) => {
   if (v) {
     // Reload save list when modal opens
-    await savesStore.listSaves()
+    console.log('SaveLoadModal opened, refreshing save list...')
+    const result = await savesStore.listSaves()
+    console.log('Save list refreshed:', result)
     currentPage.value = 1
     mode.value = 'save'
   }
-})
+}, { flush: 'post' })
 </script>
 
 <style scoped>
@@ -180,6 +222,21 @@ watch(() => props.isVisible, async (v) => {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  transition: all 0.2s ease;
+}
+.slot:hover {
+  border-color: #444;
+  background: #1a1a1a;
+}
+.slot.filled {
+  border: 2px solid #4a9eff;
+  background: #0d2847;
+  box-shadow: 0 0 8px rgba(74, 158, 255, 0.3);
+}
+.slot.filled:hover {
+  border-color: #6ab3ff;
+  background: #0f3050;
+  box-shadow: 0 0 12px rgba(74, 158, 255, 0.5);
 }
 .thumb {
   height: 90px;
@@ -188,6 +245,12 @@ watch(() => props.isVisible, async (v) => {
   align-items: center;
   justify-content: center;
   color: #666;
+  border-radius: 4px;
+}
+.slot.filled .thumb {
+  background: linear-gradient(135deg, #0a1f3d 0%, #0d2847 100%);
+  color: #4a9eff;
+  font-weight: bold;
 }
 .slot-info { color: #ccc; font-size: 13px }
 .modal-footer { display:flex; justify-content:space-between; align-items:center; margin-top:8px }
