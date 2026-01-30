@@ -13,7 +13,8 @@
 		"test": "Тест",
 		"splash": "Заставка",
 		"playground": "Площадка",
-		"back": "На главную"
+		"back": "На главную",
+		"exit-to-home": "На главную"
 	},
 	"ageVerification": {
 		"title": "Подтверждение возраста",

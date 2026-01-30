@@ -6,10 +6,11 @@
                 {{ t('mainmenu.continue') }}
             </a>
             
-            <!-- Back to Main option when needed -->
-            <a v-if="showBackToMain" class="nav-link" @click="navigateToMainMenu">
-                {{ t('mainmenu.back') }}
+            <!-- Exit to Main Screen option when in game -->
+            <a v-if="inGameContext" class="nav-link" @click="navigateToHomeScreen">
+                {{ t('mainmenu.exit-to-home') || 'В главное меню' }}
             </a>
+            
             
 			<!-- Navigation links for non-game context -->
 			<template v-if="!inGameContext">
@@ -58,10 +59,6 @@
 			type: Function,
 			default: null
 		},
-		showBackToMain: {
-			type: Boolean,
-			default: false
-		}
 	})
 	
 	const emit = defineEmits(['navigate'])
@@ -105,6 +102,10 @@
 	
 	const navigateToMainMenu = () => {
 		emit('navigate', 'main-menu')
+	}
+	
+	const navigateToHomeScreen = () => {
+		emit('navigate', 'home-screen')
 	}
 	
 	// Navigation functions that use router for page navigation

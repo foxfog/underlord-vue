@@ -13,7 +13,8 @@
 		"test": "Test",
 		"splash": "Splash",
 		"playground": "Playground",
-		"back": "Back to Menu"
+		"back": "Back to Menu",
+		"exit-to-home": "Exit to Main Screen"
 	},
 	"ageVerification": {
 		"title": "Age Verification",

@@ -1,6 +1,7 @@
 {
 	"id": "momonga",
 	"name": "Момонга",
+    "size": 1,
 	"stats": {
         "hpmax": 10,
 		"hp": 10,
@@ -17,56 +18,56 @@
             "image": "/images/sprites/characters/char/head.png",
             "parent": "body",
             "offset": {
-                "x": 5,
-                "y": -10
+                "x": 13,
+                "y": -26
             }
         },
         "arm_left": {
             "image": "/images/sprites/characters/char/arm left.png",
             "parent": "body",
             "offset": {
-                "x": 10,
-                "y": -10
+                "x": 35,
+                "y": -17
             }
         },
         "arm2_left": {
             "image": "/images/sprites/characters/char/arm2 left.png",
             "parent": "arm_left",
             "offset": {
-                "x": 10,
-                "y": -10
+                "x": 0,
+                "y": 83
             }
         },
         "arm3_left": {
             "image": "/images/sprites/characters/char/arm3 left.png",
             "parent": "arm2_left",
             "offset": {
-                "x": 10,
-                "y": -10
+                "x": 58,
+                "y": 80
             }
         },
         "arm_right": {
             "image": "/images/sprites/characters/char/arm right.png",
             "parent": "body",
             "offset": {
-                "x": -10,
-                "y": -10
+                "x": -13,
+                "y": -17
             }
         },
         "arm2_right": {
             "image": "/images/sprites/characters/char/arm2 right.png",
             "parent": "arm_right",
             "offset": {
-                "x": 10,
-                "y": -10
+                "x": -61,
+                "y": 86
             }
         },
         "arm3_right": {
             "image": "/images/sprites/characters/char/arm3 right.png",
             "parent": "arm2_right",
             "offset": {
-                "x": 10,
-                "y": -10
+                "x": -74,
+                "y": -77
             }
         }
 	}

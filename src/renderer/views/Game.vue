@@ -113,6 +113,8 @@ const handleNavigation = (view) => {
 		showMainMenu()
 	} else if (view === 'save-load') {
 		showSaveLoadModal.value = true
+	} else if (view === 'home-screen') {
+		router.push('/home')
 	}
 }
 

@@ -1,20 +1,13 @@
 <template>
-  <div class="visual-novel">
     <!-- Background Display -->
     <img v-if="currentScene" :src="currentScene.bg" alt="Background" class="background-img" />
     
     <!-- Character Sprites -->
-    <div class="characters">
-      <div 
-        v-for="character in visibleCharacters" 
-        :key="character.id"
-        class="character"
-        :class="`char-${character.id}`"
-      >
-        <img :src="character.sprites.body.image" alt="" class="sprite body" />
-        <img v-if="character.sprites.head" :src="character.sprites.head.image" alt="" class="sprite head" />
-      </div>
-    </div>
+    <Character
+      v-for="character in visibleCharacters"
+      :key="character.id"
+      :character="character"
+    />
     
     <!-- Dialogue Box -->
     <div class="dialogue-box" v-if="currentDialogue || currentNarration">
@@ -56,12 +49,12 @@
       @close="showTextInputModal = false"
       @confirm="onTextInputConfirm"
     />
-  </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import TextInputModal from './TextInputModal.vue'
+import Character from './Character.vue'
 import { useSavesStore } from '../../stores/saves'
 
 // Props
@@ -898,12 +891,6 @@ defineExpose({
 </script>
 
 <style scoped>
-.visual-novel {
-  position: relative;
-  width: 100%;
-  height: 100vh;
-  overflow: hidden;
-}
 
 .background-img {
   position: absolute;
@@ -925,15 +912,6 @@ defineExpose({
   justify-content: center;
   align-items: flex-end;
   padding: 20px;
-}
-
-.character {
-  position: relative;
-  margin: 0 10px;
-}
-
-.sprite {
-  display: block;
 }
 
 .dialogue-box {
