@@ -11,16 +11,21 @@
                 {{ t('mainmenu.back') }}
             </a>
             
-            <!-- Navigation links for non-game context -->
-            <template v-if="!inGameContext">
-                <a class="nav-link" @click="navigateToNewGame">
-                    {{ t('mainmenu.game-new') }}
-                </a>
+			<!-- Navigation links for non-game context -->
+			<template v-if="!inGameContext">
+				<a class="nav-link" @click="navigateToNewGame">
+					{{ t('mainmenu.game-new') }}
+				</a>
                 
-                <a class="nav-link" @click="navigateToSaves">
-                    {{ t('mainmenu.game-saves') }}
-                </a>
-            </template>
+				<a class="nav-link" @click="navigateToSaves">
+					{{ t('mainmenu.game-saves') }}
+				</a>
+			</template>
+
+			<!-- Save/Load modal (Ren'Py-like) -->
+			<a v-if="inGameContext" class="nav-link" @click="openSaveLoad">
+				{{ t('mainmenu.save_load') || 'Save/Load' }}
+			</a>
             
             
             <!-- Navigation links that emit events for component switching -->
@@ -92,6 +97,10 @@
 	
 	const navigateToSaves = () => {
 		emit('navigate', 'saves')
+	}
+
+	const openSaveLoad = () => {
+		emit('navigate', 'save-load')
 	}
 	
 	const navigateToMainMenu = () => {

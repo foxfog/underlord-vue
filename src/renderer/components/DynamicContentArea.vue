@@ -12,6 +12,11 @@
 			</div>
 			<SettingsContent @saved="onSettingsSaved" @reset="onSettingsReset" />
 		</div>
+        
+		<!-- Saves content (visual placeholder) -->
+		<div v-else-if="currentView === 'saves'" class="saves-content">
+			<SavesContent />
+		</div>
 		
 		<!-- Additional content can be added here -->
 		<slot></slot>
@@ -22,6 +27,7 @@
 	import { defineProps, defineEmits } from 'vue'
 	import HomeContent from '@/components/HomeContent.vue'
 	import SettingsContent from '@/components/SettingsContent.vue'
+	import SavesContent from '@/components/SavesContent.vue'
 	
 	const props = defineProps({
 		currentView: {

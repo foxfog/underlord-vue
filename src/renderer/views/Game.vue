@@ -4,35 +4,74 @@
 		<button class="stats-button" @click="toggleStatsModal">
 			📊 Статы
 		</button>
-		
+
 		<div class="game">
-			<VisualNovel 
-				ref="visualNovel" 
-				src="/data/story/ru/start.json" 
-				@end="onEnd" 
+			<VisualNovel
+				ref="visualNovel"
+				src="/data/story/ru/start.json"
+				@end="onEnd"
 				@character-loaded="onCharacterLoaded"
 			/>
 		</div>
-		
+
 		<!-- Stats Modal -->
-		<CharacterStatsModal 
+		<CharacterStatsModal
 			:is-visible="showStatsModal"
 			:character="mcCharacter"
 			@close="toggleStatsModal"
 		/>
+
+		<!-- Menu overlay that can be toggled with Esc -->
+		<div v-show="menuVisible" class="menu-overlay">
+			<div class="overlay-content">
+				<div class="content-area">
+					<DynamicContentArea
+						:current-view="currentView"
+						@back-to-menu="showMainMenu"
+						@settings-saved="onSettingsSaved"
+						@settings-reset="onSettingsReset"
+					/>
+				
+					<!-- Visual-only Save/Load modal (Ren'Py-like placeholders) -->
+					<SaveLoadModal
+						:isVisible="showSaveLoadModal"
+						:visualNovel="visualNovel"
+						@close="closeSaveLoad"
+						@save-complete="onSaveComplete"
+						@load-complete="onLoadComplete"
+					/>
+				</div>
+				<div class="menu-area __overlay">
+					<MainMenu
+						@navigate="handleNavigation"
+						:show-back-to-main="currentView !== 'main-menu'"
+						:in-game-context="true"
+						:onContinue="onContinue"
+					/>
+				</div>
+			</div>
+		</div>
 	</div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import VisualNovel from '../components/game/VisualNovel.vue'
 import CharacterStatsModal from '../components/game/CharacterStatsModal.vue'
+import DynamicContentArea from '@/components/DynamicContentArea.vue'
+import MainMenu from '@/components/MainMenu.vue'
+import SaveLoadModal from '@/components/SaveLoadModal.vue'
 
 const router = useRouter()
 const visualNovel = ref(null)
 const showStatsModal = ref(false)
 const mcCharacter = ref(null)
+
+// Menu and view state for the overlay
+const menuVisible = ref(false)
+const currentView = ref('main-menu')
+const showSaveLoadModal = ref(false)
 
 function onEnd() {
 	router.push('/home')
@@ -43,11 +82,82 @@ function toggleStatsModal() {
 }
 
 function onCharacterLoaded(characterData) {
-	// Store the MC character data when it's loaded
 	if (characterData?.mc) {
 		mcCharacter.value = characterData.mc
 	}
 }
+
+// Navigation and view switching for DynamicContentArea / MainMenu
+const showMainMenu = () => {
+	currentView.value = 'main-menu'
+}
+
+const showSettings = () => {
+	currentView.value = 'settings'
+}
+
+const showSaves = () => {
+	currentView.value = 'saves'
+}
+
+const handleNavigation = (view) => {
+	if (view === 'settings') {
+		showSettings()
+	} else if (view === 'saves') {
+		showSaves()
+	} else if (view === 'main-menu') {
+		showMainMenu()
+	} else if (view === 'save-load') {
+		showSaveLoadModal.value = true
+	}
+}
+
+const closeSaveLoad = () => {
+	showSaveLoadModal.value = false
+	currentView.value = 'main-menu'
+}
+
+function onSaveComplete(data) {
+	console.log('Game saved:', data)
+	// Optionally close the modal after saving
+	showSaveLoadModal.value = false
+	currentView.value = 'main-menu'
+}
+
+function onLoadComplete(data) {
+	console.log('Game loaded:', data)
+	// Close menu and resume the game
+	showSaveLoadModal.value = false
+	menuVisible.value = false
+}
+
+function onSettingsSaved() {
+	console.log('Settings saved')
+}
+
+function onSettingsReset() {
+	console.log('Settings reset to default')
+}
+
+// Called from MainMenu "Continue" button — hide menu and resume
+const onContinue = () => {
+	menuVisible.value = false
+}
+
+// Toggle menu visibility via Escape key
+const onKeyDown = (e) => {
+	if (e.key === 'Escape') {
+		menuVisible.value = !menuVisible.value
+	}
+}
+
+onMounted(() => {
+	window.addEventListener('keydown', onKeyDown)
+})
+
+onUnmounted(() => {
+	window.removeEventListener('keydown', onKeyDown)
+})
 </script>
 
 <style scoped>
@@ -88,6 +198,36 @@ function onCharacterLoaded(characterData) {
 	flex: 1;
 	position: relative;
 	overflow: hidden;
+}
+
+.menu-overlay {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	z-index: 250;
+	display: flex;
+	align-items: stretch;
+	background: rgba(0, 0, 0, 0.4);
+}
+
+.overlay-content {
+	display: flex;
+	width: 100%;
+}
+
+.overlay-content .content-area {
+	flex: 1;
+	padding: 24px;
+}
+
+.menu-area.__overlay {
+	width: 320px;
+	background: #111;
+	border-left: 1px solid #222;
+	padding: 16px;
+	box-shadow: -4px 0 12px rgba(0,0,0,0.6);
 }
 
 .game-background {

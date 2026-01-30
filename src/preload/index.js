@@ -11,6 +11,11 @@ const api = {
 	saveSettings: (data) => ipcRenderer.send('save-settings', data),
 	listFiles: (folderPath) => ipcRenderer.invoke('list-files', folderPath),
 	setResolution: (res) => ipcRenderer.send('set-resolution', res),
+	// Save/Load game
+	saveGame: (slotNumber, saveFile) => ipcRenderer.invoke('save-game', slotNumber, saveFile),
+	loadGame: (slotNumber) => ipcRenderer.invoke('load-game', slotNumber),
+	listSaves: () => ipcRenderer.invoke('list-saves'),
+	deleteSave: (slotNumber) => ipcRenderer.invoke('delete-save', slotNumber),
 }
 
 if (process.contextIsolated) {

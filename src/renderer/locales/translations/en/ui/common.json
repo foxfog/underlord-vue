@@ -39,5 +39,8 @@
 	"previous": "Previous",
 	"confirm": "Confirm",
 	"apply": "Apply",
-	"close": "Close"
+	"close": "Close",
+	"save": "Save",
+	"load": "Load",
+	"empty": "Empty"
 }

@@ -114,6 +114,113 @@ ipcMain.on('set-resolution', (event, resolution) => {
 	}
 })
 
+// IPC для сохранения/загрузки игры
+async function getSavesDirectory() {
+	const userDir = app.getPath('userData')
+	const savesDir = join(userDir, 'saves')
+	try {
+		await fs.mkdir(savesDir, { recursive: true })
+	} catch (err) {
+		console.error('Ошибка при создании папки saves:', err)
+	}
+	return savesDir
+}
+
+ipcMain.handle('save-game', async (_event, slotNumber, saveFile) => {
+	try {
+		const savesDir = await getSavesDirectory()
+		const { mcName, timestamp } = saveFile
+		const fileName = `${slotNumber}_${mcName}_${saveFile.timestampFormatted}.json`
+		const filePath = join(savesDir, fileName)
+		
+		await fs.writeFile(filePath, JSON.stringify(saveFile, null, 2), 'utf-8')
+		console.log(`✔ Сохранение создано: ${fileName}`)
+		return { success: true, data: saveFile }
+	} catch (error) {
+		console.error('⛔ Ошибка при сохранении:', error)
+		return { success: false, error: error.message }
+	}
+})
+
+ipcMain.handle('load-game', async (_event, slotNumber) => {
+	try {
+		const savesDir = await getSavesDirectory()
+		const entries = await fs.readdir(savesDir, { withFileTypes: true })
+		
+		// Найти файл сохранения с нужным номером слота
+		const saveFile = entries.find(entry => {
+			const nameMatch = entry.name.match(/^(\d+)_/)
+			return entry.isFile() && nameMatch && parseInt(nameMatch[1]) === slotNumber
+		})
+		
+		if (!saveFile) {
+			return { success: false, error: 'Сохранение не найдено' }
+		}
+		
+		const filePath = join(savesDir, saveFile.name)
+		const data = await fs.readFile(filePath, 'utf-8')
+		const saveData = JSON.parse(data)
+		
+		console.log(`✔ Сохранение загружено: ${saveFile.name}`)
+		return { success: true, data: saveData }
+	} catch (error) {
+		console.error('⛔ Ошибка при загрузке:', error)
+		return { success: false, error: error.message }
+	}
+})
+
+ipcMain.handle('list-saves', async (_event) => {
+	try {
+		const savesDir = await getSavesDirectory()
+		const entries = await fs.readdir(savesDir, { withFileTypes: true })
+		const saves = []
+		
+		for (const entry of entries) {
+			if (entry.isFile() && entry.name.endsWith('.json')) {
+				try {
+					const filePath = join(savesDir, entry.name)
+					const data = await fs.readFile(filePath, 'utf-8')
+					const saveData = JSON.parse(data)
+					saves.push(saveData)
+				} catch (err) {
+					console.warn(`Ошибка при чтении ${entry.name}:`, err)
+				}
+			}
+		}
+		
+		console.log(`✔ Найдено ${saves.length} сохранений`)
+		return { success: true, data: saves }
+	} catch (error) {
+		console.error('⛔ Ошибка при получении списка сохранений:', error)
+		return { success: false, error: error.message }
+	}
+})
+
+ipcMain.handle('delete-save', async (_event, slotNumber) => {
+	try {
+		const savesDir = await getSavesDirectory()
+		const entries = await fs.readdir(savesDir, { withFileTypes: true })
+		
+		// Найти файл сохранения с нужным номером слота
+		const saveFile = entries.find(entry => {
+			const nameMatch = entry.name.match(/^(\d+)_/)
+			return entry.isFile() && nameMatch && parseInt(nameMatch[1]) === slotNumber
+		})
+		
+		if (!saveFile) {
+			return { success: false, error: 'Сохранение не найдено' }
+		}
+		
+		const filePath = join(savesDir, saveFile.name)
+		await fs.unlink(filePath)
+		
+		console.log(`✔ Сохранение удалено: ${saveFile.name}`)
+		return { success: true }
+	} catch (error) {
+		console.error('⛔ Ошибка при удалении:', error)
+		return { success: false, error: error.message }
+	}
+})
 
 
 async function getInitialSettings() {

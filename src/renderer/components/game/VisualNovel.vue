@@ -85,6 +85,7 @@ const storyData = ref(null)
 const stepIndex = ref(0)
 const characterData = ref({})
 const sceneData = ref({})
+const globalData = ref({})
 let advanceStoryOverride = null
 
 // Call stack for tracking story navigation (for 'continue' functionality)
@@ -182,11 +183,13 @@ function processStep() {
         processStep()
         break
       case 'dialogue':
-        if (step.character) {
-          showDialogue(step.character, step.text)
-        } else {
-          showNarration(step.text)
-        }
+            // Apply variable modification if present on the step
+            if (step.variable) applyVariable(step.variable)
+            if (step.character) {
+              showDialogue(step.character, step.text)
+            } else {
+              showNarration(step.text)
+            }
         break
       case 'inputtext':
         showTextInput(step)
@@ -294,6 +297,106 @@ function updateCharacterData(variablePath, value) {
   }
 }
 
+// Generic resolver for root paths like 'character.id.prop...', 'global.foo.bar'
+function resolvePath(variablePath) {
+  const parts = variablePath.split('.')
+  const root = parts[0]
+  if (root === 'character' && parts.length >= 3) {
+    const characterId = parts[1]
+    const propertyPath = parts.slice(2)
+    if (!characterData.value[characterId]) return null
+    let target = characterData.value[characterId]
+    for (let i = 0; i < propertyPath.length - 1; i++) {
+      if (target[propertyPath[i]] === undefined) target[propertyPath[i]] = {}
+      target = target[propertyPath[i]]
+    }
+    return {container: target, key: propertyPath[propertyPath.length - 1], root: 'character', id: characterId}
+  }
+  if (root === 'global' && parts.length >= 2) {
+    const propertyPath = parts.slice(1)
+    let target = globalData.value
+    for (let i = 0; i < propertyPath.length - 1; i++) {
+      if (target[propertyPath[i]] === undefined) target[propertyPath[i]] = {}
+      target = target[propertyPath[i]]
+    }
+    return {container: target, key: propertyPath[propertyPath.length - 1], root: 'global'}
+  }
+  return null
+}
+
+// Apply a simple variable expression like:
+// "character.mc.stats.attack += 1" or "character.mc.stats.attack = 5" or "global.gold -= 10"
+function applyVariable(expr) {
+  if (!expr || typeof expr !== 'string') return
+  const m = expr.match(/^\s*([a-zA-Z0-9_\.]+)\s*(\+=|-=|=|\*=|\/=)\s*(.+)\s*$/)
+  if (!m) {
+    console.warn('Unsupported variable expression:', expr)
+    return
+  }
+  const targetPath = m[1]
+  const op = m[2]
+  const rhsRaw = m[3]
+
+  const resolved = resolvePath(targetPath)
+  if (!resolved) {
+    console.warn('Could not resolve target path for variable:', targetPath)
+    return
+  }
+
+  // Evaluate RHS: number, quoted string, or another variable path
+  let rhsValue = null
+  const num = Number(rhsRaw)
+  if (!isNaN(num) && rhsRaw.trim() !== '') {
+    rhsValue = num
+  } else {
+    const strMatch = rhsRaw.match(/^['"]([\s\S]*)['"]$/)
+    if (strMatch) rhsValue = strMatch[1]
+    else {
+      // try to resolve as variable path
+      const ref = resolvePath(rhsRaw)
+      if (ref && ref.container && ref.container[ref.key] !== undefined) rhsValue = ref.container[ref.key]
+      else rhsValue = rhsRaw
+    }
+  }
+
+  const container = resolved.container
+  const key = resolved.key
+
+  const current = container[key]
+  let newValue
+  switch (op) {
+    case '=':
+      newValue = rhsValue
+      break
+    case '+=':
+      newValue = (typeof current === 'number' ? current : Number(current) || 0) + (typeof rhsValue === 'number' ? rhsValue : Number(rhsValue) || 0)
+      break
+    case '-=':
+      newValue = (typeof current === 'number' ? current : Number(current) || 0) - (typeof rhsValue === 'number' ? rhsValue : Number(rhsValue) || 0)
+      break
+    case '*=':
+      newValue = (typeof current === 'number' ? current : Number(current) || 0) * (typeof rhsValue === 'number' ? rhsValue : Number(rhsValue) || 0)
+      break
+    case '/=':
+      newValue = (typeof current === 'number' ? current : Number(current) || 0) / (typeof rhsValue === 'number' ? rhsValue : Number(rhsValue) || 1)
+      break
+    default:
+      newValue = rhsValue
+  }
+
+  // Apply new value
+  container[key] = newValue
+
+  // If we modified a character property, log via updateCharacterData for parity
+  if (resolved.root === 'character') {
+    console.log(`Applied variable: ${expr} -> ${resolved.id}.${key} =`, newValue)
+    // notify using updateCharacterData to keep consistent logs/state
+    updateCharacterData(`character.${resolved.id}.${key}`, newValue)
+  } else {
+    console.log(`Applied global variable: ${expr} -> ${targetPath} =`, newValue)
+  }
+}
+
 // Substitute variables in text
 function substituteVariables(text) {
   if (!text) return ''
@@ -319,6 +422,16 @@ function substituteVariables(text) {
         
         return target || ''
       }
+    }
+    // support {global.foo}
+    if (parts[0] === 'global' && parts.length >= 2) {
+      const propertyPath = parts.slice(1)
+      let target = globalData.value
+      for (let i = 0; i < propertyPath.length; i++) {
+        if (target[propertyPath[i]] === undefined) return match
+        target = target[propertyPath[i]]
+      }
+      return target || ''
     }
     
     return match // Return original placeholder if not matched
@@ -431,6 +544,8 @@ function processChoiceActions(actions) {
         console.log('Processing dialogue action'); // Debug log
         // Store the remaining actions to process after user interaction
         const remainingActionsForOverride = actions.slice(tempIndex)
+        // Clear choices so the Continue button is shown for the user
+        currentChoices.value = []
         if (action.character) {
           showDialogue(action.character, action.text)
         } else {
@@ -455,8 +570,18 @@ function processChoiceActions(actions) {
         break
       case 'goto':
         console.log('Processing goto action to:', action.target); // Debug log
+        // For goto actions in choice processing, we need to handle the transition properly
+        // Clear any dialogue/narration first
+        currentDialogue.value = ''
+        currentNarration.value = ''
+        currentSpeaker.value = ''
+        currentChoices.value = []
+        // Execute the goto
         goToLabel(action.target)
-        return  // Stop processing further actions after goto
+        // Don't return here - let the goToLabel function handle the continuation
+        // The goToLabel function will either jump to a step in the current story
+        // or load a new story file, and in both cases it will call processStep()
+        break
       case 'show':
         console.log('Processing show action'); // Debug log
         showCharacter(action.character)
@@ -491,6 +616,8 @@ function goToLabel(targetLabel) {
   // Find the step with the matching id in the story
   const targetStepIndex = storyData.value.steps.findIndex(step => step.id === targetLabel)
   console.log('Target step index found:', targetStepIndex); // Debug log
+  console.log('Looking for step with id:', targetLabel); // Debug log
+  console.log('Current story steps:', storyData.value.steps.map((step, index) => ({index, id: step.id, type: step.type}))); // Debug log
   if (targetStepIndex !== -1) {
     console.log('Jumping to step index within current story:', targetStepIndex); // Debug log
     stepIndex.value = targetStepIndex
@@ -580,12 +707,13 @@ function advanceStory() {
   // Check if there's a temporary override for choice action processing
   if (advanceStoryOverride) {
     console.log('Using temporary advance story override for choice actions');
+    const overrideFunction = advanceStoryOverride;
+    // Clear the override immediately to prevent re-entry
+    advanceStoryOverride = null;
     try {
-      advanceStoryOverride();
+      overrideFunction();
     } catch (error) {
       console.error('Error in advanceStoryOverride:', error);
-      // Clear the override to prevent infinite loops
-      advanceStoryOverride = null;
       // Reset dialogue and narration
       currentDialogue.value = '';
       currentNarration.value = '';
@@ -602,9 +730,72 @@ function advanceStory() {
   processStep()
 }
 
+// Serialize current game state for saving
+function getGameState() {
+  return {
+    storyData: storyData.value,
+    stepIndex: stepIndex.value,
+    callStack: callStack.value,
+    globalData: globalData.value,
+    characterData: characterData.value,
+    visibleCharacters: visibleCharacters.value.map(c => c.id),
+    currentScene: currentScene.value?.id,
+  }
+}
+
+// Restore game state from save file
+async function restoreGameState(saveData) {
+  try {
+    // Restore story position
+    storyData.value = saveData.storyData
+    stepIndex.value = saveData.stepIndex
+    callStack.value = saveData.callStack
+    globalData.value = saveData.globalData
+    
+    // Restore character data (merge with loaded characters)
+    if (saveData.characterData) {
+      Object.keys(saveData.characterData).forEach(characterId => {
+        if (characterData.value[characterId]) {
+          // Deep merge character data to preserve sprite references
+          Object.assign(characterData.value[characterId], saveData.characterData[characterId])
+        }
+      })
+    }
+    
+    // Restore visible characters
+    visibleCharacters.value = []
+    if (saveData.visibleCharacters && Array.isArray(saveData.visibleCharacters)) {
+      saveData.visibleCharacters.forEach(characterId => {
+        const character = characterData.value[characterId]
+        if (character) {
+          visibleCharacters.value.push(character)
+        }
+      })
+    }
+    
+    // Restore current scene
+    if (saveData.currentScene && sceneData.value[saveData.currentScene]) {
+      currentScene.value = sceneData.value[saveData.currentScene]
+    }
+    
+    console.log('✔ Game state restored successfully')
+    // Process the current step to display the saved state
+    processStep()
+  } catch (error) {
+    console.error('Error restoring game state:', error)
+    throw error
+  }
+}
+
 // Lifecycle
 onMounted(() => {
   loadStory()
+})
+
+// Expose methods for parent components
+defineExpose({
+  getGameState,
+  restoreGameState,
 })
 </script>
 
