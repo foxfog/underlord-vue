@@ -6,7 +6,13 @@
 		{ "type": "dialogue", "text": "Вы находитесь в своей квартире." },
 		{ "type": "dialogue", "text": "Вы видите свою квартиру." },
 
-		{ "type": "show", "character": "momonga" },
+		{
+			"type": "show",
+			"character": "momonga",
+			"position": {
+				"x": -50
+			}
+		},
 
 		{
 			"type": "dialogue",
@@ -22,7 +28,14 @@
 
 		{ "type": "goto", "target": "nameinput" },
 
-		{ "type": "show", "character": "albedo" },
+		{
+			"type": "show",
+			"character": "albedo",
+			"position": {
+				"x": 50
+			}
+		},
+
 		{
 			"type": "dialogue",
 			"character": "albedo",

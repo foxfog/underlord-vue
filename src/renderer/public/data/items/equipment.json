@@ -1,0 +1,35 @@
+[
+	{
+		"id": "tshirt",
+		"part": "torso-1",
+		"characters": ["mc", "momonga"],
+		"stats": {
+			"hp": 5,
+			"mp": -1,
+			"attack": "50%",
+			"defense": "-50%"
+		}
+	},
+	{
+		"id": "tshirt-red",
+		"part": "torso-2",
+		"characters": ["momonga"],
+		"lvl": 3,
+		"stats": {
+			"hp": 1
+		}
+	},
+	{
+		"id": "sword-diamond",
+		"part": ["weapon-hand-1", "weapon-hand-2"],
+		"class": ["warrior", "rogue", "paladin", "hunter", "overlord"],
+		"stats": {
+			"attack": 10
+		}
+	},
+	{
+		"id": "pendant-zen",
+		"part": "neck-1",
+		"races": ["human", "elf", "overlord"]
+	}
+]

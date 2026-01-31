@@ -1,0 +1,33 @@
+{
+	"id": "mc",
+	"name": "Игрок",
+	"size": 1,
+	"race": "human",
+	"gender": "male",
+	"hpmax": 10,
+	"mpmax": 10,
+	"attack": 2,
+	"defense": 1,
+	"weight": 60,
+	"hp": 10,
+	"mp": 10,
+	"lvl": 1,
+	"exp": 0,
+	"skill_points": 0,
+	"stat_points": 0,
+	"fractions": [],
+	"tags": ["gamer", "noob"],
+	"equipment_slots": {
+		"head": null,
+		"neck-1": null,
+		"torso-1": null,
+		"torso-2": null,
+		"torso-3": null,
+		"legs": null,
+		"feet": null,
+		"weapon-hand-1": null,
+		"weapon-hand-2": null,
+		"hands": null,
+		"weapon_off": null
+	}
+}

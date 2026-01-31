@@ -132,14 +132,57 @@ async function loadStory() {
       const storyModule = await loadDataFromPublic(props.src);
       storyData.value = storyModule;
 
-      // Load character data
-      const mcModule = await loadDataFromPublic('/data/characters/mc.json');
-      const albedoModule = await loadDataFromPublic('/data/characters/albedo.json');
-      const momongaModule = await loadDataFromPublic('/data/characters/momonga.json');
-
-      characterData.value[mcModule.id] = mcModule;
-      characterData.value[albedoModule.id] = albedoModule;
-      characterData.value[momongaModule.id] = momongaModule;
+      // Load character data - try new format (split into 3 files) first, fall back to old format
+      const characterIds = ['mc', 'albedo', 'momonga'];
+      
+      for (const charId of characterIds) {
+        try {
+          // Try loading new format: separate values.json, body.json, equipment.json
+          const valuesData = await loadDataFromPublic(`/data/characters/${charId}/values.json`);
+          const bodyData = await loadDataFromPublic(`/data/characters/${charId}/body.json`);
+          const equipmentData = await loadDataFromPublic(`/data/characters/${charId}/equipment.json`);
+          
+          // Build equipment map by ID for quick lookup
+          const equipmentMap = {};
+          equipmentData.forEach(item => {
+            equipmentMap[item.id] = item;
+          });
+          
+          // Build equipment structure grouped by parent sprite
+          const equipmentBySlot = {};
+          if (valuesData.equipment_slots) {
+            for (const [slotName, itemId] of Object.entries(valuesData.equipment_slots)) {
+              if (itemId && equipmentMap[itemId]) {
+                equipmentBySlot[slotName] = {
+                  id: itemId,
+                  item: equipmentMap[itemId],
+                  parts: equipmentMap[itemId].parts || []
+                };
+              }
+            }
+          }
+          
+          // Merge the three parts into one character object
+          const mergedCharacter = {
+            ...valuesData,
+            sprites: bodyData,
+            equipment: equipmentData,
+            equipmentBySlot: equipmentBySlot
+          };
+          
+          characterData.value[charId] = mergedCharacter;
+          console.log(`✔ Loaded character ${charId} from split files`);
+        } catch (splitFormatError) {
+          // Fall back to old format (single .json file)
+          try {
+            const charModule = await loadDataFromPublic(`/data/characters/${charId}.json`);
+            characterData.value[charId] = charModule;
+            console.log(`✔ Loaded character ${charId} from legacy format`);
+          } catch (legacyFormatError) {
+            console.warn(`✘ Could not load character ${charId} in either format:`, splitFormatError, legacyFormatError);
+          }
+        }
+      }
 
       // Emit character data for parent components
       emit('character-loaded', characterData.value);

@@ -1,0 +1,33 @@
+{
+	"id": "momonga",
+	"name": "Момонга",
+	"size": 1,
+	"race": "overlord",
+	"gender": "male",
+	"hpmax": 100000,
+	"mpmax": 100000,
+	"hp": 100000,
+	"mp": 100000,
+	"attack": 2,
+	"defense": 1,
+	"weight": 90,
+	"lvl": 100,
+	"exp": 9000201,
+	"skill_points": 1,
+	"stat_points": 90,
+	"fractions": ["nines-own-goal","nazaric","sorcerer-kingdom"],
+	"tags": ["gamer", "nazaric-leader", "sorcerer-kingdom-king"],
+	"equipment_slots": {
+		"head": null,
+		"neck-1": "pendant-zen",
+		"torso-1": "tshirt-red",
+		"torso-2": null,
+		"torso-3": null,
+		"legs": null,
+		"feet": null,
+		"weapon-hand-1": "sword-diamond",
+		"weapon-hand-2": null,
+		"hands": null,
+		"weapon_off": null
+	}
+}

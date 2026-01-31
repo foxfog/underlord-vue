@@ -1,0 +1,33 @@
+{
+	"id": "albedo",
+	"name": "Альбедо",
+	"size": 1,
+	"race": "succubus",
+	"gender": "female",
+	"hpmax": 100000,
+	"mpmax": 100000,
+	"attack": 2,
+	"defense": 1,
+	"weight": 90,
+	"hp": 100000,
+	"mp": 100000,
+	"lvl": 100,
+	"exp": 9000201,
+	"skill_points": 1,
+	"stat_points": 90,
+	"fractions": ["nazaric","sorcerer-kingdom"],
+	"tags": ["guardian-overseer"],
+	"equipment_slots": {
+		"head": null,
+		"neck-1": null,
+		"torso-1": null,
+		"torso-2": null,
+		"torso-3": null,
+		"legs": null,
+		"feet": null,
+		"weapon-hand-1": null,
+		"weapon-hand-2": null,
+		"hands": null,
+		"weapon_off": null
+	}
+}

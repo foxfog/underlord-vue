@@ -6,6 +6,7 @@
 	:style="{ scale: character.scale || character.size || 1 }"
   >
 	<div class="char-body">
+		<!-- Base body sprites -->
 		<template v-for="(sprite, spriteName) in spritesByParent[null]" :key="spriteName">
 			<SpritePart 
 				:sprite="sprite" 
@@ -13,6 +14,7 @@
 				:character-id="character.id"
 				:sprites="character.sprites"
 				:sprites-by-parent="spritesByParent"
+				:equipment-by-slot="character.equipmentBySlot"
 			/>
 		</template>
 	</div>

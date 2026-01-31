@@ -1,0 +1,33 @@
+[
+	{
+		"id": "ygdrasil-coin-old",
+		"sprite": "/images/sprites/items/other/ygdrasil-coin-old.png",
+		"weight": 0.02
+	},
+	{
+		"id": "ygdrasil-coin-new",
+		"sprite": "/images/sprites/items/other/ygdrasil-coin-new.png",
+		"weight": 0.02
+	},
+	{
+		"id": "reestize-coin-gold",
+		"sprite": "/images/sprites/items/other/reestize-coin-gold.png",
+		"weight": 0.01
+	},
+	{
+		"id": "bread",
+		"sprite": "/images/sprites/items/other/bread.png",
+		"weight": 0.2,
+		"effects": {
+			"hp": 1
+		}
+	},
+	{
+		"id": "potion-health-small",
+		"sprite": "/images/sprites/items/other/potion-health-small.png",
+		"weight": 0.1,
+		"effects": {
+			"hp": 5
+		}
+	}
+]

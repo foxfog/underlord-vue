@@ -11,6 +11,19 @@
 				@load="onImageLoad"
 			/>
 		</div>
+		
+		<!-- Оборудование для этого спрайта -->
+		<template v-for="(equip, slotName) in equipmentBySlot" :key="`equip-${slotName}`">
+			<template v-for="(part, partIndex) in equip.parts" :key="`equip-part-${partIndex}`">
+				<EquipPart 
+					v-if="part.parent === spriteName"
+					:part="part"
+					:part-name="`${equip.id}-${partIndex}`"
+					:character-id="characterId"
+				/>
+			</template>
+		</template>
+		
 		<!-- Рекурсивно отрисовываем дочерние части тела -->
 		<template v-for="(childSprite, childName) in spritesByParent[spriteName]" :key="childName">
 			<SpritePart 
@@ -19,6 +32,7 @@
 				:character-id="characterId"
 				:sprites="sprites"
 				:sprites-by-parent="spritesByParent"
+				:equipment-by-slot="equipmentBySlot"
 			/>
 		</template>
 	</div>
@@ -26,6 +40,7 @@
 
 <script setup>
 import { defineProps, computed, ref } from 'vue'
+import EquipPart from './EquipPart.vue'
 
 const props = defineProps({
 	sprite: {
@@ -47,6 +62,10 @@ const props = defineProps({
 	spritesByParent: {
 		type: Object,
 		required: true
+	},
+	equipmentBySlot: {
+		type: Object,
+		default: () => ({})
 	}
 })
 

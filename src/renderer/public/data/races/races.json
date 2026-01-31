@@ -1,0 +1,37 @@
+[
+	{
+		"id": "sceleton",
+		"name": "Скелет",
+		"points-per-lvl": {
+			"hp": 3,
+			"mp": 2,
+			"attack": 1,
+			"defense": 1
+		}
+	},
+	{
+		"id": "overlord",
+		"name": "Повелитель",
+		"points-per-lvl": {
+			"hp": 5,
+			"mp": 5,
+			"attack": 1,
+			"defense": 1
+		}
+	},
+	{
+		"id": "human",
+		"name": "Человек",
+		"tags": ["humanoid"],
+		"baffes": {
+			"attack": "2%",
+			"defense": "2%"
+		},
+		"points-per-lvl": {
+			"hp": 1,
+			"mp": 1,
+			"attack": 1,
+			"defense": 1
+		}
+	}
+]

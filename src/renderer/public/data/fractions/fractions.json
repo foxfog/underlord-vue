@@ -1,0 +1,17 @@
+[
+	{
+		"id": "pnines-own-goal",
+		"name": "Аинз Оал Гоун",
+		"tags": ["guild", "yggdrasil"]
+	},
+	{
+		"id": "nazaric",
+		"name": "Назарик",
+		"tags": ["place"]
+	},
+	{
+		"id": "sorcerer-kingdom",
+		"name": "Колдовское Королевство",
+		"tags": ["nation"]
+	}
+]
