@@ -1,10 +1,12 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { extractCharacterDataDelta, createCharacterDefaults } from '../utils/saveGameUtils'
 
 export const useSavesStore = defineStore('saves', () => {
   const saves = ref(new Map()) // Map<slotNumber, saveData>
   const currentSlotNumber = ref(null)
   const pendingLoad = ref(null)
+  const characterDefaults = ref({}) // Сохраняем дефолтные значения персонажей
 
   // Format timestamp as YYYY-MM-DD_HHMMSS
   const formatTimestamp = (date) => {
@@ -27,14 +29,27 @@ export const useSavesStore = defineStore('saves', () => {
     }
   }
 
+  // Сохраняем дефолтные значения персонажей (нужно вызвать один раз при загрузке персонажей)
+  const setCharacterDefaults = (characterData) => {
+    characterDefaults.value = createCharacterDefaults(characterData)
+    console.log('✔ Character defaults set:', Object.keys(characterDefaults.value))
+  }
+
   // Serialize game state for saving (store only essential data, load story from disk on restore)
+  // Теперь сохраняем только дельту (изменения от дефолтов)
   const serializeGameState = (gameState) => {
+    // Извлекаем только измененные значения из characterData
+    const characterDataDelta = extractCharacterDataDelta(
+      gameState.characterData,
+      characterDefaults.value
+    )
+
     return {
       storyId: gameState.storyData?.id || 'start',  // Only store story ID, not full data
       stepIndex: gameState.stepIndex,
       callStack: deepClone(gameState.callStack),
       globalData: deepClone(gameState.globalData),
-      characterData: deepClone(gameState.characterData),
+      characterDataDelta: characterDataDelta,  // Теперь только дельта
       visibleCharacters: deepClone(gameState.visibleCharacters),
       currentScene: gameState.currentScene,
     }
@@ -172,6 +187,7 @@ export const useSavesStore = defineStore('saves', () => {
     hasSave,
     serializeGameState,
     createSaveFile,
+    setCharacterDefaults,
     pendingLoad,
     getPendingLoad,
     takePendingLoad,

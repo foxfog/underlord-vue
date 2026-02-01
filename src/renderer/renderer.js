@@ -38,5 +38,26 @@ async function main() {
   app.use(i18n)
   app.use(router)
   app.mount('#app')
+
+  // Отслеживаем размеры #app в реальном времени
+  const appElement = document.getElementById('app')
+  if (appElement) {
+    const updateAppSize = () => {
+      const width = appElement.offsetWidth
+      const height = appElement.offsetHeight
+      appElement.style.setProperty('--appW', `${width}px`)
+      appElement.style.setProperty('--appH', `${height}px`)
+    }
+
+    // Первый вызов
+    updateAppSize()
+
+    // ResizeObserver для отслеживания изменений размера
+    const resizeObserver = new ResizeObserver(() => {
+      updateAppSize()
+    })
+
+    resizeObserver.observe(appElement)
+  }
 }
 main()

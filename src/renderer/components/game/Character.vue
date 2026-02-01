@@ -5,7 +5,7 @@
 	:class="`char-${character.id}`"
 	:style="{ scale: character.scale || character.size || 1 }"
   >
-	<div class="char-body">
+  <div class="char-body" ref="charBodyRef">
 		<!-- Base body sprites -->
 		<template v-for="(sprite, spriteName) in spritesByParent[null]" :key="spriteName">
 			<SpritePart 
@@ -23,7 +23,7 @@
 
 
 <script setup>
-import { defineProps, computed } from 'vue'
+import { defineProps, computed, ref, onMounted, onUnmounted } from 'vue'
 import SpritePart from './SpritePart.vue'
 
 const props = defineProps({
@@ -32,6 +32,32 @@ const props = defineProps({
     required: true
   }
 })
+
+const charBodyRef = ref(null)
+
+onMounted(() => {
+  if (!charBodyRef.value) return
+
+  const updateCharHeight = () => {
+    const height = charBodyRef.value.offsetHeight
+    charBodyRef.value.parentElement.style.setProperty('--char-height', `${height}px`)
+  }
+
+  // Первый вызов
+  updateCharHeight()
+
+  // ResizeObserver для отслеживания изменений размера
+  const resizeObserver = new ResizeObserver(() => {
+    updateCharHeight()
+  })
+
+  resizeObserver.observe(charBodyRef.value)
+
+  onUnmounted(() => {
+    resizeObserver.disconnect()
+  })
+})
+
 
 // Группируем части тела по их родителю для быстрого доступа
 const spritesByParent = computed(() => {
@@ -65,7 +91,7 @@ const spritesByParent = computed(() => {
 <style>
 	.char {
 		position: absolute;
-		height: 100dvh;
+		height: 100%;
 		width: fit-content;
 		left: 0;
 		right: 0;
@@ -73,7 +99,7 @@ const spritesByParent = computed(() => {
 		transform-origin: center 85%;
 		.char-body {
 			position: relative;
-			height: 100dvh;
+			height: 100%;
 			width: fit-content;
 			.char-part {
 				width: fit-content;
@@ -81,7 +107,7 @@ const spritesByParent = computed(() => {
 				margin: auto;
 				&:not(._body) {
 					position: absolute;
-					height: calc(var(--charspriteH) / var(--charbodyspriteH) * 100dvh);
+					height: calc(var(--charspriteH) / var(--charbodyspriteH) * var(--char-height));
 					right: 0;
                 	bottom: 0;
 				}

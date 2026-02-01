@@ -90,6 +90,15 @@ function saveMetadata(slot) {
   return savesStore.getSave(slot)
 }
 
+async function deleteSaveSlot(slot) {
+  const confirmed = await confirmDialog(t('delete_confirm'), t('confirm_delete'))
+  if (confirmed) {
+    await savesStore.deleteSave(slot)
+    console.log('✔ Save deleted from slot', slot)
+    await savesStore.listSaves()
+  }
+}
+
 async function onSlotClick(slot) {
   try {
     if (mode.value === 'save') {

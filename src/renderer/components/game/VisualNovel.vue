@@ -186,6 +186,11 @@ async function loadStory() {
 
       // Emit character data for parent components
       emit('character-loaded', characterData.value);
+      
+      // Set character defaults for save system (optimize save file size)
+      const savesStore = useSavesStore()
+      savesStore.setCharacterDefaults(characterData.value)
+      console.log('✔ Character defaults set for save system')
 
       // Load scene data
       const scenesModule = await loadDataFromPublic('/data/scenes/scenes.json');
@@ -834,8 +839,21 @@ async function restoreGameState(saveData) {
     
     globalData.value = saveData.globalData
     
-    // Restore character data (merge with loaded characters)
-    if (saveData.characterData) {
+    // Restore character data from delta (changes only, not full data)
+    // Apply delta on top of defaults that were already loaded
+    if (saveData.characterDataDelta) {
+      Object.keys(saveData.characterDataDelta).forEach(characterId => {
+        if (characterData.value[characterId]) {
+          // Merge delta with current character data (which has defaults + sprites)
+          Object.assign(characterData.value[characterId], saveData.characterDataDelta[characterId])
+        }
+      })
+      console.log('✔ Restored character data from delta')
+    }
+    
+    // Handle legacy save files that use full characterData instead of delta
+    if (saveData.characterData && !saveData.characterDataDelta) {
+      console.warn('⚠ Loading legacy save file with full character data (not optimized)')
       Object.keys(saveData.characterData).forEach(characterId => {
         if (characterData.value[characterId]) {
           // Deep merge character data to preserve sprite references

@@ -53,7 +53,7 @@
 			"type": "dialogue",
 			"character": "albedo",
 			"text": "Ты стал сильнее",
-			"variable": "character.mc.stats.attack += 1"
+			"variable": "character.mc.attack += 1"
 		},
 
 		{
