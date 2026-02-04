@@ -1,6 +1,10 @@
 {
     "scenes": [
         {
+            "id": "city_street",
+            "bg": "images/sprites/backgrounds/2138/street.jpg"
+        },
+        {
             "id": "mc_apartment",
             "bg": "images/sprites/backgrounds/mc-apartment/default.jpg"
         },

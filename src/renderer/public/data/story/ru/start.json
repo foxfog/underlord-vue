@@ -1,94 +1,23 @@
 {
 	"id": "start",
 	"steps": [
-		{ "type": "scene", "id": "mc_apartment" },
-
-		{ "type": "dialogue", "text": "Вы находитесь в своей квартире." },
-		{ "type": "dialogue", "text": "Вы видите свою квартиру." },
 
 		{
-			"type": "show",
-			"character": "momonga",
-			"position": {
-				"x": -50
-			}
+			"type": "titles",
+			"text": "<span class='t-64'>Пролог</span>"
 		},
 
 		{
-			"type": "dialogue",
-			"character": "momonga",
-			"text": "Вы создали новую игру."
+			"type": "titles",
+			"text": "<span class='t-32'>2138 год</span>"
 		},
+
+		{ "type": "scene", "id": "city_street" },
 
 		{
 			"type": "dialogue",
 			"character": "mc",
 			"text": "ЭТО Я"
-		},
-
-		{ "type": "goto", "target": "nameinput" },
-
-		{
-			"type": "show",
-			"character": "albedo",
-			"position": {
-				"x": 50
-			}
-		},
-
-		{
-			"type": "dialogue",
-			"character": "albedo",
-			"text": "Добавьте сюжет, изображения и музыку и отправьте её в мир!"
-		},
-
-		{ "type": "hide", "character": "albedo" },
-		{ "type": "hide", "character": "momonga" },
-
-		{ "type": "scene", "id": "mc_apartment_door" },
-
-		{ "type": "show", "character": "albedo" },
-
-		{
-			"type": "dialogue",
-			"character": "albedo",
-			"text": "Ты стал сильнее",
-			"variable": "character.mc.attack += 1"
-		},
-
-		{
-			"type": "choice",
-			"speaker": "albedo",
-			"text": "Вы хотите продолжить?",
-			"options": [
-				{
-					"text": "Да",
-					"actions": [
-						{
-							"type": "dialogue",
-							"character": "mc",
-							"text": "Хорошо"
-						},
-						{ "type": "goto", "target": "second" }
-					]
-				},
-				{
-					"text": "Нет",
-					"actions": [
-						{
-							"type": "dialogue",
-							"character": "mc",
-							"text": "Нехорошо"
-						}
-					]
-				}
-			]
-		},
-
-		{
-			"type": "dialogue",
-			"character": "momonga",
-			"text": "Спасибо за игру!"
 		},
 
 		{ "type": "end" }
