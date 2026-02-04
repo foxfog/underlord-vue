@@ -12,6 +12,11 @@
 			"text": "<span class='t-32'>2138 год</span>"
 		},
 
+		{
+			"type": "titles",
+			"text": ""
+		},
+
 		{ "type": "scene", "id": "city_street" },
 
 		{
