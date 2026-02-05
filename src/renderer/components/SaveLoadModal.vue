@@ -34,7 +34,8 @@ import ConfirmModal from './ConfirmModal.vue'
 
 const props = defineProps({
   isVisible: { type: Boolean, default: false },
-  visualNovel: { type: Object, default: null }
+  visualNovel: { type: Object, default: null },
+  initialMode: { type: String, default: 'save' }
 })
 
 const emit = defineEmits(['close', 'slot-click', 'save-complete', 'load-complete'])
@@ -174,9 +175,13 @@ watch(() => props.isVisible, async (v) => {
     const result = await savesStore.listSaves()
     console.log('Save list refreshed:', result)
     currentPage.value = 1
-    mode.value = 'save'
+    // Use requested initial mode if provided
+    mode.value = props.initialMode || 'save'
   }
 }, { flush: 'post' })
+
+// Expose helper to let parent set mode programmatically
+defineExpose({ setMode: (m) => { mode.value = m } })
 </script>
 
 <style scoped>

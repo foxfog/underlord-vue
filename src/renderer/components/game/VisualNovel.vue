@@ -82,6 +82,22 @@ const currentTitle = ref('') // Centered title block text (HTML allowed)
 const currentSpeaker = ref('')
 const currentChoices = ref([])
 
+// History of previous dialogue/title entries (most recent last)
+const HISTORY_MAX = 100
+const historyEntries = ref([])
+
+function addToHistory(entry) {
+  try {
+    historyEntries.value.push(entry)
+    // Trim to max
+    if (historyEntries.value.length > HISTORY_MAX) {
+      historyEntries.value.splice(0, historyEntries.value.length - HISTORY_MAX)
+    }
+  } catch (e) {
+    console.error('Failed to add to history:', e)
+  }
+}
+
 // Timeout handle for auto-advancing titles
 let titleTimeout = null
 const storyData = ref(null)
@@ -355,6 +371,9 @@ function showDialogue(characterId, text) {
   // Clear narration when showing dialogue to avoid overlapping texts
   currentNarration.value = ''
   currentDialogue.value = substituteVariables(text)
+
+  // Add to history
+  addToHistory({ type: 'dialogue', speaker: currentSpeaker.value, text: currentDialogue.value, stepIndex: stepIndex.value })
 }
 
 // Show text without speaker (narration-style display)
@@ -362,6 +381,9 @@ function showNarration(text) {
   currentNarration.value = substituteVariables(text)
   currentSpeaker.value = ''
   currentDialogue.value = ''
+
+  // Add to history
+  addToHistory({ type: 'narration', speaker: '', text: currentNarration.value, stepIndex: stepIndex.value })
 }
 
 // Show centered title block (HTML allowed). If duration (ms) provided, auto-advance after duration.
@@ -376,6 +398,9 @@ function showTitle(text, duration) {
   currentNarration.value = ''
   currentSpeaker.value = ''
   currentChoices.value = []
+
+  // Add to history
+  addToHistory({ type: 'titles', speaker: '', text: currentTitle.value, stepIndex: stepIndex.value })
 
   if (duration && typeof duration === 'number' && duration > 0) {
     titleTimeout = setTimeout(() => {
@@ -927,6 +952,8 @@ function getGameState() {
     characterData: characterData.value,
     visibleCharacters: visibleCharacters.value.map(c => c.id),
     currentScene: currentScene.value?.id,
+    // Include dialogue history so saves can restore it
+    history: historyEntries.value.slice()
   }
 }
 
@@ -1023,7 +1050,38 @@ async function restoreGameState(saveData) {
     
     console.log('✔ Game state restored successfully')
     console.log('Restored story:', storyData.value.id, 'at step:', stepIndex.value, 'callStack length:', callStack.value.length)
-    
+
+    // Restore history if present, else rebuild from story steps up to stepIndex
+    if (saveData.history && Array.isArray(saveData.history)) {
+      historyEntries.value = saveData.history.slice(-HISTORY_MAX)
+    } else {
+      // Rebuild history from story steps processed so far
+      historyEntries.value = []
+      for (let i = 0; i < stepIndex.value && i < (storyData.value.steps || []).length; i++) {
+        const s = storyData.value.steps[i]
+        if (!s) continue
+        switch (s.type) {
+          case 'dialogue':
+            if (s.character) {
+              const speaker = characterData.value[s.character]?.name || s.character
+              const text = substituteVariables(s.text || '')
+              historyEntries.value.push({ type: 'dialogue', speaker, text, stepIndex: i })
+            } else {
+              const text = substituteVariables(s.text || '')
+              historyEntries.value.push({ type: 'narration', speaker: '', text, stepIndex: i })
+            }
+            break
+          case 'titles':
+            historyEntries.value.push({ type: 'titles', speaker: '', text: substituteVariables(s.text || ''), stepIndex: i })
+            break
+          default:
+            break
+        }
+      }
+      // Ensure length limit
+      if (historyEntries.value.length > HISTORY_MAX) historyEntries.value = historyEntries.value.slice(-HISTORY_MAX)
+    }
+
     // Process the current step to display the saved state
     // Flag isRestoringGameState will be reset when the first interactive element is shown
     processStep()
@@ -1045,6 +1103,7 @@ function resetGameState() {
   visibleCharacters.value = []
   currentScene.value = null
   globalData.value = {}
+  historyEntries.value = []
   console.log('✔ Game state reset')
 }
 
@@ -1067,6 +1126,9 @@ defineExpose({
   restoreGameState,
   resetGameState,
   startStory: () => processStep(), // Expose method to start/continue story
+  // Expose history access
+  getHistory: () => historyEntries.value.slice(),
+  clearHistory: () => { historyEntries.value = [] }
 })
 </script>
 

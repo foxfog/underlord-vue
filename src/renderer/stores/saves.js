@@ -52,6 +52,8 @@ export const useSavesStore = defineStore('saves', () => {
       characterDataDelta: characterDataDelta,  // Теперь только дельта
       visibleCharacters: deepClone(gameState.visibleCharacters),
       currentScene: gameState.currentScene,
+      // Persist dialogue history if present
+      history: deepClone(gameState.history || [])
     }
   }
 

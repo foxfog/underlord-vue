@@ -35,7 +35,7 @@
 					/>
 				
 					<!-- Visual-only Save/Load modal (Ren'Py-like placeholders) -->
-					<SaveLoadModal
+					<SaveLoadModal ref="saveLoadRef"
 						:isVisible="showSaveLoadModal"
 						:visualNovel="visualNovel"
 						@close="closeSaveLoad"
@@ -48,12 +48,23 @@
 						@navigate="handleNavigation"
 						:show-back-to-main="currentView !== 'main-menu'"
 						:in-game-context="true"
-						:onContinue="onContinue"
+						:on-continue="onContinue"
 					/>
 				</div>
 			</div>
 		</div>
 	</div>
+
+	<!-- Bottom hotbar -->
+	<div class="hotbar">
+		<button class="hotbar-btn" @click="openHistory">История</button>
+		<button class="hotbar-btn" @click="openMainMenu">Главное меню</button>
+		<button class="hotbar-btn" @click="openSave">Сохранить</button>
+		<button class="hotbar-btn" @click="openLoad">Загрузить</button>
+	</div>
+
+	<!-- History modal -->
+	<HistoryModal :isVisible="showHistoryModal" :entries="historyList" @close="showHistoryModal=false" />
 </template>
 
 <script setup>
@@ -64,6 +75,7 @@ import CharacterStatsModal from '../components/game/CharacterStatsModal.vue'
 import DynamicContentArea from '@/components/DynamicContentArea.vue'
 import MainMenu from '@/components/MainMenu.vue'
 import SaveLoadModal from '@/components/SaveLoadModal.vue'
+import HistoryModal from '@/components/HistoryModal.vue'
 import { useSavesStore } from '@/stores/saves'
 
 const router = useRouter()
@@ -76,6 +88,10 @@ const mcCharacter = ref(null)
 const menuVisible = ref(false)
 const currentView = ref('main-menu')
 const showSaveLoadModal = ref(false)
+const saveLoadInitialMode = ref('save')
+const saveLoadRef = ref(null)
+const showHistoryModal = ref(false)
+const historyList = ref([])
 
 function onEnd() {
 	router.push('/home')
@@ -145,6 +161,12 @@ function onSettingsReset() {
 	console.log('Settings reset to default')
 }
 
+// Handler for MainMenu "Continue"
+function onContinue() {
+	// Close menu and resume game
+	menuVisible.value = false
+}
+
 async function onLoadRequest(saveData) {
  	try {
  		if (!visualNovel.value) {
@@ -164,16 +186,37 @@ async function onLoadRequest(saveData) {
  	}
 }
 
-// Called from MainMenu "Continue" button — hide menu and resume
-const onContinue = () => {
-	menuVisible.value = false
+// Hotbar actions
+function openHistory() {
+  if (!visualNovel.value) return
+  historyList.value = visualNovel.value.getHistory()
+  showHistoryModal.value = true
+}
+
+function openMainMenu() {
+  menuVisible.value = true
+  currentView.value = 'main-menu'
+}
+
+function openSave() {
+  showSaveLoadModal.value = true
+  nextTick(() => {
+    if (saveLoadRef.value && typeof saveLoadRef.value.setMode === 'function') saveLoadRef.value.setMode('save')
+  })
+}
+
+function openLoad() {
+  showSaveLoadModal.value = true
+  nextTick(() => {
+    if (saveLoadRef.value && typeof saveLoadRef.value.setMode === 'function') saveLoadRef.value.setMode('load')
+  })
 }
 
 // Toggle menu visibility via Escape key
 const onKeyDown = (e) => {
-	if (e.key === 'Escape') {
-		menuVisible.value = !menuVisible.value
-	}
+  if (e.key === 'Escape') {
+    menuVisible.value = !menuVisible.value
+  }
 }
 
 onMounted(() => {
@@ -232,6 +275,26 @@ onUnmounted(() => {
 	color: #fff;
 	position: relative;
 }
+
+.hotbar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 12px;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  z-index: 1500;
+}
+.hotbar-btn {
+  background: rgba(255,255,255,0.04);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.06);
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.hotbar-btn:hover { background: rgba(255,255,255,0.06) }
 
 .stats-button {
 	position: absolute;
