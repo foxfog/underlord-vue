@@ -82,6 +82,12 @@ Features:
 - Calls `visualNovel.getGameState()` to save
 - Calls `visualNovel.restoreGameState()` to load
 
+Notes on refactor:
+- UI split into smaller components: `src/renderer/components/saves/SaveList.vue` and `src/renderer/components/saves/SaveItem.vue` (used by `SaveLoadModal.vue`)
+- Business logic and IPC moved to `src/renderer/services/saveService.js` (unit-tested via Vitest)
+- Use `src/renderer/composables/useSaves.js` for a simple reactive API over the store
+
+
 #### **SavesContent Component**
 File: `src/renderer/components/SavesContent.vue`
 

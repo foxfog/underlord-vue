@@ -10,7 +10,7 @@
       </header>
 
       <div class="modal-body">
-        <SaveSlotsGrid :slots="slotsForPage" @slot-click="onSlotClick" @delete="deleteSaveSlot" />
+        <SaveList :slots="slotsForPage" @slot-click="onSlotClick" @delete="deleteSaveSlot" />
       </div>
 
       <footer class="modal-footer">
@@ -29,7 +29,7 @@
 import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSavesStore } from '../stores/saves'
-import SaveSlotsGrid from './SaveSlotsGrid.vue'
+import SaveList from './saves/SaveList.vue'
 import ConfirmModal from './ConfirmModal.vue'
 
 const props = defineProps({
