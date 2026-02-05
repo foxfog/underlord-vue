@@ -60,34 +60,8 @@ const styleWithHeight = computed(() => {
 	}
 })
 
-// Обработчик загрузки изображения для получения его высоты
-const onImageLoad = (event) => {
-	spriteHeight.value = `${event.target.naturalHeight}`
-}
-</script>
-
-<style>
-.equip-part {
-	width: 100%;
-	height: 100%;
-	transform-origin: center center;
-	margin: auto;
-	position: absolute;
-	top: 0;
-	bottom: 0;
-	left: 0;
-	right: 0;
-	.equip-part-sprite {
-		position: absolute;
-		width: 100%;
-		height: 100%;
-		
-		.sprite-image {
-			height: 100%;
-			width: 100%;
-			position: absolute;
-			object-fit: contain;
-		}
+	// Обработчик загрузки изображения для получения его высоты
+	const onImageLoad = (event) => {
+		spriteHeight.value = `${event.target.naturalHeight}`
 	}
-}
-</style>
+</script>
