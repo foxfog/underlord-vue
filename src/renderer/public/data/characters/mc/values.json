@@ -19,6 +19,7 @@
 	"tags": ["gamer", "noob"],
 	"equipment_slots": {
 		"head": null,
+		"mask": null,
 		"neck-1": null,
 		"torso-1": null,
 		"torso-2": null,

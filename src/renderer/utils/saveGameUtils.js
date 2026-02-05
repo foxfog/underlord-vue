@@ -10,6 +10,45 @@
 export function extractDelta(current, defaults, excludeKeys = ['sprites', 'equipment', 'equipmentBySlot']) {
   const delta = {}
   
+  // Helper: sanitize values that may contain complex references (e.g., equipment objects)
+  function sanitizeForSave(value) {
+    if (value === null || typeof value === 'undefined') return value
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return value
+    if (Array.isArray(value)) return value.map(sanitizeForSave)
+    if (typeof value === 'object') {
+      // If it looks like an equipment/item object with an id, return its id
+      if (value.id && (typeof value.id === 'string' || typeof value.id === 'number')) return value.id
+      // If it has an 'item' with id, use that id
+      if (value.item && value.item.id) return value.item.id
+      // Otherwise, shallow-clone simple properties
+      const out = {}
+      for (const k of Object.keys(value)) {
+        const v = value[k]
+        // Avoid deep complex structures by picking primitives or ids
+        if (v === null || ['string','number','boolean'].includes(typeof v)) {
+          out[k] = v
+        } else if (v && typeof v === 'object') {
+          if (v.id && (typeof v.id === 'string' || typeof v.id === 'number')) out[k] = v.id
+          else out[k] = String(v)
+        } else {
+          out[k] = v
+        }
+      }
+      return out
+    }
+    return String(value)
+  }
+
+  // Specific sanitizer for equipment_slots mapping
+  function sanitizeEquipmentSlots(slots) {
+    if (!slots || typeof slots !== 'object') return slots
+    const out = {}
+    for (const s in slots) {
+      out[s] = sanitizeForSave(slots[s])
+    }
+    return out
+  }
+  
   // Проходим по ключам дефолта
   for (const key in defaults) {
     // Пропускаем исключенные ключи
@@ -18,11 +57,22 @@ export function extractDelta(current, defaults, excludeKeys = ['sprites', 'equip
     }
     
     const defaultValue = defaults[key]
-    const currentValue = current[key]
+    let currentValue = current[key]
+
+    // Sanitize specific known complex keys before comparison
+    if (key === 'equipment_slots') {
+      currentValue = sanitizeEquipmentSlots(currentValue)
+    }
     
     // Если значение изменилось от дефолта
-    if (JSON.stringify(currentValue) !== JSON.stringify(defaultValue)) {
-      delta[key] = currentValue
+    // Use JSON.stringify for comparison on sanitized values
+    try {
+      if (JSON.stringify(currentValue) !== JSON.stringify(defaultValue)) {
+        delta[key] = currentValue
+      }
+    } catch (err) {
+      // As a fallback, store a sanitized version
+      delta[key] = sanitizeForSave(currentValue)
     }
   }
   

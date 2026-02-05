@@ -71,6 +71,61 @@ export const useSavesStore = defineStore('saves', () => {
   const saveGame = async (slotNumber, gameState, mcName) => {
     try {
       const saveFile = createSaveFile(slotNumber, gameState, mcName)
+
+      // Diagnostic: ensure saveFile is cloneable / serializable before IPC
+      function findNonSerializable(obj, path = '') {
+        const visited = new Set()
+        function helper(o, p) {
+          if (o === null || typeof o !== 'object') {
+            try {
+              if (typeof structuredClone === 'function') structuredClone(o)
+              else JSON.stringify(o)
+              return null
+            } catch (e) {
+              return { path: p || '[root]', error: e }
+            }
+          }
+          if (visited.has(o)) return null
+          visited.add(o)
+          try {
+            if (typeof structuredClone === 'function') structuredClone(o)
+            else JSON.stringify(o)
+            return null
+          } catch (err) {
+            // Try to inspect children
+            for (const key of Object.keys(o)) {
+              const val = o[key]
+              const subPath = p ? `${p}.${key}` : key
+              try {
+                if (typeof structuredClone === 'function') structuredClone(val)
+                else JSON.stringify(val)
+              } catch (e2) {
+                if (val && typeof val === 'object') {
+                  const found = helper(val, subPath)
+                  if (found) return found
+                } else {
+                  return { path: subPath, error: e2 }
+                }
+              }
+            }
+            return { path: p || '[root]', error: err }
+          }
+        }
+        return helper(obj, path)
+      }
+
+      const nonSerial = findNonSerializable(saveFile)
+      if (nonSerial) {
+        console.error('Save file is NOT serializable/cloneable:', nonSerial.error)
+        console.error('Problematic path inside save file:', nonSerial.path)
+        // Log top-level property types for quick inspection
+        for (const key of Object.keys(saveFile)) {
+          const val = saveFile[key]
+          console.log(`saveFile property: ${key} - type: ${typeof val} - constructor: ${val && val.constructor ? val.constructor.name : 'n/a'}`)
+        }
+        return { success: false, error: `Save file not serializable, problematic path: ${nonSerial.path}` }
+      }
+
       const result = await window.api.saveGame(slotNumber, saveFile)
 
       if (result.success) {

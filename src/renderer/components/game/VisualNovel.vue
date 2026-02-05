@@ -9,11 +9,16 @@
       :character="character"
     />
     
+    <!-- Title Block (centered, full-screen clickable) -->
+    <div class="title-box" v-if="currentTitle" @click="advanceStory">
+      <div class="title-content" v-html="currentTitle"></div>
+    </div>
+
     <!-- Dialogue Box -->
     <div class="dialogue-box" v-if="currentDialogue || currentNarration">
       <div class="speaker" v-if="currentSpeaker">{{ currentSpeaker }}</div>
-      <div class="dialogue-text" v-if="currentDialogue">{{ currentDialogue }}</div>
-      <div class="narration-text" v-if="currentNarration">{{ currentNarration }}</div>
+      <div class="dialogue-text" v-if="currentDialogue" v-html="currentDialogue"></div>
+      <div class="narration-text" v-if="currentNarration" v-html="currentNarration"></div>
       
       <!-- Choices -->
       <div class="choices" v-if="currentChoices.length > 0">
@@ -73,8 +78,12 @@ const currentScene = ref(null)
 const visibleCharacters = ref([])
 const currentDialogue = ref('')
 const currentNarration = ref('') // Text without speaker (used for narration-style display)
+const currentTitle = ref('') // Centered title block text (HTML allowed)
 const currentSpeaker = ref('')
 const currentChoices = ref([])
+
+// Timeout handle for auto-advancing titles
+let titleTimeout = null
 const storyData = ref(null)
 const stepIndex = ref(0)
 const characterData = ref({})
@@ -224,6 +233,15 @@ function processStep() {
   console.log(`[processStep] Story: "${storyData.value.id}" | Step ${stepIndex.value}/${storyData.value.steps.length} | Type: ${step.type}`, { callStackDepth: callStack.value.length, isRestoring: isRestoringGameState.value }); // Debug log
   console.log('Current step details:', step); // Debug log
   
+  // Handle steps that only contain a variable assignment and no type
+  if (!step.type && step.variable) {
+    console.log('Processing standalone variable step:', step.variable)
+    applyVariable(step.variable)
+    stepIndex.value++
+    processStep()
+    return
+  }
+
   try {
     switch (step.type) {
       case 'scene':
@@ -260,6 +278,19 @@ function processStep() {
             }
             // Reset restoration flag after first interactive element is shown
             isRestoringGameState.value = false
+        break
+      case 'titles':
+        // Centered title blocks (like dialogues but centered on screen)
+        // Skip showing titles when restoring game state to avoid transient opening titles
+        if (isRestoringGameState.value) {
+          stepIndex.value++
+          processStep()
+          break
+        }
+        if (step.variable) applyVariable(step.variable)
+        showTitle(step.text, step.duration)
+        // Reset restoration flag after first interactive element is shown
+        isRestoringGameState.value = false
         break
       case 'inputtext':
         showTextInput(step)
@@ -333,6 +364,27 @@ function showNarration(text) {
   currentDialogue.value = ''
 }
 
+// Show centered title block (HTML allowed). If duration (ms) provided, auto-advance after duration.
+function showTitle(text, duration) {
+  console.log('showTitle() called — stepIndex:', stepIndex.value, 'isRestoringGameState:', isRestoringGameState.value, 'text:', text)
+  if (titleTimeout) {
+    clearTimeout(titleTimeout)
+    titleTimeout = null
+  }
+  currentTitle.value = substituteVariables(text)
+  currentDialogue.value = ''
+  currentNarration.value = ''
+  currentSpeaker.value = ''
+  currentChoices.value = []
+
+  if (duration && typeof duration === 'number' && duration > 0) {
+    titleTimeout = setTimeout(() => {
+      titleTimeout = null
+      advanceStory()
+    }, duration)
+  }
+} 
+
 // Show text input modal
 function showTextInput(step) {
   // Clear any existing dialogue when showing text input
@@ -344,6 +396,47 @@ function showTextInput(step) {
   currentInputStep.value = step
   showTextInputModal.value = true
 }
+
+// Rebuild equipmentBySlot for a character from its equipment list and equipment_slots mapping
+function rebuildEquipmentBySlot(characterId) {
+  const char = characterData.value[characterId]
+  if (!char) return
+
+  const equipmentMap = {}
+  if (Array.isArray(char.equipment)) {
+    char.equipment.forEach(item => {
+      if (item && item.id) equipmentMap[item.id] = item
+    })
+  }
+
+  const equipmentBySlot = {}
+  const slots = char.equipment_slots || {}
+  for (const [slotName, itemRef] of Object.entries(slots)) {
+    let itemId = null
+    if (itemRef === null || typeof itemRef === 'undefined') {
+      itemId = null
+    } else if (typeof itemRef === 'string' || typeof itemRef === 'number') {
+      itemId = itemRef
+    } else if (typeof itemRef === 'object' && itemRef.id) {
+      itemId = itemRef.id
+    } else if (typeof itemRef === 'object' && itemRef.item && itemRef.item.id) {
+      itemId = itemRef.item.id
+    }
+
+    if (itemId && equipmentMap[itemId]) {
+      equipmentBySlot[slotName] = {
+        id: itemId,
+        item: equipmentMap[itemId],
+        parts: equipmentMap[itemId].parts || []
+      }
+    }
+  }
+
+  // Assign a new object to trigger reactivity
+  char.equipmentBySlot = equipmentBySlot
+  console.log(`✔ Rebuilt equipmentBySlot for ${characterId}:`, equipmentBySlot)
+}
+
 
 // Update character data based on variable path
 function updateCharacterData(variablePath, value) {
@@ -371,6 +464,11 @@ function updateCharacterData(variablePath, value) {
       
       console.log(`Updated ${variablePath} to:`, value)
       console.log('Character data now:', characterData.value[characterId])
+
+      // If equipment_slots (or its child) changed, rebuild equipmentBySlot so visuals update
+      if (propertyPath[0] === 'equipment_slots' || finalProperty === 'equipment_slots' || propertyPath.includes('equipment_slots')) {
+        rebuildEquipmentBySlot(characterId)
+      }
     }
   }
 }
@@ -469,7 +567,9 @@ function applyVariable(expr) {
   if (resolved.root === 'character') {
     console.log(`Applied variable: ${expr} -> ${resolved.id}.${key} =`, newValue)
     // notify using updateCharacterData to keep consistent logs/state
-    updateCharacterData(`character.${resolved.id}.${key}`, newValue)
+    // Use the original targetPath (full path like 'character.mc.equipment_slots.mask') so
+    // nested paths (e.g., equipment_slots) are detected and handled correctly
+    updateCharacterData(targetPath, newValue)
   } else {
     console.log(`Applied global variable: ${expr} -> ${targetPath} =`, newValue)
   }
@@ -802,6 +902,13 @@ function advanceStory() {
     return;
   }
   
+  // Clear title block and any pending auto-advance
+  currentTitle.value = ''
+  if (titleTimeout) {
+    clearTimeout(titleTimeout)
+    titleTimeout = null
+  }
+
   currentDialogue.value = ''
   currentNarration.value = ''
   // Reset restoration flag when user advances the story
@@ -881,9 +988,21 @@ async function restoreGameState(saveData) {
     } else {
       console.log('⚠ Warning: Could not restore scene. saveData.currentScene:', saveData.currentScene, 'sceneData keys:', Object.keys(sceneData.value))
     }
-        // Clear any previous dialogue/narration to avoid leftover text from prior story
+
+    // Rebuild equipmentBySlot for all characters after applying deltas so visuals reflect saved equipment
+    Object.keys(characterData.value).forEach(charId => {
+      rebuildEquipmentBySlot(charId)
+    })
+    console.log('✔ Rebuilt equipmentBySlot for all characters after restore')
+        // Clear any previous dialogue/narration/title to avoid leftover text from prior story
         currentDialogue.value = ''
         currentNarration.value = ''
+        currentTitle.value = ''
+        // Clear any pending title auto-advance
+        if (titleTimeout) {
+          clearTimeout(titleTimeout)
+          titleTimeout = null
+        }
         currentSpeaker.value = ''
         currentChoices.value = []
     
@@ -962,6 +1081,33 @@ defineExpose({
   object-fit: cover;
   object-position: center;
   transition: opacity 0.5s ease;
+}
+
+/* Centered title box shown during 'titles' steps (full-screen transparent overlay) */
+.title-box {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  color: white;
+  text-align: center;
+  border: none;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.title-content {
+  font-size: 1.8em;
+  line-height: 1.2;
+  margin: 0;
+  user-select: none;
 }
 
 .characters {

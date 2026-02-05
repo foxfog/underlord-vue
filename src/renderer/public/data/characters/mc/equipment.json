@@ -1,18 +1,10 @@
 [
 	{
-		"id": "tshirt",
+		"id": "gasmask",
 		"parts": [
 			{
-				"parent" : "body",
-				"image": "/images/sprites/characters/char/body.png"
-			},
-			{
-				"parent" : "arm_left",
-				"image": "/images/sprites/characters/char/arm left.png"
-			},
-			{
-				"parent" : "arm_right",
-				"image": "/images/sprites/characters/char/arm right.png"
+				"parent" : "head",
+				"image": "/images/sprites/characters/mc/gasmask.png"
 			}
 		]
 	}
