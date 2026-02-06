@@ -8,8 +8,16 @@ export function useVisualNovel({ src, emit } = {}) {
   const currentDialogue = ref('')
   const currentNarration = ref('')
   const currentTitle = ref('')
+  const currentTitleEffects = ref(null) // { effectStart, effect, effectEnd }
   const currentSpeaker = ref('')
   const currentChoices = ref([])
+
+  // Audio state - indexed by stream ID
+  const audioStreams = ref({}) // { streamId: { type, file, loop, stream } }
+  const pausedStreams = ref({}) // Store paused streams for resume
+  const currentSound = ref(null)
+  const currentVoice = ref(null)
+  const currentMusic = ref(null)
 
   // History
   const HISTORY_MAX = 100
@@ -151,6 +159,31 @@ export function useVisualNovel({ src, emit } = {}) {
           stepIndex.value++
           processStep()
           break
+        case 'sound':
+          if (!isRestoringGameState.value) playSound(step)
+          stepIndex.value++
+          processStep()
+          break
+        case 'voice':
+          if (!isRestoringGameState.value) playVoice(step)
+          stepIndex.value++
+          processStep()
+          break
+        case 'music':
+          if (!isRestoringGameState.value) playMusic(step)
+          stepIndex.value++
+          processStep()
+          break
+        case 'stop-stream':
+          if (!isRestoringGameState.value) stopStream(step.stream)
+          stepIndex.value++
+          processStep()
+          break
+        case 'stop-all-streams':
+          if (!isRestoringGameState.value) stopAllStreams()
+          stepIndex.value++
+          processStep()
+          break
         case 'dialogue':
           if (step.variable) applyVariable(step.variable)
           if (step.character) showDialogue(step.character, step.text)
@@ -160,7 +193,7 @@ export function useVisualNovel({ src, emit } = {}) {
         case 'titles':
           if (isRestoringGameState.value) { stepIndex.value++; processStep(); break }
           if (step.variable) applyVariable(step.variable)
-          showTitle(step.text, step.duration)
+          showTitle(step)
           isRestoringGameState.value = false
           break
         case 'inputtext':
@@ -199,6 +232,101 @@ export function useVisualNovel({ src, emit } = {}) {
   }
   function hideCharacter(characterId) { visibleCharacters.value = visibleCharacters.value.filter(c => c.id !== characterId) }
 
+  // Audio handlers
+  function playSound(soundData) {
+    // soundData: { file: "path/to/sound.mp3", loop: false, stream: "id" }
+    const streamId = soundData.stream || `sound_${Date.now()}`
+    const audioData = {
+      type: 'sound',
+      file: soundData.file,
+      loop: soundData.loop ?? false,
+      stream: streamId
+    }
+    audioStreams.value[streamId] = audioData
+    currentSound.value = audioData
+  }
+
+  function playVoice(voiceData) {
+    // voiceData: { file: "path/to/voice.mp3", loop: false, stream: "id" }
+    const streamId = voiceData.stream || `voice_${Date.now()}`
+    const audioData = {
+      type: 'voice',
+      file: voiceData.file,
+      loop: voiceData.loop ?? false,
+      stream: streamId
+    }
+    audioStreams.value[streamId] = audioData
+    currentVoice.value = audioData
+  }
+
+  function playMusic(musicData) {
+    // musicData: { file: "path/to/music.ogg", loop: true, stream: "id" }
+    const streamId = musicData.stream || `music_${Date.now()}`
+    const audioData = {
+      type: 'music',
+      file: musicData.file,
+      loop: musicData.loop ?? true,
+      stream: streamId
+    }
+    audioStreams.value[streamId] = audioData
+    currentMusic.value = audioData
+  }
+
+  function stopSound() { currentSound.value = null }
+  function stopVoice() { currentVoice.value = null }
+  function stopMusic() { currentMusic.value = null }
+
+  // Stream management by ID
+  function stopStream(streamId) {
+    const stream = audioStreams.value[streamId]
+    if (!stream) return
+    
+    switch (stream.type) {
+      case 'sound':
+        if (currentSound.value?.stream === streamId) stopSound()
+        break
+      case 'voice':
+        if (currentVoice.value?.stream === streamId) stopVoice()
+        break
+      case 'music':
+        if (currentMusic.value?.stream === streamId) stopMusic()
+        break
+    }
+    delete audioStreams.value[streamId]
+    delete pausedStreams.value[streamId]
+    console.log(`🛑 Stopped stream: ${streamId}`)
+  }
+
+  function stopAllStreams() {
+    console.log('🛑 Stopping all streams')
+    audioStreams.value = {}
+    pausedStreams.value = {}
+    stopSound()
+    stopVoice()
+    stopMusic()
+  }
+
+  function getStream(streamId) {
+    return audioStreams.value[streamId] || null
+  }
+
+  function pauseAllStreams() {
+    console.log('🔇 pauseAllStreams called, active streams:', Object.keys(audioStreams.value))
+    pausedStreams.value = {}
+    Object.entries(audioStreams.value).forEach(([streamId, stream]) => {
+      pausedStreams.value[streamId] = { ...stream }
+    })
+    window.dispatchEvent(new CustomEvent('pauseAllAudio'))
+    console.log('📢 pauseAllAudio event dispatched')
+  }
+
+  function resumeAllStreams() {
+    console.log('🔊 resumeAllStreams called')
+    window.dispatchEvent(new CustomEvent('resumeAllAudio'))
+    console.log('📢 resumeAllAudio event dispatched')
+    pausedStreams.value = {}
+  }
+
   function showDialogue(characterId, text) {
     const character = characterData.value[characterId]
     currentSpeaker.value = character ? character.name : ''
@@ -214,16 +342,23 @@ export function useVisualNovel({ src, emit } = {}) {
     addToHistory({ type: 'narration', speaker: '', text: currentNarration.value, stepIndex: stepIndex.value })
   }
 
-  function showTitle(text, duration) {
+  function showTitle(step) {
     if (titleTimeout) { clearTimeout(titleTimeout); titleTimeout = null }
-    currentTitle.value = substituteVariables(text)
+    currentTitle.value = substituteVariables(step.text)
+    currentTitleEffects.value = {
+      effectStart: step['effect-start'] || null,
+      effect: step.effect || null,
+      effectEnd: step['effect-end'] || null,
+      typewriter: step.typewriter || false,
+      duration: step.duration || 0
+    }
     currentDialogue.value = ''
     currentNarration.value = ''
     currentSpeaker.value = ''
     currentChoices.value = []
     addToHistory({ type: 'titles', speaker: '', text: currentTitle.value, stepIndex: stepIndex.value })
-    if (duration && typeof duration === 'number' && duration > 0) {
-      titleTimeout = setTimeout(() => { titleTimeout = null; advanceStory() }, duration)
+    if (step.duration && typeof step.duration === 'number' && step.duration > 0) {
+      titleTimeout = setTimeout(() => { titleTimeout = null; advanceStory() }, step.duration)
     }
   }
 
@@ -503,6 +638,7 @@ export function useVisualNovel({ src, emit } = {}) {
   function advanceStory() {
     if (advanceStoryOverride) { const f = advanceStoryOverride; advanceStoryOverride = null; try { f() } catch (e) { console.error('Error in override:', e); currentDialogue.value=''; currentNarration.value=''; stepIndex.value++; processStep() } return }
     currentTitle.value = ''
+    currentTitleEffects.value = null
     if (titleTimeout) { clearTimeout(titleTimeout); titleTimeout = null }
     currentDialogue.value = ''
     currentNarration.value = ''
@@ -512,6 +648,15 @@ export function useVisualNovel({ src, emit } = {}) {
   }
 
   function getGameState() {
+    // Save only active looping streams (that should resume on load)
+    const activeLoopingStreams = {}
+    Object.entries(audioStreams.value).forEach(([streamId, stream]) => {
+      if (stream.loop) {
+        activeLoopingStreams[streamId] = { ...stream }
+      }
+    })
+    console.log('💾 getGameState called, saving audio streams:', Object.keys(activeLoopingStreams))
+    
     return {
       storyData: storyData.value,
       stepIndex: stepIndex.value,
@@ -520,7 +665,8 @@ export function useVisualNovel({ src, emit } = {}) {
       characterData: characterData.value,
       visibleCharacters: visibleCharacters.value.map(c => c.id),
       currentScene: currentScene.value?.id,
-      history: historyEntries.value.slice()
+      history: historyEntries.value.slice(),
+      audioStreams: activeLoopingStreams
     }
   }
 
@@ -579,6 +725,18 @@ export function useVisualNovel({ src, emit } = {}) {
         }
         if (historyEntries.value.length > HISTORY_MAX) historyEntries.value = historyEntries.value.slice(-HISTORY_MAX)
       }
+
+      // Restore audio streams (only looping ones)
+      audioStreams.value = {}
+      if (saveData.audioStreams && typeof saveData.audioStreams === 'object') {
+        Object.entries(saveData.audioStreams).forEach(([streamId, stream]) => {
+          if (stream && stream.loop) {
+            console.log(`🔄 Restoring audio stream: ${streamId}`)
+            audioStreams.value[streamId] = stream
+          }
+        })
+      }
+
       processStep()
     } catch (error) { console.error('Error restoring game state:', error); isRestoringGameState.value = false; throw error }
   }
@@ -594,15 +752,22 @@ export function useVisualNovel({ src, emit } = {}) {
     currentScene.value = null
     globalData.value = {}
     historyEntries.value = []
+    audioStreams.value = {}
+    pausedStreams.value = {}
   }
 
   return {
     // state
-    currentScene, visibleCharacters, currentDialogue, currentNarration, currentTitle, currentSpeaker, currentChoices,
+    currentScene, visibleCharacters, currentDialogue, currentNarration, currentTitle, currentTitleEffects, currentSpeaker, currentChoices,
     showTextInputModal, currentInputStep,
+    // audio state
+    currentSound, currentVoice, currentMusic, audioStreams,
     // methods
     loadStory, processStep, advanceStory, selectChoice, getGameState, restoreGameState, resetGameState,
     getInitialValue, onTextInputConfirm,
+    // audio methods
+    playSound, playVoice, playMusic, stopSound, stopVoice, stopMusic,
+    stopStream, stopAllStreams, getStream, pauseAllStreams, resumeAllStreams,
     // history helpers
     getHistory: () => historyEntries.value.slice(),
     clearHistory: () => { historyEntries.value = [] }

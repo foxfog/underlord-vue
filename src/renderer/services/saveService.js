@@ -68,7 +68,7 @@ export function serializeGameState(gameState, characterDefaults = {}) {
     characterDefaults
   )
 
-  return {
+  const serialized = {
     storyId: gameState.storyData?.id || 'start',
     stepIndex: gameState.stepIndex,
     callStack: deepClone(gameState.callStack),
@@ -76,8 +76,11 @@ export function serializeGameState(gameState, characterDefaults = {}) {
     characterDataDelta,
     visibleCharacters: deepClone(gameState.visibleCharacters),
     currentScene: gameState.currentScene,
-    history: deepClone(gameState.history || [])
+    history: deepClone(gameState.history || []),
+    audioStreams: deepClone(gameState.audioStreams || {})
   }
+  console.log('💾 serializeGameState - audioStreams:', Object.keys(serialized.audioStreams))
+  return serialized
 }
 
 export function createSaveFile(slotNumber, gameState, mcName, characterDefaults = {}) {
@@ -102,6 +105,7 @@ export const saveService = {
     }
 
     try {
+      console.log('💾 saveService.saveGame - audioStreams in saveFile:', Object.keys(saveFile.gameState.audioStreams || {}))
       const result = await window.api.saveGame(slotNumber, saveFile)
       return result
     } catch (err) {

@@ -1,8 +1,10 @@
 <template>
+  <StoryAudio :audio-streams="audioStreams" />
+  
   <Background :scene="currentScene" />
   <CharacterList :characters="visibleCharacters" />
 
-  <TitleBlock :title="currentTitle" @advance="advanceStory" />
+  <TitleBlock :title="currentTitle" :effects="currentTitleEffects" @advance="advanceStory" />
 
   <DialogueBox
     :dialogue="currentDialogue"
@@ -29,6 +31,7 @@
 <script setup>
 import { onMounted } from 'vue'
 import TextInputModal from './TextInputModal.vue'
+import StoryAudio from './StoryAudio.vue'
 import Background from './visual-novel/Background.vue'
 import CharacterList from './visual-novel/CharacterList.vue'
 import TitleBlock from './visual-novel/TitleBlock.vue'
@@ -42,10 +45,12 @@ const emit = defineEmits(['end', 'character-loaded'])
 const vn = useVisualNovel({ src: props.src, emit })
 
 const {
-  currentScene, visibleCharacters, currentDialogue, currentNarration, currentTitle,
+  currentScene, visibleCharacters, currentDialogue, currentNarration, currentTitle, currentTitleEffects,
   currentSpeaker, currentChoices, showTextInputModal, currentInputStep,
+  audioStreams,
   loadStory, processStep, advanceStory, selectChoice, getInitialValue, onTextInputConfirm,
-  getGameState, restoreGameState, resetGameState, getHistory, clearHistory
+  getGameState, restoreGameState, resetGameState, getHistory, clearHistory,
+  pauseAllStreams, resumeAllStreams
 } = vn
 
 onMounted(async () => {
@@ -56,7 +61,7 @@ onMounted(async () => {
   }
 })
 
-defineExpose({ getGameState, restoreGameState, resetGameState, startStory: () => processStep(), getHistory: () => getHistory(), clearHistory: () => clearHistory() })
+defineExpose({ getGameState, restoreGameState, resetGameState, startStory: () => processStep(), getHistory: () => getHistory(), clearHistory: () => clearHistory(), pauseAllStreams, resumeAllStreams })
 
 </script>
 

@@ -68,7 +68,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import VisualNovel from '../components/game/VisualNovel.vue'
 import CharacterStatsModal from '../components/game/CharacterStatsModal.vue'
@@ -77,9 +77,11 @@ import MainMenu from '@/components/MainMenu.vue'
 import SaveLoadModal from '@/components/SaveLoadModal.vue'
 import HistoryModal from '@/components/HistoryModal.vue'
 import { useSavesStore } from '@/stores/saves'
+import { useSettingsStore } from '@/stores/settings'
 
 const router = useRouter()
 const route = useRoute()
+const settingsStore = useSettingsStore()
 const visualNovel = ref(null)
 const showStatsModal = ref(false)
 const mcCharacter = ref(null)
@@ -93,7 +95,25 @@ const saveLoadRef = ref(null)
 const showHistoryModal = ref(false)
 const historyList = ref([])
 
+// Watch menu visibility changes
+watch(menuVisible, (isVisible) => {
+	console.log('Menu visibility changed:', isVisible)
+	if (isVisible) {
+		// Opening menu: pause story streams and play background music
+		console.log('Opening menu - pausing streams and playing bgmusic')
+		visualNovel.value?.pauseAllStreams?.()
+		settingsStore.isMusicPlaying = true
+	} else {
+		// Closing menu: stop background music and resume story streams
+		console.log('Closing menu - stopping bgmusic and resuming streams')
+		settingsStore.isMusicPlaying = false
+		visualNovel.value?.resumeAllStreams?.()
+	}
+})
+
 function onEnd() {
+	// Stop game music, restore background music
+	settingsStore.isMusicPlaying = true
 	router.push('/home')
 }
 
@@ -148,9 +168,10 @@ function onSaveComplete(data) {
 
 function onLoadComplete(data) {
 	console.log('Game loaded:', data)
-	// Close menu and resume the game
+	// Close menu and resume the game (stop background music and restore game streams)
 	showSaveLoadModal.value = false
 	menuVisible.value = false
+	settingsStore.isMusicPlaying = false
 }
 
 function onSettingsSaved() {
@@ -165,6 +186,7 @@ function onSettingsReset() {
 function onContinue() {
 	// Close menu and resume game
 	menuVisible.value = false
+	settingsStore.isMusicPlaying = false
 }
 
 async function onLoadRequest(saveData) {
@@ -180,6 +202,7 @@ async function onLoadRequest(saveData) {
  		// Close menus and resume
  		menuVisible.value = false
  		currentView.value = 'main-menu'
+ 		settingsStore.isMusicPlaying = false
  	} catch (err) {
  		console.error('Failed to restore save from saves list:', err)
  		alert(`Failed to restore save: ${err.message}`)
@@ -220,6 +243,9 @@ const onKeyDown = (e) => {
 }
 
 onMounted(() => {
+	// Stop background music when starting the game
+	settingsStore.isMusicPlaying = false
+	
 	window.addEventListener('keydown', onKeyDown)
 
 	// If this is a new game, reset the VisualNovel state

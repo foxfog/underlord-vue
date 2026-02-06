@@ -121,6 +121,7 @@ async function onSlotClick(slot) {
           return
         }
       const gameState = props.visualNovel.getGameState()
+      console.log('📦 SaveLoadModal - gameState.audioStreams:', Object.keys(gameState.audioStreams || {}))
       const mcName = gameState.characterData?.mc?.name || 'Unknown'
 
       // Save the game

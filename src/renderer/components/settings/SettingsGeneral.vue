@@ -16,6 +16,22 @@
 				/>
 			</div>
 		</div>
+
+		<div class="settings-item">
+			<div class="left">
+				<div class="settings-item-label">Скорость текста:</div>
+				<div class="settings-item-description">{{ store.general.textSpeed === 100 ? 'Мгновенно' : store.general.textSpeed }}</div>
+			</div>
+			<div class="right">
+				<UiRange
+					v-model="store.general.textSpeed"
+					:min="1"
+					:max="100"
+					@change="onTextSpeedChange"
+					class="settings-range"
+				/>
+			</div>
+		</div>
 	</div>
 </template>
 
@@ -25,6 +41,7 @@
 	import { useSettingsStore } from '@/stores/settings'
 	import languageNames from '@/locales/languageNames.js'
 	import UiSelect from '@/components/UI/UiSelect.vue'
+	import UiRange from '@/components/UI/UiRange.vue'
 
 	defineOptions({
 		name: 'SettingsGeneral'
@@ -53,6 +70,12 @@
 		autoSaveLanguageSetting()
 	}
 	
+	function onTextSpeedChange() {
+		store.setTextSpeed(store.general.textSpeed)
+		console.log('Text speed changed to:', store.general.textSpeed)
+		autoSaveTextSpeedSetting()
+	}
+	
 	async function autoSaveLanguageSetting() {
 		try {
 			const current = await window.electronAPI.getSettings()
@@ -67,6 +90,23 @@
 			console.log('Language setting auto-saved')
 		} catch (error) {
 			console.error('Failed to auto-save language setting:', error)
+		}
+	}
+
+	async function autoSaveTextSpeedSetting() {
+		try {
+			const current = await window.electronAPI.getSettings()
+			const updated = {
+				...current,
+				general: {
+					...current.general,
+					textSpeed: store.general.textSpeed
+				}
+			}
+			window.electronAPI.saveSettings(JSON.parse(JSON.stringify(updated)))
+			console.log('Text speed setting auto-saved')
+		} catch (error) {
+			console.error('Failed to auto-save text speed setting:', error)
 		}
 	}
 </script>

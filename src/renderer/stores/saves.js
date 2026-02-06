@@ -24,7 +24,9 @@ export const useSavesStore = defineStore('saves', () => {
   // Save game state to slot — delegated to saveService
   const saveGame = async (slotNumber, gameState, mcName) => {
     try {
+      console.log('💾 saves.saveGame - gameState.audioStreams:', Object.keys(gameState.audioStreams || {}))
       const saveFile = createSaveFile(slotNumber, gameState, mcName, characterDefaults.value)
+      console.log('💾 saves.saveGame - saveFile.gameState.audioStreams:', Object.keys(saveFile.gameState.audioStreams || {}))
       const result = await saveService.saveGame(slotNumber, saveFile)
 
       if (result.success) {

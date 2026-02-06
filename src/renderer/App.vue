@@ -7,6 +7,7 @@
 	import { watchEffect } from 'vue'
 	import { useSettingsStore } from '@/stores/settings'
 	import BgMusic from '@/components/sounds/BgMusic.vue'
+	import '@/public/styles/game/title-effects.css'
 
 	const store = useSettingsStore()
 

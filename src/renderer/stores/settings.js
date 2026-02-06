@@ -29,6 +29,7 @@ export function initSettingsStore(settings) {
 			general: {
 				...(settings?.general ?? {}),
 				language: settings?.general?.language ?? 'ru',
+				textSpeed: settings?.general?.textSpeed ?? 100,
 			},
 
 			video: {
@@ -68,6 +69,10 @@ export function initSettingsStore(settings) {
 
 			setLanguage(lang) {
 				this.general.language = lang
+			},
+
+			setTextSpeed(speed) {
+				this.general.textSpeed = speed
 			},
 
 			setKeyboardLayout(layout) {
