@@ -3,7 +3,7 @@
 	:key="character.id"
 	class="char"
 	:class="`char-${character.id}`"
-	:style="{ scale: character.scale || character.size || 1 }"
+	:style="characterStyle"
   >
   <div class="char-body" ref="charBodyRef">
 		<!-- Base body sprites -->
@@ -34,6 +34,33 @@ const props = defineProps({
 })
 
 const charBodyRef = ref(null)
+
+// Compute positioning style from character.position object
+const characterStyle = computed(() => {
+  const style = {
+    scale: props.character.scale || props.character.size || 1
+  }
+  
+  // Map position aliases to CSS properties
+  if (props.character.position) {
+    const posMap = {
+      l: 'left',
+      r: 'right',
+      t: 'top',
+      b: 'bottom'
+    }
+    
+    for (const [alias, cssProp] of Object.entries(posMap)) {
+      if (props.character.position[alias] !== undefined) {
+        const value = props.character.position[alias]
+        // Add % if value is a number
+        style[cssProp] = typeof value === 'number' ? `${value}%` : value
+      }
+    }
+  }
+  
+  return style
+})
 
 onMounted(() => {
   if (!charBodyRef.value) return

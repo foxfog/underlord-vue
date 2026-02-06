@@ -11,7 +11,6 @@
             <span class="speaker" v-if="entry.speaker">{{ entry.speaker }}:</span>
             <span class="type" v-else-if="entry.type==='titles'">[Заголовок]</span>
             <span class="type" v-else-if="entry.type==='narration'">[Наррация]</span>
-            <span class="step">#{{ entry.stepIndex }}</span>
           </div>
           <div class="text" v-html="entry.text"></div>
         </div>

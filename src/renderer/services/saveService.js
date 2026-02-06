@@ -20,6 +20,16 @@ function deepClone(obj) {
   }
 }
 
+// Remove Vue-specific attributes from HTML strings (data-v-*, __v_*, etc)
+function cleanHTMLFromVueAttributes(html) {
+  if (!html || typeof html !== 'string') return html
+  // Remove data-v-* attributes and other Vue internals
+  return html
+    .replace(/\s*data-v-[a-f0-9]{0,8}="[^"]*"/g, '')
+    .replace(/\s*data-v-[a-f0-9]{0,8}[^\s>]*/g, '')
+    .replace(/\s*__v[a-zA-Z0-9]*[^\s>]*/g, '')
+}
+
 // Returns problematic path if not serializable
 export function findNonSerializable(obj, path = '') {
   const visited = new Set()
@@ -68,6 +78,19 @@ export function serializeGameState(gameState, characterDefaults = {}) {
     characterDefaults
   )
 
+  // Compact history to reduce save size: remove empty speaker and stepIndex, clean Vue attributes
+  const rawHistory = deepClone(gameState.history || [])
+  const compactHistory = rawHistory.map(entry => {
+    const e = { ...entry }
+    // Clean HTML from Vue attributes
+    if (e.text && typeof e.text === 'string') {
+      e.text = cleanHTMLFromVueAttributes(e.text)
+    }
+    if (e.speaker === '') delete e.speaker
+    if (e.stepIndex !== undefined) delete e.stepIndex
+    return e
+  })
+
   const serialized = {
     storyId: gameState.storyData?.id || 'start',
     stepIndex: gameState.stepIndex,
@@ -76,7 +99,7 @@ export function serializeGameState(gameState, characterDefaults = {}) {
     characterDataDelta,
     visibleCharacters: deepClone(gameState.visibleCharacters),
     currentScene: gameState.currentScene,
-    history: deepClone(gameState.history || []),
+    history: compactHistory,
     audioStreams: deepClone(gameState.audioStreams || {})
   }
   console.log('💾 serializeGameState - audioStreams:', Object.keys(serialized.audioStreams))

@@ -71,7 +71,12 @@
 			"text": "<p><b>Местоположение:</b> <s>Нью-Йорк</s></p><p><b>Время:</b> 20:52</p>"
 		},
 
-		{ "type": "show", "character": "mc" },
+		{ 
+			"type": "show",
+			"character": "mc",
+			"position": {"l": 20, "r": "auto"},
+			"class": "red big-char"
+		},
 
 		{
 			"type": "dialogue",

@@ -150,7 +150,7 @@ export function useVisualNovel({ src, emit } = {}) {
           processStep()
           break
         case 'show':
-          if (!isRestoringGameState.value) showCharacter(step.character)
+          if (!isRestoringGameState.value) showCharacter(step)
           stepIndex.value++
           processStep()
           break
@@ -226,9 +226,18 @@ export function useVisualNovel({ src, emit } = {}) {
   }
 
   function changeScene(sceneId) { currentScene.value = sceneData.value[sceneId] }
-  function showCharacter(characterId) {
+  function showCharacter(step) {
+    const characterId = typeof step === 'string' ? step : step.character
     const character = characterData.value[characterId]
-    if (character && !visibleCharacters.value.some(c => c.id === characterId)) visibleCharacters.value.push(character)
+    if (character) {
+      // Apply position if provided
+      if (step.position && typeof step === 'object') {
+        character.position = step.position
+      }
+      if (!visibleCharacters.value.some(c => c.id === characterId)) {
+        visibleCharacters.value.push(character)
+      }
+    }
   }
   function hideCharacter(characterId) { visibleCharacters.value = visibleCharacters.value.filter(c => c.id !== characterId) }
 
@@ -583,7 +592,7 @@ export function useVisualNovel({ src, emit } = {}) {
           currentChoices.value = []
           goToLabel(action.target)
           break
-        case 'show': showCharacter(action.character); processAction(); break
+        case 'show': showCharacter(action); processAction(); break
         case 'hide': hideCharacter(action.character); processAction(); break
         default: processAction(); break
       }
