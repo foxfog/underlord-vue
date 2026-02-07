@@ -3,6 +3,9 @@
 @import './character-stats-modal.css';
 @import './text-input-modal.css';
 @import './equip-part.css';
+@import './title-effects.css';
+@import './star-wars-titles.css';
+
 
 .game-area {
 	width: 100%;

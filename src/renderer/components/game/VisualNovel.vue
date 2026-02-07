@@ -11,6 +11,7 @@
     :narration="currentNarration"
     :speaker="currentSpeaker"
     :choices="currentChoices"
+    :multi-step-printed-length="multiStepPrintedLength"
     @advance="advanceStory"
     @selectChoice="selectChoice"
   />
@@ -46,7 +47,7 @@ const vn = useVisualNovel({ src: props.src, emit })
 
 const {
   currentScene, visibleCharacters, currentDialogue, currentNarration, currentTitle, currentTitleEffects,
-  currentSpeaker, currentChoices, showTextInputModal, currentInputStep,
+  currentSpeaker, currentChoices, multiStepPrintedLength, showTextInputModal, currentInputStep, uiVisibility,
   audioStreams,
   loadStory, processStep, advanceStory, selectChoice, getInitialValue, onTextInputConfirm,
   getGameState, restoreGameState, resetGameState, getHistory, clearHistory,
@@ -61,7 +62,7 @@ onMounted(async () => {
   }
 })
 
-defineExpose({ getGameState, restoreGameState, resetGameState, startStory: () => processStep(), getHistory: () => getHistory(), clearHistory: () => clearHistory(), pauseAllStreams, resumeAllStreams })
+defineExpose({ getGameState, restoreGameState, resetGameState, startStory: () => processStep(), getHistory: () => getHistory(), clearHistory: () => clearHistory(), pauseAllStreams, resumeAllStreams, uiVisibility })
 
 </script>
 

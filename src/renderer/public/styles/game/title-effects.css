@@ -28,8 +28,8 @@
 
 /* Fade Out Effect */
 .fade-out {
-  animation: fadeOut var(--duration-end) ease-in-out forwards;
-  animation-delay: var(--delay-end);
+  animation: fadeOut var(--duration) ease-in-out forwards;
+  animation-delay: var(--delay);
 }
 
 @keyframes fadeOut {

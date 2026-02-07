@@ -32,7 +32,8 @@ const props = defineProps({
   dialogue: { type: String, default: '' },
   narration: { type: String, default: '' },
   speaker: { type: String, default: '' },
-  choices: { type: Array, default: () => [] }
+  choices: { type: Array, default: () => [] },
+  multiStepPrintedLength: { type: Number, default: 0 }
 })
 
 const emit = defineEmits(['advance', 'selectChoice'])
@@ -42,6 +43,8 @@ const dialogueTextRef = ref(null)
 const narrationTextRef = ref(null)
 let typewriterTimeout = null
 let isTypewriting = false
+let lastPrintedLength = 0 // Track the last printed length to continue from there
+let lastDialogueValue = '' // Track the last dialogue value to detect new dialogues
 
 // Calculate duration per character based on text speed
 // Ren'Py-like speed scale:
@@ -78,6 +81,7 @@ function startTypewriter(element, htmlText) {
   if (store.general.textSpeed === 100) {
     element.innerHTML = htmlText
     isTypewriting = false
+    lastPrintedLength = htmlText.length
     return
   }
   
@@ -86,16 +90,30 @@ function startTypewriter(element, htmlText) {
   tempDiv.innerHTML = htmlText
   const plainText = tempDiv.textContent || tempDiv.innerText || ''
   
-  console.log('🖤 Starting typewriter for text:', plainText.substring(0, 50))
-  console.log('   Total chars:', plainText.length, 'Speed:', store.general.textSpeed, 'Duration per char:', charDuration.value)
+  // Determine starting position
+  // If multiStepPrintedLength > 0, we're in a multi-step dialogue
+  // Show the already-printed part, then continue from there
+  const startCharIndex = props.multiStepPrintedLength > 0 ? props.multiStepPrintedLength : 0
   
-  typeCharByChar(element, htmlText, plainText, 0)
+  console.log('🖤 Starting typewriter for text:', plainText.substring(0, 50))
+  console.log('   Total chars:', plainText.length, 'Starting from:', startCharIndex, 'Speed:', store.general.textSpeed, 'Duration per char:', charDuration.value)
+  
+  // If continuing from a previous step, show the already-printed part first
+  if (startCharIndex > 0) {
+    const displayHTML = buildVisibleHTML(htmlText, startCharIndex)
+    element.innerHTML = displayHTML
+    lastPrintedLength = startCharIndex
+    console.log('🖤 Showing already-printed part, startCharIndex:', startCharIndex)
+  }
+  
+  typeCharByChar(element, htmlText, plainText, startCharIndex)
 }
 
 function typeCharByChar(element, htmlText, plainText, charIndex) {
   if (charIndex <= plainText.length) {
     // Get visible portion by counting plain text chars
     const visibleChars = plainText.substring(0, charIndex)
+    lastPrintedLength = charIndex
     
     // Build HTML with visible characters
     const displayHTML = buildVisibleHTML(htmlText, charIndex)
@@ -169,7 +187,22 @@ watch(() => props.dialogue, (newVal) => {
   if (newVal) {
     nextTick(() => {
       if (dialogueTextRef.value) {
-        dialogueTextRef.value.innerHTML = ''
+        // Check if this is a completely new dialogue (not a continuation)
+        const isNewDialogue = newVal !== lastDialogueValue && props.multiStepPrintedLength === 0
+        
+        if (isNewDialogue) {
+          // New dialogue - clear the element and reset tracking
+          dialogueTextRef.value.innerHTML = ''
+          lastPrintedLength = 0
+          console.log('🖤 [Watch] New dialogue starting, clearing element')
+        } else if (props.multiStepPrintedLength > 0) {
+          // Continuation of multi-step dialogue - don't clear
+          console.log('🖤 [Watch] Multi-step continuation, keeping existing text. multiStepPrintedLength:', props.multiStepPrintedLength)
+        } else {
+          console.log('🖤 [Watch] Dialogue changed but conditions unclear. isNew:', isNewDialogue, 'printed:', props.multiStepPrintedLength)
+        }
+        
+        lastDialogueValue = newVal
         startTypewriter(dialogueTextRef.value, newVal)
       }
     })
@@ -181,7 +214,20 @@ watch(() => props.narration, (newVal) => {
   if (newVal) {
     nextTick(() => {
       if (narrationTextRef.value) {
-        narrationTextRef.value.innerHTML = ''
+        // Check if this is a completely new narration (not a continuation)
+        const isNewNarration = newVal !== lastDialogueValue && props.multiStepPrintedLength === 0
+        
+        if (isNewNarration) {
+          // New narration - clear the element and reset tracking
+          narrationTextRef.value.innerHTML = ''
+          lastPrintedLength = 0
+          console.log('🖤 New narration starting, clearing element')
+        } else if (props.multiStepPrintedLength > 0) {
+          // Continuation of multi-step narration - don't clear
+          console.log('🖤 Multi-step narration continuation, keeping existing text')
+        }
+        
+        lastDialogueValue = newVal
         startTypewriter(narrationTextRef.value, newVal)
       }
     })

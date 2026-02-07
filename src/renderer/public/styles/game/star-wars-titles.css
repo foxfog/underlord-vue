@@ -1,0 +1,114 @@
+.title-box {
+	&.sw-title-block {
+		padding: 0;
+		.title-content {
+			height: 100%;
+			width: 100%;
+		}
+	}
+}
+
+.sw-text-blue {
+	color: #0676d1;
+	text-shadow: 0 0 0.6em rgb(0, 178, 238);
+	font-family: 'Pathway Gothic One', sans-serif;
+}
+
+.sw-stars, .sw-twinkling {
+  position:absolute;
+  top:0;
+  left:0;
+  right:0;
+  bottom:0;
+  width:100%;
+  height:100%;
+  display:block;
+}
+
+.sw-stars {
+  background:#000 url('@/images/sw/space.png') repeat top center;
+  z-index: 0;
+}
+
+.sw-twinkling {
+  background-image: url('@/images/sw/twinkling.png');
+  animation: 3s twinkle infinite;
+  animation-timing-function: linear;
+}
+
+@keyframes twinkle {
+  from {backrgound-position: 0}
+  to {background-position: -100px 0}
+}
+
+.sw-old-filter {
+	filter: drop-shadow(0 0 0.3em #ae5509);
+	perspective: calc(var(--appH) * 0.4);
+	height: 100%;
+	width: 100%;
+}
+
+.sw-logo {
+	position: absolute;
+	top: 0;
+	left: 0;
+	margin: auto;
+	width: 100%;
+	height: 100%;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	z-index: 2;
+	animation: logohide 12s ease-out forwards;
+	img {
+		width: 100%;
+		height: auto;
+	};
+}
+
+
+.sw-inner {
+	display: flex;
+    justify-content: center;
+    position: relative;
+    height: 100%;
+    transform: rotateX(45deg) translateZ(-10em);
+}
+
+.sw-crawl {
+	position: relative;
+    width: 86%;
+    top: 72%;
+    transform-origin: 50% 100%;
+    animation: crawl 260s linear;
+    font-size: 2.4em;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    line-height: 100%;
+    text-align: justify;
+    font-family: 'Pathway Gothic One', sans-serif;
+    color: #f9d43e;
+    text-shadow: 0 0 0.5em #ae5509;
+}
+
+@keyframes crawl {
+	0% {
+		top: 100%;
+	}
+	100% { 
+		top: -600%;
+	}
+}
+
+@keyframes logohide {
+	0% {
+		scale: 1;
+	}
+	50% {
+		opacity: 1;
+	}
+	100% { 
+		scale: 0;
+		opacity: 0;
+	}
+}

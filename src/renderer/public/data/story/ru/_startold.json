@@ -6,13 +6,36 @@
 
 		{ "type": "dialogue", "text": "Вы находитесь в своей квартире." },
 		{ "type": "dialogue", "text": "Вы видите свою квартиру." },
+		
 
+		{
+			"type": "titles",
+			"text": "<span class='t-32'>Пролог</span>",
+			"effect-start": {	
+				"class": "fade-in",
+				"duration": 5000
+			},
+			"effect": {	
+				"class": "pulse spin",
+				"delay": 0,
+				"duration": 3000
+			},
+			"effect-end": {	
+				"class": "fade-out",
+				"duration": 2000
+			}
+		},
 		{
 			"type": "show",
 			"character": "momonga",
 			"position": {
 				"x": -50
 			}
+		},
+		{
+			"type": "titles",
+			"text": "<p>Мир задыхается... </p>",
+			"typewriter": true
 		},
 
 		{

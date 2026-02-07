@@ -1,7 +1,7 @@
 <!-- src/renderer/components/game/visual-novel/TitleBlock.vue -->
 
 <template>
-  <div class="title-box" v-if="title" @click="handleClick">
+  <div class="title-box" v-if="title" @click="handleClick" :class="boxClasses">
     <div 
       class="title-content" 
       :class="appliedClasses"
@@ -25,6 +25,7 @@ const emit = defineEmits(['advance'])
 const store = useSettingsStore()
 const titleContentRef = ref(null)
 const appliedClasses = ref('')
+const boxClasses = ref('')
 const isPlayingEffectEnd = ref(false)
 let effectEndTimeout = null
 let effectStartTimeout = null
@@ -184,15 +185,46 @@ function buildVisibleHTML(html, visibleCharCount) {
 }
 
 // Watch effects changes and restart animation sequence
-watch(() => props.effects, () => {
-  startEffectSequence()
+watch(() => props.effects, (newEffects) => {
+  // If triggerEffectEnd flag is set, start the effect-end sequence
+  if (newEffects?.triggerEffectEnd && newEffects?.effectEnd) {
+    playEffectEnd()
+  } else {
+    startEffectSequence()
+  }
 }, { deep: true })
+
+function playEffectEnd() {
+  // Clear any pending timeouts
+  if (effectEndTimeout) clearTimeout(effectEndTimeout)
+  if (effectStartTimeout) clearTimeout(effectStartTimeout)
+  
+  if (props.effects?.effectEnd) {
+    isPlayingEffectEnd.value = true
+    appliedClasses.value = props.effects.effectEnd.class || ''
+    
+    const endDuration = props.effects.effectEnd.duration || 0
+    const endDelay = props.effects.effectEnd.delay || 0
+    
+    // Account for both delay and duration
+    effectEndTimeout = setTimeout(() => {
+      isPlayingEffectEnd.value = false
+      appliedClasses.value = ''
+      emit('advance')
+    }, endDelay + endDuration)
+  } else {
+    emit('advance')
+  }
+}
 
 function startEffectSequence() {
   // Clear any pending timeouts
   if (effectEndTimeout) clearTimeout(effectEndTimeout)
   if (effectStartTimeout) clearTimeout(effectStartTimeout)
   isPlayingEffectEnd.value = false
+  
+  // Apply step class to box
+  boxClasses.value = props.effects?.class || ''
   
   if (!props.effects) return
   
@@ -213,6 +245,9 @@ function startEffectSequence() {
   } else if (props.effects.effect) {
     // No effect-start, apply main effect directly
     appliedClasses.value = props.effects.effect.class || ''
+  } else {
+    // No effects, clear classes
+    appliedClasses.value = ''
   }
 }
 
@@ -254,15 +289,7 @@ function handleClick() {
   
   // If there's an effect-end, play it before advancing
   if (props.effects?.effectEnd) {
-    isPlayingEffectEnd.value = true
-    appliedClasses.value = props.effects.effectEnd.class || ''
-    
-    const endDuration = props.effects.effectEnd.duration || 0
-    effectEndTimeout = setTimeout(() => {
-      isPlayingEffectEnd.value = false
-      appliedClasses.value = ''
-      emit('advance')
-    }, endDuration)
+    playEffectEnd()
   } else {
     emit('advance')
   }
@@ -276,12 +303,11 @@ onBeforeUnmount(() => {
 })
 </script>
 
-<style scoped>
+<style>
 .title-box {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 200px;
   cursor: pointer;
   padding: 20px;
 }

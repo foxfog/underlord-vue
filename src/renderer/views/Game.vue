@@ -1,7 +1,7 @@
 <template>
 	<div class="game-area">
 		<!-- Stats Button -->
-		<button class="stats-button" @click="toggleStatsModal">
+		<button v-if="showStatsButton" class="stats-button" @click="toggleStatsModal">
 			📊 Статы
 		</button>
 
@@ -56,7 +56,7 @@
 	</div>
 
 	<!-- Bottom hotbar -->
-	<div class="hotbar">
+	<div v-if="showHotbar" class="hotbar">
 		<button class="hotbar-btn" @click="openHistory">История</button>
 		<button class="hotbar-btn" @click="openMainMenu">Главное меню</button>
 		<button class="hotbar-btn" @click="openSave">Сохранить</button>
@@ -68,7 +68,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import VisualNovel from '../components/game/VisualNovel.vue'
 import CharacterStatsModal from '../components/game/CharacterStatsModal.vue'
@@ -94,6 +94,30 @@ const saveLoadInitialMode = ref('save')
 const saveLoadRef = ref(null)
 const showHistoryModal = ref(false)
 const historyList = ref([])
+
+// UI visibility states
+const uiVisibility = ref({
+	all: true,
+	'stats-button': true,
+	hotbar: true,
+	dialogue: true
+})
+
+// Computed properties for UI visibility
+const showStatsButton = computed(() => {
+	return uiVisibility.value.all && uiVisibility.value['stats-button']
+})
+
+const showHotbar = computed(() => {
+	return uiVisibility.value.all && uiVisibility.value.hotbar
+})
+
+// Watch for uiVisibility changes from VisualNovel
+watch(() => visualNovel.value?.uiVisibility, (newVisibility) => {
+	if (newVisibility) {
+		uiVisibility.value = newVisibility
+	}
+}, { deep: true })
 
 // Watch menu visibility changes
 watch(menuVisible, (isVisible) => {

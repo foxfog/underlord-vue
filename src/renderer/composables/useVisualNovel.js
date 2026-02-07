@@ -11,6 +11,8 @@ export function useVisualNovel({ src, emit } = {}) {
   const currentTitleEffects = ref(null) // { effectStart, effect, effectEnd }
   const currentSpeaker = ref('')
   const currentChoices = ref([])
+  const multiStepDialogueBuffer = ref('') // Buffer for accumulating multi-step dialogue text
+  const multiStepPrintedLength = ref(0) // Track how many characters have been printed via typewriter
 
   // Audio state - indexed by stream ID
   const audioStreams = ref({}) // { streamId: { type, file, loop, stream } }
@@ -45,6 +47,14 @@ export function useVisualNovel({ src, emit } = {}) {
 
   const showTextInputModal = ref(false)
   const currentInputStep = ref(null)
+
+  // UI visibility state
+  const uiVisibility = ref({
+    all: true,
+    'stats-button': true,
+    hotbar: true,
+    dialogue: true
+  })
 
   const isRestoringGameState = ref(false)
   let loadingPromise = null
@@ -186,8 +196,14 @@ export function useVisualNovel({ src, emit } = {}) {
           break
         case 'dialogue':
           if (step.variable) applyVariable(step.variable)
-          if (step.character) showDialogue(step.character, step.text)
-          else showNarration(step.text)
+          // Check if dialogue has steps
+          if (step.steps && Array.isArray(step.steps)) {
+            processDialogueSteps(step.steps)
+          } else if (step.character) {
+            showDialogue(step.character, step.text)
+          } else {
+            showNarration(step.text)
+          }
           isRestoringGameState.value = false
           break
         case 'titles':
@@ -203,6 +219,11 @@ export function useVisualNovel({ src, emit } = {}) {
         case 'choice':
           showChoices(step)
           isRestoringGameState.value = false
+          break
+        case 'ui':
+          handleUIStep(step)
+          stepIndex.value++
+          processStep()
           break
         case 'goto':
           goToLabel(step.target)
@@ -240,6 +261,28 @@ export function useVisualNovel({ src, emit } = {}) {
     }
   }
   function hideCharacter(characterId) { visibleCharacters.value = visibleCharacters.value.filter(c => c.id !== characterId) }
+
+  function handleUIStep(step) {
+    const action = step.action // 'show' or 'hide'
+    const targets = step.target || [] // Array of target IDs
+
+    // If target is not specified or empty, apply to all UI
+    if (!targets || targets.length === 0) {
+      console.log(`UI ${action}: all elements`)
+      uiVisibility.value['all'] = action === 'show'
+      return
+    }
+
+    // Apply action to specified targets
+    targets.forEach(target => {
+      console.log(`UI ${action}: ${target}`)
+      if (target === 'all') {
+        uiVisibility.value['all'] = action === 'show'
+      } else {
+        uiVisibility.value[target] = action === 'show'
+      }
+    })
+  }
 
   // Audio handlers
   function playSound(soundData) {
@@ -353,21 +396,43 @@ export function useVisualNovel({ src, emit } = {}) {
 
   function showTitle(step) {
     if (titleTimeout) { clearTimeout(titleTimeout); titleTimeout = null }
-    currentTitle.value = substituteVariables(step.text)
+    let titleText = substituteVariables(step.text)
+    let titleTextForDisplay = titleText
+    
+    // Apply wrap if provided
+    if (step.wrap) {
+      titleTextForDisplay = step.wrap.replace('%text%', titleText)
+    }
+    
+    currentTitle.value = titleTextForDisplay
     currentTitleEffects.value = {
       effectStart: step['effect-start'] || null,
       effect: step.effect || null,
       effectEnd: step['effect-end'] || null,
       typewriter: step.typewriter || false,
-      duration: step.duration || 0
+      duration: step.duration || 0,
+      class: step.class || null,
+      autoEnd: step['auto-end'] || false
     }
     currentDialogue.value = ''
     currentNarration.value = ''
     currentSpeaker.value = ''
     currentChoices.value = []
-    addToHistory({ type: 'titles', speaker: '', text: currentTitle.value, stepIndex: stepIndex.value })
+    addToHistory({ type: 'titles', speaker: '', text: titleText, stepIndex: stepIndex.value })
     if (step.duration && typeof step.duration === 'number' && step.duration > 0) {
-      titleTimeout = setTimeout(() => { titleTimeout = null; advanceStory() }, step.duration)
+      titleTimeout = setTimeout(() => { 
+        titleTimeout = null
+        // If there's an effect-end, trigger it on the component and let it handle the advance
+        if (step['effect-end']) {
+          // Signal to TitleBlock to play effect-end by setting a flag
+          currentTitleEffects.value = {
+            ...currentTitleEffects.value,
+            triggerEffectEnd: true
+          }
+        } else {
+          advanceStory()
+        }
+      }, step.duration)
     }
   }
 
@@ -554,6 +619,54 @@ export function useVisualNovel({ src, emit } = {}) {
     if (choiceStep.text) currentDialogue.value = substituteVariables(choiceStep.text)
   }
 
+  function processDialogueSteps(steps) {
+    let tempIndex = 0
+    function processDialogueAction() {
+      if (tempIndex >= steps.length) { 
+        multiStepDialogueBuffer.value = ''
+        multiStepPrintedLength.value = 0
+        stepIndex.value++; processStep(); return 
+      }
+      const action = steps[tempIndex]; tempIndex++
+      const actionType = action.type || (action.text ? 'text' : 'unknown')
+      switch (actionType) {
+        case 'text':
+        case 'dialogue':
+          currentChoices.value = []
+          // Add text to buffer with line break if needed
+          if (multiStepDialogueBuffer.value) {
+            multiStepDialogueBuffer.value += ''
+          }
+          multiStepDialogueBuffer.value += action.text
+          if (action.character) showDialogue(action.character, multiStepDialogueBuffer.value)
+          else showNarration(multiStepDialogueBuffer.value)
+          advanceStoryOverride = function() {
+            // When advancing, calculate how many plain text chars have been printed
+            const tempDiv = document.createElement('div')
+            tempDiv.innerHTML = multiStepDialogueBuffer.value
+            const plainTextLength = tempDiv.textContent?.length || 0
+            multiStepPrintedLength.value = plainTextLength
+            console.log(`📝 Multi-step advance: buffer length=${multiStepDialogueBuffer.value.length}, plain text length=${plainTextLength}`)
+            currentDialogue.value = ''
+            currentNarration.value = ''
+            processDialogueAction()
+            advanceStoryOverride = null
+          }
+          break
+        case 'action':
+          // Execute action and continue to next dialogue step
+          if (action.action) {
+            console.log(`Executing action: ${action.action}`)
+            // Here you can add action handlers if needed
+          }
+          processDialogueAction()
+          break
+        default: processDialogueAction(); break
+      }
+    }
+    processDialogueAction()
+  }
+
   function selectChoice(index) {
     const choice = currentChoices.value[index]
     if (choice.actions) processChoiceActions(choice.actions)
@@ -645,12 +758,14 @@ export function useVisualNovel({ src, emit } = {}) {
   }
 
   function advanceStory() {
-    if (advanceStoryOverride) { const f = advanceStoryOverride; advanceStoryOverride = null; try { f() } catch (e) { console.error('Error in override:', e); currentDialogue.value=''; currentNarration.value=''; stepIndex.value++; processStep() } return }
+    if (advanceStoryOverride) { const f = advanceStoryOverride; advanceStoryOverride = null; try { f() } catch (e) { console.error('Error in override:', e); currentDialogue.value=''; currentNarration.value=''; multiStepDialogueBuffer.value=''; multiStepPrintedLength.value=0; stepIndex.value++; processStep() } return }
     currentTitle.value = ''
     currentTitleEffects.value = null
     if (titleTimeout) { clearTimeout(titleTimeout); titleTimeout = null }
     currentDialogue.value = ''
     currentNarration.value = ''
+    multiStepDialogueBuffer.value = ''
+    multiStepPrintedLength.value = 0
     isRestoringGameState.value = false
     stepIndex.value++
     processStep()
@@ -700,6 +815,8 @@ export function useVisualNovel({ src, emit } = {}) {
       Object.keys(characterData.value).forEach(charId => { rebuildEquipmentBySlot(charId) })
       currentDialogue.value = ''
       currentNarration.value = ''
+      multiStepDialogueBuffer.value = ''
+      multiStepPrintedLength.value = 0
       currentTitle.value = ''
       if (titleTimeout) { clearTimeout(titleTimeout); titleTimeout = null }
       currentSpeaker.value = ''
@@ -719,7 +836,16 @@ export function useVisualNovel({ src, emit } = {}) {
           if (!s) continue
           switch (s.type) {
             case 'dialogue':
-              if (s.character) {
+              // Handle dialogue with steps
+              if (s.steps && Array.isArray(s.steps)) {
+                s.steps.forEach((step, stepIdx) => {
+                  if (step.text) {
+                    const speaker = step.character ? (characterData.value[step.character]?.name || step.character) : ''
+                    const text = substituteVariables(step.text)
+                    historyEntries.value.push({ type: 'dialogue', speaker, text, stepIndex: `${i}_${stepIdx}` })
+                  }
+                })
+              } else if (s.character) {
                 const speaker = characterData.value[s.character]?.name || s.character
                 const text = substituteVariables(s.text || '')
                 historyEntries.value.push({ type: 'dialogue', speaker, text, stepIndex: i })
@@ -755,6 +881,8 @@ export function useVisualNovel({ src, emit } = {}) {
     callStack.value = []
     currentDialogue.value = ''
     currentNarration.value = ''
+    multiStepDialogueBuffer.value = ''
+    multiStepPrintedLength.value = 0
     currentSpeaker.value = ''
     currentChoices.value = []
     visibleCharacters.value = []
@@ -767,8 +895,8 @@ export function useVisualNovel({ src, emit } = {}) {
 
   return {
     // state
-    currentScene, visibleCharacters, currentDialogue, currentNarration, currentTitle, currentTitleEffects, currentSpeaker, currentChoices,
-    showTextInputModal, currentInputStep,
+    currentScene, visibleCharacters, currentDialogue, currentNarration, currentTitle, currentTitleEffects, currentSpeaker, currentChoices, multiStepDialogueBuffer, multiStepPrintedLength,
+    showTextInputModal, currentInputStep, uiVisibility,
     // audio state
     currentSound, currentVoice, currentMusic, audioStreams,
     // methods

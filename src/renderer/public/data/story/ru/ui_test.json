@@ -1,0 +1,105 @@
+{
+	"id": "ui_test",
+	"steps": [
+		{
+			"type": "dialogue",
+			"text": "Тест 1: Скроем ВСЕ UI (hotbar и stats-button)"
+		},
+
+		{
+			"type": "ui",
+			"action": "hide"
+		},
+
+		{
+			"type": "titles",
+			"text": "Все UI скрыто. Видны только титры!",
+			"duration": 3000,
+			"auto-end": true
+		},
+
+		{
+			"type": "ui",
+			"action": "show"
+		},
+
+		{
+			"type": "dialogue",
+			"text": "Тест 2: Скроем только hotbar"
+		},
+
+		{
+			"type": "ui",
+			"target": ["hotbar"],
+			"action": "hide"
+		},
+
+		{
+			"type": "titles",
+			"text": "Hotbar скрыт, но stats-button видна!",
+			"duration": 3000,
+			"auto-end": true
+		},
+
+		{
+			"type": "ui",
+			"target": ["hotbar"],
+			"action": "show"
+		},
+
+		{
+			"type": "dialogue",
+			"text": "Тест 3: Скроем только stats-button"
+		},
+
+		{
+			"type": "ui",
+			"target": ["stats-button"],
+			"action": "hide"
+		},
+
+		{
+			"type": "titles",
+			"text": "Stats-button скрыта, но hotbar видна!",
+			"duration": 3000,
+			"auto-end": true
+		},
+
+		{
+			"type": "ui",
+			"target": ["stats-button"],
+			"action": "show"
+		},
+
+		{
+			"type": "dialogue",
+			"text": "Тест 4: Скроем всё кроме dialogue (dialogue остается видимым)"
+		},
+
+		{
+			"type": "ui",
+			"target": ["all", "dialogue"],
+			"action": "hide"
+		},
+
+		{
+			"type": "titles",
+			"text": "Всё скрыто кроме диалога!",
+			"duration": 3000,
+			"auto-end": true
+		},
+
+		{
+			"type": "ui",
+			"target": ["all"],
+			"action": "show"
+		},
+
+		{
+			"type": "dialogue",
+			"text": "Все тесты завершены! Все UI элементы видны."
+		},
+
+		{ "type": "end" }
+	]
+}

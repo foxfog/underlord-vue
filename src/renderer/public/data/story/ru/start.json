@@ -3,6 +3,23 @@
 	"steps": [
 
 		{
+			"type": "ui",
+			"action": "hide"
+		},
+
+		{
+			"type": "titles",
+			"text": "<span class='t-32 sw-text-blue'>В недалёком будущем, не так далеко...</span>",
+			"duration": 5000,
+			"auto-end": true,
+			"effect": {	
+				"class": "fade-out",
+				"duration": 2000,
+				"delay": 3000
+			}
+		},
+
+		{
 			"type": "music",
 			"file": "audio/music/star_wars_title.mp3",
 			"loop": true,
@@ -11,45 +28,15 @@
 
 		{
 			"type": "titles",
-			"text": "<span class='t-64'>Пролог</span>",
-			"effect-start": {	
-				"class": "fade-in",
-				"duration": 5000
-			},
-			"effect": {	
-				"class": "pulse spin",
-				"delay": 5000,
-				"duration": 3000,
-				"repeat": 2
-			},
+			"text": "<p>2138 год. Земля. Мир задыхается... Промышленные мегаполисы поглотили планету. Небо скрыто смогом. Океаны отравлены. Природа существует лишь в заповедниках за стеклом и колючей проволокой. Большинство людей никогда не видели настоящих звёзд. Не дышали чистым воздухом. Не касались живого дерева. Реальность стала тюрьмой из бетона и химикатов. Но виртуальная реальность предлагает побег. Миры, где всё ещё есть небо. Где можно почувствовать себя... живым. Сегодня закрывается одна из величайших DMMO-RPG игр. Эпоха YGGDRASIL™ заканчивается...</p><br><br> <p>А у тебя заканчивается смена...</p>",
+			"class": "sw-title-block",
+			"wrap": "<div class='sw-stars'></div><div class='sw-twinkling'></div><div class='sw-old-filter'><div class='sw-logo'><img src='images/sw/sw-logo.svg'></div><div class='sw-fade'></div><div class='sw-inner'><div class='sw-crawl'>%text%</div></div></div>",
+			"duration": 85000,
+			"auto-end": true,
 			"effect-end": {	
 				"class": "fade-out",
 				"duration": 2000
 			}
-		},
-
-		{
-			"type": "titles",
-			"text": "<span class='t-32'>2138 год</span>",
-			"effect-start": {	
-				"class": "fade-in",
-				"duration": 5000
-			},
-			"effect": {	
-				"class": "pulse spin",
-				"delay": 0,
-				"duration": 3000
-			},
-			"effect-end": {	
-				"class": "fade-out",
-				"duration": 2000
-			}
-		},
-
-		{
-			"type": "titles",
-			"text": "<p>Мир задыхается... Промышленные мегаполисы поглотили планету. Небо скрыто смогом. Океаны отравлены. Природа существует лишь в заповедниках за стеклом и колючей проволокой.</p><p>Большинство людей никогда не видели настоящих звёзд. Не дышали чистым воздухом. Не касались живого дерева.</p><p>Реальность стала тюрьмой из бетона и химикатов. Но виртуальная реальность предлагает побег. Миры, где всё ещё есть небо. Где можно почувствовать себя... живым.</p><p>Сегодня закрывается одна из величайших DMMO-RPG игр. Эпоха заканчивается...</p> <p>А у тебя заканчивается смена...</p>",
-			"typewriter": true
 		},
 
 		{
@@ -57,7 +44,28 @@
 			"stream": "swt"
 		},
 
+		{
+			"type": "titles",
+			"text": "<p class='t-64'>Глава I</p><p class='t-32'>Конец и начало</p>",
+			"duration": 8000,
+			"auto-end": true,
+			"effect-start": {	
+				"class": "fade-in",
+				"duration": 2000
+			},
+			"effect": {	
+				"class": "fade-out",
+				"duration": 2000,
+				"delay": 3000
+			}
+		},
+
 		{ "type": "scene", "id": "city_street" },
+
+		{
+			"type": "ui",
+			"action": "show"
+		},
 
 		{
 			"type": "sound",
@@ -68,7 +76,15 @@
 
 		{
 			"type": "dialogue",
-			"text": "<p><b>Местоположение:</b> <s>Нью-Йорк</s></p><p><b>Время:</b> 20:52</p>"
+			"id": "location_time_info",
+			"steps": [
+				{
+					"text": "<p><b>Местоположение:</b> <s>какой то город</s></p>"
+				},
+				{
+					"text": "<p><b>Время:</b> 20:52</p>"
+				}
+			]
 		},
 
 		{ 
