@@ -58,32 +58,3 @@
 		console.log('Settings reset to default')
 	}
 </script>
-
-<style scoped>
-.main-menu-content {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	height: 100%;
-}
-
-.welcome-title {
-	font-size: 2.5rem;
-	text-align: center;
-	margin-top: 2rem;
-	color: var(--text-primary);
-}
-
-.welcome-subtitle {
-	font-size: 1.2rem;
-	text-align: center;
-	margin-top: 1rem;
-	color: var(--text-secondary);
-}
-
-.settings-content .page-header,
-.saves-content .page-header {
-	margin-bottom: 1.5rem;
-}
-</style>

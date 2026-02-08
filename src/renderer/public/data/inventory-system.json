@@ -1,0 +1,103 @@
+{
+  "description": "Описание системы инвентаря персонажей",
+  
+  "itemDefinition": {
+    "equipment": {
+      "description": "Предметы экипировки (equipment.json)",
+      "example": {
+        "id": "gasmask",
+        "part": "head",
+        "characters": ["mc"],
+        "weight": 0.5,
+        "stats": {
+          "hp": 2,
+          "defense": 5
+        }
+      },
+      "notes": [
+        "stackable отсутствует → по умолчанию false (нестакаемый)",
+        "Каждый экземпляр занимает отдельный слот в инвентаре"
+      ]
+    },
+    "consumables": {
+      "description": "Расходники, валюта, еда (other.json)",
+      "example": {
+        "id": "ygdrasil-coin-old",
+        "sprite": "/images/sprites/items/other/ygdrasil-coin-old.png",
+        "weight": 0.02,
+        "stackable": true
+      },
+      "notes": [
+        "stackable: true явно указано",
+        "Можно иметь сколько угодно в одной группе"
+      ]
+    }
+  },
+
+  "inventoryStructure": {
+    "description": "Структура инвентаря в values.json каждого персонажа",
+    "example": {
+      "id": "mc",
+      "name": "Я",
+      "inventory": {
+        "items": [
+          {
+            "itemId": "gasmask"
+          },
+          {
+            "itemId": "ygdrasil-coin-old",
+            "quantity": 23
+          }
+        ]
+      }
+    }
+  },
+
+  "rules": {
+    "stackable_false": {
+      "behavior": "Не стакается",
+      "example": "{ 'itemId': 'gasmask' }",
+      "notes": [
+        "quantity всегда = 1 (не указывается)",
+        "Для нескольких таких предметов создаются отдельные записи",
+        "Примеры: одежда, оружие, украшения"
+      ]
+    },
+    "stackable_true": {
+      "behavior": "Стакается",
+      "example_1": "{ 'itemId': 'ygdrasil-coin-old', 'quantity': 23 }",
+      "example_2": "{ 'itemId': 'bread' }",
+      "notes": [
+        "quantity может быть любым числом",
+        "Если quantity = 1, не указывается",
+        "Все одинаковые предметы объединяются в одну строку",
+        "Примеры: монеты, еда, зелья, материалы"
+      ]
+    }
+  },
+
+  "filePaths": {
+    "itemDefinitions": [
+      "/data/items/equipment.json",
+      "/data/items/other.json"
+    ],
+    "characterInventories": [
+      "/data/characters/mc/values.json",
+      "/data/characters/momonga/values.json",
+      "/data/characters/albedo/values.json"
+    ]
+  },
+
+  "currentState": {
+    "mc": {
+      "gasmask": 1,
+      "ygdrasil-coin-old": 23
+    },
+    "momonga": {
+      "potion-health-small": 10
+    },
+    "albedo": {
+      "empty": "no items"
+    }
+  }
+}

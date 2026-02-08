@@ -44,7 +44,7 @@
 </template>
 
 <script setup>
-	import { ref } from 'vue'
+	import { ref, onMounted, onBeforeUnmount, onUnmounted } from 'vue'
 	import SettingsAudio from '@/components/settings/SettingsAudio.vue'
 	import SettingsGeneral from '@/components/settings/SettingsGeneral.vue'
 	import SettingsVideo from '@/components/settings/SettingsVideo.vue'
@@ -74,10 +74,19 @@
 		await saveSettings()
 		emit('reset')
 	}
-</script>
 
-<style scoped>
-.settings-content .ui-tabs {
-	margin-bottom: 1.5rem;
-}
-</style>
+	onMounted(() => {
+		console.log('SettingsContent mounted')
+		activeSection.value = 'audio'
+	})
+
+	onBeforeUnmount(() => {
+		console.log('SettingsContent before unmount - resetting tab')
+		// Reset to first tab when unmounting
+		activeSection.value = 'audio'
+	})
+
+	onUnmounted(() => {
+		console.log('SettingsContent unmounted - cleaning up')
+	})
+</script>

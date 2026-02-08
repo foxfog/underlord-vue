@@ -2,7 +2,11 @@
   <div
 	:key="character.id"
 	class="char"
-	:class="`char-${character.id}`"
+	:class="[
+	  `char-${character.id}`,
+	  `orientation-${character.orientation || 'right'}`,
+	  { 'char-back': character.back }
+	]"
 	:style="characterStyle"
   >
   <div class="char-body" ref="charBodyRef">
@@ -39,7 +43,7 @@ const isAnimating = ref(false)
 // Compute positioning style from character.position object
 const characterStyle = computed(() => {
   const style = {
-    scale: props.character.scale || props.character.size || 1
+    scale: props.character.scale || props.character.size || 1.3
   }
   
   // Determine which position to use

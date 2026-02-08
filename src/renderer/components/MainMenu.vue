@@ -97,7 +97,7 @@
 	}
 
 	const openSaveLoad = () => {
-		emit('navigate', 'save-load')
+		emit('navigate', 'saves')
 	}
 	
 	const navigateToMainMenu = () => {

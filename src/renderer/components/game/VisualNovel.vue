@@ -65,12 +65,3 @@ onMounted(async () => {
 defineExpose({ getGameState, restoreGameState, resetGameState, startStory: () => processStep(), getHistory: () => getHistory(), clearHistory: () => clearHistory(), pauseAllStreams, resumeAllStreams, uiVisibility })
 
 </script>
-
-<style scoped>
-:root {
-  --game-width: 100%;
-  --game-height: 100%;
-}
-
-/* Root container for all visual novel elements */
-</style>

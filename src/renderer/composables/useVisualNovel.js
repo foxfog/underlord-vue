@@ -52,6 +52,7 @@ export function useVisualNovel({ src, emit } = {}) {
   const uiVisibility = ref({
     all: true,
     'stats-button': true,
+    topbar: true,
     hotbar: true,
     dialogue: true
   })
@@ -274,6 +275,12 @@ export function useVisualNovel({ src, emit } = {}) {
         character.animationDuration = null
       }
       
+      // Set orientation (default 'right' if not specified)
+      character.orientation = step.orientation || 'right'
+      
+      // Set back flag (default false if not specified)
+      character.back = step.back ?? false
+      
       // Apply class if provided
       if (step.class && typeof step === 'object') {
         character.customClass = step.class
@@ -303,6 +310,11 @@ export function useVisualNovel({ src, emit } = {}) {
       if (target === 'all') {
         uiVisibility.value['all'] = action === 'show'
       } else {
+        // Skip topbar - it should always be visible during gameplay
+        if (target === 'topbar') {
+          console.log(`UI ${action}: ${target} - skipped (topbar always visible)`)
+          return
+        }
         uiVisibility.value[target] = action === 'show'
       }
     })

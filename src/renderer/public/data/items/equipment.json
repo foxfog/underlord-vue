@@ -3,6 +3,7 @@
 		"id": "tshirt",
 		"part": "torso-1",
 		"characters": ["mc", "momonga"],
+		"weight": 0.5,
 		"stats": {
 			"hp": 5,
 			"mp": -1,
@@ -11,9 +12,20 @@
 		}
 	},
 	{
+		"id": "gasmask",
+		"part": "head",
+		"characters": ["mc"],
+		"weight": 0.5,
+		"stats": {
+			"hp": 2,
+			"defense": 5
+		}
+	},
+	{
 		"id": "tshirt-red",
 		"part": "torso-2",
 		"characters": ["momonga"],
+		"weight": 0.5,
 		"lvl": 3,
 		"stats": {
 			"hp": 1
@@ -23,6 +35,7 @@
 		"id": "sword-diamond",
 		"part": ["weapon-hand-1", "weapon-hand-2"],
 		"class": ["warrior", "rogue", "paladin", "hunter", "overlord"],
+		"weight": 0.5,
 		"stats": {
 			"attack": 10
 		}
@@ -30,6 +43,7 @@
 	{
 		"id": "pendant-zen",
 		"part": "neck-1",
-		"races": ["human", "elf", "overlord"]
+		"races": ["human", "elf", "overlord"],
+		"weight": 0.5
 	}
 ]

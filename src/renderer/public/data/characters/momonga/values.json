@@ -29,5 +29,13 @@
 		"weapon-hand-2": null,
 		"hands": null,
 		"weapon_off": null
+	},
+	"inventory": {
+		"items": [
+			{
+				"itemId": "potion-health-small",
+				"quantity": 10
+			}
+		]
 	}
 }

@@ -60,6 +60,9 @@
 	align-items: center;
 	z-index: 2;
 	animation: logohide 12s ease-out forwards;
+	color: #f9d43e;
+	font-size: 10em;
+    font-family: Overlord;
 	img {
 		width: 100%;
 		height: auto;

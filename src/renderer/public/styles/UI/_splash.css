@@ -1,0 +1,49 @@
+/* Splash Screen Styles */
+.splash-screen {
+  position: absolute;
+  inset: 0;
+  background: var(--color-black);
+  color: var(--color-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.splash-screen ._box {
+  max-width: 60%;
+}
+
+.splash-screen ._title {
+  display: flex;
+  flex-direction: column;
+  font-size: calc(4 * var(--size));
+  font-family: Overlord;
+  width: 100%;
+  text-align: center;
+}
+
+.splash-screen ._title ._version {
+  text-align: right;
+  font-size: 0.5em;
+  margin-top: -1em;
+}
+
+.splash-screen ._text-box {
+  text-align: center;
+}
+
+.splash-screen .section {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.splash-screen .section.__show {
+  opacity: 1;
+  pointer-events: auto;
+}

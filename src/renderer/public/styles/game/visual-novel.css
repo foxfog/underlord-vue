@@ -51,27 +51,53 @@
 
 .dialogue-box {
 	position: absolute;
-	bottom: 20px;
-	left: 50%;
-	transform: translateX(-50%);
-	width: 80%;
-	max-width: 800px;
-	background: rgba(0, 0, 0, 0.8);
-	border-radius: 10px;
-	padding: 20px;
+	bottom: 0;
+	width: 100%;
+	padding: 0 2em;
 	color: white;
-	border: 2px solid #444;
-
+	height: 20%;
+	&::before {
+		content: "";
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		width: 100%;
+		height: 150%;
+		background: linear-gradient(to top, rgba(0, 0, 0, 0.75) 35%, rgba(255, 255, 255, 0) 100%);
+		z-index: 0;
+	}
+	.dialogue-in {
+		width: 60%;
+		position: absolute;
+		left: 0;
+		right: 0;
+		margin: auto;
+		z-index: 1;
+		pointer-events: none;
+	}
 	.speaker {
 		font-weight: bold;
 		color: #ffcc00;
-		margin-bottom: 10px;
-		font-size: 1.2em;
+		font-size: 2em;
+		height: 2em;
 	}
 
 	.dialogue-text {
-		margin-bottom: 10px;
 		line-height: 1.4;
+		font-size: 1.35em;
+		position: absolute;
+		top: calc(var(--size)* 3.5);
+		p {
+			margin-block-start: 0.2em;
+    		margin-block-end: 0.2em;
+		}
+		.blink {
+			animation: blink 1s step-start infinite;
+		}
+		.secret {
+			background: #000;
+			color: transparent;
+		}
 	}
 
 	.narration-text {
@@ -103,18 +129,37 @@
 	}
 
 	.continue-btn {
-		padding: 10px 20px;
+		padding: 0.5em 2em;
 		background: #007bff;
 		color: white;
 		border: none;
-		border-radius: 5px;
+		border-radius: 0.2em;
 		cursor: pointer;
 		float: right;
 		transition: background 0.2s ease;
-
+		position: absolute;
+		right: 2em;
+		bottom: 2em;
 		&:hover {
 			background: #0056b3;
 		}
 	}
+	.hidden-continue {
+		width: 100%;
+		height: var(--appH);
+		bottom: 0;
+		position: absolute;
+		background: none;
+		border: 0;
+		padding: 0;
+	}
 }
 
+@keyframes blink {
+	0%, 50% {
+		opacity: 1;
+	}
+	50.01%, 100% {
+		opacity: 0;
+	}
+}

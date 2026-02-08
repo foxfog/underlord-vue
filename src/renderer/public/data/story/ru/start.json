@@ -31,7 +31,7 @@
 			"type": "titles",
 			"text": "<p>2138 год. Земля. Мир задыхается... Промышленные мегаполисы поглотили планету. Небо скрыто смогом. Океаны отравлены. Природа существует лишь в заповедниках за стеклом и колючей проволокой. Большинство людей никогда не видели настоящих звёзд. Не дышали чистым воздухом. Не касались живого дерева. Реальность стала тюрьмой из бетона и химикатов. Но виртуальная реальность предлагает побег. Миры, где всё ещё есть небо. Где можно почувствовать себя... живым. Сегодня закрывается одна из величайших DMMO-RPG игр. Эпоха YGGDRASIL™ заканчивается...</p><br><br> <p>А у тебя заканчивается смена...</p>",
 			"class": "sw-title-block",
-			"wrap": "<div class='sw-stars'></div><div class='sw-twinkling'></div><div class='sw-old-filter'><div class='sw-logo'><img src='images/sw/sw-logo.svg'></div><div class='sw-fade'></div><div class='sw-inner'><div class='sw-crawl'>%text%</div></div></div>",
+			"wrap": "<div class='sw-stars'></div><div class='sw-twinkling'></div><div class='sw-old-filter'><div class='sw-logo'>UnderlorD</div><div class='sw-fade'></div><div class='sw-inner'><div class='sw-crawl'>%text%</div></div></div>",
 			"duration": 85,
 			"auto-end": true,
 			"effect-end": {	
@@ -81,10 +81,10 @@
 			"id": "location_time_info",
 			"steps": [
 				{
-					"text": "<p><b>Местоположение:</b> <s>какой то город</s></p>"
+					"text": "<p><b>Местоположение:</b> &nbsp;&nbsp;<span class='secret'>какой то город</span></p>"
 				},
 				{
-					"text": "<p><b>Время:</b> 20:52</p>"
+					"text": "<p><b>Время:</b> &nbsp;&nbsp;20<span class='blink'>:</span>52</p>"
 				}
 			]
 		},
@@ -92,6 +92,8 @@
 		{ 
 			"type": "show",
 			"character": "mc",
+			"orientation": "left",
+			"back": false,
 			"position": {"l": 20, "r": "auto"},
 			"from": {"l": -25},
 			"duration": 0.5,
@@ -107,6 +109,13 @@
 			"type": "dialogue",
 			"character": "mc",
 			"text": "Еще один день в этом аду..."
+		},
+
+		{ 
+			"type": "show",
+			"character": "mc",
+			"orientation": "right",
+			"duration": 0.5
 		},
 
 		{

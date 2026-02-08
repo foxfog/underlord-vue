@@ -19,6 +19,9 @@
 			column-gap: 1em;
 			.settings-item-value {
 				display: flex;
+				width: 3em;
+                text-align: right;
+                justify-content: end;
 			}
 		}
 	}

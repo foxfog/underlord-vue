@@ -1,22 +1,25 @@
 <template>
 	<div class="page-content">
-		<!-- Main menu content -->
-		<div v-if="currentView === 'main-menu'" class="main-menu-content">
-			<HomeContent />
-		</div>
-		
-		<!-- Settings content -->
-		<div v-else-if="currentView === 'settings'" class="settings-content">
-			<div class="page-header">
-				<div class="page-title">{{ $t('mainmenu.settings') }}</div>
+		<Transition name="fade" mode="out-in">
+			<!-- Main menu content -->
+			<HomeContent v-if="currentView === 'main-menu'" key="main-menu" />
+			
+			<!-- Settings content -->
+			<div v-else-if="currentView === 'settings'" key="settings" class="settings-wrapper">
+				<div class="page-header">
+					<div class="page-title">{{ $t('mainmenu.settings') }}</div>
+				</div>
+				<SettingsContent @saved="onSettingsSaved" @reset="onSettingsReset" />
 			</div>
-			<SettingsContent @saved="onSettingsSaved" @reset="onSettingsReset" />
-		</div>
-        
-		<!-- Saves content (visual placeholder) -->
-		<div v-else-if="currentView === 'saves'" class="saves-content">
-			<SavesContent :in-game="inGameContext" @load-request="(data) => emit('load-request', data)" />
-		</div>
+	        
+			<!-- Saves content (visual placeholder) -->
+			<div v-else-if="currentView === 'saves'" key="saves" class="saves-wrapper">
+				<div class="page-header">
+					<div class="page-title">{{ $t('mainmenu.save_load') }}</div>
+				</div>
+				<SavesContent :in-game="inGameContext" @load-request="(data) => emit('load-request', data)" />
+			</div>
+		</Transition>
 		
 		<!-- Additional content can be added here -->
 		<slot></slot>
@@ -24,7 +27,7 @@
 </template>
 
 <script setup>
-	import { defineProps, defineEmits } from 'vue'
+	import { defineProps, defineEmits, watch } from 'vue'
 	import HomeContent from '@/components/HomeContent.vue'
 	import SettingsContent from '@/components/SettingsContent.vue'
 	import SavesContent from '@/components/SavesContent.vue'
@@ -39,6 +42,11 @@
 	
 	const emit = defineEmits(['back-to-menu', 'settings-saved', 'settings-reset', 'load-request'])
 	
+	// Watch for view changes
+	watch(() => props.currentView, (newView, oldView) => {
+		console.log(`DynamicContentArea: switching from "${oldView}" to "${newView}"`)
+	})
+	
 	// Event handlers
 	const onBackToMenu = () => {
 		emit('back-to-menu')
@@ -52,10 +60,3 @@
 		emit('settings-reset')
 	}
 </script>
-
-<style scoped>
-.settings-content .page-header,
-.saves-content .page-header {
-	margin-bottom: 1.5rem;
-}
-</style>

@@ -50,7 +50,7 @@
 		top: 50%;
 		width: calc(1.2 * var(--size));
 		height: calc(1.2 * var(--size));
-		background: var(--color-white);
+		background: var(--color-primary);
 		border: 2px solid var(--color-primary);
 		border-radius: 50%;
 		transform: translateY(-50%);

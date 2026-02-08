@@ -1,9 +1,12 @@
 <template>
 	<div class="game-area">
-		<!-- Stats Button -->
-		<button v-if="showStatsButton" class="stats-button" @click="toggleStatsModal">
-			📊 Статы
-		</button>
+		<!-- Top Toolbar -->
+		<Topbar
+			v-if="showTopbar"
+			:character="mcCharacter"
+			@open-stats="toggleStatsModal"
+			@open-inventory="toggleInventoryModal"
+		/>
 
 		<div class="game">
 			<VisualNovel
@@ -21,6 +24,14 @@
 			@close="toggleStatsModal"
 		/>
 
+		<!-- Inventory Modal -->
+		<InventoryModal
+			:is-visible="showInventoryModal"
+			:character="mcCharacter"
+			:items-data="itemsData"
+			@close="toggleInventoryModal"
+		/>
+
 		<!-- Menu overlay that can be toggled with Esc -->
 		<div v-show="menuVisible" class="menu-overlay">
 			<div class="overlay-content">
@@ -32,15 +43,6 @@
 						@settings-saved="onSettingsSaved"
 						@settings-reset="onSettingsReset"
 						@load-request="onLoadRequest"
-					/>
-				
-					<!-- Visual-only Save/Load modal (Ren'Py-like placeholders) -->
-					<SaveLoadModal ref="saveLoadRef"
-						:isVisible="showSaveLoadModal"
-						:visualNovel="visualNovel"
-						@close="closeSaveLoad"
-						@save-complete="onSaveComplete"
-						@load-complete="onLoadComplete"
 					/>
 				</div>
 				<div class="menu-area __overlay">
@@ -72,9 +74,10 @@ import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import VisualNovel from '../components/game/VisualNovel.vue'
 import CharacterStatsModal from '../components/game/CharacterStatsModal.vue'
+import InventoryModal from '../components/game/InventoryModal.vue'
+import Topbar from '../components/game/Topbar.vue'
 import DynamicContentArea from '@/components/DynamicContentArea.vue'
 import MainMenu from '@/components/MainMenu.vue'
-import SaveLoadModal from '@/components/SaveLoadModal.vue'
 import HistoryModal from '@/components/HistoryModal.vue'
 import { useSavesStore } from '@/stores/saves'
 import { useSettingsStore } from '@/stores/settings'
@@ -84,14 +87,13 @@ const route = useRoute()
 const settingsStore = useSettingsStore()
 const visualNovel = ref(null)
 const showStatsModal = ref(false)
+const showInventoryModal = ref(false)
 const mcCharacter = ref(null)
+const itemsData = ref({})
 
 // Menu and view state for the overlay
 const menuVisible = ref(false)
 const currentView = ref('main-menu')
-const showSaveLoadModal = ref(false)
-const saveLoadInitialMode = ref('save')
-const saveLoadRef = ref(null)
 const showHistoryModal = ref(false)
 const historyList = ref([])
 
@@ -99,13 +101,14 @@ const historyList = ref([])
 const uiVisibility = ref({
 	all: true,
 	'stats-button': true,
+	topbar: true,
 	hotbar: true,
 	dialogue: true
 })
 
 // Computed properties for UI visibility
-const showStatsButton = computed(() => {
-	return uiVisibility.value.all && uiVisibility.value['stats-button']
+const showTopbar = computed(() => {
+	return uiVisibility.value.all && uiVisibility.value.topbar
 })
 
 const showHotbar = computed(() => {
@@ -135,6 +138,11 @@ watch(menuVisible, (isVisible) => {
 	}
 })
 
+// Watch for view changes
+watch(() => currentView.value, (newView, oldView) => {
+	console.log(`Current view changed from "${oldView}" to "${newView}"`)
+})
+
 function onEnd() {
 	// Stop game music, restore background music
 	settingsStore.isMusicPlaying = true
@@ -143,6 +151,10 @@ function onEnd() {
 
 function toggleStatsModal() {
 	showStatsModal.value = !showStatsModal.value
+}
+
+function toggleInventoryModal() {
+	showInventoryModal.value = !showInventoryModal.value
 }
 
 function onCharacterLoaded(characterData) {
@@ -171,31 +183,9 @@ const handleNavigation = (view) => {
 		showSaves()
 	} else if (view === 'main-menu') {
 		showMainMenu()
-	} else if (view === 'save-load') {
-		showSaveLoadModal.value = true
 	} else if (view === 'home-screen') {
 		router.push('/home')
 	}
-}
-
-const closeSaveLoad = () => {
-	showSaveLoadModal.value = false
-	currentView.value = 'main-menu'
-}
-
-function onSaveComplete(data) {
-	console.log('Game saved:', data)
-	// Optionally close the modal after saving
-	showSaveLoadModal.value = false
-	currentView.value = 'main-menu'
-}
-
-function onLoadComplete(data) {
-	console.log('Game loaded:', data)
-	// Close menu and resume the game (stop background music and restore game streams)
-	showSaveLoadModal.value = false
-	menuVisible.value = false
-	settingsStore.isMusicPlaying = false
 }
 
 function onSettingsSaved() {
@@ -246,17 +236,13 @@ function openMainMenu() {
 }
 
 function openSave() {
-  showSaveLoadModal.value = true
-  nextTick(() => {
-    if (saveLoadRef.value && typeof saveLoadRef.value.setMode === 'function') saveLoadRef.value.setMode('save')
-  })
+  menuVisible.value = true
+  currentView.value = 'saves'
 }
 
 function openLoad() {
-  showSaveLoadModal.value = true
-  nextTick(() => {
-    if (saveLoadRef.value && typeof saveLoadRef.value.setMode === 'function') saveLoadRef.value.setMode('load')
-  })
+  menuVisible.value = true
+  currentView.value = 'saves'
 }
 
 // Toggle menu visibility via Escape key
@@ -271,6 +257,24 @@ onMounted(() => {
 	settingsStore.isMusicPlaying = false
 	
 	window.addEventListener('keydown', onKeyDown)
+
+	// Load items data (equipment and consumables)
+	Promise.all([
+		fetch('/data/characters/equipment.json').then(r => r.json()),
+		fetch('/data/characters/other.json').then(r => r.json())
+	]).then(([equipment, other]) => {
+		// Merge both item collections by id
+		itemsData.value = {}
+		equipment.forEach(item => {
+			itemsData.value[item.id] = item
+		})
+		other.forEach(item => {
+			itemsData.value[item.id] = item
+		})
+		console.log('Items data loaded:', itemsData.value)
+	}).catch(err => {
+		console.error('Failed to load items data:', err)
+	})
 
 	// If this is a new game, reset the VisualNovel state
 	if (route.meta.newGame && visualNovel.value) {
@@ -314,106 +318,3 @@ onUnmounted(() => {
 	window.removeEventListener('keydown', onKeyDown)
 })
 </script>
-
-<style scoped>
-.game-area {
-	display: flex;
-	flex-direction: column;
-	width: 100%;
-	height: 100%;
-	background: #1a1a1a;
-	color: #fff;
-	position: relative;
-}
-
-.hotbar {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 12px;
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  z-index: 1500;
-}
-.hotbar-btn {
-  background: rgba(255,255,255,0.04);
-  color: #fff;
-  border: 1px solid rgba(255,255,255,0.06);
-  padding: 8px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-}
-.hotbar-btn:hover { background: rgba(255,255,255,0.06) }
-
-.stats-button {
-	position: absolute;
-	top: 20px;
-	left: 20px;
-	z-index: 100;
-	background-color: #2c2c2c;
-	color: white;
-	border: 2px solid #444;
-	border-radius: 8px;
-	padding: 10px 15px;
-	font-size: 1rem;
-	cursor: pointer;
-	transition: all 0.2s ease;
-	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-}
-
-.stats-button:hover {
-	background-color: #3a3a3a;
-	border-color: #007bff;
-	transform: translateY(-2px);
-	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
-}
-
-.game {
-	flex: 1;
-	position: relative;
-	overflow: hidden;
-}
-
-.menu-overlay {
-	position: absolute;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
-	z-index: 250;
-	display: flex;
-	align-items: stretch;
-	background: rgba(0, 0, 0, 0.4);
-}
-
-.overlay-content {
-	display: flex;
-	width: 100%;
-}
-
-.overlay-content .content-area {
-	flex: 1;
-	padding: 24px;
-}
-
-.menu-area.__overlay {
-	width: 320px;
-	background: #111;
-	border-left: 1px solid #222;
-	padding: 16px;
-	box-shadow: -4px 0 12px rgba(0,0,0,0.6);
-}
-
-.game-background {
-	position: absolute;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
-	background-size: cover;
-	background-position: center;
-	transition: background 0.5s ease;
-}
-
-</style>

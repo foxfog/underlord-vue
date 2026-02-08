@@ -37,7 +37,7 @@
 		>
 			<div class="_box ui-poscen">
 				<div class="_title">
-					<div class="_name">Underlord</div>
+					<div class="_name">UnderlorD</div>
 					<div class="_version">0.1</div>
 				</div>
 			</div>
@@ -135,30 +135,3 @@
 	})
 </script>
 
-<style scoped>
-	.splash-screen {
-		position: absolute;
-		inset: 0;
-		background: var(--color-black);
-		color: var(--color-white);
-		._box {
-			max-width: 60%;
-			._title {
-				display: flex;
-				flex-direction: column;
-				font-size: calc(4 * var(--size));
-				font-family: Overlord;
-				width: 100%;
-				text-align: center;
-				._version {
-					text-align: right;
-					font-size: 0.5em;
-					margin-top: -1em;
-				}
-			}
-			._text-box {
-				text-align: center;
-			}
-		}
-	}
-</style>
