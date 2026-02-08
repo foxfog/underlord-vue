@@ -63,20 +63,20 @@ const cssVariables = computed(() => {
   // effect-start variables
   if (props.effects.effectStart) {
     if (props.effects.effectStart.duration) {
-      vars['--duration-start'] = `${props.effects.effectStart.duration}ms`
+      vars['--duration-start'] = `${props.effects.effectStart.duration}s`
     }
     if (props.effects.effectStart.delay) {
-      vars['--delay-start'] = `${props.effects.effectStart.delay}ms`
+      vars['--delay-start'] = `${props.effects.effectStart.delay}s`
     }
   }
   
   // effect variables
   if (props.effects.effect) {
     if (props.effects.effect.duration) {
-      vars['--duration'] = `${props.effects.effect.duration}ms`
+      vars['--duration'] = `${props.effects.effect.duration}s`
     }
     if (props.effects.effect.delay) {
-      vars['--delay'] = `${props.effects.effect.delay}ms`
+      vars['--delay'] = `${props.effects.effect.delay}s`
     }
     // Default to infinite repeat if not specified
     vars['--repeat'] = props.effects.effect.repeat ?? 'infinite'
@@ -85,10 +85,10 @@ const cssVariables = computed(() => {
   // effect-end variables
   if (props.effects.effectEnd) {
     if (props.effects.effectEnd.duration) {
-      vars['--duration-end'] = `${props.effects.effectEnd.duration}ms`
+      vars['--duration-end'] = `${props.effects.effectEnd.duration}s`
     }
     if (props.effects.effectEnd.delay) {
-      vars['--delay-end'] = `${props.effects.effectEnd.delay}ms`
+      vars['--delay-end'] = `${props.effects.effectEnd.delay}s`
     }
   }
   
@@ -203,8 +203,8 @@ function playEffectEnd() {
     isPlayingEffectEnd.value = true
     appliedClasses.value = props.effects.effectEnd.class || ''
     
-    const endDuration = props.effects.effectEnd.duration || 0
-    const endDelay = props.effects.effectEnd.delay || 0
+    const endDuration = (props.effects.effectEnd.duration || 0) * 1000 // Convert seconds to milliseconds
+    const endDelay = (props.effects.effectEnd.delay || 0) * 1000 // Convert seconds to milliseconds
     
     // Account for both delay and duration
     effectEndTimeout = setTimeout(() => {
@@ -232,7 +232,7 @@ function startEffectSequence() {
   if (props.effects.effectStart) {
     appliedClasses.value = props.effects.effectStart.class || ''
     
-    const startDuration = props.effects.effectStart.duration || 0
+    const startDuration = (props.effects.effectStart.duration || 0) * 1000 // Convert seconds to milliseconds
     
     // After effect-start completes, switch to main effect
     effectStartTimeout = setTimeout(() => {

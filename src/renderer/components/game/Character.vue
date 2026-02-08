@@ -23,7 +23,7 @@
 
 
 <script setup>
-import { defineProps, computed, ref, onMounted, onUnmounted } from 'vue'
+import { defineProps, computed, ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import SpritePart from './SpritePart.vue'
 
 const props = defineProps({
@@ -34,6 +34,7 @@ const props = defineProps({
 })
 
 const charBodyRef = ref(null)
+const isAnimating = ref(false)
 
 // Compute positioning style from character.position object
 const characterStyle = computed(() => {
@@ -41,8 +42,25 @@ const characterStyle = computed(() => {
     scale: props.character.scale || props.character.size || 1
   }
   
+  // Determine which position to use
+  // If we have fromPosition and NOT animating yet, use fromPosition
+  // If we have fromPosition and animating, use position (final) with transition
+  let positionToUse
+  if (props.character.fromPosition && !isAnimating.value) {
+    positionToUse = props.character.fromPosition
+  } else {
+    positionToUse = props.character.position
+  }
+  
+  // Add transition only when animating
+  if (isAnimating.value && props.character.animationDuration) {
+    // animationDuration is in milliseconds, convert to seconds for CSS
+    const durationInSeconds = props.character.animationDuration / 1000
+    style.transition = `all ${durationInSeconds}s ease-in-out`
+  }
+  
   // Map position aliases to CSS properties
-  if (props.character.position) {
+  if (positionToUse) {
     const posMap = {
       l: 'left',
       r: 'right',
@@ -51,8 +69,8 @@ const characterStyle = computed(() => {
     }
     
     for (const [alias, cssProp] of Object.entries(posMap)) {
-      if (props.character.position[alias] !== undefined) {
-        const value = props.character.position[alias]
+      if (positionToUse[alias] !== undefined) {
+        const value = positionToUse[alias]
         // Add % if value is a number
         style[cssProp] = typeof value === 'number' ? `${value}%` : value
       }
@@ -61,6 +79,22 @@ const characterStyle = computed(() => {
   
   return style
 })
+
+// Watch for animation trigger
+watch(() => props.character.fromPosition, (newFromPosition) => {
+  if (newFromPosition) {
+    console.log(`🎬 [${props.character.id}] Frame 1: Show at fromPosition=${JSON.stringify(newFromPosition)}`)
+    // Start with fromPosition (isAnimating = false)
+    isAnimating.value = false
+    
+    // Next tick, apply animation to position
+    nextTick(() => {
+      const durationInSeconds = props.character.animationDuration ? (props.character.animationDuration / 1000) : 'unknown'
+      console.log(`🎬 [${props.character.id}] Frame 2: Animate to position=${JSON.stringify(props.character.position)} (transition: ${durationInSeconds}s)`)
+      isAnimating.value = true
+    })
+  }
+}, { immediate: true })
 
 onMounted(() => {
   if (!charBodyRef.value) return
@@ -114,4 +148,3 @@ const spritesByParent = computed(() => {
   return grouped
 })
 </script>
-

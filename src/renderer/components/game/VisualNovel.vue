@@ -66,3 +66,11 @@ defineExpose({ getGameState, restoreGameState, resetGameState, startStory: () =>
 
 </script>
 
+<style scoped>
+:root {
+  --game-width: 100%;
+  --game-height: 100%;
+}
+
+/* Root container for all visual novel elements */
+</style>

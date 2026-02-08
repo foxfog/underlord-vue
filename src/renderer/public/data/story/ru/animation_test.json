@@ -1,0 +1,80 @@
+{
+	"id": "animation_test",
+	"steps": [
+		{
+			"type": "scene",
+			"id": "mc_apartment"
+		},
+
+		{
+			"type": "dialogue",
+			"text": "Тест 1: Персонаж появляется с анимацией слева"
+		},
+
+		{
+			"type": "show",
+			"character": "mc",
+			"position": {"l": 20},
+			"from": {"l": -25},
+			"duration": 2000,
+			"class": "big-char"
+		},
+
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "Я появился с анимацией!"
+		},
+
+		{
+			"type": "dialogue",
+			"text": "Тест 2: Добавим второго персонажа справа с другой скоростью"
+		},
+
+		{
+			"type": "show",
+			"character": "albedo",
+			"position": {"r": 15},
+			"from": {"r": -30},
+			"duration": 1500,
+			"class": "big-char"
+		},
+
+		{
+			"type": "dialogue",
+			"character": "albedo",
+			"text": "А я появилась быстрее!"
+		},
+
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "Ты права!"
+		},
+
+		{
+			"type": "dialogue",
+			"text": "Тест 3: Персонаж с дефолтной длительностью (1000ms)"
+		},
+
+		{
+			"type": "show",
+			"character": "momonga",
+			"position": {"l": 50},
+			"from": {"l": 0}
+		},
+
+		{
+			"type": "dialogue",
+			"character": "momonga",
+			"text": "Я появился с дефолтной скоростью 1000ms!"
+		},
+
+		{
+			"type": "dialogue",
+			"text": "Все тесты анимации завершены!"
+		},
+
+		{ "type": "end" }
+	]
+}

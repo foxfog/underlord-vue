@@ -251,10 +251,34 @@ export function useVisualNovel({ src, emit } = {}) {
     const characterId = typeof step === 'string' ? step : step.character
     const character = characterData.value[characterId]
     if (character) {
-      // Apply position if provided
+      // Set initial position from 'from' if provided
+      if (step.from && typeof step === 'object') {
+        character.fromPosition = step.from
+        console.log(`🎬 [${characterId}] Animation started: from=${JSON.stringify(step.from)} to=${JSON.stringify(step.position)} duration=${step.duration ?? 1}s`)
+      } else {
+        character.fromPosition = null
+      }
+      
+      // Set target position
       if (step.position && typeof step === 'object') {
         character.position = step.position
       }
+      
+      // Set animation duration (default 1000ms if from is specified but duration is not)
+      // Duration in JSON is in seconds, convert to milliseconds for CSS
+      if (step.from && typeof step === 'object') {
+        character.animationDuration = ((step.duration ?? 1) * 1000)
+      } else if (step.duration && typeof step === 'object') {
+        character.animationDuration = (step.duration * 1000)
+      } else {
+        character.animationDuration = null
+      }
+      
+      // Apply class if provided
+      if (step.class && typeof step === 'object') {
+        character.customClass = step.class
+      }
+      
       if (!visibleCharacters.value.some(c => c.id === characterId)) {
         visibleCharacters.value.push(character)
       }
@@ -410,7 +434,7 @@ export function useVisualNovel({ src, emit } = {}) {
       effect: step.effect || null,
       effectEnd: step['effect-end'] || null,
       typewriter: step.typewriter || false,
-      duration: step.duration || 0,
+      duration: (step.duration || 0) * 1000, // Convert seconds to milliseconds
       class: step.class || null,
       autoEnd: step['auto-end'] || false
     }
@@ -432,7 +456,7 @@ export function useVisualNovel({ src, emit } = {}) {
         } else {
           advanceStory()
         }
-      }, step.duration)
+      }, step.duration * 1000) // Convert seconds to milliseconds
     }
   }
 
