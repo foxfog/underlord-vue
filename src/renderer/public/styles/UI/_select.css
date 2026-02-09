@@ -15,20 +15,20 @@
 		height: 1.2em;
 		border: 2px solid var(--color-border-alpha);
 		border-radius: 3px;
-		background: var(--color-bg-transparent);
+		background-color: var(--color-bg-transparent);
 		cursor: pointer;
 		transition: all 0.2s ease;
 		margin: 0;
 		flex-shrink: 0;
 
 		&:checked {
-			background: var(--color-primary);
+			background-color: var(--color-primary);
 			border-color: var(--color-primary);
 		}
 
 		&:hover {
 			border-color: var(--color-primary);
-			background: var(--color-primary-alpha);
+			background-color: var(--color-primary-alpha);
 		}
 
 		&:disabled {
@@ -95,7 +95,6 @@
 	&._loading {
 		.ui-dropdown-toggle {
 			position: relative;
-
 			&::after {
 				content: '';
 				position: absolute;
@@ -116,7 +115,6 @@
 		padding: 0.5em;
 		border-bottom: 1px solid var(--color-border-light);
 		background: var(--color-bg-overlay-dark);
-
 		input {
 			width: 100%;
 			padding: 0.5em;

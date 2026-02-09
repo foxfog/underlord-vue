@@ -1,7 +1,7 @@
 // src/main/index.js
 
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
-import { join, dirname } from 'path'
+import { join } from 'path'
 import fs from 'fs/promises'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 

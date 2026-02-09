@@ -1,98 +1,67 @@
 <template>
-	<div v-if="isVisible" class="modal" @click="closeModal">
+	<div v-if="isVisible" class="modal _inventory" @click="closeModal">
 		<div class="modal-content" @click.stop>
 			<div class="modal-header">
 				<h2 class="modal-title">{{ character?.name }} - Инвентарь</h2>
 				<button class="btn-close" @click="closeModal">×</button>
 			</div>
 
-			<!-- Tabs Navigation -->
-			<div class="modal-tabs">
-				<button
-					v-for="tab in tabs"
-					:key="tab.id"
-					class="modal-tab"
-					:class="{ active: activeTab === tab.id }"
-					@click="activeTab = tab.id"
-				>
-					{{ tab.label }}
-				</button>
-			</div>
-
-			<!-- Tab Content -->
-			<div class="modal-body">
-				<!-- Inventory Tab -->
-				<div v-show="activeTab === 'inventory'" class="tab-content">
-					<div v-if="inventoryItems.length > 0" class="inventory-list">
-						<div v-for="item in inventoryItems" :key="item.itemId" class="inventory-item">
-							<div class="item-icon">📦</div>
-							<div class="item-info">
-								<div class="item-name">{{ item.itemName }}</div>
-								<div class="item-weight">Вес: {{ item.weight }}</div>
-							</div>
-							<div class="item-quantity" v-if="item.quantity > 1">
-								x{{ item.quantity }}
-							</div>
-						</div>
+			<div class="modal-body inventory-layout">
+				<div class="left-panel">
+					<div class="char-preview">
+						<Character :character="character" />
 					</div>
-					<div v-else class="empty-message">
-						Инвентарь пуст
-					</div>
-				</div>
 
-				<!-- Statistics Tab -->
-				<div v-show="activeTab === 'statistics'" class="tab-content">
-					<div class="stats-grid">
-						<div class="stat-item">
-							<span class="stat-label">HP:</span>
-							<span class="stat-value">{{ (character?.stats?.hp ?? character?.hp) }} / {{ (character?.stats?.hpmax ?? character?.hpmax) }}</span>
-							<div class="stat-bar">
-								<div 
-									class="stat-fill" 
-									:style="{ width: hpPercentage + '%' }"
-								></div>
+					<div class="slots-grid">
+						<div
+							v-for="(value, slot) in equipmentSlots"
+							:key="slot"
+							class="slot"
+							@dragover.prevent
+							@drop="onDropToSlot($event, slot)"
+						>
+							<div
+								v-if="value"
+								class="slot-item"
+								draggable="true"
+								@dragstart="onSlotDragStart($event, slot)"
+							>
+								<img v-if="getItemSprite(value)" :src="getItemSprite(value)" :alt="value" />
+								<span v-else class="slot-id">{{ value }}</span>
 							</div>
-						</div>
-						
-						<div class="stat-item">
-							<span class="stat-label">MP:</span>
-							<span class="stat-value">{{ (character?.stats?.mp ?? character?.mp) }} / {{ (character?.stats?.mpmax ?? character?.mpmax) }}</span>
-							<div class="stat-bar">
-								<div 
-									class="stat-fill mp" 
-									:style="{ width: mpPercentage + '%' }"
-								></div>
-							</div>
-						</div>
-						
-						<div class="stat-item">
-							<span class="stat-label">Атака:</span>
-							<span class="stat-value">{{ character?.stats?.attack ?? character?.attack }}</span>
-						</div>
-
-						<div class="stat-item">
-							<span class="stat-label">Защита:</span>
-							<span class="stat-value">{{ character?.stats?.defense ?? character?.defense ?? 0 }}</span>
+							<div v-else class="slot-empty">—</div>
 						</div>
 					</div>
 				</div>
 
-				<!-- Abilities Tab -->
-				<div v-show="activeTab === 'abilities'" class="tab-content">
-					<div v-if="abilities.length > 0" class="abilities-list">
-						<div v-for="ability in abilities" :key="ability.id" class="ability-item">
-							<div class="ability-name">{{ ability.name }}</div>
-							<div class="ability-description">{{ ability.description }}</div>
-						</div>
+				<div class="right-panel">
+					<!-- Tabs Navigation -->
+					<div class="modal-tabs">
+						<button
+							v-for="tab in tabs"
+							:key="tab.id"
+							class="modal-tab"
+							:class="{ active: activeTab === tab.id }"
+							@click="activeTab = tab.id"
+						>
+							{{ tab.label }}
+						</button>
 					</div>
-					<div v-else class="empty-message">
-						Способности не найдены
+
+					<!-- Tab Content -->
+					<div class="tab-content">
+						<InventoryItems
+							v-show="activeTab === 'inventory'"
+							:items="inventoryItems"
+							:items-data="propsItemsData"
+							@drag-inventory-drop="handleInventoryDrop"
+						/>
+
+						<InventoryStats v-show="activeTab === 'statistics'" :character="character" />
+
+						<InventoryAbilities v-show="activeTab === 'abilities'" :abilities="abilities" />
 					</div>
 				</div>
-			</div>
-
-			<div class="modal-footer">
-				<button class="btn btn-primary" @click="closeModal">Закрыть</button>
 			</div>
 		</div>
 	</div>
@@ -100,6 +69,10 @@
 
 <script setup>
 import { computed, ref } from 'vue'
+import InventoryItems from './InventoryItems.vue'
+import InventoryStats from './InventoryStats.vue'
+import InventoryAbilities from './InventoryAbilities.vue'
+import Character from '../characters/Character.vue'
 
 const props = defineProps({
 	isVisible: {
@@ -116,7 +89,7 @@ const props = defineProps({
 	}
 })
 
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'equip', 'unequip', 'swap'])
 
 const activeTab = ref('inventory')
 
@@ -145,6 +118,9 @@ const inventoryItems = computed(() => {
 	})
 })
 
+// expose itemsData under a local name for template prop binding
+const propsItemsData = props.itemsData
+
 const abilities = computed(() => {
 	if (!props.character?.abilities) return []
 
@@ -172,6 +148,62 @@ const mpPercentage = computed(() => {
 function closeModal() {
 	activeTab.value = 'inventory'
 	emit('close')
+}
+
+const equipmentSlots = computed(() => {
+	if (!props.character) return {}
+	return (
+		props.character.equipment_slots ||
+		props.character.equipmentSlots ||
+		props.character.equipment || {}
+	)
+})
+
+function getItemSprite(itemId) {
+	if (!props.itemsData) return null
+	const def = props.itemsData[itemId]
+	if (!def) return null
+	return def.sprite || def.image || def.icon || null
+}
+
+function onSlotDragStart(e, slot) {
+	try {
+		const payload = { type: 'slot', slot, itemId: equipmentSlots.value[slot] }
+		e.dataTransfer.setData('application/json', JSON.stringify(payload))
+		e.dataTransfer.effectAllowed = 'move'
+	} catch (err) {
+		console.error('slot drag start', err)
+	}
+}
+
+function onDropToSlot(e, slot) {
+	try {
+		const raw = e.dataTransfer.getData('application/json')
+		if (!raw) return
+		const payload = JSON.parse(raw)
+
+		if (payload.type === 'item') {
+			// equipping an item from inventory into slot
+			emit('equip', { slot, itemId: payload.itemId })
+			return
+		}
+
+		if (payload.type === 'slot') {
+			// swapping between slots
+			emit('swap', { from: payload.slot, to: slot })
+			return
+		}
+	} catch (err) {
+		console.error('drop to slot parse error', err)
+	}
+}
+
+function handleInventoryDrop(payload) {
+	// payload forwarded from InventoryItems when user drops something onto inventory
+	if (!payload || !payload.type) return
+	if (payload.type === 'slot') {
+		emit('unequip', { slot: payload.slot })
+	}
 }
 </script>
 

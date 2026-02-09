@@ -1,16 +1,16 @@
 @font-face {
 	font-family: Overlord;
-	src: url('../../fonts/Overlord.woff');
+	src: url('/fonts/Overlord.woff');
 }
 
 @font-face {
 	font-family: Kurale;
-	src: url('../../fonts/Kurale.ttf');
+	src: url('/fonts/Kurale.ttf');
 }
 
 @font-face {
 	font-family: icomoon;
-	src: url('../../fonts/icomoon/icomoon.woff');
+	src: url('/fonts/icomoon/icomoon.woff');
 }
 
 [class^="icon-"], [class*=" icon-"] {

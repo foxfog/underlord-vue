@@ -22,56 +22,27 @@
 	border-radius: 4px;
 	font-size: 0.9em;
 	transition: all 0.2s ease;
-}
-
-.pagination-btn:hover:not(:disabled) {
-	border-color: var(--color-primary, #4a9eff);
-	background: var(--color-bg-overlay-medium, #333);
-}
-
-.pagination-btn.__active {
-	background: var(--color-primary, #4a9eff);
-	border-color: var(--color-primary, #4a9eff);
-	color: var(--color-white, #fff);
-}
-
-.pagination-btn:disabled {
-	opacity: 0.5;
-	cursor: not-allowed;
+	&:hover {
+		&:not(:disabled) {
+			border-color: var(--color-primary, #4a9eff);
+			background: var(--color-bg-overlay-medium, #333);
+		}
+	}
+	&.__active {
+		background: var(--color-primary, #4a9eff);
+		border-color: var(--color-primary, #4a9eff);
+		color: var(--color-white, #fff);
+	}
+	&:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
 }
 
 .slots-grid {
 	display: grid;
 	grid-template-columns: repeat(3, 1fr);
 	gap: 12px;
-}
-
-.slot {
-	background: #111;
-	border: 1px solid #222;
-	padding: 8px;
-	cursor: pointer;
-	transition: all 0.2s ease;
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
-}
-
-.slot:hover {
-	border-color: #444;
-	background: #1a1a1a;
-}
-
-.slot.filled {
-	border: 2px solid #4a9eff;
-	background: #0d2847;
-	box-shadow: 0 0 8px rgba(74, 158, 255, 0.3);
-}
-
-.slot.filled:hover {
-	border-color: #6ab3ff;
-	background: #0f3050;
-	box-shadow: 0 0 12px rgba(74, 158, 255, 0.5);
 }
 
 .thumb {
@@ -86,10 +57,34 @@
 	text-align: center;
 }
 
-.slot.filled .thumb {
-	background: linear-gradient(135deg, #0a1f3d 0%, #0d2847 100%);
-	color: #4a9eff;
-	font-weight: bold;
+.slot {
+	background: #111;
+	border: 1px solid #222;
+	padding: 8px;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	&:hover {
+		border-color: #444;
+		background: #1a1a1a;
+	}
+	&.filled {
+		border: 2px solid #4a9eff;
+		background: #0d2847;
+		box-shadow: 0 0 8px rgba(74, 158, 255, 0.3);
+		&:hover {
+			border-color: #6ab3ff;
+			background: #0f3050;
+			box-shadow: 0 0 12px rgba(74, 158, 255, 0.5);
+		}
+		.thumb {
+			background: linear-gradient(135deg, #0a1f3d 0%, #0d2847 100%);
+			color: #4a9eff;
+			font-weight: bold;
+		}
+	}
 }
 
 .timestamp {
