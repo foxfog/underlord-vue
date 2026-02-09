@@ -6,13 +6,22 @@
 		<meta charset="UTF-8" />
 		<title>Underlord</title>
 		<script>
-			// Set base URL for Electron app
-			if (typeof window !== 'undefined') {
-				const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
-				const base = document.createElement('base');
-				base.href = baseUrl;
-				document.head.appendChild(base);
-			}
+			// Determine base path for asset loading
+			// In Electron, __dirname is available in preload context
+			// But for fetch requests, we need to calculate from window.location
+			window.__APP_BASE__ = (() => {
+				const url = new URL(window.location.href);
+				// For file:// protocol, get the directory containing index.html
+				if (url.protocol === 'file:') {
+					const pathname = url.pathname;
+					// Remove trailing /index.html and return with trailing slash
+					const dir = pathname.substring(0, pathname.lastIndexOf('/') + 1);
+					return dir;
+				}
+				// For http:// protocol (dev server), return root
+				return '/';
+			})();
+			console.log('App base path:', window.__APP_BASE__);
 		</script>
 		<meta
 			http-equiv="Content-Security-Policy"

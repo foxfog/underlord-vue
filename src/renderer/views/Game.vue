@@ -335,9 +335,14 @@ onMounted(() => {
 	window.addEventListener('keydown', onKeyDown)
 
 	// Load items data (equipment and consumables)
+	const getFullPath = (path) => {
+		const basePath = typeof window !== 'undefined' && window.__APP_BASE__ ? window.__APP_BASE__ : ''
+		return basePath ? basePath + path.replace(/^\//, '') : path
+	}
+
 	Promise.all([
-		fetch('/data/items/equipment.json').then(r => r.json()),
-		fetch('/data/items/other.json').then(r => r.json())
+		fetch(getFullPath('/data/items/equipment.json')).then(r => r.json()),
+		fetch(getFullPath('/data/items/other.json')).then(r => r.json())
 	]).then(([equipment, other]) => {
 		// Merge both item collections by id
 		itemsData.value = {}

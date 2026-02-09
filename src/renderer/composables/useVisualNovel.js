@@ -67,13 +67,21 @@ export function useVisualNovel({ src, emit } = {}) {
     // Convert .js to .json path
     const jsonPath = path.replace(/\.js$/, '.json')
     try {
-      const response = await fetch(jsonPath)
+      // Use the base path set in index.html for file:// protocol
+      // In dev mode, window.__APP_BASE__ will be '/', in production it will be the file path
+      const basePath = typeof window !== 'undefined' && window.__APP_BASE__ ? window.__APP_BASE__ : ''
+      const fullPath = basePath ? basePath + jsonPath.replace(/^\//, '') : jsonPath
+      
+      console.log(`📥 Loading: ${fullPath}`)
+      const response = await fetch(fullPath)
       if (!response.ok) {
         console.error(`❌ HTTP Error ${response.status}: ${response.statusText}`)
-        console.error(`   Attempting to fetch: ${jsonPath}`)
+        console.error(`   Full path: ${fullPath}`)
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
-      return await response.json()
+      const data = await response.json()
+      console.log(`✅ Loaded successfully`)
+      return data
     } catch (jsonError) {
       console.error('Error in loadDataFromPublic:', jsonError)
       console.error(`   Path: ${jsonPath}`)
