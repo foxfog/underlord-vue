@@ -37,7 +37,7 @@
 <script setup>
 import { ref, onBeforeUnmount, onUnmounted, watch } from 'vue'
 import { useSavesStore } from '@/stores/saves'
-import SavesGrid from './saves/SavesGrid.vue'
+import SavesGrid from './SavesGrid.vue'
 
 const props = defineProps({ inGame: { type: Boolean, default: false } })
 const emit = defineEmits(['load-request', 'save-request'])

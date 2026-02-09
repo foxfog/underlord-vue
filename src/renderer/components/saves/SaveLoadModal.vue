@@ -35,9 +35,9 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useSavesStore } from '../stores/saves'
-import SavesGrid from './saves/SavesGrid.vue'
-import ConfirmModal from './ConfirmModal.vue'
+import { useSavesStore } from '@/stores/saves'
+import SavesGrid from './SavesGrid.vue'
+import ConfirmModal from '../ConfirmModal.vue'
 
 const props = defineProps({
   isVisible: { type: Boolean, default: false },

@@ -5,6 +5,6 @@
 </template>
 
 <script setup>
-import Character from '../Character.vue'
+import Character from '../characters/Character.vue'
 const props = defineProps({ characters: { type: Array, default: () => [] } })
 </script>

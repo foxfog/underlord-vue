@@ -45,9 +45,9 @@
 
 <script setup>
 	import { ref, onMounted, onBeforeUnmount, onUnmounted } from 'vue'
-	import SettingsAudio from '@/components/settings/SettingsAudio.vue'
-	import SettingsGeneral from '@/components/settings/SettingsGeneral.vue'
-	import SettingsVideo from '@/components/settings/SettingsVideo.vue'
+	import SettingsAudio from './SettingsAudio.vue'
+	import SettingsGeneral from './SettingsGeneral.vue'
+	import SettingsVideo from './SettingsVideo.vue'
 	import { useSettingsStore } from '@/stores/settings'
 
 	const store = useSettingsStore()

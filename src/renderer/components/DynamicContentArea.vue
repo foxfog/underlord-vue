@@ -28,8 +28,8 @@
 <script setup>
 	import { defineProps, defineEmits, watch } from 'vue'
 	import HomeContent from '@/components/HomeContent.vue'
-	import SettingsContent from '@/components/SettingsContent.vue'
-	import SavesContent from '@/components/SavesContent.vue'
+	import SettingsContent from '@/components/settings/SettingsContent.vue'
+	import SavesContent from '@/components/saves/SavesContent.vue'
 	
 	const props = defineProps({
 		currentView: {

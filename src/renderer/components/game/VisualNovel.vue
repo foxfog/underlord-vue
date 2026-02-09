@@ -31,7 +31,7 @@
 
 <script setup>
 import { onMounted } from 'vue'
-import TextInputModal from './TextInputModal.vue'
+import TextInputModal from './modals/TextInputModal.vue'
 import StoryAudio from './StoryAudio.vue'
 import Background from './visual-novel/Background.vue'
 import CharacterList from './visual-novel/CharacterList.vue'

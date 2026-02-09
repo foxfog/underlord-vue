@@ -65,3 +65,4 @@ const styleWithHeight = computed(() => {
 		spriteHeight.value = `${event.target.naturalHeight}`
 	}
 </script>
+

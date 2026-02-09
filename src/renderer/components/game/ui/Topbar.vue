@@ -27,3 +27,4 @@ function openInventory() {
 	emit('open-inventory')
 }
 </script>
+
