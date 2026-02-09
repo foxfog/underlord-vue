@@ -42,8 +42,7 @@
 						@back-to-menu="showMainMenu"
 						@settings-saved="onSettingsSaved"
 						@settings-reset="onSettingsReset"
-						@load-request="onLoadRequest"
-					/>
+						@load-request="onLoadRequest"					@save-request="onSaveRequest"					/>
 				</div>
 				<div class="menu-area __overlay">
 					<MainMenu
@@ -67,6 +66,16 @@
 
 	<!-- History modal -->
 	<HistoryModal :isVisible="showHistoryModal" :entries="historyList" @close="showHistoryModal=false" />
+
+	<ConfirmModal
+		:visible="confirmVisible"
+		:title="confirmTitle"
+		:message="confirmMessage"
+		confirmText="Да"
+		cancelText="Отмена"
+		@confirm="onConfirm"
+		@cancel="onCancel"
+	/>
 </template>
 
 <script setup>
@@ -79,12 +88,14 @@ import Topbar from '../components/game/Topbar.vue'
 import DynamicContentArea from '@/components/DynamicContentArea.vue'
 import MainMenu from '@/components/MainMenu.vue'
 import HistoryModal from '@/components/HistoryModal.vue'
+import ConfirmModal from '@/components/ConfirmModal.vue'
 import { useSavesStore } from '@/stores/saves'
 import { useSettingsStore } from '@/stores/settings'
 
 const router = useRouter()
 const route = useRoute()
 const settingsStore = useSettingsStore()
+const savesStore = useSavesStore()
 const visualNovel = ref(null)
 const showStatsModal = ref(false)
 const showInventoryModal = ref(false)
@@ -96,6 +107,32 @@ const menuVisible = ref(false)
 const currentView = ref('main-menu')
 const showHistoryModal = ref(false)
 const historyList = ref([])
+
+const confirmVisible = ref(false)
+const confirmTitle = ref('')
+const confirmMessage = ref('')
+let confirmAction = null
+
+function showConfirm(title, message, action) {
+	confirmTitle.value = title
+	confirmMessage.value = message
+	confirmAction = action
+	confirmVisible.value = true
+}
+
+function onConfirm() {
+	confirmVisible.value = false
+	if (confirmAction) {
+		const act = confirmAction
+		confirmAction = null
+		act()
+	}
+}
+
+function onCancel() {
+	confirmVisible.value = false
+	confirmAction = null
+}
 
 // UI visibility states
 const uiVisibility = ref({
@@ -205,41 +242,76 @@ function onContinue() {
 
 async function onLoadRequest(saveData) {
  	try {
- 		if (!visualNovel.value) {
- 			console.warn('VisualNovel ref not ready')
- 			return
- 		}
+		if (!visualNovel.value) {
+			console.warn('VisualNovel ref not ready')
+			return
+		}
 
- 		console.log('Restoring game from save request', saveData)
- 		await visualNovel.value.restoreGameState(saveData.gameState)
-
- 		// Close menus and resume
- 		menuVisible.value = false
- 		currentView.value = 'main-menu'
- 		settingsStore.isMusicPlaying = false
+		// Ask confirmation before loading during an active game
+		showConfirm(
+			'Загрузить сохранение?',
+			`Загрузка слота ${saveData.slot + 1} приведёт к потере текущего прогресса. Продолжить?`,
+			async () => {
+				console.log('Restoring game from save request', saveData)
+				await visualNovel.value.restoreGameState(saveData.gameState)
+				menuVisible.value = false
+				currentView.value = 'main-menu'
+				settingsStore.isMusicPlaying = false
+			}
+		)
  	} catch (err) {
  		console.error('Failed to restore save from saves list:', err)
  		alert(`Failed to restore save: ${err.message}`)
  	}
 }
 
-// Hotbar actions
-function openHistory() {
-  if (!visualNovel.value) return
-  historyList.value = visualNovel.value.getHistory()
-  showHistoryModal.value = true
-}
+async function onSaveRequest(saveData) {
+	try {
+		if (!visualNovel.value) {
+			console.warn('VisualNovel ref not ready')
+			return
+		}
 
-function openMainMenu() {
-  menuVisible.value = true
-  currentView.value = 'main-menu'
-}
+		const gameState = visualNovel.value.getGameState()
+		const mcName = gameState.characterData?.mc?.name || 'Unknown'
 
-function openSave() {
-  menuVisible.value = true
-  currentView.value = 'saves'
-}
+		// If target slot already has a save, confirm overwrite
+		if (savesStore.hasSave(saveData.slot)) {
+			showConfirm(
+				'Перезаписать слот?',
+				`Слот ${saveData.slot + 1} уже содержит сохранение. Перезаписать?`,
+				async () => {
+					console.log('Saving game to slot', saveData.slot)
+					const result = await savesStore.saveGame(saveData.slot, gameState, mcName)
+					if (result.success) {
+						console.log('✔ Game saved to slot', saveData.slot)
+						await savesStore.listSaves()
+						menuVisible.value = false
+						currentView.value = 'main-menu'
+					} else {
+						alert(`Failed to save: ${result.error}`)
+					}
+				}
+			)
+			return
+		}
 
+		console.log('Saving game to slot', saveData.slot)
+		const result = await savesStore.saveGame(saveData.slot, gameState, mcName)
+
+		if (result.success) {
+			console.log('✔ Game saved to slot', saveData.slot)
+			await savesStore.listSaves()
+			menuVisible.value = false
+			currentView.value = 'main-menu'
+		} else {
+			alert(`Failed to save: ${result.error}`)
+		}
+	} catch (err) {
+		console.error('Failed to save game:', err)
+		alert(`Failed to save: ${err.message}`)
+	}
+}
 function openLoad() {
   menuVisible.value = true
   currentView.value = 'saves'
@@ -260,8 +332,8 @@ onMounted(() => {
 
 	// Load items data (equipment and consumables)
 	Promise.all([
-		fetch('/data/characters/equipment.json').then(r => r.json()),
-		fetch('/data/characters/other.json').then(r => r.json())
+		fetch('/data/items/equipment.json').then(r => r.json()),
+		fetch('/data/items/other.json').then(r => r.json())
 	]).then(([equipment, other]) => {
 		// Merge both item collections by id
 		itemsData.value = {}

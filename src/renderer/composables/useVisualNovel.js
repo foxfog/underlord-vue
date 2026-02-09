@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { useSavesStore } from '../stores/saves'
+import { extractVisibleCharacterDisplay, applyVisibleCharacterDisplay } from '../utils/saveGameUtils'
 
 export function useVisualNovel({ src, emit } = {}) {
   // State
@@ -823,7 +824,7 @@ export function useVisualNovel({ src, emit } = {}) {
       callStack: callStack.value,
       globalData: globalData.value,
       characterData: characterData.value,
-      visibleCharacters: visibleCharacters.value.map(c => c.id),
+      visibleCharacters: extractVisibleCharacterDisplay(visibleCharacters.value),
       currentScene: currentScene.value?.id,
       history: historyEntries.value.slice(),
       audioStreams: activeLoopingStreams
@@ -843,12 +844,39 @@ export function useVisualNovel({ src, emit } = {}) {
       if (saveData.characterData && !saveData.characterDataDelta) {
         Object.keys(saveData.characterData).forEach(characterId => { if (characterData.value[characterId]) Object.assign(characterData.value[characterId], saveData.characterData[characterId]) })
       }
+      // Rebuild equipment BEFORE restoring visible characters so they get the updated equipmentBySlot
+      Object.keys(characterData.value).forEach(charId => { rebuildEquipmentBySlot(charId) })
+      
       visibleCharacters.value = []
       if (saveData.visibleCharacters && Array.isArray(saveData.visibleCharacters)) {
-        saveData.visibleCharacters.forEach(characterId => { const character = characterData.value[characterId]; if (character) visibleCharacters.value.push(character) })
+        // Handle both old format (array of IDs) and new format (array of display objects)
+        if (saveData.visibleCharacters.length > 0) {
+          const firstItem = saveData.visibleCharacters[0]
+          
+          if (typeof firstItem === 'string') {
+            // Old format: array of character IDs - just get the character from characterData
+            saveData.visibleCharacters.forEach(characterId => { 
+              const character = characterData.value[characterId]
+              if (character) visibleCharacters.value.push(character) 
+            })
+          } else if (typeof firstItem === 'object' && firstItem.id) {
+            // New format: array of display objects - restore characters with display properties
+            saveData.visibleCharacters.forEach(displayData => {
+              const character = characterData.value[displayData.id]
+              if (character) {
+                // Apply display properties from saved data directly to original character
+                if (displayData.position !== undefined) character.position = displayData.position
+                if (displayData.orientation !== undefined) character.orientation = displayData.orientation
+                if (displayData.back !== undefined) character.back = displayData.back
+                if (displayData.customClass !== undefined) character.customClass = displayData.customClass
+                if (displayData.scale !== undefined) character.scale = displayData.scale
+                visibleCharacters.value.push(character)
+              }
+            })
+          }
+        }
       }
       if (saveData.currentScene && sceneData.value[saveData.currentScene]) currentScene.value = sceneData.value[saveData.currentScene]
-      Object.keys(characterData.value).forEach(charId => { rebuildEquipmentBySlot(charId) })
       currentDialogue.value = ''
       currentNarration.value = ''
       multiStepDialogueBuffer.value = ''

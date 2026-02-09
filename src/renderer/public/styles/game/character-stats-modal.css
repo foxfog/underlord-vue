@@ -1,4 +1,4 @@
-/* Character Stats Modal Styles */
+/* Character & Inventory Modal Styles (merged) */
 
 .modal {
 	position: fixed;
@@ -17,8 +17,13 @@
 		border-radius: 8px;
 		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 		min-width: 300px;
-		max-width: 400px;
+		/* expanded to accommodate inventory modal */
+		min-width: 300px;
+		max-width: 650px;
 		width: 90%;
+		max-height: 80vh;
+		display: flex;
+		flex-direction: column;
 
 		.modal-header {
 			padding: 15px 20px;
@@ -26,10 +31,11 @@
 			display: flex;
 			justify-content: space-between;
 			align-items: center;
+			flex-shrink: 0;
 
 			.modal-title {
 				margin: 0;
-				font-size: 1.25rem;
+				font-size: 1.25em;
 				font-weight: 500;
 				color: #fff;
 			}
@@ -37,8 +43,8 @@
 			.btn-close {
 				background: none;
 				border: none;
-				font-size: 1.5rem;
-				color: #aaa;
+				font-size: 1.5em;
+				color: #fff;
 				cursor: pointer;
 				padding: 0;
 				width: 30px;
@@ -46,55 +52,208 @@
 				display: flex;
 				align-items: center;
 				justify-content: center;
-				transition: color 0.2s ease;
+				transition: color 0.2s;
 
 				&:hover {
-					color: #fff;
+					color: #ff6b6b;
 				}
+			}
+		}
+
+		/* Tabs (inventory modal) */
+		.modal-tabs {
+			display: flex;
+			gap: 5px;
+			padding: 10px 15px;
+			background: #252525;
+			border-bottom: 1px solid #444;
+			flex-shrink: 0;
+		}
+
+		.modal-tab {
+			padding: 8px 16px;
+			background: rgba(255, 255, 255, 0.1);
+			border: 1px solid rgba(255, 255, 255, 0.2);
+			color: #ccc;
+			border-radius: 4px 4px 0 0;
+			cursor: pointer;
+			font-size: 13px;
+			font-weight: 500;
+			transition: all 0.2s ease;
+
+			&:hover {
+				background: rgba(255, 255, 255, 0.15);
+				border-color: rgba(255, 255, 255, 0.3);
+			}
+
+			&.active {
+				background: #4a9eff;
+				color: #fff;
+				border-color: #3a8fef;
 			}
 		}
 
 		.modal-body {
 			padding: 20px;
+			overflow-y: auto;
+			flex: 1;
 
-			.stats-grid {
+			.tab-content {
+				min-height: 200px;
+			}
+
+			/* Inventory list */
+			.inventory-list {
 				display: flex;
 				flex-direction: column;
+				gap: 8px;
+			}
+
+			.inventory-item {
+				display: flex;
+				align-items: center;
+				gap: 12px;
+				padding: 10px;
+				background: rgba(255, 255, 255, 0.05);
+				border: 1px solid rgba(255, 255, 255, 0.1);
+				border-radius: 4px;
+				transition: background 0.2s;
+			}
+
+			.inventory-item:hover {
+				background: rgba(255, 255, 255, 0.08);
+			}
+
+			.item-icon {
+				font-size: 24px;
+				min-width: 32px;
+				text-align: center;
+			}
+
+			.item-info {
+				flex: 1;
+				min-width: 0;
+			}
+
+			.item-name {
+				font-weight: 500;
+				color: #fff;
+				white-space: nowrap;
+				overflow: hidden;
+				text-overflow: ellipsis;
+			}
+
+			.item-weight {
+				font-size: 12px;
+				color: #aaa;
+				margin-top: 2px;
+			}
+
+			.item-quantity {
+				font-weight: 600;
+				color: #4a9eff;
+				min-width: 40px;
+				text-align: right;
+			}
+
+			/* Stats grid (keeps previous character styles but with adjusted sizing) */
+			.stats-grid {
+				display: grid;
+				grid-template-columns: 1fr;
 				gap: 15px;
+			}
 
-				.stat-item {
-					display: flex;
-					flex-direction: column;
-					gap: 5px;
+			.stat-item {
+				display: flex;
+				flex-direction: column;
+				gap: 5px;
+			}
 
-					.stat-label {
-						font-weight: bold;
-						color: #ddd;
-					}
+			.stat-label {
+				font-weight: 600;
+				color: #4a9eff;
+				font-size: 14px;
+			}
 
-					.stat-value {
-						color: #fff;
-						font-size: 1.1rem;
-					}
+			.stat-value {
+				color: #fff;
+				font-size: 16px;
+				font-weight: 500;
+			}
 
-					.stat-bar {
-						width: 100%;
-						height: 12px;
-						background-color: #444;
-						border-radius: 6px;
-						overflow: hidden;
+			.stat-bar {
+				height: 20px;
+				background: #1a1a1a;
+				border-radius: 3px;
+				border: 1px solid #444;
+				overflow: hidden;
+			}
 
-						.stat-fill {
-							height: 100%;
-							background-color: #4caf50;
-							transition: width 0.3s ease;
+			.stat-fill {
+				height: 100%;
+				background: linear-gradient(to right, #4a9eff, #6bb3ff);
+				transition: width 0.3s ease;
+			}
 
-							&.mp {
-								background-color: #2196f3;
-							}
-						}
-					}
-				}
+			.stat-fill.mp {
+				background: linear-gradient(to right, #7c3aed, #a855f7);
+			}
+
+			/* Abilities */
+			.abilities-list {
+				display: flex;
+				flex-direction: column;
+				gap: 10px;
+			}
+
+			.ability-item {
+				padding: 12px;
+				background: rgba(255, 255, 255, 0.05);
+				border: 1px solid rgba(255, 255, 255, 0.1);
+				border-radius: 4px;
+				transition: background 0.2s;
+			}
+
+			.ability-item:hover {
+				background: rgba(255, 255, 255, 0.08);
+			}
+
+			.ability-name {
+				font-weight: 600;
+				color: #ffd700;
+				margin-bottom: 5px;
+			}
+
+			.ability-description {
+				font-size: 13px;
+				color: #bbb;
+				line-height: 1.4;
+			}
+
+			/* Empty State */
+			.empty-message {
+				text-align: center;
+				padding: 40px 20px;
+				color: #888;
+				font-size: 14px;
+			}
+
+			/* Scrollbar */
+			&::-webkit-scrollbar {
+				width: 8px;
+			}
+
+			&::-webkit-scrollbar-track {
+				background: transparent;
+			}
+
+			&::-webkit-scrollbar-thumb {
+				background: rgba(255, 255, 255, 0.2);
+				border-radius: 4px;
+			}
+
+			&::-webkit-scrollbar-thumb:hover {
+				background: rgba(255, 255, 255, 0.3);
 			}
 		}
 
@@ -103,23 +262,24 @@
 			border-top: 1px solid #444;
 			display: flex;
 			justify-content: flex-end;
+			flex-shrink: 0;
 
 			.btn {
 				padding: 8px 16px;
 				border: none;
 				border-radius: 4px;
 				cursor: pointer;
-				font-size: 1rem;
-				transition: background-color 0.2s ease;
+				font-weight: 500;
+				transition: all 0.2s;
+			}
 
-				&.btn-primary {
-					background-color: #007bff;
-					color: white;
+			.btn-primary {
+				background: #4a9eff;
+				color: #fff;
+			}
 
-					&:hover {
-						background-color: #0056b3;
-					}
-				}
+			.btn-primary:hover {
+				background: #3a8fef;
 			}
 		}
 	}

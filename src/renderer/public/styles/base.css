@@ -2,7 +2,8 @@
 	--layout-width: 1920;
 	--layout-height: 1080;
 
-	--size-coef: calc(2 * 800 / var(--layout-width));
+	--size-coef: calc(2 * 800 / 1920);
+	/*--size-coef: calc(2 * 800 / var(--layout-width));*/
 	--size-pred: min(
 		calc(100dvw / var(--layout-width) * (var(--layout-width) / 100)),
 		calc(100dvh / var(--layout-height) * (var(--layout-width) / 100))
@@ -173,20 +174,20 @@ p {
 }
 
 .welcome-title {
-	font-size: 2.5rem;
+	font-size: 2.5em;
 	text-align: center;
-	margin-top: 2rem;
+	margin-top: 2em;
 	color: var(--text-primary);
 }
 
 .welcome-subtitle {
-	font-size: 1.2rem;
+	font-size: 1.2em;
 	text-align: center;
-	margin-top: 1rem;
+	margin-top: 1em;
 	color: var(--text-secondary);
 }
 
 .settings-content .page-header,
 .saves-content .page-header {
-	margin-bottom: 1.5rem;
+	margin-bottom: 1.5em;
 }

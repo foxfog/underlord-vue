@@ -157,3 +157,44 @@ export function createCharacterDefaults(characterData) {
   
   return defaults
 }
+
+/**
+ * Извлекает отображаемые свойства персонажей (position, orientation, back, class, scale)
+ */
+export function extractVisibleCharacterDisplay(visibleCharacters) {
+  return visibleCharacters.map(character => ({
+    id: character.id,
+    position: character.position,
+    orientation: character.orientation,
+    back: character.back,
+    customClass: character.customClass,
+    scale: character.scale
+  }))
+}
+
+/**
+ * Восстанавливает отображаемые свойства персонажей из сохраненных данных
+ */
+export function applyVisibleCharacterDisplay(characters, displayData) {
+  if (!displayData || !Array.isArray(displayData)) {
+    return characters
+  }
+
+  const displayMap = new Map(displayData.map(d => [d.id, d]))
+
+  return characters.map(character => {
+    const display = displayMap.get(character.id)
+    if (display) {
+      return {
+        ...character,
+        position: display.position,
+        orientation: display.orientation,
+        back: display.back,
+        customClass: display.customClass,
+        scale: display.scale
+      }
+    }
+    return character
+  })
+}
+

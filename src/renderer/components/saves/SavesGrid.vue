@@ -121,14 +121,8 @@ async function handleLoad(slot) {
 
 async function handleSave(slot) {
   try {
-    const result = await savesStore.saveGame(slot)
-    if (result.success) {
-      console.log('✔ Game saved to slot', slot)
-      await savesStore.listSaves()
-      emit('save', slot)
-    } else {
-      alert(`Failed to save: ${result.error}`)
-    }
+    // Emit save event for parent to handle (must provide gameState)
+    emit('save', slot)
   } catch (err) {
     console.error('Error saving slot:', err)
     alert(`Error: ${err.message}`)

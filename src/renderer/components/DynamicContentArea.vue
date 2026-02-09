@@ -11,13 +11,12 @@
 				</div>
 				<SettingsContent @saved="onSettingsSaved" @reset="onSettingsReset" />
 			</div>
-	        
 			<!-- Saves content (visual placeholder) -->
 			<div v-else-if="currentView === 'saves'" key="saves" class="saves-wrapper">
 				<div class="page-header">
 					<div class="page-title">{{ $t('mainmenu.save_load') }}</div>
 				</div>
-				<SavesContent :in-game="inGameContext" @load-request="(data) => emit('load-request', data)" />
+				<SavesContent :in-game="inGameContext" @load-request="(data) => emit('load-request', data)" @save-request="(data) => emit('save-request', data)" />
 			</div>
 		</Transition>
 		
@@ -40,7 +39,7 @@
 		inGameContext: { type: Boolean, default: false }
 	})
 	
-	const emit = defineEmits(['back-to-menu', 'settings-saved', 'settings-reset', 'load-request'])
+	const emit = defineEmits(['back-to-menu', 'settings-saved', 'settings-reset', 'load-request', 'save-request'])
 	
 	// Watch for view changes
 	watch(() => props.currentView, (newView, oldView) => {

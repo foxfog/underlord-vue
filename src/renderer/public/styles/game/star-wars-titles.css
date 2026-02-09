@@ -11,7 +11,7 @@
 .sw-text-blue {
 	color: #0676d1;
 	text-shadow: 0 0 0.6em rgb(0, 178, 238);
-	font-family: 'Pathway Gothic One', sans-serif;
+	font-family: Tahoma;
 }
 
 .sw-stars, .sw-twinkling {
@@ -89,7 +89,7 @@
     letter-spacing: 0.1em;
     line-height: 100%;
     text-align: justify;
-    font-family: 'Pathway Gothic One', sans-serif;
+    font-family: Tahoma;
     color: #f9d43e;
     text-shadow: 0 0 0.5em #ae5509;
 }
