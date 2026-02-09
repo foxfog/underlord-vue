@@ -14,8 +14,6 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits } from 'vue'
-
 const props = defineProps({
   visible: { type: Boolean, default: false },
   title: { type: String, default: '' },

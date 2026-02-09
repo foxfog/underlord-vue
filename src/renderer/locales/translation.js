@@ -1,4 +1,4 @@
-// src/renderer/public/locales/translation.js
+// src/renderer/locales/translation.js
 
 import i18n from "./index.js"
 

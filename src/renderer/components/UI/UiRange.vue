@@ -87,7 +87,7 @@
 		// Position thumb so left edge aligns at 0% and right edge aligns at 100%
 		// Thumb width is 1.2rem, so we need to subtract thumb width * progress
 		// to shift it left as progress increases
-		return `calc(${progressWidth.value}% - ${progress * 1.2}rem)`
+		return `calc(${progressWidth.value}% - ${progress * 1.2}em)`
 	})
 	
 	// Calculate value from position

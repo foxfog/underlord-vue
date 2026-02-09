@@ -27,7 +27,7 @@
 
 
 <script setup>
-import { defineProps, computed, ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { computed, ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import SpritePart from './SpritePart.vue'
 
 const props = defineProps({
