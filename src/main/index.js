@@ -1,6 +1,6 @@
 // src/main/index.js
 
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, protocol } from 'electron'
 import { join } from 'path'
 import fs from 'fs/promises'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
@@ -334,6 +334,16 @@ async function createWindow() {
 app.whenReady().then(async () => {
 	electronApp.setAppUserModelId('com.electron')
 	await ensureSettingsFile()
+	
+	// Register protocol to serve static files
+	if (!is.dev) {
+		protocol.registerFileProtocol('file', (request, callback) => {
+			const url = new URL(request.url)
+			const filePath = decodeURIComponent(url.pathname)
+			callback(filePath)
+		})
+	}
+	
 	app.on('browser-window-created', (_, window) => optimizer.watchWindowShortcuts(window))
 	createWindow()
 	app.on('activate', () => {

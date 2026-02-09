@@ -68,10 +68,16 @@ export function useVisualNovel({ src, emit } = {}) {
     const jsonPath = path.replace(/\.js$/, '.json')
     try {
       const response = await fetch(jsonPath)
-      if (response.ok) return await response.json()
-      throw new Error('JSON file not found')
+      if (!response.ok) {
+        console.error(`❌ HTTP Error ${response.status}: ${response.statusText}`)
+        console.error(`   Attempting to fetch: ${jsonPath}`)
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+      return await response.json()
     } catch (jsonError) {
       console.error('Error in loadDataFromPublic:', jsonError)
+      console.error(`   Path: ${jsonPath}`)
+      console.error(`   Error: ${jsonError.message}`)
       throw new Error(`Data file not found as JSON: ${jsonPath}`)
     }
   }

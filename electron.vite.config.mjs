@@ -20,6 +20,7 @@ export default defineConfig({
       }
     },
     plugins: [vue()],
+    publicDir: resolve(__dirname, 'src/renderer/public'),
   },
   builderOptions: { 
     asar: false,

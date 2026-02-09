@@ -11,7 +11,7 @@
 		<div class="game">
 			<VisualNovel
 				ref="visualNovel"
-				src="/data/story/ru/start.json"
+				:src="novelsrc"
 				@end="onEnd"
 				@character-loaded="onCharacterLoaded"
 			/>
@@ -112,6 +112,10 @@ const confirmVisible = ref(false)
 const confirmTitle = ref('')
 const confirmMessage = ref('')
 let confirmAction = null
+
+const novelsrc = computed(() => {
+	return '/data/story/ru/start.json'
+})
 
 function showConfirm(title, message, action) {
 	confirmTitle.value = title

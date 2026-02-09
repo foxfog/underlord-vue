@@ -26,12 +26,12 @@
 }
 
 .sw-stars {
-  background:#000 url('@/images/sw/space.png') repeat top center;
+  background:#000 url('@/public/images/sw/space.png') repeat top center;
   z-index: 0;
 }
 
 .sw-twinkling {
-  background-image: url('@/images/sw/twinkling.png');
+  background-image: url('@/public/images/sw/twinkling.png');
   animation: 3s twinkle infinite;
   animation-timing-function: linear;
 }
