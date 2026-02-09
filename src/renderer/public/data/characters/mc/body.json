@@ -1,9 +1,9 @@
 {
 	"body": {
-		"image": "/images/sprites/characters/mc/body.png"
+		"image": "images/sprites/characters/mc/body.png"
 	},
 	"head": {
-		"image": "/images/sprites/characters/mc/head.png",
+		"image": "images/sprites/characters/mc/head.png",
 		"parent": "body",
 		"offset": {
 			"x": 0,

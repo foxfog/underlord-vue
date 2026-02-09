@@ -1,9 +1,9 @@
 {
 	"body": {
-		"image": "/images/sprites/characters/char/body.png"
+		"image": "images/sprites/characters/char/body.png"
 	},
 	"head": {
-		"image": "/images/sprites/characters/char/head.png",
+		"image": "images/sprites/characters/char/head.png",
 		"parent": "body",
 		"offset": {
 			"x": 13,
@@ -11,7 +11,7 @@
 		}
 	},
 	"arm_left": {
-		"image": "/images/sprites/characters/char/arm left.png",
+		"image": "images/sprites/characters/char/arm left.png",
 		"parent": "body",
 		"offset": {
 			"x": 35,
@@ -19,7 +19,7 @@
 		}
 	},
 	"arm2_left": {
-		"image": "/images/sprites/characters/char/arm2 left.png",
+		"image": "images/sprites/characters/char/arm2 left.png",
 		"parent": "arm_left",
 		"offset": {
 			"x": 0,
@@ -27,7 +27,7 @@
 		}
 	},
 	"arm3_left": {
-		"image": "/images/sprites/characters/char/arm3 left.png",
+		"image": "images/sprites/characters/char/arm3 left.png",
 		"parent": "arm2_left",
 		"offset": {
 			"x": 58,
@@ -35,7 +35,7 @@
 		}
 	},
 	"arm_right": {
-		"image": "/images/sprites/characters/char/arm right.png",
+		"image": "images/sprites/characters/char/arm right.png",
 		"parent": "body",
 		"offset": {
 			"x": -13,
@@ -43,7 +43,7 @@
 		}
 	},
 	"arm2_right": {
-		"image": "/images/sprites/characters/char/arm2 right.png",
+		"image": "images/sprites/characters/char/arm2 right.png",
 		"parent": "arm_right",
 		"offset": {
 			"x": -61,
@@ -51,7 +51,7 @@
 		}
 	},
 	"arm3_right": {
-		"image": "/images/sprites/characters/char/arm3 right.png",
+		"image": "images/sprites/characters/char/arm3 right.png",
 		"parent": "arm2_right",
 		"offset": {
 			"x": -74,

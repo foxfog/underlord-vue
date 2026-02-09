@@ -15,7 +15,7 @@
 		"id": "gasmask",
 		"part": "head",
 		"characters": ["mc"],
-		"sprite": "/images/sprites/items/equipments/gasmask.png",
+		"sprite": "images/sprites/items/equipments/gasmask.png",
 		"weight": 0.5,
 		"stats": {
 			"hp": 2,

@@ -4,7 +4,7 @@
 		"parts": [
 			{
 				"parent" : "head",
-				"image": "/images/sprites/characters/mc/gasmask.png"
+				"image": "images/sprites/characters/mc/gasmask.png"
 			}
 		]
 	}
