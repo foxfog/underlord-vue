@@ -23,17 +23,17 @@
 		"@electron-toolkit/utils": "^4.0.0",
 		"pinia": "^3.0.3",
 		"vue-i18n": "^11.1.11",
-		"vue-router": "^4.5.1"
+		"vue-router": "^5.0.2"
 	},
 	"devDependencies": {
 		"@electron-toolkit/eslint-config-prettier": "^3.0.0",
-		"@vitejs/plugin-vue": "^5.2.3",
-		"electron": "^35.1.5",
-		"electron-builder": "^25.1.8",
+		"@vitejs/plugin-vue": "^6.0.4",
+		"electron": "^40.2.1",
+		"electron-builder": "^26.7.0",
 		"electron-devtools-installer": "^4.0.0",
-		"electron-vite": "^3.1.0",
+		"electron-vite": "^5.0.0",
 		"prettier": "^3.5.3",
-		"vite": "^6.2.6",
+		"vite": "^7.3.1",
 		"vitest": "^4.0.18",
 		"vue": "^3.5.13",
 		"vue-eslint-parser": "^10.1.3"
