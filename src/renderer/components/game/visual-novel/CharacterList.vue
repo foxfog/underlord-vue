@@ -1,7 +1,7 @@
 <template>
-  <div class="characters-container">
-    <Character v-for="character in characters" :key="character.id" :character="character" />
-  </div>
+	<div class="characters-container">
+		<Character v-for="character in characters" :key="character.id" :character="character" />
+	</div>
 </template>
 
 <script setup>

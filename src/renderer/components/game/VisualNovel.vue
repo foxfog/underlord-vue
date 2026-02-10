@@ -1,32 +1,32 @@
 <template>
-  <StoryAudio :audio-streams="audioStreams" />
-  
-  <Background :scene="currentScene" />
-  <CharacterList :characters="visibleCharacters" />
+	<StoryAudio :audio-streams="audioStreams" />
+	
+	<Background :scene="currentScene" />
+	<CharacterList :characters="visibleCharacters" />
 
-  <TitleBlock :title="currentTitle" :effects="currentTitleEffects" @advance="advanceStory" />
+	<TitleBlock :title="currentTitle" :effects="currentTitleEffects" @advance="advanceStory" />
 
-  <DialogueBox
-    :dialogue="currentDialogue"
-    :narration="currentNarration"
-    :speaker="currentSpeaker"
-    :choices="currentChoices"
-    :multi-step-printed-length="multiStepPrintedLength"
-    @advance="advanceStory"
-    @selectChoice="selectChoice"
-  />
+	<DialogueBox
+		:dialogue="currentDialogue"
+		:narration="currentNarration"
+		:speaker="currentSpeaker"
+		:choices="currentChoices"
+		:multi-step-printed-length="multiStepPrintedLength"
+		@advance="advanceStory"
+		@selectChoice="selectChoice"
+	/>
 
-  <TextInputModal
-    :is-visible="showTextInputModal"
-    :title="currentInputStep?.text || 'Введите значение'"
-    :description="currentInputStep?.text || 'Пожалуйста, введите требуемое значение:'"
-    :initial-value="getInitialValue(currentInputStep?.variable)"
-    :show-close-button="currentInputStep?.showCloseButton !== false"
-    :show-cancel-button="currentInputStep?.showCancelButton !== false"
-    :confirm-button-text="currentInputStep?.confirmButtonText || 'Подтвердить'"
-    @close="showTextInputModal = false"
-    @confirm="onTextInputConfirm"
-  />
+	<TextInputModal
+		:is-visible="showTextInputModal"
+		:title="currentInputStep?.text || 'Введите значение'"
+		:description="currentInputStep?.text || 'Пожалуйста, введите требуемое значение:'"
+		:initial-value="getInitialValue(currentInputStep?.variable)"
+		:show-close-button="currentInputStep?.showCloseButton !== false"
+		:show-cancel-button="currentInputStep?.showCancelButton !== false"
+		:confirm-button-text="currentInputStep?.confirmButtonText || 'Подтвердить'"
+		@close="showTextInputModal = false"
+		@confirm="onTextInputConfirm"
+	/>
 </template>
 
 <script setup>
@@ -46,20 +46,20 @@ const emit = defineEmits(['end', 'character-loaded'])
 const vn = useVisualNovel({ src: props.src, emit })
 
 const {
-  currentScene, visibleCharacters, currentDialogue, currentNarration, currentTitle, currentTitleEffects,
-  currentSpeaker, currentChoices, multiStepPrintedLength, showTextInputModal, currentInputStep, uiVisibility,
-  audioStreams,
-  loadStory, processStep, advanceStory, selectChoice, getInitialValue, onTextInputConfirm,
-  getGameState, restoreGameState, resetGameState, getHistory, clearHistory,
-  pauseAllStreams, resumeAllStreams
+	currentScene, visibleCharacters, currentDialogue, currentNarration, currentTitle, currentTitleEffects,
+	currentSpeaker, currentChoices, multiStepPrintedLength, showTextInputModal, currentInputStep, uiVisibility,
+	audioStreams,
+	loadStory, processStep, advanceStory, selectChoice, getInitialValue, onTextInputConfirm,
+	getGameState, restoreGameState, resetGameState, getHistory, clearHistory,
+	pauseAllStreams, resumeAllStreams
 } = vn
 
 onMounted(async () => {
-  await loadStory()
-  const savesStore = useSavesStore()
-  if (!savesStore.getPendingLoad()) {
-    processStep()
-  }
+	await loadStory()
+	const savesStore = useSavesStore()
+	if (!savesStore.getPendingLoad()) {
+		processStep()
+	}
 })
 
 defineExpose({ getGameState, restoreGameState, resetGameState, startStory: () => processStep(), getHistory: () => getHistory(), clearHistory: () => clearHistory(), pauseAllStreams, resumeAllStreams, uiVisibility })

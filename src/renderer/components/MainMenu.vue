@@ -1,45 +1,41 @@
 <template>
-    <div class="mainmenu">
-        <nav class="nav">
-            <!-- Show Continue button only when in game context (moved to first position) -->
-            <a v-if="inGameContext" class="nav-link continue-button" @click="handleContinueClick">
-                {{ t('mainmenu.continue') }}
-            </a>
-            
-            <!-- Exit to Main Screen option when in game -->
-            <a v-if="inGameContext" class="nav-link" @click="navigateToHomeScreen">
-                {{ t('mainmenu.exit-to-home') || 'В главное меню' }}
-            </a>
-            
-            
-			<!-- Navigation links for non-game context -->
+	<div class="mainmenu">
+		<nav class="nav">
+			<a v-if="inGameContext" class="nav-link continue-button" @click="handleContinueClick">
+				{{ t('mainmenu.continue') }}
+			</a>
+			
+			<a v-if="inGameContext" class="nav-link" @click="navigateToHomeScreen">
+				{{ t('mainmenu.exit-to-home') || 'В главное меню' }}
+			</a>
+			
 			<template v-if="!inGameContext">
 				<a class="nav-link" @click="navigateToNewGame">
 					{{ t('mainmenu.game-new') }}
 				</a>
-                
+				
 				<a class="nav-link" @click="navigateToSaves">
 					{{ t('mainmenu.game-saves') }}
 				</a>
 			</template>
 
-			<!-- Save/Load modal (Ren'Py-like) -->
-			<a v-if="inGameContext" class="nav-link" @click="openSaveLoad">
-				{{ t('mainmenu.save_load') || 'Save/Load' }}
+			<a v-if="inGameContext" class="nav-link" @click="openSave">
+				{{ t('save') || 'Сохранить' }}
 			</a>
-            
-            
-            <!-- Navigation links that emit events for component switching -->
-            <a class="nav-link" @click="navigateToSettings">
-                {{ t('mainmenu.settings') }}
-            </a>
-            
-            <!-- Show Close button -->
-            <a class="nav-link" @click="handleButtonClick">
-                {{ t('mainmenu.close') }}
-            </a>
-        </nav>
-    </div>
+			
+			<a class="nav-link" @click="openLoad">
+				{{ t('load') || 'Загрузить' }}
+			</a>
+			
+			<a class="nav-link" @click="navigateToSettings">
+				{{ t('mainmenu.settings') }}
+			</a>
+			
+			<a class="nav-link" @click="handleButtonClick">
+				{{ t('mainmenu.close') }}
+			</a>
+		</nav>
+	</div>
 </template>
 
 <script setup>
@@ -74,11 +70,9 @@
 	}
 
 	const handleContinueClick = () => {
-		// If a custom continue handler is provided, use it
 		if (props.onContinue) {
 			props.onContinue()
 		} else {
-			// Default behavior
 			if (window.electronAPI?.closeWindow) {
 				window.electronAPI.closeWindow()
 			} else {
@@ -87,7 +81,6 @@
 		}
 	}
 	
-	// Navigation functions that emit events for component switching
 	const navigateToSettings = () => {
 		emit('navigate', 'settings')
 	}
@@ -96,6 +89,14 @@
 		emit('navigate', 'saves')
 	}
 
+	const openSave = () => {
+		emit('navigate', 'save')
+	}
+	
+	const openLoad = () => {
+		emit('navigate', 'load')
+	}
+	
 	const openSaveLoad = () => {
 		emit('navigate', 'saves')
 	}
@@ -108,7 +109,6 @@
 		emit('navigate', 'home-screen')
 	}
 	
-	// Navigation functions that use router for page navigation
 	const navigateToNewGame = () => {
 		router.push('/game/new')
 	}

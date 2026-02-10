@@ -42,6 +42,9 @@
 	const handleNavigation = (view) => {
 		if (view === 'settings') {
 			showSettings()
+		} else if (view === 'save' || view === 'load') {
+			// Both save and load on main menu go to saves view (load tab)
+			showSaves()
 		} else if (view === 'saves') {
 			showSaves()
 		} else if (view === 'main-menu') {

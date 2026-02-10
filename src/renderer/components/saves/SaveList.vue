@@ -1,7 +1,7 @@
 <template>
-  <div class="slots-grid">
-    <SaveItem v-for="slot in slots" :key="slot" :slot="slot" @click="onSlotClick" @delete="onDelete" />
-  </div>
+	<div class="slots-grid">
+		<SaveItem v-for="slot in slots" :key="slot" :slot="slot" @click="onSlotClick" @delete="onDelete" />
+	</div>
 </template>
 
 <script setup>

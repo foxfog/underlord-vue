@@ -1,18 +1,18 @@
 {
-  "audio": {
-    "commonVolume": 84,
-    "musicVolume": 30,
-    "soundVolume": 66,
-    "voiceVolume": 70
-  },
-  "controls": {
-    "keyboardLayout": "qwerty"
-  },
-  "general": {
-    "language": "ru"
-  },
-  "video": {
-    "fullscreen": false,
-    "resolution": "1920x1080"
-  }
+	"audio": {
+		"commonVolume": 84,
+		"musicVolume": 30,
+		"soundVolume": 66,
+		"voiceVolume": 70
+	},
+	"controls": {
+		"keyboardLayout": "qwerty"
+	},
+	"general": {
+		"language": "ru"
+	},
+	"video": {
+		"fullscreen": false,
+		"resolution": "1920x1080"
+	}
 }

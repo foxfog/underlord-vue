@@ -39,10 +39,13 @@
 					<DynamicContentArea
 						:current-view="currentView"
 						:in-game-context="true"
+						:saves-initial-tab="savesTab"
 						@back-to-menu="showMainMenu"
 						@settings-saved="onSettingsSaved"
 						@settings-reset="onSettingsReset"
-						@load-request="onLoadRequest"					@save-request="onSaveRequest"					/>
+						@load-request="onLoadRequest"
+						@save-request="onSaveRequest"
+					/>
 				</div>
 				<div class="menu-area __overlay">
 					<MainMenu
@@ -57,12 +60,14 @@
 	</div>
 
 	<!-- Bottom hotbar -->
-	<div v-if="showHotbar" class="hotbar">
-		<button class="hotbar-btn" @click="openHistory">История</button>
-		<button class="hotbar-btn" @click="openMainMenu">Главное меню</button>
-		<button class="hotbar-btn" @click="openSave">Сохранить</button>
-		<button class="hotbar-btn" @click="openLoad">Загрузить</button>
-	</div>
+	<Hotbar
+		:visible="showHotbar"
+		@open-history="openHistory"
+		@open-menu="openMainMenu"
+		@open-settings="openSettings"
+		@open-save="openSave"
+		@open-load="openLoad"
+	/>
 
 	<!-- History modal -->
 	<HistoryModal :isVisible="showHistoryModal" :entries="historyList" @close="showHistoryModal=false" />
@@ -89,6 +94,7 @@ import DynamicContentArea from '@/components/DynamicContentArea.vue'
 import MainMenu from '@/components/MainMenu.vue'
 import HistoryModal from '@/components/game/modals/HistoryModal.vue'
 import ConfirmModal from '@/components/ConfirmModal.vue'
+import Hotbar from '../components/game/ui/Hotbar.vue'
 import { useSavesStore } from '@/stores/saves'
 import { useSettingsStore } from '@/stores/settings'
 
@@ -101,6 +107,8 @@ const showStatsModal = ref(false)
 const showInventoryModal = ref(false)
 const mcCharacter = ref(null)
 const itemsData = ref({})
+
+const savesTab = ref('load')
 
 // Menu and view state for the overlay
 const menuVisible = ref(false)
@@ -220,6 +228,14 @@ const showSaves = () => {
 const handleNavigation = (view) => {
 	if (view === 'settings') {
 		showSettings()
+	} else if (view === 'save') {
+		savesTab.value = 'save'
+		currentView.value = 'saves'
+		menuVisible.value = true
+	} else if (view === 'load') {
+		savesTab.value = 'load'
+		currentView.value = 'saves'
+		menuVisible.value = true
 	} else if (view === 'saves') {
 		showSaves()
 	} else if (view === 'main-menu') {
@@ -316,9 +332,30 @@ async function onSaveRequest(saveData) {
 		alert(`Failed to save: ${err.message}`)
 	}
 }
+function openHistory() {
+	showHistoryModal.value = true
+}
+
+function openMainMenu() {
+	menuVisible.value = true
+	currentView.value = 'main-menu'
+}
+
+function openSettings() {
+	menuVisible.value = true
+	currentView.value = 'settings'
+}
+
+function openSave() {
+	savesTab.value = 'save'
+	menuVisible.value = true
+	currentView.value = 'saves'
+}
+
 function openLoad() {
-  menuVisible.value = true
-  currentView.value = 'saves'
+	savesTab.value = 'load'
+	menuVisible.value = true
+	currentView.value = 'saves'
 }
 
 // Toggle menu visibility via Escape key

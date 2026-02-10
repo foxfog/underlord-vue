@@ -16,7 +16,12 @@
 				<div class="page-header">
 					<div class="page-title">{{ $t('mainmenu.save_load') }}</div>
 				</div>
-				<SavesContent :in-game="inGameContext" @load-request="(data) => emit('load-request', data)" @save-request="(data) => emit('save-request', data)" />
+				<SavesContent 
+				:in-game="inGameContext" 
+				:initial-tab="savesInitialTab"
+				@load-request="(data) => emit('load-request', data)" 
+				@save-request="(data) => emit('save-request', data)" 
+			/>
 			</div>
 		</Transition>
 		
@@ -26,7 +31,7 @@
 </template>
 
 <script setup>
-	import { watch } from 'vue'
+	import { watch, ref } from 'vue'
 	import HomeContent from '@/components/HomeContent.vue'
 	import SettingsContent from '@/components/settings/SettingsContent.vue'
 	import SavesContent from '@/components/saves/SavesContent.vue'
@@ -36,7 +41,8 @@
 			type: String,
 			default: 'main-menu'
 		},
-		inGameContext: { type: Boolean, default: false }
+		inGameContext: { type: Boolean, default: false },
+		savesInitialTab: { type: String, default: 'load', validator: (val) => ['load', 'save'].includes(val) }
 	})
 	
 	const emit = defineEmits(['back-to-menu', 'settings-saved', 'settings-reset', 'load-request', 'save-request'])

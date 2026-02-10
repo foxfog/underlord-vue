@@ -1,5 +1,5 @@
 <template>
-  <img v-if="scene" :src="scene.bg" alt="Background" class="background-img" />
+	<img v-if="scene" :src="scene.bg" alt="Background" class="background-img" />
 </template>
 
 <script setup>

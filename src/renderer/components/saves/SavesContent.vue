@@ -39,17 +39,23 @@ import { ref, onBeforeUnmount, onUnmounted, watch } from 'vue'
 import { useSavesStore } from '@/stores/saves'
 import SavesGrid from './SavesGrid.vue'
 
-const props = defineProps({ inGame: { type: Boolean, default: false } })
+const props = defineProps({ 
+	inGame: { type: Boolean, default: false },
+	initialTab: { type: String, default: 'load', validator: (val) => ['load', 'save'].includes(val) }
+})
 const emit = defineEmits(['load-request', 'save-request'])
 const savesStore = useSavesStore()
 
-const activeTab = ref('load')
+const activeTab = ref(props.initialTab)
 
-// Reset to 'load' tab when inGame changes or when component is not in-game
-watch(() => props.inGame, (newInGame) => {
+// Reset to initial tab or 'load' tab when inGame changes or when component is not in-game
+watch(() => [props.inGame, props.initialTab], ([newInGame, newInitialTab]) => {
 	if (!newInGame) {
 		// On main menu, always show load tab
 		activeTab.value = 'load'
+	} else {
+		// In-game: use initialTab if provided
+		activeTab.value = newInitialTab || 'load'
 	}
 })
 
