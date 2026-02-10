@@ -1,7 +1,7 @@
 [
 	{
 		"id": "tshirt",
-		"part": "torso-1",
+		"slot": "torso-1",
 		"characters": ["mc", "momonga"],
 		"weight": 0.5,
 		"stats": {
@@ -13,7 +13,7 @@
 	},
 	{
 		"id": "gasmask",
-		"part": "head",
+		"slot": "mask",
 		"characters": ["mc"],
 		"sprite": "images/sprites/items/equipments/gasmask.png",
 		"weight": 0.5,
@@ -24,7 +24,7 @@
 	},
 	{
 		"id": "tshirt-red",
-		"part": "torso-2",
+		"slot": "torso-2",
 		"characters": ["momonga"],
 		"weight": 0.5,
 		"lvl": 3,
@@ -34,7 +34,7 @@
 	},
 	{
 		"id": "sword-diamond",
-		"part": ["weapon-hand-1", "weapon-hand-2"],
+		"slot": ["weapon-hand-1", "weapon-hand-2"],
 		"class": ["warrior", "rogue", "paladin", "hunter", "overlord"],
 		"weight": 0.5,
 		"stats": {
@@ -43,7 +43,7 @@
 	},
 	{
 		"id": "pendant-zen",
-		"part": "neck-1",
+		"slot": "neck-1",
 		"races": ["human", "elf", "overlord"],
 		"weight": 0.5
 	}

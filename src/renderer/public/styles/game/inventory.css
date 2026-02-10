@@ -3,6 +3,44 @@
 		.modal-content {
 			width: calc(100% - 5em);
 			height: calc(100% - 5em);
+			.modal-tabs {
+				display: flex;
+				align-items: center;
+				column-gap: 1em;
+				margin-bottom: 1em;
+				.btn-close {
+					margin-left: auto;
+				}
+				.modal-tab {
+					background: none;
+					border: 1px solid #ddd;
+					color: #999;
+					height: 2.5em;
+					font-size: 1.3em;
+					padding: 0 1em;
+					border-radius: 0.5em;
+					&:hover {
+						color: #ddd;
+					}
+					&.active {
+						color: var(--color-primary);
+						border-color: var(--color-primary);
+					}
+				}
+			}
+			.modal-body {
+				width: 100%;
+				height: 100%;
+				display: flex;
+				flex-direction: column;
+				.tab-content {
+					height: 100%;
+					.tab-content-item {
+						height: 100%;
+						overflow-y: auto;
+					}
+				}
+			}
 		}
 	}
 }
@@ -10,19 +48,14 @@
 .inventory-layout {
 	padding: 0;
 	display: flex;
-	gap: 0;
-	max-height: 600px;
-
 	.left-panel {
-		flex: 0 0 300px;
 		background-color: #1a1a1a;
 		border-right: 1px solid #444;
-		padding: 15px;
+		padding: 1em;
 		overflow-y: auto;
 		display: flex;
 		flex-direction: column;
-		gap: 15px;
-
+		gap: 1em;
 		.char-preview {
 			width: 100%;
 			aspect-ratio: 1;
@@ -56,11 +89,23 @@
 				font-size: 0.75em;
 				color: #666;
 				position: relative;
-				min-height: 70px;
+				min-height: 8em;
 
 				&:hover {
 					border-color: #666;
 					background-color: #252525;
+				}
+
+				&.compatible {
+					border-color: #4CAF50;
+					background-color: rgba(76, 175, 80, 0.1);
+					box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+				}
+
+				&.incompatible {
+					border-color: #666;
+					background-color: rgba(100, 100, 100, 0.2);
+					opacity: 0.5;
 				}
 
 				&.dragover {
@@ -79,6 +124,12 @@
 
 					&:active {
 						cursor: grabbing;
+					}
+
+					&.inventory-item-content {
+						flex-direction: column;
+						gap: 0.5em;
+						padding: 0.5em;
 					}
 
 					img {
@@ -113,106 +164,92 @@
 		flex-direction: column;
 		overflow: hidden;
 		padding: 15px;
-
-		.modal-tabs {
-			display: flex;
-			gap: 8px;
-			margin-bottom: 15px;
-			border-bottom: 1px solid #444;
-			padding-bottom: 8px;
-
-			.modal-tab {
-				background: none;
-				border: none;
-				color: #999;
-				cursor: pointer;
-				padding: 8px 12px;
-				font-size: 0.95em;
-				transition: all 0.2s ease;
-				border-bottom: 2px solid transparent;
-				margin-bottom: -9px;
-
-				&:hover {
-					color: #ddd;
-				}
-
-				&.active {
-					color: #fff;
-					border-bottom-color: #007bff;
-				}
-			}
+		.empty-message {
+			text-align: center;
+			color: #666;
+			padding: 20px;
 		}
+	}
+}
 
-		.tab-content {
-			overflow-y: auto;
-			flex: 1 1 auto;
+.inventory-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+.inventory-item {
+	display: flex;
+	width: 6em;
+	height: 6em;
+	aspect-ratio: 1;
+	background-color: #1f1f1f;
+	border: 1px solid #333;
+	border-radius: 1em;
+	cursor: grab;
+	transition: all 0.2s ease;
+	position: relative;
+	.inventory-item-content {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 1em;
+		padding: 1em;
+		position: absolute;
+		background-color: #1f1f1f;
+		width: 6em;
+		height: 6em;
+	}
+	&:hover {
+		background-color: #252525;
+		border-color: #444;
+	}
 
-			.inventory-list {
-				display: flex;
-				flex-direction: column;
-				gap: 8px;
+	&:active {
+		cursor: grabbing;
+	}
 
-				.inventory-item {
-					display: flex;
-					align-items: center;
-					gap: 10px;
-					padding: 10px;
-					background-color: #1f1f1f;
-					border: 1px solid #333;
-					border-radius: 4px;
-					cursor: grab;
-					transition: all 0.2s ease;
+	.item-icon {
+		font-size: 1.5em;
+		flex-shrink: 0;
+	}
 
-					&:hover {
-						background-color: #252525;
-						border-color: #444;
-					}
+	.item-quantity {
+		flex-shrink: 0;
+		background-color: #007bff;
+		color: #fff;
+		padding: 4px 8px;
+		border-radius: 3px;
+		font-size: 0.85em;
+		font-weight: 500;
+	}
+}
 
-					&:active {
-						cursor: grabbing;
-					}
+.item-info {
+	flex: 1 1 auto;
+	min-width: 0;
 
-					.item-icon {
-						font-size: 1.5em;
-						flex-shrink: 0;
-					}
+	.item-name {
+		font-weight: 500;
+		color: #fff;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
 
-					.item-quantity {
-						flex-shrink: 0;
-						background-color: #007bff;
-						color: #fff;
-						padding: 4px 8px;
-						border-radius: 3px;
-						font-size: 0.85em;
-						font-weight: 500;
-					}
-				}
+	.item-weight {
+		font-size: 0.85em;
+		color: #999;
+	}
+}
 
-				.item-info {
-					flex: 1 1 auto;
-					min-width: 0;
+/* Styles for item-info within slots */
+.slot-item.inventory-item-content .item-info {
+	flex: 0 0 auto;
+	text-align: center;
 
-					.item-name {
-						font-weight: 500;
-						color: #fff;
-						white-space: nowrap;
-						overflow: hidden;
-						text-overflow: ellipsis;
-					}
-
-					.item-weight {
-						font-size: 0.85em;
-						color: #999;
-					}
-				}
-			}
-
-			.empty-message {
-				text-align: center;
-				color: #666;
-				padding: 20px;
-			}
-		}
+	.item-name {
+		font-size: 0.7em;
+		line-height: 1;
 	}
 }
 

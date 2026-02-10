@@ -1,5 +1,5 @@
 <template>
-	<div class="stats-grid">
+	<div class="tab-content-item stats-grid">
 		<div class="stat-item">
 			<span class="stat-label">HP:</span>
 			<span class="stat-value">{{ hpDisplay }}</span>

@@ -1,5 +1,5 @@
 <template>
-	<div>
+	<div class="tab-content-item">
 		<div v-if="abilities && abilities.length > 0" class="abilities-list">
 			<div v-for="ability in abilities" :key="ability.id" class="ability-item">
 				<div class="ability-name">{{ ability.name }}</div>

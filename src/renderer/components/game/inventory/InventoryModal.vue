@@ -1,66 +1,38 @@
 <template>
 	<div v-if="isVisible" class="modal _inventory" @click="closeModal">
 		<div class="modal-content" @click.stop>
-			<div class="modal-header">
-				<h2 class="modal-title">{{ character?.name }} - Инвентарь</h2>
-				<button class="btn-close" @click="closeModal">×</button>
-			</div>
-
-			<div class="modal-body inventory-layout">
-				<div class="left-panel">
-					<div class="char-preview">
-						<Character :character="character" />
-					</div>
-
-					<div class="slots-grid">
-						<div
-							v-for="(value, slot) in equipmentSlots"
-							:key="slot"
-							class="slot"
-							@dragover.prevent
-							@drop="onDropToSlot($event, slot)"
-						>
-							<div
-								v-if="value"
-								class="slot-item"
-								draggable="true"
-								@dragstart="onSlotDragStart($event, slot)"
-							>
-								<img v-if="getItemSprite(value)" :src="getItemSprite(value)" :alt="value" />
-								<span v-else class="slot-id">{{ value }}</span>
-							</div>
-							<div v-else class="slot-empty">—</div>
-						</div>
-					</div>
+			<div class="modal-body">
+				<!-- Tabs Navigation -->
+				<div class="modal-tabs">
+					<button
+						v-for="tab in tabs"
+						:key="tab.id"
+						class="modal-tab"
+						:class="{ active: activeTab === tab.id }"
+						@click="activeTab = tab.id"
+					>
+						{{ tab.label }}
+					</button>
+					<button class="btn-close" @click="closeModal">×</button>
 				</div>
 
-				<div class="right-panel">
-					<!-- Tabs Navigation -->
-					<div class="modal-tabs">
-						<button
-							v-for="tab in tabs"
-							:key="tab.id"
-							class="modal-tab"
-							:class="{ active: activeTab === tab.id }"
-							@click="activeTab = tab.id"
-						>
-							{{ tab.label }}
-						</button>
-					</div>
+				<!-- Tab Content -->
+				<div class="tab-content">
+					<InventoryItems
+						v-show="activeTab === 'inventory'"
+						:character="character"
+						:items="inventoryItems"
+						:items-data="propsItemsData"
+						:equipment-slots="equipmentSlots"
+						@equip="(e) => emit('equip', e)"
+						@unequip="(e) => emit('unequip', e)"
+						@swap="(e) => emit('swap', e)"
+						@drag-inventory-drop="handleInventoryDrop"
+					/>
 
-					<!-- Tab Content -->
-					<div class="tab-content">
-						<InventoryItems
-							v-show="activeTab === 'inventory'"
-							:items="inventoryItems"
-							:items-data="propsItemsData"
-							@drag-inventory-drop="handleInventoryDrop"
-						/>
+					<InventoryStats v-show="activeTab === 'statistics'" :character="character" />
 
-						<InventoryStats v-show="activeTab === 'statistics'" :character="character" />
-
-						<InventoryAbilities v-show="activeTab === 'abilities'" :abilities="abilities" />
-					</div>
+					<InventoryAbilities v-show="activeTab === 'abilities'" :abilities="abilities" />
 				</div>
 			</div>
 		</div>
@@ -72,7 +44,6 @@ import { computed, ref } from 'vue'
 import InventoryItems from './InventoryItems.vue'
 import InventoryStats from './InventoryStats.vue'
 import InventoryAbilities from './InventoryAbilities.vue'
-import Character from '../characters/Character.vue'
 
 const props = defineProps({
 	isVisible: {
@@ -94,9 +65,9 @@ const emit = defineEmits(['close', 'equip', 'unequip', 'swap'])
 const activeTab = ref('inventory')
 
 const tabs = [
-	{ id: 'inventory', label: '🎒 Инвентарь' },
-	{ id: 'statistics', label: '📊 Статистика' },
-	{ id: 'abilities', label: '✨ Способности' }
+	{ id: 'inventory', label: 'Инвентарь' },
+	{ id: 'statistics', label: 'Статистика' },
+	{ id: 'abilities', label: 'Способности' }
 ]
 
 const inventoryItems = computed(() => {
@@ -158,45 +129,6 @@ const equipmentSlots = computed(() => {
 		props.character.equipment || {}
 	)
 })
-
-function getItemSprite(itemId) {
-	if (!props.itemsData) return null
-	const def = props.itemsData[itemId]
-	if (!def) return null
-	return def.sprite || def.image || def.icon || null
-}
-
-function onSlotDragStart(e, slot) {
-	try {
-		const payload = { type: 'slot', slot, itemId: equipmentSlots.value[slot] }
-		e.dataTransfer.setData('application/json', JSON.stringify(payload))
-		e.dataTransfer.effectAllowed = 'move'
-	} catch (err) {
-		console.error('slot drag start', err)
-	}
-}
-
-function onDropToSlot(e, slot) {
-	try {
-		const raw = e.dataTransfer.getData('application/json')
-		if (!raw) return
-		const payload = JSON.parse(raw)
-
-		if (payload.type === 'item') {
-			// equipping an item from inventory into slot
-			emit('equip', { slot, itemId: payload.itemId })
-			return
-		}
-
-		if (payload.type === 'slot') {
-			// swapping between slots
-			emit('swap', { from: payload.slot, to: slot })
-			return
-		}
-	} catch (err) {
-		console.error('drop to slot parse error', err)
-	}
-}
 
 function handleInventoryDrop(payload) {
 	// payload forwarded from InventoryItems when user drops something onto inventory
