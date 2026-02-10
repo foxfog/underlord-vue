@@ -15,11 +15,11 @@
 		</div>
 
 		<!-- Slots grid -->
-		<div class="slots-grid">
+		<div class="seves-slots-grid">
 			<div 
 				v-for="slot in slotsForPage" 
 				:key="slot" 
-				class="slot" 
+				class="seves-slot" 
 				:class="{ filled: hasSaveInSlot(slot) }"
 				@click="onSlotClick(slot)"
 			>
@@ -29,15 +29,15 @@
 					</span>
 					<span v-else class="empty">{{ $t('empty') || 'Empty' }}</span>
 				</div>
-				<div class="slot-info">
-					<div class="slot-title">Слот {{ slot + 1 }}</div>
-					<div class="slot-meta" v-if="hasSaveInSlot(slot)">
+				<div class="seves-slot-info">
+					<div class="seves-slot-title">Слот {{ slot + 1 }}</div>
+					<div class="seves-slot-meta" v-if="hasSaveInSlot(slot)">
 						<div>{{ saveMetadata(slot)?.mcName }}</div>
 						<button class="delete-btn" @click.stop="onDeleteClick(slot)" title="Delete save">
 							🗑️
 						</button>
 					</div>
-					<div class="slot-meta" v-else>— пусто —</div>
+					<div class="seves-slot-meta" v-else>— пусто —</div>
 				</div>
 			</div>
 		</div>

@@ -13,10 +13,6 @@
 				<a class="nav-link" @click="navigateToNewGame">
 					{{ t('mainmenu.game-new') }}
 				</a>
-				
-				<a class="nav-link" @click="navigateToSaves">
-					{{ t('mainmenu.game-saves') }}
-				</a>
 			</template>
 
 			<a v-if="inGameContext" class="nav-link" @click="openSave">
@@ -83,10 +79,6 @@
 	
 	const navigateToSettings = () => {
 		emit('navigate', 'settings')
-	}
-	
-	const navigateToSaves = () => {
-		emit('navigate', 'saves')
 	}
 
 	const openSave = () => {

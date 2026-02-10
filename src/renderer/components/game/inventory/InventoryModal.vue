@@ -21,7 +21,7 @@
 					<InventoryItems
 						v-show="activeTab === 'inventory'"
 						:character="character"
-						:items="inventoryItems"
+						:items="props.character?.inventory?.items || []"
 						:items-data="propsItemsData"
 						:equipment-slots="equipmentSlots"
 						@equip="(e) => emit('equip', e)"
@@ -40,7 +40,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import InventoryItems from './InventoryItems.vue'
 import InventoryStats from './InventoryStats.vue'
 import InventoryAbilities from './InventoryAbilities.vue'
@@ -64,6 +64,20 @@ const emit = defineEmits(['close', 'equip', 'unequip', 'swap'])
 
 const activeTab = ref('inventory')
 
+// Create a reactive copy of itemsData to ensure it updates properly
+const localItemsData = ref({})
+
+// Watch for changes and update local copy
+watch(() => props.itemsData, (newData) => {
+	console.log('InventoryModal: itemsData updated', newData, Object.keys(newData))
+	if (newData && typeof newData === 'object') {
+		localItemsData.value = { ...newData }
+	}
+}, { deep: true, immediate: true })
+
+// Expose itemsData under a local name for template prop binding
+const propsItemsData = computed(() => localItemsData.value)
+
 const tabs = [
 	{ id: 'inventory', label: 'Инвентарь' },
 	{ id: 'statistics', label: 'Статистика' },
@@ -75,7 +89,7 @@ const inventoryItems = computed(() => {
 
 	return props.character.inventory.items.map(invItem => {
 		// Получаем описание предмета из itemsData (equipment или other)
-		const itemDef = props.itemsData[invItem.itemId] || {
+		const itemDef = localItemsData.value[invItem.itemId] || {
 			id: invItem.itemId,
 			name: invItem.itemId
 		}
@@ -88,9 +102,6 @@ const inventoryItems = computed(() => {
 		}
 	})
 })
-
-// expose itemsData under a local name for template prop binding
-const propsItemsData = props.itemsData
 
 const abilities = computed(() => {
 	if (!props.character?.abilities) return []

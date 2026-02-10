@@ -21,6 +21,7 @@
 	"dependencies": {
 		"@electron-toolkit/preload": "^3.0.1",
 		"@electron-toolkit/utils": "^4.0.0",
+		"interactjs": "^1.10.19",
 		"pinia": "^3.0.3",
 		"vue-i18n": "^11.1.11",
 		"vue-router": "^5.0.2"

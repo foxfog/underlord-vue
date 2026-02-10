@@ -1,5 +1,5 @@
 <template>
-	<div class="slots-grid">
+	<div class="seves-slots-grid">
 		<SaveItem v-for="slot in slots" :key="slot" :slot="slot" @click="onSlotClick" @delete="onDelete" />
 	</div>
 </template>

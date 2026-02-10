@@ -24,15 +24,16 @@
 			@close="toggleStatsModal"
 		/>
 
-		<!-- Inventory Modal -->
-		<InventoryModal
-			:is-visible="showInventoryModal"
-			:character="mcCharacter"
-			:items-data="itemsData"
-			@close="toggleInventoryModal"
-		/>
-
-		<!-- Menu overlay that can be toggled with Esc -->
+	<!-- Inventory Modal -->
+	<InventoryModal
+		:is-visible="showInventoryModal"
+		:character="mcCharacter"
+		:items-data="itemsData"
+		@close="toggleInventoryModal"
+		@equip="handleEquip"
+		@unequip="handleUnequip"
+		@swap="handleSwap"
+	/>		<!-- Menu overlay that can be toggled with Esc -->
 		<div v-show="menuVisible" class="menu-overlay">
 			<div class="overlay-content">
 				<div class="content-area">
@@ -204,6 +205,99 @@ function toggleStatsModal() {
 
 function toggleInventoryModal() {
 	showInventoryModal.value = !showInventoryModal.value
+}
+
+function handleEquip({ slot, itemId }) {
+	console.log('Equipping:', { slot, itemId })
+	console.log('Before equip - inventory items:', mcCharacter.value?.inventory?.items)
+	if (mcCharacter.value?.equipment_slots) {
+		mcCharacter.value.equipment_slots[slot] = itemId
+		// Удалить предмет из инвентаря
+		if (mcCharacter.value?.inventory?.items) {
+			const itemIndex = mcCharacter.value.inventory.items.findIndex(item => item.itemId === itemId)
+			console.log('Item index:', itemIndex)
+			if (itemIndex !== -1) {
+				const item = mcCharacter.value.inventory.items[itemIndex]
+				console.log('Item object:', item)
+				console.log('Item keys:', Object.keys(item))
+				
+				// Ensure quantity exists
+				if (item.quantity === undefined) {
+					item.quantity = 1
+					console.log('Initialized quantity to 1')
+				}
+				
+				console.log('Reducing quantity from', item.quantity)
+				item.quantity -= 1
+				console.log('After reduction:', item.quantity)
+				if (item.quantity <= 0) {
+					console.log('Removing item completely')
+					mcCharacter.value.inventory.items.splice(itemIndex, 1)
+				}
+			}
+		}
+		console.log('After equip - inventory items:', mcCharacter.value?.inventory?.items)
+		// Перестроить equipmentBySlot
+		rebuildEquipmentBySlot()
+	}
+}
+
+function handleUnequip({ slot, itemId }) {
+	console.log('Unequipping:', { slot, itemId })
+	if (mcCharacter.value?.equipment_slots) {
+		// Устанавливаем слот в null вместо удаления, чтобы слот остался в объекте
+		// Vue будет отслеживать изменение значения
+		mcCharacter.value.equipment_slots[slot] = null
+		
+		// Добавить предмет в инвентарь
+		if (mcCharacter.value?.inventory?.items) {
+			const existingItem = mcCharacter.value.inventory.items.find(item => item.itemId === itemId)
+			if (existingItem) {
+				existingItem.quantity += 1
+			} else {
+				mcCharacter.value.inventory.items.push({ itemId, quantity: 1 })
+			}
+		}
+		// Перестроить equipmentBySlot
+		rebuildEquipmentBySlot()
+	}
+}
+
+function handleSwap({ from, to }) {
+	console.log('Swapping slots:', { from, to })
+	if (mcCharacter.value?.equipment_slots) {
+		const temp = mcCharacter.value.equipment_slots[from]
+		mcCharacter.value.equipment_slots[from] = mcCharacter.value.equipment_slots[to]
+		mcCharacter.value.equipment_slots[to] = temp
+		// Перестроить equipmentBySlot
+		rebuildEquipmentBySlot()
+	}
+}
+
+function rebuildEquipmentBySlot() {
+	if (!mcCharacter.value) return
+
+	const equipmentMap = {}
+	if (Array.isArray(mcCharacter.value.equipment)) {
+		mcCharacter.value.equipment.forEach(item => {
+			if (item && item.id) equipmentMap[item.id] = item
+		})
+	}
+
+	const equipmentBySlot = {}
+	const slots = mcCharacter.value.equipment_slots || {}
+	for (const [slotName, itemRef] of Object.entries(slots)) {
+		let itemId = null
+		if (itemRef === null || typeof itemRef === 'undefined') itemId = null
+		else if (typeof itemRef === 'string' || typeof itemRef === 'number') itemId = itemRef
+		else if (typeof itemRef === 'object' && itemRef.id) itemId = itemRef.id
+		else if (typeof itemRef === 'object' && itemRef.item && itemRef.item.id) itemId = itemRef.item.id
+		if (itemId && equipmentMap[itemId]) {
+			equipmentBySlot[slotName] = { id: itemId, item: equipmentMap[itemId], parts: equipmentMap[itemId].parts || [] }
+		}
+	}
+
+	mcCharacter.value.equipmentBySlot = equipmentBySlot
 }
 
 function onCharacterLoaded(characterData) {
@@ -390,6 +484,8 @@ onMounted(() => {
 			itemsData.value[item.id] = item
 		})
 		console.log('Items data loaded:', itemsData.value)
+		console.log('Equipment items:', equipment)
+		console.log('Other items:', other)
 	}).catch(err => {
 		console.error('Failed to load items data:', err)
 	})
