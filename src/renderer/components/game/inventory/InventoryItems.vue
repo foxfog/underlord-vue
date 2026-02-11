@@ -11,7 +11,7 @@
 		/>
 		<div class="left-panel">
 			<div class="char-preview">
-				<Character :character="character" />
+				<Character :character="characterPreview" />
 			</div>
 			<div class="inventory-grid">
 				<div
@@ -171,6 +171,21 @@ const allAvailableSlots = computed(() => {
 	if (!props.character?.equipment_slots) return {}
 	// Возвращаем ВСЕ слоты с их текущими значениями из equipmentSlots
 	return props.character.equipment_slots
+})
+
+// Создаём объект персонажа для превью с дефолтной ориентацией
+const characterPreview = computed(() => {
+	if (!props.character) return null
+	
+	// Копируем все свойства персонажа, но переопределяем ориентацию на дефолтную
+	return {
+		...props.character,
+		orientation: 'right',      // Всегда смотрит вправо в превью
+		back: false,               // Всегда спереди в превью
+		position: { l: 0, t: 0 },  // Центрируем в превью
+		fromPosition: null,        // Отключаем анимацию входа в превью
+		animationDuration: 0,      // Нет длительности анимации в превью
+	}
 })
 
 function goToPage(page) {
@@ -436,21 +451,42 @@ function setupDragAndDrop() {
 							}
 							return
 						}
+						
+						// Проверяем, что слот либо пуст, либо содержит другой предмет
+						const currentItemInSlot = allAvailableSlots.value[slot]
+						if (currentItemInSlot === draggedItemId.value) {
+							console.warn(`Cannot equip: slot ${slot} already contains the same item. Use swap to exchange items.`)
+							if (draggedElement.value) {
+								resetItemPosition(draggedElement.value)
+							}
+							return
+						}
+						
 						// Находим индекс предмета в инвентаре
 						const inventoryIndex = inventorySlots.value.findIndex((item, idx) => {
 							if (!item) return false
 							return item.itemId === draggedItemId.value && idx >= (currentPage.value - 1) * SLOTS_PER_PAGE
 						})
+						console.log('Equipping item from inventory:', { slot, itemId: draggedItemId.value, inventoryIndex })
 						emit('equip', { slot, itemId: draggedItemId.value, inventoryIndex })
 					}
-					// Если из слота в другой слот - меняем их местами или перемещаем
+					// Если из слота в другой слот - меняем их местами только если оба содержат предметы
 					else if (draggedFromType.value === 'slot' && targetPanel === 'equipment') {
 						const fromItemId = draggedItemId.value
 						const fromSlot = draggedFromSlot.value
-						const toItemId = allAvailableSlots.value[slot] // Получаем текущий предмет в целевом слоте
+						const toItemId = allAvailableSlots.value[slot]
+						
+						// Swap возможен ТОЛЬКО если в обоих слотах есть предметы
+						if (!toItemId) {
+							console.warn('Cannot swap: target slot is empty. Use unequip to move to inventory.')
+							if (draggedElement.value) {
+								resetItemPosition(draggedElement.value)
+							}
+							return
+						}
 						
 						// Проверяем совместимость ПЕРЕМЕЩАЕМОГО предмета с целевым слотом
-						const fromItemSlots = currentCompatibleSlots.value // Слоты, в которые может идти перемещаемый предмет
+						const fromItemSlots = currentCompatibleSlots.value
 						if (!fromItemSlots.includes(slot)) {
 							console.warn(`Item ${fromItemId} is not compatible with slot ${slot}`)
 							if (draggedElement.value) {
@@ -459,20 +495,18 @@ function setupDragAndDrop() {
 							return
 						}
 						
-						// Если в целевом слоте есть предмет, проверяем совместимость ЦЕЛЕВОГО предмета с исходным слотом
-						if (toItemId) {
-							const toItemSlots = getItemSlots(toItemId)
-							if (!toItemSlots.includes(fromSlot)) {
-								console.warn(`Item ${toItemId} cannot be placed in slot ${fromSlot}`)
-								if (draggedElement.value) {
-									resetItemPosition(draggedElement.value)
-								}
-								return
+						// Проверяем совместимость ЦЕЛЕВОГО предмета с исходным слотом
+						const toItemSlots = getItemSlots(toItemId)
+						if (!toItemSlots.includes(fromSlot)) {
+							console.warn(`Item ${toItemId} cannot be placed in slot ${fromSlot}`)
+							if (draggedElement.value) {
+								resetItemPosition(draggedElement.value)
 							}
+							return
 						}
 						
-						console.log('Swapping items:', { from: fromSlot, to: slot, fromItem: fromItemId, toItem: toItemId })
-						emit('swap', { from: fromSlot, to: slot, fromItemId, toItemId })
+						console.log('Swapping items between slots:', { from: fromSlot, to: slot, fromItem: fromItemId, toItem: toItemId })
+						emit('swap', { from: fromSlot, to: slot })
 					}
 
 					if (draggedElement.value) {

@@ -208,106 +208,111 @@ function toggleInventoryModal() {
 	showInventoryModal.value = !showInventoryModal.value
 }
 
-function handleEquip({ slot, itemId, stackable, inventoryIndex }) {
-	console.log('Equipping:', { slot, itemId, stackable, inventoryIndex })
-	console.log('Before equip - inventory items:', mcCharacter.value?.inventory?.items)
-	if (mcCharacter.value?.equipment_slots) {
-		// Если в слоте уже что-то есть - вернуть в инвентарь
-		const oldItemId = mcCharacter.value.equipment_slots[slot]
-		if (oldItemId) {
-			console.log('Slot was occupied, returning old item to inventory:', oldItemId)
-			if (mcCharacter.value?.inventory?.items) {
-				// Для старого предмета - добавляем как отдельный если non-stackable
-				const oldItemDef = itemsData.value[oldItemId]
-				const oldItemStackable = oldItemDef?.stackable !== false
-				
-				if (oldItemStackable) {
-					const existingItem = mcCharacter.value.inventory.items.find(item => item.itemId === oldItemId)
-					if (existingItem) {
-						existingItem.quantity += 1
-					} else {
-						mcCharacter.value.inventory.items.push({ itemId: oldItemId, quantity: 1 })
-					}
-				} else {
-					mcCharacter.value.inventory.items.push({ itemId: oldItemId, quantity: 1 })
-				}
-			}
-		}
-		
-		// Установить новый предмет в слот
-		mcCharacter.value.equipment_slots[slot] = itemId
-		
-		// Удалить предмет из инвентаря
-		if (mcCharacter.value?.inventory?.items) {
-			// Use provided inventoryIndex if available, otherwise find first match
-			let itemIndex = inventoryIndex ?? -1
-			if (itemIndex === -1) {
-				itemIndex = mcCharacter.value.inventory.items.findIndex(item => item.itemId === itemId)
-			}
-			console.log('Item index:', itemIndex)
-			if (itemIndex !== -1) {
-				const item = mcCharacter.value.inventory.items[itemIndex]
-				console.log('Item object:', item)
-				console.log('Item keys:', Object.keys(item))
-				
-				// Ensure quantity exists
-				if (item.quantity === undefined) {
-					item.quantity = 1
-					console.log('Initialized quantity to 1')
-				}
-				
-				console.log('Reducing quantity from', item.quantity)
-				item.quantity -= 1
-				console.log('After reduction:', item.quantity)
-				if (item.quantity <= 0) {
-					console.log('Removing item completely')
-					mcCharacter.value.inventory.items.splice(itemIndex, 1)
-				}
-			}
-		}
-		console.log('After equip - inventory items:', mcCharacter.value?.inventory?.items)
-		// Перестроить equipmentBySlot
-		rebuildEquipmentBySlot()
-	}
-}
+function handleEquip({ slot, itemId, inventoryIndex }) {
+	console.log('Equipping:', { slot, itemId, inventoryIndex })
+	if (!mcCharacter.value?.equipment_slots || !mcCharacter.value?.inventory?.items) return
 
-function handleUnequip({ slot, itemId, stackable }) {
-	console.log('Unequipping:', { slot, itemId, stackable })
-	if (mcCharacter.value?.equipment_slots) {
-		// Устанавливаем слот в null вместо удаления, чтобы слот остался в объекте
-		// Vue будет отслеживать изменение значения
-		mcCharacter.value.equipment_slots[slot] = null
+	// Шаг 1: Проверить, что слот пуст ИЛИ нужен swap с инвентарём (запрещаем)
+	const currentItemInSlot = mcCharacter.value.equipment_slots[slot]
+	
+	// Слот может быть ТОЛЬКО пустым или содержать ДРУГОЙ предмет для swap'а
+	// Если слот занят ИМ ЖЕ предметом - это ошибка (нельзя положить второй)
+	if (currentItemInSlot === itemId) {
+		console.warn(`Cannot equip: slot ${slot} already contains the same item ${itemId}. Use swap instead.`)
+		return
+	}
+	
+	// Шаг 2: Если слот содержит ДРУГОЙ предмет - вернуть его в инвентарь
+	// (это означает, что пользователь заменяет предмет)
+	if (currentItemInSlot) {
+		console.log('Replacing item in slot:', { slot, oldItem: currentItemInSlot, newItem: itemId })
+		const oldItemDef = itemsData.value[currentItemInSlot]
+		const oldItemStackable = oldItemDef?.stackable !== false
 		
-		// Добавить предмет в инвентарь
-		if (mcCharacter.value?.inventory?.items) {
-			// Если предмет non-stackable (stackable === false) - всегда добавляем как новый объект
-			if (stackable === false) {
-				mcCharacter.value.inventory.items.push({ itemId, quantity: 1 })
+		if (oldItemStackable) {
+			const existingItem = mcCharacter.value.inventory.items.find(item => item.itemId === currentItemInSlot)
+			if (existingItem) {
+				existingItem.quantity = (existingItem.quantity ?? 1) + 1
 			} else {
-				// Если stackable или не указано - стакаем с существующим
-				const existingItem = mcCharacter.value.inventory.items.find(item => item.itemId === itemId)
-				if (existingItem) {
-					existingItem.quantity += 1
-				} else {
-					mcCharacter.value.inventory.items.push({ itemId, quantity: 1 })
-				}
+				mcCharacter.value.inventory.items.push({ itemId: currentItemInSlot, quantity: 1 })
+			}
+		} else {
+			mcCharacter.value.inventory.items.push({ itemId: currentItemInSlot, quantity: 1 })
+		}
+	}
+	
+	// Шаг 3: Удалить новый предмет из инвентаря
+	let itemIndex = inventoryIndex ?? -1
+	if (itemIndex === -1) {
+		itemIndex = mcCharacter.value.inventory.items.findIndex(item => item.itemId === itemId)
+	}
+	
+	if (itemIndex !== -1) {
+		const item = mcCharacter.value.inventory.items[itemIndex]
+		if (item) {
+			item.quantity = (item.quantity ?? 1) - 1
+			if (item.quantity <= 0) {
+				mcCharacter.value.inventory.items.splice(itemIndex, 1)
 			}
 		}
-		// Перестроить equipmentBySlot
-		rebuildEquipmentBySlot()
 	}
+	
+	// Шаг 4: Установить новый предмет в слот
+	mcCharacter.value.equipment_slots[slot] = itemId
+	
+	rebuildEquipmentBySlot()
 }
 
-function handleSwap({ from, to, fromItemId, toItemId }) {
-	console.log('Swapping slots:', { from, to, fromItemId, toItemId })
-	if (mcCharacter.value?.equipment_slots) {
-		// Просто меняем предметы местами
-		const temp = mcCharacter.value.equipment_slots[from]
-		mcCharacter.value.equipment_slots[from] = mcCharacter.value.equipment_slots[to]
-		mcCharacter.value.equipment_slots[to] = temp
-		// Перестроить equipmentBySlot
-		rebuildEquipmentBySlot()
+function handleUnequip({ slot, itemId }) {
+	console.log('Unequipping:', { slot, itemId })
+	if (!mcCharacter.value?.equipment_slots || !mcCharacter.value?.inventory?.items) return
+
+	// Шаг 1: Убедиться, что в слоте именно этот предмет
+	if (mcCharacter.value.equipment_slots[slot] !== itemId) {
+		console.warn('Item in slot does not match itemId being unequipped')
+		return
 	}
+
+	// Шаг 2: Очистить слот
+	mcCharacter.value.equipment_slots[slot] = null
+
+	// Шаг 3: Добавить предмет в инвентарь
+	const itemDef = itemsData.value[itemId]
+	const isStackable = itemDef?.stackable !== false
+
+	if (isStackable) {
+		const existingItem = mcCharacter.value.inventory.items.find(item => item.itemId === itemId)
+		if (existingItem) {
+			existingItem.quantity += 1
+		} else {
+			mcCharacter.value.inventory.items.push({ itemId, quantity: 1 })
+		}
+	} else {
+		mcCharacter.value.inventory.items.push({ itemId, quantity: 1 })
+	}
+
+	rebuildEquipmentBySlot()
+}
+
+function handleSwap({ from, to }) {
+	console.log('Swapping slots:', { from, to })
+	if (!mcCharacter.value?.equipment_slots) return
+
+	const fromItemId = mcCharacter.value.equipment_slots[from]
+	const toItemId = mcCharacter.value.equipment_slots[to]
+
+	// Проверяем, что оба предмета существуют (не null)
+	if (!fromItemId || !toItemId) {
+		console.warn('Cannot swap: one or both slots are empty', { from, to, fromItemId, toItemId })
+		return
+	}
+
+	// Просто меняем местами
+	const temp = mcCharacter.value.equipment_slots[from]
+	mcCharacter.value.equipment_slots[from] = mcCharacter.value.equipment_slots[to]
+	mcCharacter.value.equipment_slots[to] = temp
+
+	rebuildEquipmentBySlot()
 }
 
 function handleDrop({ itemId, source, slot, quantity = 1 }) {
