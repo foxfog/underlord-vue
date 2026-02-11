@@ -19,7 +19,7 @@
 	"tags": ["gamer", "nazaric-leader", "sorcerer-kingdom-king"],
 	"equipment_slots": {
 		"head": null,
-		"neck-1": "pendant-zen",
+		"neck_1": "pendant-zen",
 		"torso-1": "tshirt-red",
 		"torso-2": null,
 		"torso-3": null,

@@ -112,6 +112,13 @@
 			"text": "Еще один день в этом аду..."
 		},
 
+		{
+			"type": "notification",
+			"text": "<p>⚠️ Воздух токсичен</p><p>Надеть маску обязательно</p>",
+			"notificationType": "warning",
+			"duration": 4000
+		},
+
 		{ 
 			"type": "show",
 			"character": "mc",
@@ -130,9 +137,43 @@
 		},
 
 		{
+			"type": "inventory-remove",
+			"character": "mc",
+			"itemId": "ygdrasil-coin-old",
+			"quantity": 7
+		},
+
+		{
+			"type": "inventory-add",
+			"character": "mc",
+			"itemId": "ygdrasil-coin-new",
+			"quantity": 4
+		},
+
+		{
+			"type": "notification",
+			"text": "<p class='notif-title'>{character.mc.name}: Монеты обменяны</p><p>7 старых → {character.mc.inventory.items[ygdrasil-coin-new].quantity} новых</p>",
+			"notificationType": "success",
+			"duration": 3000
+		},
+
+		{
+			"type": "inventory-remove",
+			"character": "mc",
+			"itemId": "gasmask"
+		},
+
+		{
 			"type": "dialogue",
 			"character": "mc",
 			"text": "<i>Надеваю маску</i>"
+		},
+
+		{
+			"type": "notification",
+			"text": "<p>✓ Маска надета</p><p>Система фильтрации активна</p>",
+			"notificationType": "success",
+			"duration": 2500
 		},
 
 		{

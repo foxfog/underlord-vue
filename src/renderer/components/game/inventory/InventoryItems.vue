@@ -1,5 +1,14 @@
 <template>
 	<div class="tab-content-item inventory-layout">
+		<InventoryContextMenu
+			:items-data="itemsData"
+			:equipment-slots="equipmentSlots"
+			:inventory-items="items"
+			@equip="handleContextMenuEquip"
+			@unequip="handleContextMenuUnequip"
+			@drop="handleContextMenuDrop"
+			ref="contextMenu"
+		/>
 		<div class="left-panel">
 			<div class="char-preview">
 				<Character :character="character" />
@@ -13,15 +22,23 @@
 					data-panel="equipment"
 				>
 					<div v-if="value" 
-						class="inventory-item-content draggable-item" 
+						class="inventory-item draggable-item" 
 						:data-item-id="value"
 						:data-from="slot"
 						:data-type="'slot'"
 						touch-action="none"
+						@mouseenter="onItemHover(value)"
+						@mouseleave="onItemLeave"
+						@contextmenu.prevent="showEquipmentContextMenu($event, value, slot)"
 					>
-						<div class="item-icon">📦</div>
-						<div class="item-info">
-							<div class="item-name">{{ getItemName(value) }}</div>
+						<div class="inventory-item-content">
+							<div v-if="getItemSprite(value)" class="item-icon">
+								<img :src="getItemSprite(value)" :alt="getItemName(value)" />
+							</div>
+							<div v-else class="item-icon">📦</div>
+							<div class="item-info">
+								<div class="item-name">{{ getItemName(value) }}</div>
+							</div>
 						</div>
 					</div>
 					<div v-else class="inventory-slot-empty">{{ slot }}</div>
@@ -47,14 +64,18 @@
 							:data-type="'item'"
 							touch-action="none"
 							@mouseenter="onItemHover(item.itemId)"
-							@mouseleave="onItemLeave"
-						>
+						@mouseleave="onItemLeave"
+						@contextmenu.prevent="showInventoryContextMenu($event, item.itemId, (currentPage - 1) * SLOTS_PER_PAGE + currentPageSlots.indexOf(item))"
+					>
 							<div class="inventory-item-content">
-								<div class="item-icon">📦</div>
+								<div v-if="getItemSprite(item.itemId)" class="item-icon">
+									<img :src="getItemSprite(item.itemId)" :alt="getItemName(item.itemId)" />
+								</div>
+								<div v-else class="item-icon">📦</div>
 								<div class="item-info">
 									<div class="item-name">{{ getItemName(item.itemId) }}</div>
 								</div>
-								<div class="item-quantity" v-if="item.quantity > 1">x{{ item.quantity }}</div>
+							<div v-if="isItemStackable(item.itemId) && item.quantity > 1" class="item-quantity">x{{ item.quantity }}</div>
 							</div>
 						</div>
 						<div v-else class="empty-slot"></div>
@@ -91,6 +112,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
 import Character from '../characters/Character.vue'
+import InventoryContextMenu from './InventoryContextMenu.vue'
 import interact from 'interactjs'
 
 const props = defineProps({
@@ -100,18 +122,9 @@ const props = defineProps({
 	equipmentSlots: { type: Object, default: () => ({}) }
 })
 
-const emit = defineEmits(['drag-inventory-drop', 'equip', 'unequip', 'swap'])
+const emit = defineEmits(['drag-inventory-drop', 'equip', 'unequip', 'swap', 'drop'])
 
-// Fallback data for items if they're not loaded yet
-const fallbackItemData = {
-	'gasmask': { id: 'gasmask', slot: 'mask', name: 'Gas Mask' },
-	'tshirt': { id: 'tshirt', slot: 'torso-1', name: 'T-Shirt' },
-	'tshirt-red': { id: 'tshirt-red', slot: 'torso-1', name: 'Red T-Shirt' },
-	'sword-diamond': { id: 'sword-diamond', slot: ['hand-left', 'hand-right'], name: 'Diamond Sword' },
-	'pendant-zen': { id: 'pendant-zen', slot: 'neck', name: 'Zen Pendant' },
-	'ygdrasil-coin-old': { id: 'ygdrasil-coin-old', slot: [], name: 'Old Ygdrasil Coin' },
-	'ygdrasil-coin-new': { id: 'ygdrasil-coin-new', slot: [], name: 'New Ygdrasil Coin' }
-}
+const contextMenu = ref(null)
 
 const draggedItemSlots = ref([])
 const isDragging = ref(false)
@@ -120,6 +133,7 @@ const draggedItemId = ref(null)
 const draggedFromType = ref(null)
 const draggedFromSlot = ref(null)
 const currentCompatibleSlots = ref([])  // Сохраняем совместимые слоты отдельно
+const dropWasSuccessful = ref(false)  // Track if drop landed on valid zone
 
 // Inventory pagination
 const SLOTS_PER_PAGE = 30
@@ -165,22 +179,31 @@ function goToPage(page) {
 }
 
 function getItemName(id) {
-	const def = props.itemsData[id] || fallbackItemData[id] || { name: id }
+	const def = props.itemsData[id]
+	if (!def) return id
 	return def.name || def.id || id
 }
 
+function getItemSprite(id) {
+	const def = props.itemsData[id]
+	return def?.sprite || null
+}
+
+function isItemStackable(id) {
+	const def = props.itemsData[id]
+	return def?.stackable !== false  // по умолчанию stackable если не указано false
+}
+
 function getItemSlots(itemId) {
-	// Try to get from props.itemsData first, then fallback to fallbackItemData
-	const def = props.itemsData[itemId] || fallbackItemData[itemId]
+	const def = props.itemsData[itemId]
 	console.log('getItemSlots:', { 
 		itemId, 
 		found: !!def, 
 		def, 
-		propsItemsDataKeys: Object.keys(props.itemsData),
-		fallbackKeys: Object.keys(fallbackItemData)
+		propsItemsDataKeys: Object.keys(props.itemsData)
 	})
 	if (!def) {
-		console.warn(`Item ${itemId} not found in itemsData or fallback!`)
+		console.warn(`Item ${itemId} not found in itemsData!`)
 		return []
 	}
 	const slot = def.slot
@@ -189,10 +212,38 @@ function getItemSlots(itemId) {
 	return []
 }
 
+function showEquipmentContextMenu(event, itemId, slot) {
+	contextMenu.value?.show(event, itemId, 'equipment', slot)
+}
+
+function showInventoryContextMenu(event, itemId, inventoryIndex) {
+	contextMenu.value?.show(event, itemId, 'inventory', null, inventoryIndex)
+}
+
+function handleContextMenuEquip({ itemId, slot, inventoryIndex }) {
+	emit('equip', { slot, itemId, inventoryIndex })
+}
+
+function handleContextMenuUnequip({ slot, itemId, stackable }) {
+	emit('unequip', { slot, itemId, stackable })
+}
+
+function handleContextMenuDrop({ itemId, source, slot, quantity = 1 }) {
+	if (source === 'equipment') {
+		// Dropping from equipment - unequip first
+		const itemDef = props.itemsData[itemId]
+		const isStackable = itemDef?.stackable !== false
+		emit('unequip', { slot, itemId, stackable: isStackable })
+	}
+	// After unequipping (or if from inventory), emit drop event
+	emit('drop', { itemId, source, slot, quantity })
+}
+
 function onItemHover(itemId) {
 	draggedItemSlots.value = [...getItemSlots(itemId)]
 	
-	document.querySelectorAll('.slot').forEach(slot => {
+	// Подсвечиваем только слоты оборудования в левой панели
+	document.querySelectorAll('.left-panel .inventory-grid-slot').forEach(slot => {
 		const slotName = slot.getAttribute('data-slot')
 		if (draggedItemSlots.value.includes(slotName)) {
 			slot.classList.add('compatible')
@@ -204,7 +255,8 @@ function onItemHover(itemId) {
 
 function onItemLeave() {
 	draggedItemSlots.value = []
-	document.querySelectorAll('.slot').forEach(slot => {
+	// Очищаем подсвечивание только в левой панели
+	document.querySelectorAll('.left-panel .inventory-grid-slot').forEach(slot => {
 		slot.classList.remove('compatible')
 		slot.classList.remove('incompatible')
 	})
@@ -231,7 +283,7 @@ function resetItemPosition(element) {
 	isDragging.value = false
 	draggedItemSlots.value = []
 	// НЕ очищаем currentCompatibleSlots здесь, так как он используется в drop событии
-	document.querySelectorAll('.slot').forEach(slot => {
+	document.querySelectorAll('.left-panel .inventory-grid-slot').forEach(slot => {
 		slot.classList.remove('compatible')
 		slot.classList.remove('incompatible')
 	})
@@ -256,6 +308,9 @@ function setupDragAndDrop() {
 			autoScroll: true,
 			listeners: {
 				start: (event) => {
+					// Reset drop tracking
+					dropWasSuccessful.value = false
+					
 					// Сохраняем информацию о перетаскиваемом элементе
 					draggedElement.value = event.target
 					const itemId = event.target.getAttribute('data-item-id')
@@ -283,7 +338,8 @@ function setupDragAndDrop() {
 					
 					console.log('Drag start:', { itemId, fromType, fromSlot, slots })
 					
-					document.querySelectorAll('.slot').forEach(slot => {
+					// Подсвечиваем только слоты оборудования в левой панели при перетаскивании
+					document.querySelectorAll('.left-panel .inventory-grid-slot').forEach(slot => {
 						const slotName = slot.getAttribute('data-slot')
 						if (slots.includes(slotName)) {
 							slot.classList.add('compatible')
@@ -296,6 +352,21 @@ function setupDragAndDrop() {
 				end: (event) => {
 					const target = event.target
 					resetItemPosition(target)
+					
+					// If dragging from equipment slot to somewhere else without hitting a valid dropzone,
+					// don't unequip. The drop handlers will mark dropWasSuccessful = true if valid.
+					// This prevents items from disappearing when dropped outside the inventory.
+					if (draggedFromType.value === 'slot' && dropWasSuccessful.value) {
+						// For unequip to inventory (if drop was in empty space), emit unequip
+						emit('unequip', { slot: draggedFromSlot.value, itemId: draggedItemId.value })
+					}
+					
+					// Reset state
+					draggedItemId.value = null
+					draggedFromType.value = null
+					draggedFromSlot.value = null
+					draggedElement.value = null
+					dropWasSuccessful.value = false
 				}
 			}
 		})
@@ -307,7 +378,18 @@ function setupDragAndDrop() {
 			overlap: 0.5,
 			listeners: {
 				dragenter: (event) => {
-					event.target.classList.add('drag-over')
+					// Подсвечиваем желтым только совместимые слоты
+					const targetPanel = event.target.getAttribute('data-panel')
+					if (targetPanel === 'equipment') {
+						const slot = event.target.getAttribute('data-slot')
+						const compatibleSlots = currentCompatibleSlots.value
+						if (compatibleSlots.includes(slot)) {
+							event.target.classList.add('drag-over')
+						}
+					} else {
+						// Для инвентаря подсвечиваем всегда
+						event.target.classList.add('drag-over')
+					}
 				},
 				dragleave: (event) => {
 					event.target.classList.remove('drag-over')
@@ -317,6 +399,9 @@ function setupDragAndDrop() {
 					event.target.classList.remove('drag-over')
 					const slot = event.target.getAttribute('data-slot')
 					const targetPanel = event.target.getAttribute('data-panel')
+					
+					// Mark drop as successful since we reached a valid dropzone
+					dropWasSuccessful.value = true
 					
 					// Используем сохраненные совместимые слоты
 					const compatibleSlots = currentCompatibleSlots.value
@@ -332,11 +417,14 @@ function setupDragAndDrop() {
 					
 					// Если из слота перетаскиваем в инвентарь - разэкипируем
 					if (draggedFromType.value === 'slot' && targetPanel === 'inventory') {
+					const itemDef = props.itemsData[draggedItemId.value]
+						const isStackable = itemDef?.stackable !== false  // по умолчанию stackable если не указано false
 						console.log('Unequipping from slot to inventory:', { 
 							slot: draggedFromSlot.value, 
-							itemId: draggedItemId.value 
+							itemId: draggedItemId.value,
+							stackable: isStackable
 						})
-						emit('unequip', { slot: draggedFromSlot.value, itemId: draggedItemId.value })
+						emit('unequip', { slot: draggedFromSlot.value, itemId: draggedItemId.value, stackable: isStackable })
 					}
 					// Если из инвентаря в слот - экипируем
 					else if (draggedFromType.value === 'item' && targetPanel === 'equipment') {
@@ -348,7 +436,12 @@ function setupDragAndDrop() {
 							}
 							return
 						}
-						emit('equip', { slot, itemId: draggedItemId.value })
+						// Находим индекс предмета в инвентаре
+						const inventoryIndex = inventorySlots.value.findIndex((item, idx) => {
+							if (!item) return false
+							return item.itemId === draggedItemId.value && idx >= (currentPage.value - 1) * SLOTS_PER_PAGE
+						})
+						emit('equip', { slot, itemId: draggedItemId.value, inventoryIndex })
 					}
 					// Если из слота в другой слот - меняем их местами или перемещаем
 					else if (draggedFromType.value === 'slot' && targetPanel === 'equipment') {
@@ -379,7 +472,7 @@ function setupDragAndDrop() {
 						}
 						
 						console.log('Swapping items:', { from: fromSlot, to: slot, fromItem: fromItemId, toItem: toItemId })
-						emit('swap', { from: fromSlot, to: slot })
+						emit('swap', { from: fromSlot, to: slot, fromItemId, toItemId })
 					}
 
 					if (draggedElement.value) {
@@ -389,7 +482,7 @@ function setupDragAndDrop() {
 			}
 		})
 
-	// Setup dropzone for inventory
+	// Setup dropzone for inventory - only handle drops that specifically missed other dropzones
 	interact('.inventory-grid-main')
 		.dropzone({
 			accept: '.draggable-item',
@@ -398,8 +491,10 @@ function setupDragAndDrop() {
 				drop: (event) => {
 					event.preventDefault()
 					
+					// Mark that drop was successful on inventory grid container
+					// This handles drops in empty spaces of the inventory
 					if (draggedFromType.value === 'slot') {
-						emit('unequip', { slot: draggedFromSlot.value, itemId: draggedItemId.value })
+						dropWasSuccessful.value = true
 					}
 
 					if (draggedElement.value) {

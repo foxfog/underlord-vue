@@ -20,7 +20,7 @@
 	"equipment_slots": {
 		"head": null,
 		"mask": null,
-		"neck-1": null,
+		"neck_1": null,
 		"torso-1": null,
 		"torso-2": null,
 		"torso-3": null,
@@ -37,8 +37,14 @@
 				"itemId": "gasmask"
 			},
 			{
+				"itemId": "gasmask"
+			},
+			{
 				"itemId": "ygdrasil-coin-old",
 				"quantity": 23
+			},
+			{
+				"itemId": "medicalmask"
 			}
 		]
 	},

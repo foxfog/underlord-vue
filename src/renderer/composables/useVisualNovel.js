@@ -2,7 +2,7 @@ import { ref } from 'vue'
 import { useSavesStore } from '../stores/saves'
 import { extractVisibleCharacterDisplay, applyVisibleCharacterDisplay } from '../utils/saveGameUtils'
 
-export function useVisualNovel({ src, emit } = {}) {
+export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	// State
 	const currentScene = ref(null)
 	const visibleCharacters = ref([])
@@ -207,6 +207,66 @@ export function useVisualNovel({ src, emit } = {}) {
 					break
 				case 'stop-all-streams':
 					if (!isRestoringGameState.value) stopAllStreams()
+					stepIndex.value++
+					processStep()
+					break
+				case 'inventory-remove':
+					// Remove item(s) from inventory: { character: "mc", itemId: "gasmask", quantity: 1 }
+					if (!isRestoringGameState.value && step.character && step.itemId) {
+						const char = characterData.value[step.character]
+						if (char && char.inventory && Array.isArray(char.inventory.items)) {
+							const itemQtyToRemove = step.quantity || 1
+							let remainingToRemove = itemQtyToRemove
+							for (let i = char.inventory.items.length - 1; i >= 0 && remainingToRemove > 0; i--) {
+								const item = char.inventory.items[i]
+								if (item.itemId === step.itemId) {
+									const itemQty = item.quantity || 1
+									if (itemQty <= remainingToRemove) {
+										remainingToRemove -= itemQty
+										char.inventory.items.splice(i, 1)
+										console.log(`📦 Removed ${itemQty}x ${step.itemId} from ${step.character}'s inventory`)
+									} else {
+										item.quantity = itemQty - remainingToRemove
+										console.log(`📦 Reduced ${step.itemId} quantity by ${remainingToRemove} (now ${item.quantity})`)
+										remainingToRemove = 0
+									}
+								}
+							}
+						}
+					}
+					stepIndex.value++
+					processStep()
+					break
+				case 'inventory-add':
+					// Add item(s) to inventory: { character: "mc", itemId: "ygdrasil-coin-new", quantity: 4 }
+					if (!isRestoringGameState.value && step.character && step.itemId) {
+						const char = characterData.value[step.character]
+						if (char && char.inventory && Array.isArray(char.inventory.items)) {
+							const itemQtyToAdd = step.quantity || 1
+							// Try to stack with existing item
+							const existingIndex = char.inventory.items.findIndex(item => item.itemId === step.itemId)
+							if (existingIndex !== -1) {
+								const existing = char.inventory.items[existingIndex]
+								existing.quantity = (existing.quantity || 1) + itemQtyToAdd
+								console.log(`📦 Added ${itemQtyToAdd}x ${step.itemId} to ${step.character}'s inventory (new qty: ${existing.quantity})`)
+							} else {
+								char.inventory.items.push({ itemId: step.itemId, quantity: itemQtyToAdd })
+								console.log(`📦 Added new item ${itemQtyToAdd}x ${step.itemId} to ${step.character}'s inventory`)
+							}
+						}
+					}
+					stepIndex.value++
+					processStep()
+					break
+				case 'notification':
+					// Show notification: { text: "...", notificationType: "info|success|warning|error", duration: 3000 }
+					if (!isRestoringGameState.value && notificationComponent.value && step.text) {
+						const html = substituteVariables(step.text)
+						const notificationType = step.notificationType || 'info'
+						const duration = step.duration || 3000
+						notificationComponent.value.showNotification(html, notificationType, duration)
+						console.log(`📢 Notification: ${html}`)
+					}
 					stepIndex.value++
 					processStep()
 					break
@@ -619,8 +679,29 @@ export function useVisualNovel({ src, emit } = {}) {
 				if (characterData.value[characterId]) {
 					let target = characterData.value[characterId]
 					for (let i = 0; i < propertyPath.length; i++) {
-						if (target[propertyPath[i]] === undefined) return match
-						target = target[propertyPath[i]]
+						const part = propertyPath[i]
+						// Handle array indexing: items[0], items[indexOf(gasmask)]
+						const arrayMatch = part.match(/^(\w+)\[([^\]]+)\]$/)
+						if (arrayMatch) {
+							const arrayName = arrayMatch[1]
+							const indexExpr = arrayMatch[2]
+							if (target[arrayName] === undefined) return match
+							let index = parseInt(indexExpr)
+							// If index is NaN, try to find by property value
+							if (isNaN(index)) {
+								// Look for an item by itemId: items[gasmask] or items['gasmask']
+								const searchValue = indexExpr.replace(/^['"]|['"]$/g, '')
+								if (Array.isArray(target[arrayName])) {
+									index = target[arrayName].findIndex(item => item.itemId === searchValue)
+									if (index === -1) return match
+								}
+							}
+							target = Array.isArray(target[arrayName]) ? target[arrayName][index] : undefined
+							if (target === undefined) return match
+						} else {
+							if (target[part] === undefined) return match
+							target = target[part]
+						}
 					}
 					return target || ''
 				}

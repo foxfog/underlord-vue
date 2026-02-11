@@ -48,6 +48,42 @@ export function extractDelta(current, defaults, excludeKeys = ['sprites', 'equip
 		}
 		return out
 	}
+
+	// Specific sanitizer for inventory with items array
+	function sanitizeInventory(inventory) {
+		if (!inventory || typeof inventory !== 'object') return inventory
+		try {
+			// Deep clone through JSON to remove all Vue reactivity (Proxies)
+			const cleaned = JSON.parse(JSON.stringify({
+				items: Array.isArray(inventory.items) 
+					? inventory.items.map(item => {
+						const cleanItem = { itemId: item.itemId }
+						// Only include quantity if it's > 1
+						if (item.quantity && item.quantity > 1) {
+							cleanItem.quantity = item.quantity
+						}
+						return cleanItem
+					})
+					: []
+			}))
+			return cleaned
+		} catch (err) {
+			console.warn('Failed to sanitize inventory:', err)
+			// Fallback: return a minimal safe structure
+			return {
+				items: Array.isArray(inventory.items) 
+					? inventory.items.map(item => {
+						const cleanItem = { itemId: String(item.itemId) }
+						const qty = Number(item.quantity) || 1
+						if (qty > 1) {
+							cleanItem.quantity = qty
+						}
+						return cleanItem
+					})
+					: []
+			}
+		}
+	}
 	
 	// Проходим по ключам дефолта
 	for (const key in defaults) {
@@ -62,6 +98,8 @@ export function extractDelta(current, defaults, excludeKeys = ['sprites', 'equip
 		// Sanitize specific known complex keys before comparison
 		if (key === 'equipment_slots') {
 			currentValue = sanitizeEquipmentSlots(currentValue)
+		} else if (key === 'inventory') {
+			currentValue = sanitizeInventory(currentValue)
 		}
 		
 		// Если значение изменилось от дефолта
@@ -108,10 +146,20 @@ export function mergeDeltaWithDefaults(defaults, delta) {
 		return JSON.parse(JSON.stringify(defaults))
 	}
 	
-	return {
+	const merged = {
 		...defaults,
 		...delta
 	}
+	
+	// Ensure inventory items have quantity field (default to 1 if missing)
+	if (merged.inventory && Array.isArray(merged.inventory.items)) {
+		merged.inventory.items = merged.inventory.items.map(item => ({
+			...item,
+			quantity: item.quantity !== undefined ? item.quantity : 1
+		}))
+	}
+	
+	return merged
 }
 
 /**

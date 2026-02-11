@@ -3,6 +3,7 @@
 		"id": "tshirt",
 		"slot": "torso-1",
 		"characters": ["mc", "momonga"],
+		"stackable": false,
 		"weight": 0.5,
 		"stats": {
 			"hp": 5,
@@ -14,7 +15,9 @@
 	{
 		"id": "gasmask",
 		"slot": "mask",
+		"name": "газовая маска GM-1",
 		"characters": ["mc"],
+		"stackable": false,
 		"sprite": "images/sprites/items/equipments/gasmask.png",
 		"weight": 0.5,
 		"stats": {
@@ -23,9 +26,21 @@
 		}
 	},
 	{
+		"id": "medicalmask",
+		"slot": "mask",
+		"name": "медицинская маска",
+		"stackable": false,
+		"sprite": "images/sprites/items/equipments/medicalmask.png",
+		"weight": 0.5,
+		"stats": {
+			"defense": 1
+		}
+	},
+	{
 		"id": "tshirt-red",
 		"slot": "torso-2",
 		"characters": ["momonga"],
+		"stackable": false,
 		"weight": 0.5,
 		"lvl": 3,
 		"stats": {
@@ -36,6 +51,7 @@
 		"id": "sword-diamond",
 		"slot": ["weapon-hand-1", "weapon-hand-2"],
 		"class": ["warrior", "rogue", "paladin", "hunter", "overlord"],
+		"stackable": false,
 		"weight": 0.5,
 		"stats": {
 			"attack": 10
@@ -43,8 +59,9 @@
 	},
 	{
 		"id": "pendant-zen",
-		"slot": "neck-1",
+		"slot": "neck_1",
 		"races": ["human", "elf", "overlord"],
+		"stackable": false,
 		"weight": 0.5
 	}
 ]

@@ -16,6 +16,8 @@
 		@selectChoice="selectChoice"
 	/>
 
+	<Notification ref="notificationComponent" />
+
 	<TextInputModal
 		:is-visible="showTextInputModal"
 		:title="currentInputStep?.text || 'Введите значение'"
@@ -30,20 +32,23 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import TextInputModal from './modals/TextInputModal.vue'
 import StoryAudio from './StoryAudio.vue'
 import Background from './visual-novel/Background.vue'
 import CharacterList from './visual-novel/CharacterList.vue'
 import TitleBlock from './visual-novel/TitleBlock.vue'
 import DialogueBox from './visual-novel/DialogueBox.vue'
+import Notification from './visual-novel/Notification.vue'
 import { useVisualNovel } from '../../composables/useVisualNovel'
 import { useSavesStore } from '../../stores/saves'
 
 const props = defineProps({ src: { type: String, required: true } })
 const emit = defineEmits(['end', 'character-loaded'])
 
-const vn = useVisualNovel({ src: props.src, emit })
+const notificationComponent = ref(null)
+
+const vn = useVisualNovel({ src: props.src, emit, notificationComponent })
 
 const {
 	currentScene, visibleCharacters, currentDialogue, currentNarration, currentTitle, currentTitleEffects,

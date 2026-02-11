@@ -27,6 +27,7 @@
 						@equip="(e) => emit('equip', e)"
 						@unequip="(e) => emit('unequip', e)"
 						@swap="(e) => emit('swap', e)"
+						@drop="(e) => emit('drop', e)"
 						@drag-inventory-drop="handleInventoryDrop"
 					/>
 
@@ -60,7 +61,7 @@ const props = defineProps({
 	}
 })
 
-const emit = defineEmits(['close', 'equip', 'unequip', 'swap'])
+const emit = defineEmits(['close', 'equip', 'unequip', 'swap', 'drop'])
 
 const activeTab = ref('inventory')
 

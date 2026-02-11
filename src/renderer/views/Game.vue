@@ -33,6 +33,7 @@
 		@equip="handleEquip"
 		@unequip="handleUnequip"
 		@swap="handleSwap"
+		@drop="handleDrop"
 	/>		<!-- Menu overlay that can be toggled with Esc -->
 		<div v-show="menuVisible" class="menu-overlay">
 			<div class="overlay-content">
@@ -207,14 +208,42 @@ function toggleInventoryModal() {
 	showInventoryModal.value = !showInventoryModal.value
 }
 
-function handleEquip({ slot, itemId }) {
-	console.log('Equipping:', { slot, itemId })
+function handleEquip({ slot, itemId, stackable, inventoryIndex }) {
+	console.log('Equipping:', { slot, itemId, stackable, inventoryIndex })
 	console.log('Before equip - inventory items:', mcCharacter.value?.inventory?.items)
 	if (mcCharacter.value?.equipment_slots) {
+		// Если в слоте уже что-то есть - вернуть в инвентарь
+		const oldItemId = mcCharacter.value.equipment_slots[slot]
+		if (oldItemId) {
+			console.log('Slot was occupied, returning old item to inventory:', oldItemId)
+			if (mcCharacter.value?.inventory?.items) {
+				// Для старого предмета - добавляем как отдельный если non-stackable
+				const oldItemDef = itemsData.value[oldItemId]
+				const oldItemStackable = oldItemDef?.stackable !== false
+				
+				if (oldItemStackable) {
+					const existingItem = mcCharacter.value.inventory.items.find(item => item.itemId === oldItemId)
+					if (existingItem) {
+						existingItem.quantity += 1
+					} else {
+						mcCharacter.value.inventory.items.push({ itemId: oldItemId, quantity: 1 })
+					}
+				} else {
+					mcCharacter.value.inventory.items.push({ itemId: oldItemId, quantity: 1 })
+				}
+			}
+		}
+		
+		// Установить новый предмет в слот
 		mcCharacter.value.equipment_slots[slot] = itemId
+		
 		// Удалить предмет из инвентаря
 		if (mcCharacter.value?.inventory?.items) {
-			const itemIndex = mcCharacter.value.inventory.items.findIndex(item => item.itemId === itemId)
+			// Use provided inventoryIndex if available, otherwise find first match
+			let itemIndex = inventoryIndex ?? -1
+			if (itemIndex === -1) {
+				itemIndex = mcCharacter.value.inventory.items.findIndex(item => item.itemId === itemId)
+			}
 			console.log('Item index:', itemIndex)
 			if (itemIndex !== -1) {
 				const item = mcCharacter.value.inventory.items[itemIndex]
@@ -242,8 +271,8 @@ function handleEquip({ slot, itemId }) {
 	}
 }
 
-function handleUnequip({ slot, itemId }) {
-	console.log('Unequipping:', { slot, itemId })
+function handleUnequip({ slot, itemId, stackable }) {
+	console.log('Unequipping:', { slot, itemId, stackable })
 	if (mcCharacter.value?.equipment_slots) {
 		// Устанавливаем слот в null вместо удаления, чтобы слот остался в объекте
 		// Vue будет отслеживать изменение значения
@@ -251,11 +280,17 @@ function handleUnequip({ slot, itemId }) {
 		
 		// Добавить предмет в инвентарь
 		if (mcCharacter.value?.inventory?.items) {
-			const existingItem = mcCharacter.value.inventory.items.find(item => item.itemId === itemId)
-			if (existingItem) {
-				existingItem.quantity += 1
-			} else {
+			// Если предмет non-stackable (stackable === false) - всегда добавляем как новый объект
+			if (stackable === false) {
 				mcCharacter.value.inventory.items.push({ itemId, quantity: 1 })
+			} else {
+				// Если stackable или не указано - стакаем с существующим
+				const existingItem = mcCharacter.value.inventory.items.find(item => item.itemId === itemId)
+				if (existingItem) {
+					existingItem.quantity += 1
+				} else {
+					mcCharacter.value.inventory.items.push({ itemId, quantity: 1 })
+				}
 			}
 		}
 		// Перестроить equipmentBySlot
@@ -263,14 +298,34 @@ function handleUnequip({ slot, itemId }) {
 	}
 }
 
-function handleSwap({ from, to }) {
-	console.log('Swapping slots:', { from, to })
+function handleSwap({ from, to, fromItemId, toItemId }) {
+	console.log('Swapping slots:', { from, to, fromItemId, toItemId })
 	if (mcCharacter.value?.equipment_slots) {
+		// Просто меняем предметы местами
 		const temp = mcCharacter.value.equipment_slots[from]
 		mcCharacter.value.equipment_slots[from] = mcCharacter.value.equipment_slots[to]
 		mcCharacter.value.equipment_slots[to] = temp
 		// Перестроить equipmentBySlot
 		rebuildEquipmentBySlot()
+	}
+}
+
+function handleDrop({ itemId, source, slot, quantity = 1 }) {
+	console.log('Dropping item:', { itemId, source, slot, quantity })
+	if (mcCharacter.value?.inventory?.items) {
+		// Найти и удалить предмет из инвентаря
+		const itemIndex = mcCharacter.value.inventory.items.findIndex(item => item.itemId === itemId)
+		if (itemIndex !== -1) {
+			const item = mcCharacter.value.inventory.items[itemIndex]
+			
+			// Если есть quantity > удаляемого количества, просто уменьшить
+			if (item.quantity && item.quantity > quantity) {
+				item.quantity -= quantity
+			} else {
+				// Иначе удалить полностью
+				mcCharacter.value.inventory.items.splice(itemIndex, 1)
+			}
+		}
 	}
 }
 
@@ -427,6 +482,9 @@ async function onSaveRequest(saveData) {
 	}
 }
 function openHistory() {
+	if (visualNovel.value) {
+		historyList.value = visualNovel.value.getHistory()
+	}
 	showHistoryModal.value = true
 }
 

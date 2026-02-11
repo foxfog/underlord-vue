@@ -7,5 +7,14 @@
 				"image": "images/sprites/characters/mc/gasmask.png"
 			}
 		]
+	},
+	{
+		"id": "medicalmask",
+		"parts": [
+			{
+				"parent" : "head",
+				"image": "images/sprites/characters/mc/medicalmask.png"
+			}
+		]
 	}
 ]
