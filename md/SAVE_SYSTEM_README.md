@@ -71,21 +71,28 @@ Serialized Data:
 }
 ```
 
-#### **SaveLoadModal Component**
-File: `src/renderer/components/SaveLoadModal.vue`
+#### **SavesContent Component**
+File: `src/renderer/components/saves/SavesContent.vue`
 
 Features:
-- Tab switching between Save/Load modes
-- 20 save slots displayed in paginated 3-column grid
-- Shows metadata: timestamp, MC name, slot status
-- Save slot detection and highlighting
-- Calls `visualNovel.getGameState()` to save
-- Calls `visualNovel.restoreGameState()` to load
+- Tab switching between Load/Save modes (Save tab only in-game)
+- Integrates SavesGrid for displaying saves
+- Emits `load-request` and `save-request` events
 
-Notes on refactor:
-- UI split into smaller components: `src/renderer/components/saves/SaveList.vue` and `src/renderer/components/saves/SaveItem.vue` (used by `SaveLoadModal.vue`)
-- Business logic and IPC moved to `src/renderer/services/saveService.js` (unit-tested via Vitest)
-- Use `src/renderer/composables/useSaves.js` for a simple reactive API over the store
+#### **SavesGrid Component**
+File: `src/renderer/components/saves/SavesGrid.vue`
+
+Features:
+- Displays save slots in paginated grid (6 slots per page)
+- Shows metadata: timestamp, MC name, slot status
+- Delete button for each save
+- Save slot detection and highlighting
+- Emits `load`, `save`, `delete` events
+
+Notes on architecture:
+- UI unified in SavesGrid component (simplified from old SaveList + SaveItem structure)
+- Business logic and IPC in `src/renderer/services/saveService.js` (unit-tested via Vitest)
+- Use `src/renderer/composables/useSaves.js` for reactive API over the store
 
 
 #### **SavesContent Component**

@@ -12,10 +12,7 @@
 ```
 components/saves/
 ├── SavesContent.vue        ← главный интерфейс (Load/Save вкладки)
-├── SaveLoadModal.vue       ← модаль для игры
-├── SavesGrid.vue           ← сетка с пагинацией (6 слотов/страница)
-├── SaveItem.vue            ← элемент сохранения
-└── SaveList.vue            ← список сохранений
+└── SavesGrid.vue           ← сетка с пагинацией (слоты с фильтрацией)
 ```
 
 ### Settings-компоненты
@@ -57,8 +54,10 @@ components/game/
 
 ### Перемещённые файлы Save-компоненты
 - ✅ SavesContent.vue: `components/` → `components/saves/`
-- ✅ SaveLoadModal.vue: `components/` → `components/saves/`
-- ❌ SaveSlotsGrid.vue: удалён (дубликат SavesGrid.vue)
+- ❌ SaveLoadModal.vue: удалён (функция объединена в SavesContent)
+- ✅ SavesGrid.vue: `components/` → `components/saves/`
+- ❌ SaveList.vue: удалён (функция объединена в SavesGrid)
+- ❌ SaveItem.vue: удалён (функция объединена в SavesGrid)
 
 ### Перемещённые файлы Settings-компоненты
 - ✅ SettingsContent.vue: `components/` → `components/settings/`

@@ -10,10 +10,7 @@
 ```
 src/renderer/components/saves/
 ├── SavesContent.vue        ← главный интерфейс (Load/Save вкладки)
-├── SaveLoadModal.vue       ← модаль для игры
-├── SavesGrid.vue           ← сетка с пагинацией (6 слотов/страница)
-├── SaveItem.vue            ← элемент сохранения
-└── SaveList.vue            ← список сохранений
+└── SavesGrid.vue           ← сетка с пагинацией (слоты с фильтрацией)
 ```
 
 ### 🗂️ Settings-компоненты
@@ -28,11 +25,13 @@ src/renderer/components/settings/
 
 ### 📝 Перемещённые компоненты
 
-| Компонент | Было | Стало |
-|-----------|------|-------|
-| SavesContent.vue | `src/renderer/components/` | `src/renderer/components/saves/` |
-| SaveLoadModal.vue | `src/renderer/components/` | `src/renderer/components/saves/` |
-| SaveSlotsGrid.vue | `src/renderer/components/` | ❌ Удалён (дубликат SavesGrid.vue) |
+| Компонент | Было | Стало | Статус |
+|-----------|------|-------|--------|
+| SavesContent.vue | `src/renderer/components/` | `src/renderer/components/saves/` | ✅ Активно |
+| SavesGrid.vue | `src/renderer/components/` | `src/renderer/components/saves/` | ✅ Активно |
+| SaveLoadModal.vue | `src/renderer/components/saves/` | — | ❌ Удалён (функция объединена в SavesContent) |
+| SaveList.vue | `src/renderer/components/saves/` | — | ❌ Удалён (функция объединена в SavesGrid) |
+| SaveItem.vue | `src/renderer/components/saves/` | — | ❌ Удалён (функция объединена в SavesGrid) |
 
 ### 🔗 Обновлённые импорты
 
@@ -54,17 +53,6 @@ import SavesGrid from './saves/SavesGrid.vue'
 
 // Стало
 import SavesGrid from './SavesGrid.vue'  // Теперь в одной папке
-```
-
-**[SaveLoadModal.vue](src/renderer/components/saves/SaveLoadModal.vue):** (в новом месте)
-```javascript
-// Было
-import SavesGrid from './saves/SavesGrid.vue'
-import ConfirmModal from './ConfirmModal.vue'
-
-// Стало
-import SavesGrid from './SavesGrid.vue'  // Теперь в одной папке
-import ConfirmModal from '../ConfirmModal.vue'  // На уровень выше
 ```
 
 **[SettingsContent.vue](src/renderer/components/settings/SettingsContent.vue):** (в новом месте)
