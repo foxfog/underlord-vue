@@ -11,7 +11,11 @@
 			/>
 		</div>
 		<div class="menu-area __static">
-			<MainMenu @navigate="handleNavigation" :show-back-to-main="currentView !== 'main-menu'" />
+			<MainMenu
+				@navigate="handleNavigation"
+				:show-back-to-main="currentView !== 'main-menu'"
+				:current-view="currentView"
+			/>
 		</div>
 		<div class="back-area">
 			<img src="/images/wallpaper/1.jpg" />

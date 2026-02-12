@@ -1,15 +1,22 @@
 .btn {
 	cursor: pointer;
+	font-size: 1.3em;
 	&.btn-primary {
-		background-color: var(--color-primary);
+		background-color: transparent;
 		border-color: var(--color-primary);
 		border-width: 1px;
 		border-style: solid;
-		border-radius: 0.2em;
+		border-radius: 0.4em;
 		padding: 0.5em 1.5em;
+		color: var(--color-primary);
 		&:hover {
-			background-color: var(--color-primary-dark);
+			background-color: transparent;
 			border-color: var(--color-primary-dark);
+			box-shadow: 0 0 0.5em var(--color-primary-light);
+		}
+		&:active {
+			transform: scale(0.95);
+			box-shadow: 0 0 0.25em var(--color-primary-light);
 		}
 	}
 }
@@ -18,4 +25,6 @@
 	column-gap: 1em;
 	padding-top: 1em;
 	padding-bottom: 1em;
+	padding-left: 1em;
+	padding-right: 1em;
 }

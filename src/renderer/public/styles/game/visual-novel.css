@@ -124,20 +124,16 @@
 	}
 
 	.continue-btn {
-		padding: 0.5em 2em;
-		background: #007bff;
-		color: white;
-		border: none;
-		border-radius: 0.2em;
-		cursor: pointer;
 		float: right;
-		transition: background-color 0.2s ease;
 		position: absolute;
 		right: 2em;
 		bottom: 2em;
-		&:hover {
-			background-color: #0056b3;
-		}
+		border-radius: 100%;
+		aspect-ratio: 1;
+		padding: 0.2em 1em;	
+		display: flex;
+        align-items: center;
+        justify-content: center;
 	}
 	.hidden-continue {
 		width: 100%;

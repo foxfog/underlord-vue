@@ -7,6 +7,12 @@
 		position: relative;
 		padding-left: 1em;
 	}
+	&.__overlay {
+		width: 20em;
+		border-left: 1px solid var(--color-border);
+        padding: 2em;
+        backdrop-filter: blur(0.5em);
+	}
 	.mainmenu {
 		margin-top: auto;
 		.nav {
@@ -16,6 +22,13 @@
 				font-size: calc(2 * var(--size));
 				width: 100%;
 				text-align: right;
+				&:not(._active):hover {
+					text-shadow: 0 0 0.5em var(--color-primary);
+					cursor: pointer;
+				}
+				&._active {
+					color: var(--color-primary);
+				}
 			}
 		}
 	}

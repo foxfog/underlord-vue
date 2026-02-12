@@ -22,11 +22,12 @@
 					<div class="page-title">{{ $t('mainmenu.save_load') }}</div>
 				</div>
 				<SavesContent 
-				:in-game="inGameContext" 
-				:initial-tab="savesInitialTab"
-				@load-request="(data) => emit('load-request', data)" 
-				@save-request="(data) => emit('save-request', data)" 
-			/>
+					:in-game="inGameContext" 
+					:initial-tab="savesInitialTab"
+					@load-request="(data) => emit('load-request', data)" 
+					@save-request="(data) => emit('save-request', data)"
+					@tab-change="onSavesTabChange"
+				/>
 			</div>
 		</Transition>
 		
@@ -41,18 +42,30 @@
 	import SettingsContent from '@/components/settings/SettingsContent.vue'
 	import SavesContent from '@/components/saves/SavesContent.vue'
 	
-	const props = defineProps({
-		currentView: {
-			type: String,
-			default: 'main-menu'
-		},
-		inGameContext: { type: Boolean, default: false },
-		savesInitialTab: { type: String, default: 'load', validator: (val) => ['load', 'save'].includes(val) }
-	})
+const props = defineProps({
+	currentView: {
+		type: String,
+		default: 'main-menu'
+	},
+	inGameContext: { type: Boolean, default: false },
+	savesInitialTab: { type: String, default: 'load', validator: (val) => ['load', 'save'].includes(val) }
+})
 	
-	const emit = defineEmits(['back-to-menu', 'settings-saved', 'settings-reset', 'settings-dirty-change', 'load-request', 'save-request'])
+const emit = defineEmits([
+	'back-to-menu',
+	'settings-saved',
+	'settings-reset',
+	'settings-dirty-change',
+	'load-request',
+	'save-request',
+	'saves-tab-change'
+])
 	
-	const settingsContentRef = ref(null)
+const settingsContentRef = ref(null)
+
+const onSavesTabChange = (tab) => {
+	emit('saves-tab-change', tab)
+}
 	
 	// Watch for view changes
 	watch(() => props.currentView, (newView, oldView) => {

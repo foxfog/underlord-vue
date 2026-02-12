@@ -5,6 +5,8 @@
 		<button class="hotbar-btn" @click="$emit('open-settings')">Настройки</button>
 		<button class="hotbar-btn" @click="$emit('open-save')">Сохранить</button>
 		<button class="hotbar-btn" @click="$emit('open-load')">Загрузить</button>
+		<button class="hotbar-btn" @click="$emit('quick-save')">Быстрое сохранение</button>
+		<button class="hotbar-btn" @click="$emit('quick-load')">Быстрая загрузка</button>
 	</div>
 </template>
 
@@ -16,5 +18,13 @@ defineProps({
 	}
 })
 
-defineEmits(['open-history', 'open-menu', 'open-settings', 'open-save', 'open-load'])
+defineEmits([
+	'open-history',
+	'open-menu',
+	'open-settings',
+	'open-save',
+	'open-load',
+	'quick-save',
+	'quick-load'
+])
 </script>

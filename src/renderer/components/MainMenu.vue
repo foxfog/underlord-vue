@@ -15,15 +15,28 @@
 				</a>
 			</template>
 
-			<a v-if="inGameContext" class="nav-link" @click="openSave">
+			<a
+				v-if="inGameContext"
+				class="nav-link"
+				:class="{ _active: currentView === 'saves' && savesTab === 'save' }"
+				@click="openSave"
+			>
 				{{ t('save') || 'Сохранить' }}
 			</a>
 			
-			<a class="nav-link" @click="openLoad">
+			<a
+				class="nav-link"
+				:class="{ _active: currentView === 'saves' && (!inGameContext || savesTab === 'load') }"
+				@click="openLoad"
+			>
 				{{ t('load') || 'Загрузить' }}
 			</a>
 			
-			<a class="nav-link" @click="navigateToSettings">
+			<a
+				class="nav-link"
+				:class="{ _active: currentView === 'settings' }"
+				@click="navigateToSettings"
+			>
 				{{ t('mainmenu.settings') }}
 			</a>
 			
@@ -46,6 +59,14 @@
 		inGameContext: {
 			type: Boolean,
 			default: false
+		},
+		currentView: {
+			type: String,
+			default: 'main-menu'
+		},
+		savesTab: {
+			type: String,
+			default: 'load'
 		},
 		onContinue: {
 			type: Function,

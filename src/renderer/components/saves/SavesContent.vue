@@ -43,10 +43,15 @@ const props = defineProps({
 	inGame: { type: Boolean, default: false },
 	initialTab: { type: String, default: 'load', validator: (val) => ['load', 'save'].includes(val) }
 })
-const emit = defineEmits(['load-request', 'save-request'])
+const emit = defineEmits(['load-request', 'save-request', 'tab-change'])
 const savesStore = useSavesStore()
 
 const activeTab = ref(props.initialTab)
+
+// Notify parent when active tab changes (for highlighting in main menu, etc.)
+watch(activeTab, (newTab) => {
+	emit('tab-change', newTab)
+})
 
 // Reset to initial tab or 'load' tab when inGame changes or when component is not in-game
 watch(() => [props.inGame, props.initialTab], ([newInGame, newInitialTab]) => {

@@ -302,20 +302,3 @@ onBeforeUnmount(() => {
 	if (typewriterTimeout) clearTimeout(typewriterTimeout)
 })
 </script>
-
-<style>
-.title-box {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	cursor: pointer;
-	padding: 20px;
-}
-
-.title-content {
-	font-size: 2em;
-	text-align: center;
-	color: #fff;
-	text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
-}
-</style>

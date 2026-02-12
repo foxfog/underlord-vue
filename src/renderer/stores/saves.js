@@ -3,6 +3,10 @@ import { ref, computed } from 'vue'
 import { createCharacterDefaults } from '../utils/saveGameUtils'
 import { saveService, createSaveFile, serializeGameState } from '../services/saveService'
 
+const QUICK_SAVE_SLOTS_COUNT = 9
+const QUICK_SAVE_MIN_SLOT = 0
+const QUICK_SAVE_MAX_SLOT = QUICK_SAVE_MIN_SLOT + QUICK_SAVE_SLOTS_COUNT - 1
+
 export const useSavesStore = defineStore('saves', () => {
 	const saves = ref(new Map()) // Map<slotNumber, saveData>
 	const currentSlotNumber = ref(null)
@@ -113,14 +117,94 @@ export const useSavesStore = defineStore('saves', () => {
 		return saves.value.get(slotNumber)
 	}
 
-	// Get all saves sorted by slot
+	// Быстрые сохранения (только слоты 0-8), отсортированы по дате (сначала самые свежие)
+	const quickSaves = computed(() => {
+		return Array.from(saves.value.values())
+			.filter((saveFile) => (
+				typeof saveFile.slot === 'number' &&
+				saveFile.slot >= QUICK_SAVE_MIN_SLOT &&
+				saveFile.slot <= QUICK_SAVE_MAX_SLOT
+			))
+			.sort((a, b) => b.timestamp - a.timestamp)
+	})
+
+	// Все обычные сохранения (без быстрых), отсортированы по номеру слота
 	const allSaves = computed(() => {
-		return Array.from(saves.value.values()).sort((a, b) => a.slot - b.slot)
+		return Array.from(saves.value.values())
+			.filter((saveFile) => (
+				typeof saveFile.slot === 'number' &&
+				(saveFile.slot < QUICK_SAVE_MIN_SLOT || saveFile.slot > QUICK_SAVE_MAX_SLOT)
+			))
+			.sort((a, b) => a.slot - b.slot)
 	})
 
 	// Check if slot has save
 	const hasSave = (slotNumber) => {
 		return saves.value.has(slotNumber)
+	}
+
+	// Быстрое сохранение: использует только слоты 0-8.
+	// Сначала заполняет все свободные слоты, затем перезаписывает самый старый.
+	const saveQuick = async (gameState, mcName) => {
+		try {
+			// Обновляем список сохранений перед операцией
+			await listSaves()
+
+			const existingQuick = quickSaves.value
+			let targetSlot = null
+
+			if (existingQuick.length < QUICK_SAVE_SLOTS_COUNT) {
+				// Есть свободные индексы в диапазоне 0-8 — находим первый свободный
+				const usedSlots = new Set(existingQuick.map((s) => s.slot))
+				for (let i = QUICK_SAVE_MIN_SLOT; i <= QUICK_SAVE_MAX_SLOT; i++) {
+					if (!usedSlots.has(i)) {
+						targetSlot = i
+						break
+					}
+				}
+			} else {
+				// Все 9 заняты — берём самый старый по дате
+				const oldest = existingQuick[existingQuick.length - 1] // quickSaves отсортированы по timestamp DESC
+				if (!oldest) {
+					return { success: false, error: 'NO_QUICK_SAVE_SLOT' }
+				}
+				targetSlot = oldest.slot
+
+				// Удаляем старый файл перед перезаписью
+				await deleteSave(targetSlot)
+			}
+
+			if (targetSlot === null || typeof targetSlot !== 'number') {
+				return { success: false, error: 'NO_AVAILABLE_QUICK_SLOT' }
+			}
+
+			return await saveGame(targetSlot, gameState, mcName)
+		} catch (error) {
+			console.error('Failed to perform quick save:', error)
+			return { success: false, error: error.message }
+		}
+	}
+
+	// Загрузить самое свежее быстрое сохранение
+	const loadLatestQuick = async () => {
+		try {
+			await listSaves()
+			const existingQuick = quickSaves.value
+
+			if (!existingQuick.length) {
+				return { success: false, error: 'NO_QUICK_SAVES' }
+			}
+
+			const latest = existingQuick[0]
+			if (!latest || typeof latest.slot !== 'number') {
+				return { success: false, error: 'INVALID_QUICK_SAVE' }
+			}
+
+			return await loadGame(latest.slot)
+		} catch (error) {
+			console.error('Failed to load latest quick save:', error)
+			return { success: false, error: error.message }
+		}
 	}
 
 	const getPendingLoad = () => pendingLoad.value
@@ -140,6 +224,9 @@ export const useSavesStore = defineStore('saves', () => {
 		getSave,
 		allSaves,
 		hasSave,
+		quickSaves,
+		saveQuick,
+		loadLatestQuick,
 		serializeGameState,
 		createSaveFile,
 		setCharacterDefaults,

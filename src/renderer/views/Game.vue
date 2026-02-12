@@ -52,6 +52,7 @@
 						:current-view="currentView"
 						:in-game-context="true"
 						:saves-initial-tab="savesTab"
+						@saves-tab-change="onSavesTabChange"
 						@back-to-menu="showMainMenu"
 						@settings-saved="onSettingsSaved"
 						@settings-reset="onSettingsReset"
@@ -64,6 +65,8 @@
 					<MainMenu
 						@navigate="handleNavigation"
 						:show-back-to-main="currentView !== 'main-menu'"
+						:current-view="currentView"
+						:saves-tab="savesTab"
 						:in-game-context="true"
 						:on-continue="onContinue"
 					/>
@@ -80,6 +83,8 @@
 		@open-settings="openSettings"
 		@open-save="openSave"
 		@open-load="openLoad"
+		@quick-save="quickSave"
+		@quick-load="quickLoad"
 	/>
 
 	<!-- History modal -->
@@ -447,6 +452,10 @@ function navigateImmediate(view) {
 	}
 }
 
+function onSavesTabChange(tab) {
+	savesTab.value = tab
+}
+
 const handleNavigation = (view) => {
 	// Leaving settings with unsaved changes → ask first
 	if (currentView.value === 'settings' && view !== 'settings' && isSettingsDirty.value) {
@@ -577,6 +586,70 @@ async function onSaveRequest(saveData) {
 	} catch (err) {
 		console.error('Failed to save game:', err)
 		alert(`Failed to save: ${err.message}`)
+	}
+}
+
+async function quickSave() {
+	try {
+		if (!visualNovel.value) {
+			console.warn('VisualNovel ref not ready for quick save')
+			return
+		}
+
+		const gameState = visualNovel.value.getGameState()
+		const mcName = gameState.characterData?.mc?.name || 'Unknown'
+
+		const result = await savesStore.saveQuick(gameState, mcName)
+		if (result.success) {
+			console.log('✔ Quick save created')
+		} else {
+			alert(`Не удалось сделать быстрое сохранение: ${result.error}`)
+		}
+	} catch (err) {
+		console.error('Failed to create quick save:', err)
+		alert(`Ошибка быстрого сохранения: ${err.message}`)
+	}
+}
+
+async function quickLoad() {
+	try {
+		const result = await savesStore.loadLatestQuick()
+
+		if (!result.success) {
+			if (result.error === 'NO_QUICK_SAVES') {
+				alert('Нет быстрых сохранений')
+			} else {
+				alert(`Не удалось загрузить быстрое сохранение: ${result.error}`)
+			}
+			return
+		}
+
+		const saveFile = result.data
+
+		if (!visualNovel.value) {
+			console.warn('VisualNovel ref not ready for quick load')
+			return
+		}
+
+		// Просим подтверждение, как при обычной загрузке
+		showConfirm(
+			'Загрузить быстрое сохранение?',
+			'Загрузка приведёт к потере текущего прогресса. Продолжить?',
+			async () => {
+				try {
+					await visualNovel.value.restoreGameState(saveFile.gameState)
+					menuVisible.value = false
+					currentView.value = 'main-menu'
+					settingsStore.isMusicPlaying = false
+				} catch (err) {
+					console.error('Failed to restore quick save:', err)
+					alert(`Не удалось восстановить быстрое сохранение: ${err.message}`)
+				}
+			}
+		)
+	} catch (err) {
+		console.error('Failed to load quick save:', err)
+		alert(`Ошибка быстрой загрузки: ${err.message}`)
 	}
 }
 function openHistory() {

@@ -66,7 +66,8 @@
 	z-index: 250;
 	display: flex;
 	align-items: stretch;
-	background: rgba(0, 0, 0, 0.4);
+	background: rgba(0, 0, 0, 0.6);
+	backdrop-filter: blur(0.5em);
 }
 
 .overlay-content {
@@ -77,16 +78,6 @@
 		padding: 24px;
 	}
 
-}
-
-.menu-area {
-	&.__overlay {
-		width: 320px;
-		background: #111;
-		border-left: 1px solid #222;
-		padding: 16px;
-		box-shadow: -4px 0 12px rgba(0,0,0,0.6);
-	}
 }
 
 .game-background {
@@ -101,7 +92,7 @@
 }
 
 .topbar {
-	position: fixed;
+	position: absolute;
 	top: 0;
 	left: 0;
 	right: 0;

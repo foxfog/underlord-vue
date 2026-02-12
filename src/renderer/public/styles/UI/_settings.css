@@ -26,8 +26,8 @@
 		}
 	}
 	.settings-select {
-		max-width: 300px;
-		min-width: 200px;
+		max-width: 20em;
+        min-width: 15em;
 		flex-shrink: 0;
 		.ui-dropdown-toggle {
 			min-height: 2.5em;
@@ -35,8 +35,8 @@
 			padding: 0.6em 1em;
 		}
 		.ui-dropdown-menu {
-			max-height: 180px;
-			z-index: 1002;
+			max-height: 14em;
+			z-index: 320;
 		}
 	}
 	.btn {

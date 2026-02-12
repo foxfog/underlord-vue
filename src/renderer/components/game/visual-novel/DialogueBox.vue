@@ -22,7 +22,7 @@
 			</div>
 		</div>
 		<button v-if="!choices.length && (dialogue || narration)" @click="$emit('advance')" class="hidden-continue"></button>
-		<button v-if="!choices.length && (dialogue || narration)" @click="$emit('advance')" class="continue-btn">Продолжить</button>
+		<button v-if="!choices.length && (dialogue || narration)" @click="$emit('advance')" class="continue-btn btn btn-primary"><i class="icon-arrow-right"></i></button>
 	</div>
 </template>
 

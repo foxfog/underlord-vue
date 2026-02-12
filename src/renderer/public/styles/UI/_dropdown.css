@@ -2,6 +2,7 @@
 	position: relative;
 	display: inline-block;
 	width: 100%;
+	font-size: 1.2em;
 	&:focus-within {
 		.ui-dropdown-toggle {
 			border-color: var(--color-primary);
@@ -129,12 +130,11 @@
 		}
 
 		&._selected {
-			background: var(--color-primary);
-			color: var(--color-black);
+			background: color-mix(in srgb, var(--color-primary), transparent 80%);
 			font-weight: bold;
 
 			&:hover {
-				background-color: var(--color-primary);
+				background-color: color-mix(in srgb, var(--color-primary), transparent 80%);
 				filter: brightness(1.1);
 			}
 		}

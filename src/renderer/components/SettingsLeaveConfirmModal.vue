@@ -5,13 +5,13 @@
 				<div class="confirm-title" v-if="title">{{ title }}</div>
 				<div class="confirm-message">{{ message }}</div>
 				<div class="confirm-actions">
-					<button class="btn confirm" @click="$emit('yes')">
+					<button class="btn btn-confirm btn-primary" @click="$emit('yes')">
 						{{ yesText }}
 					</button>
-					<button class="btn secondary" @click="$emit('no')">
+					<button class="btn btn-no btn-secondary" @click="$emit('no')">
 						{{ noText }}
 					</button>
-					<button class="btn cancel" @click="$emit('cancel')">
+					<button class="btn btn-cancel" @click="$emit('cancel')">
 						{{ cancelText }}
 					</button>
 				</div>
