@@ -32,6 +32,21 @@
 				/>
 			</div>
 		</div>
+
+		<div class="settings-item">
+			<div class="left">
+				<div class="settings-item-label">Пропускать заставку:</div>
+				<div class="settings-item-description">при запуске игры</div>
+			</div>
+			<div class="right">
+				<UiCheckbox
+					v-model="store.general.skipSplash"
+					mode="switch"
+					@change="onSkipSplashChange"
+				>
+				</UiCheckbox>
+			</div>
+		</div>
 	</div>
 </template>
 
@@ -40,8 +55,6 @@
 	import { useI18n } from 'vue-i18n'
 	import { useSettingsStore } from '@/stores/settings'
 	import languageNames from '@/locales/languageNames.js'
-	import UiSelect from '@/components/UI/UiSelect.vue'
-	import UiRange from '@/components/UI/UiRange.vue'
 
 	defineOptions({
 		name: 'SettingsGeneral'
@@ -75,6 +88,12 @@
 		console.log('Text speed changed to:', store.general.textSpeed)
 		autoSaveTextSpeedSetting()
 	}
+
+	function onSkipSplashChange() {
+		store.setSkipSplash(store.general.skipSplash)
+		console.log('Skip splash changed to:', store.general.skipSplash)
+		autoSaveSkipSplashSetting()
+	}
 	
 	async function autoSaveLanguageSetting() {
 		try {
@@ -107,6 +126,23 @@
 			console.log('Text speed setting auto-saved')
 		} catch (error) {
 			console.error('Failed to auto-save text speed setting:', error)
+		}
+	}
+
+	async function autoSaveSkipSplashSetting() {
+		try {
+			const current = await window.electronAPI.getSettings()
+			const updated = {
+				...current,
+				general: {
+					...current.general,
+					skipSplash: store.general.skipSplash
+				}
+			}
+			window.electronAPI.saveSettings(JSON.parse(JSON.stringify(updated)))
+			console.log('Skip splash setting auto-saved')
+		} catch (error) {
+			console.error('Failed to auto-save skip splash setting:', error)
 		}
 	}
 </script>

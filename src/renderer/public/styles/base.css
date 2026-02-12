@@ -11,6 +11,8 @@
 	--size: calc(var(--size-coef) * var(--size-pred));
 
 	--page-area-space: calc(3 * var(--size));
+
+	--font-simple: Noto;
 }
 
 * {
@@ -80,7 +82,7 @@ a {
 
 h3 {
 	font-family: Overlord;
-	font-size: calc(2 * var(--size));
+	font-size: calc(3 * var(--size));
 }
 
 p {
@@ -100,6 +102,7 @@ p {
 	right: 0;
 	margin: auto;
 	display: flex;
+	font-size: 1em;
 }
 
 .page-area {

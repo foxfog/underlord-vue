@@ -9,8 +9,8 @@ export function initSettingsStore(settings) {
 	_SettingsStore = defineStore('settings', {
 		state: () => ({
 			isMusicPlaying: true,
-			defaultMusicFile: 'audio/music/Called_Upon.ogg',
-			currentMusicFile: 'audio/music/Called_Upon.ogg',
+			defaultMusicFile: 'audio/music/medieval-irish.mp3',
+			currentMusicFile: 'audio/music/medieval-irish.mp3',
 			isTestAudioPlaying: false,
 
 			audio: {
@@ -30,6 +30,7 @@ export function initSettingsStore(settings) {
 				...(settings?.general ?? {}),
 				language: settings?.general?.language ?? 'ru',
 				textSpeed: settings?.general?.textSpeed ?? 100,
+				skipSplash: settings?.general?.skipSplash ?? false,
 			},
 
 			video: {
@@ -73,6 +74,10 @@ export function initSettingsStore(settings) {
 
 			setTextSpeed(speed) {
 				this.general.textSpeed = speed
+			},
+
+			setSkipSplash(value) {
+				this.general.skipSplash = value
 			},
 
 			setKeyboardLayout(layout) {

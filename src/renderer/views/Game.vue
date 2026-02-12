@@ -39,12 +39,14 @@
 			<div class="overlay-content">
 				<div class="content-area">
 					<DynamicContentArea
+						ref="dynamicContentAreaRef"
 						:current-view="currentView"
 						:in-game-context="true"
 						:saves-initial-tab="savesTab"
 						@back-to-menu="showMainMenu"
 						@settings-saved="onSettingsSaved"
 						@settings-reset="onSettingsReset"
+						@settings-dirty-change="onSettingsDirtyChange"
 						@load-request="onLoadRequest"
 						@save-request="onSaveRequest"
 					/>
@@ -83,6 +85,15 @@
 		@confirm="onConfirm"
 		@cancel="onCancel"
 	/>
+
+	<SettingsLeaveConfirmModal
+		:visible="showLeaveConfirm"
+		title="Несохранённые настройки"
+		message="Сохранить изменения перед переходом?"
+		@yes="handleLeaveYes"
+		@no="handleLeaveNo"
+		@cancel="handleLeaveCancel"
+	/>
 </template>
 
 <script setup>
@@ -97,6 +108,7 @@ import MainMenu from '@/components/MainMenu.vue'
 import HistoryModal from '@/components/game/modals/HistoryModal.vue'
 import ConfirmModal from '@/components/ConfirmModal.vue'
 import Hotbar from '../components/game/ui/Hotbar.vue'
+import SettingsLeaveConfirmModal from '@/components/SettingsLeaveConfirmModal.vue'
 import { useSavesStore } from '@/stores/saves'
 import { useSettingsStore } from '@/stores/settings'
 
@@ -115,6 +127,10 @@ const savesTab = ref('load')
 // Menu and view state for the overlay
 const menuVisible = ref(false)
 const currentView = ref('main-menu')
+const dynamicContentAreaRef = ref(null)
+const isSettingsDirty = ref(false)
+const showLeaveConfirm = ref(false)
+const pendingView = ref(null)
 const showHistoryModal = ref(false)
 const historyList = ref([])
 
@@ -379,7 +395,7 @@ const showSaves = () => {
 	currentView.value = 'saves'
 }
 
-const handleNavigation = (view) => {
+function navigateImmediate(view) {
 	if (view === 'settings') {
 		showSettings()
 	} else if (view === 'save') {
@@ -399,12 +415,57 @@ const handleNavigation = (view) => {
 	}
 }
 
+const handleNavigation = (view) => {
+	// Leaving settings with unsaved changes → ask first
+	if (currentView.value === 'settings' && view !== 'settings' && isSettingsDirty.value) {
+		pendingView.value = view
+		showLeaveConfirm.value = true
+		return
+	}
+	navigateImmediate(view)
+}
+
 function onSettingsSaved() {
 	console.log('Settings saved')
+	isSettingsDirty.value = false
 }
 
 function onSettingsReset() {
 	console.log('Settings reset to default')
+	isSettingsDirty.value = false
+}
+
+function onSettingsDirtyChange(val) {
+	isSettingsDirty.value = val
+}
+
+async function handleLeaveYes() {
+	showLeaveConfirm.value = false
+	if (dynamicContentAreaRef.value?.saveSettingsFromOutside) {
+		await dynamicContentAreaRef.value.saveSettingsFromOutside()
+		isSettingsDirty.value = false
+	}
+	if (pendingView.value) {
+		navigateImmediate(pendingView.value)
+		pendingView.value = null
+	}
+}
+
+function handleLeaveNo() {
+	showLeaveConfirm.value = false
+	if (dynamicContentAreaRef.value?.revertSettingsFromOutside) {
+		dynamicContentAreaRef.value.revertSettingsFromOutside()
+	}
+	isSettingsDirty.value = false
+	if (pendingView.value) {
+		navigateImmediate(pendingView.value)
+		pendingView.value = null
+	}
+}
+
+function handleLeaveCancel() {
+	showLeaveConfirm.value = false
+	pendingView.value = null
 }
 
 // Handler for MainMenu "Continue"
@@ -504,12 +565,24 @@ function openSettings() {
 }
 
 function openSave() {
+	// If leaving settings with unsaved changes, ask first
+	if (currentView.value === 'settings' && isSettingsDirty.value) {
+		pendingView.value = 'save'
+		showLeaveConfirm.value = true
+		return
+	}
 	savesTab.value = 'save'
 	menuVisible.value = true
 	currentView.value = 'saves'
 }
 
 function openLoad() {
+	// If leaving settings with unsaved changes, ask first
+	if (currentView.value === 'settings' && isSettingsDirty.value) {
+		pendingView.value = 'load'
+		showLeaveConfirm.value = true
+		return
+	}
 	savesTab.value = 'load'
 	menuVisible.value = true
 	currentView.value = 'saves'

@@ -1,7 +1,9 @@
 <template>
-	<div class="splash-screen">
+	<div class="splash-screen" 
+		:style="{ '--transition-duration': config.transitions.duration + 'ms', '--transition-easing': config.transitions.easing }"
+		:class="{ '__transitions-disabled': !config.transitions.enabled }"
+	>
 		<div 
-			v-show="currentSection === 0" 
 			class="section section-0"
 			:class="{ '__show': currentSection === 0 }"
 		>
@@ -19,69 +21,119 @@
 		</div>
 
 		<div 
-			v-show="currentSection === 1" 
 			class="section section-1"
 			:class="{ '__show': currentSection === 1 }"
 		>
 			<div class="_box ui-poscen">
 				<div class="_title">
 					<div class="_name">DarkiFox</div>
+					<div class="_desc">разработка</div>
 				</div>
 			</div>
 		</div>
 
 		<div 
-			v-show="currentSection === 2" 
 			class="section section-2"
 			:class="{ '__show': currentSection === 2 }"
 		>
 			<div class="_box ui-poscen">
-				<div class="_title">
+				<div class="_title _big">
 					<div class="_name">UnderlorD</div>
 					<div class="_version">0.1</div>
 				</div>
+			</div>
+			<div class="_box _gonext">
+				Нажмите <b>«Esc»</b> чтобы продолжить
 			</div>
 		</div>
 	</div>
 </template>
 
 <script setup>
-	import { ref, onMounted, onBeforeUnmount } from 'vue'
-	import { useRouter } from 'vue-router'
-	import { useSettingsStore } from '@/stores/settings'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { useRouter } from 'vue-router'
+import { useSettingsStore } from '@/stores/settings'
 
-	const router = useRouter()
-	const store = useSettingsStore()
-	const splashMusic = 'audio/music/Bloodhound Gang - The Bad Touch.mp3'
+const router = useRouter()
+const store = useSettingsStore()
+	const splashMusic = 'audio/music/intro.mp3'
 
 	// =================== КОНФИГ ===================
 	const config = {
-		sectionTimes: [1, 1, 1],       // секунды для каждой секции (0 = нет авто)
+		sectionTimes: [9, 6, 0],       // секунды для каждой секции (0 = нет авто)
+		transitions: {
+			enabled: true,             // включить плавные переходы
+			duration: 3000,             // длительность эффекта в мс
+			easing: 'ease-in-out'      // функция затемнения
+		},
 		controls: {
 			keyboard: true,            // включить реакцию на клавиатуру
 			mouseClick: false,          // включить реакцию на клик ЛКМ
 			anyKey: false,             // true = любая клавиша
-			allowedKeys: ['Space', 'Enter', 'ArrowRight'] // если anyKey=false
+			allowedKeys: ['Space', 'Enter', 'ArrowRight', 'Escape'] // если anyKey=false
 		}
 	}
 	// ==============================================
 
 	let timerId = null
-	const currentSection = ref(0)
+	let transitionTimerId = null
+	const currentSection = ref(-1) // Начинаем с -1, чтобы первая секция тоже анимировалась
+	const isTransitioning = ref(false)
 
 	function goHome() {
 		clearTimer()
+		clearTransitionTimer()
 		removeListeners()
-		router.replace('/home')
+		
+		if (config.transitions.enabled && currentSection.value >= 0) {
+			// Сначала скрываем последнюю секцию с анимацией
+			currentSection.value = -1
+			
+			// Ждем длительность анимации, затем переходим на главную
+			transitionTimerId = setTimeout(() => {
+				router.replace('/home')
+			}, config.transitions.duration)
+		} else {
+			// Если transitions отключены - переходим сразу
+			router.replace('/home')
+		}
 	}
 
 	function nextSection() {
+		if (isTransitioning.value) return
+		
 		clearTimer()
+		clearTransitionTimer()
+		
 		if (currentSection.value < config.sectionTimes.length - 1) {
-			currentSection.value++
-			startTimer()
+			isTransitioning.value = true
+			const nextSectionIndex = currentSection.value + 1
+			
+			if (config.transitions.enabled && currentSection.value >= 0) {
+				// Сначала скрываем текущую секцию
+				currentSection.value = -1
+				
+				// Ждем длительность анимации, затем показываем следующую
+				transitionTimerId = setTimeout(() => {
+					currentSection.value = nextSectionIndex
+					isTransitioning.value = false
+					startTimer()
+				}, config.transitions.duration)
+			} else {
+				// Для первой секции или если transitions отключены - показываем сразу
+				currentSection.value = nextSectionIndex
+				isTransitioning.value = false
+				startTimer()
+			}
 		} else {
 			goHome()
+		}
+	}
+
+	function clearTransitionTimer() {
+		if (transitionTimerId) {
+			clearTimeout(transitionTimerId)
+			transitionTimerId = null
 		}
 	}
 
@@ -123,13 +175,23 @@
 	}
 
 	onMounted(() => {
+		// Если в настройках включён пропуск заставки — сразу уходим на главную
+		if (store.general?.skipSplash) {
+			router.replace('/home')
+			return
+		}
+
 		store.setMusicFile(splashMusic)
-		startTimer()
+		setTimeout(() => {
+			currentSection.value = 0
+			startTimer()
+		}, 100)
 		addListeners()
 	})
 
 	onBeforeUnmount(() => {
 		clearTimer()
+		clearTransitionTimer()
 		removeListeners()
 		store.setMusicFile(store.defaultMusicFile)
 	})

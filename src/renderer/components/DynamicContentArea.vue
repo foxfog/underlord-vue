@@ -9,7 +9,12 @@
 				<div class="page-header">
 					<div class="page-title">{{ $t('mainmenu.settings') }}</div>
 				</div>
-				<SettingsContent @saved="onSettingsSaved" @reset="onSettingsReset" />
+				<SettingsContent
+					ref="settingsContentRef"
+					@saved="onSettingsSaved"
+					@reset="onSettingsReset"
+					@dirty-change="onSettingsDirtyChange"
+				/>
 			</div>
 			<!-- Saves content (visual placeholder) -->
 			<div v-else-if="currentView === 'saves'" key="saves" class="saves-wrapper">
@@ -45,7 +50,9 @@
 		savesInitialTab: { type: String, default: 'load', validator: (val) => ['load', 'save'].includes(val) }
 	})
 	
-	const emit = defineEmits(['back-to-menu', 'settings-saved', 'settings-reset', 'load-request', 'save-request'])
+	const emit = defineEmits(['back-to-menu', 'settings-saved', 'settings-reset', 'settings-dirty-change', 'load-request', 'save-request'])
+	
+	const settingsContentRef = ref(null)
 	
 	// Watch for view changes
 	watch(() => props.currentView, (newView, oldView) => {
@@ -64,4 +71,22 @@
 	const onSettingsReset = () => {
 		emit('settings-reset')
 	}
+
+	const onSettingsDirtyChange = (val) => {
+		emit('settings-dirty-change', val)
+	}
+
+	// Expose helpers for parent components to control settings
+	function saveSettingsFromOutside() {
+		return settingsContentRef.value?.saveSettings?.()
+	}
+
+	function revertSettingsFromOutside() {
+		return settingsContentRef.value?.revertToInitial?.()
+	}
+
+	defineExpose({
+		saveSettingsFromOutside,
+		revertSettingsFromOutside
+	})
 </script>

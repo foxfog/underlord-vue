@@ -44,9 +44,8 @@
 </template>
 
 <script setup>
-	import { reactive } from 'vue'
-	import { useSettingsStore } from '@/stores/settings'
-	import UiRange from '../UI/UiRange.vue'
+import { reactive } from 'vue'
+import { useSettingsStore } from '@/stores/settings'
 
 	const store = useSettingsStore()
 	

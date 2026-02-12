@@ -1,4 +1,3 @@
-/* Splash Screen Styles */
 .splash-screen {
 	position: absolute;
 	inset: 0;
@@ -13,18 +12,42 @@
 	._title {
 		display: flex;
 		flex-direction: column;
-		font-size: calc(4 * var(--size));
-		font-family: Overlord;
 		width: 100%;
 		text-align: center;
+		font-size: calc(4 * var(--size));
+		font-family: Overlord;
+		&._big {
+			font-size: calc(6 * var(--size));
+		}
 		._version {
 			text-align: right;
+            font-size: 0.3em;
+            margin-top: -1.8em;
+            opacity: 0.7;
+		}
+		._desc {
+			font-family: Kurale;
+			opacity: 0.7;
 			font-size: 0.5em;
-			margin-top: -1em;
+            margin-top: -1em;
 		}
 	}
 	._text-box {
+		font-size: 1.4em;
+		text-align: justify;
+		line-height: 1.8;
+		font-family: var(--font-simple);
+	}
+	._gonext {
+		font-size: 1.2em;
 		text-align: center;
+		line-height: 1.8;
+		position: absolute;
+		bottom: 2em;
+		color: var(--color-text-muted);
+		opacity: 0;
+		transition: opacity 1s var(--transition-easing, ease-in-out);
+		transition-delay: calc(var(--transition-duration, 500ms) + 1s);
 	}
 	.section {
 		position: absolute;
@@ -33,11 +56,25 @@
 		align-items: center;
 		justify-content: center;
 		opacity: 0;
-		transition: opacity 0.3s ease;
+		transition: opacity var(--transition-duration, 500ms) var(--transition-easing, ease-in-out);
 		pointer-events: none;
+		z-index: 1;
+		
+		&.__show {
+			opacity: 1;
+			pointer-events: auto;
+			z-index: 2;
+			._gonext {
+				opacity: 1;
+			}
+		}
 	}
-	.section.__show {
-		opacity: 1;
-		pointer-events: auto;
+	
+	&.__transitions-disabled {
+		.section {
+			transition: none !important;
+			opacity: 1 !important;
+		}
 	}
+	
 }

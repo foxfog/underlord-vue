@@ -36,9 +36,8 @@
 </template>
 
 <script setup>
-	import { computed } from 'vue'
-	import { useSettingsStore } from '@/stores/settings'
-	import UiSelect from '@/components/UI/UiSelect.vue'
+import { computed } from 'vue'
+import { useSettingsStore } from '@/stores/settings'
 
 	defineOptions({
 		name: 'SettingsVideo'
