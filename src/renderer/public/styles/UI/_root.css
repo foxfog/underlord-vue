@@ -1,18 +1,129 @@
 :root {
-	--color-primary: #4CAF50;
-	--color-primary-light: #8BC34A;
-	--color-primary-dark: #388E3C;
-	--color-primary-alpha: color-mix(in srgb, #4CAF50, transparent 90%);
-	
-	--color-secondary: #FF9800;
-	--color-secondary-light: #FFC107;
-	--color-secondary-dark: #F57C00;
-
+	/* Base colors */
 	--color-black: #000;
 	--color-white: #FFF;
 
 	--color-base: var(--color-black);
 	--color-back: var(--color-white);
+
+	/* Primary palette: gold */
+	--color-primary: #d4af37; /* base gold */
+	--color-primary-light: #f5d76e; /* light gold */
+	--color-primary-dark: #b08c2f; /* deep gold */
+	--color-primary-alpha: color-mix(in srgb, #d4af37, transparent 90%);
+	
+	/* Secondary palette: jade */
+	--color-secondary: #00a86b; /* base jade */
+	--color-secondary-light: #3fd6a4; /* light jade */
+	--color-secondary-dark: #007a4d; /* deep jade */
+
+	/* Tertiary palette: ruby */
+	--color-tertiary: #c2183a; /* base ruby */
+	--color-tertiary-light: #f06277; /* light ruby */
+	--color-tertiary-dark: #8c102b; /* deep ruby */
+
+
+	/* Gold surface effects for fills / backgrounds */
+	--color-gold-flat: #d4af37;
+	--color-gold-soft: linear-gradient(
+		135deg,
+		#f8e9a1 0%,
+		#d4af37 35%,
+		#b08c2f 65%,
+		#f5d76e 100%
+	);
+	--color-gold-contrast: linear-gradient(
+		120deg,
+		#fdf6c3 0%,
+		#d4af37 20%,
+		#8b6b1f 45%,
+		#f5d76e 70%,
+		#3f2a07 100%
+	);
+	--color-gold-brushed: linear-gradient(
+		90deg,
+		#d4af37 0%,
+		#f1d27a 8%,
+		#b08c2f 16%,
+		#d4af37 24%,
+		#f1d27a 32%,
+		#b08c2f 40%,
+		#d4af37 48%,
+		#f1d27a 56%,
+		#b08c2f 64%,
+		#d4af37 72%,
+		#f1d27a 80%,
+		#b08c2f 88%,
+		#d4af37 100%
+	);
+
+	/* Jade (secondary) surface effects for fills / backgrounds */
+	--color-jade-flat: #00a86b;
+	--color-jade-soft: linear-gradient(
+		135deg,
+		#6ff2bf 0%,
+		#00a86b 35%,
+		#007a4d 65%,
+		#3fd6a4 100%
+	);
+	--color-jade-contrast: linear-gradient(
+		120deg,
+		#c9ffe0 0%,
+		#00a86b 20%,
+		#00523a 45%,
+		#3fd6a4 70%,
+		#002419 100%
+	);
+	--color-jade-brushed: linear-gradient(
+		90deg,
+		#00a86b 0%,
+		#3fd6a4 8%,
+		#007a4d 16%,
+		#00a86b 24%,
+		#3fd6a4 32%,
+		#007a4d 40%,
+		#00a86b 48%,
+		#3fd6a4 56%,
+		#007a4d 64%,
+		#00a86b 72%,
+		#3fd6a4 80%,
+		#007a4d 88%,
+		#00a86b 100%
+	);
+
+	/* Ruby (tertiary) surface effects for fills / backgrounds */
+	--color-ruby-flat: #c2183a;
+	--color-ruby-soft: linear-gradient(
+		135deg,
+		#ffb7c4 0%,
+		#e53956 30%,
+		#c2183a 60%,
+		#f06277 100%
+	);
+	--color-ruby-contrast: linear-gradient(
+		120deg,
+		#ffe4ea 0%,
+		#e53956 20%,
+		#8c102b 45%,
+		#f06277 70%,
+		#3b020b 100%
+	);
+	--color-ruby-brushed: linear-gradient(
+		90deg,
+		#c2183a 0%,
+		#f06277 8%,
+		#8c102b 16%,
+		#c2183a 24%,
+		#f06277 32%,
+		#8c102b 40%,
+		#c2183a 48%,
+		#f06277 56%,
+		#8c102b 64%,
+		#c2183a 72%,
+		#f06277 80%,
+		#8c102b 88%,
+		#c2183a 100%
+	);
 
 	/* Border colors - using color-mix */
 	--color-border: color-mix(in srgb, var(--color-white), transparent 75%);

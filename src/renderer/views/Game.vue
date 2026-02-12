@@ -6,6 +6,7 @@
 			:character="mcCharacter"
 			@open-stats="toggleStatsModal"
 			@open-inventory="toggleInventoryModal"
+			@open-map="toggleMapModal"
 		/>
 
 		<div class="game">
@@ -24,17 +25,25 @@
 			@close="toggleStatsModal"
 		/>
 
-	<!-- Inventory Modal -->
-	<InventoryModal
-		:is-visible="showInventoryModal"
-		:character="mcCharacter"
-		:items-data="itemsData"
-		@close="toggleInventoryModal"
-		@equip="handleEquip"
-		@unequip="handleUnequip"
-		@swap="handleSwap"
-		@drop="handleDrop"
-	/>		<!-- Menu overlay that can be toggled with Esc -->
+		<!-- Inventory Modal -->
+		<InventoryModal
+			:is-visible="showInventoryModal"
+			:character="mcCharacter"
+			:items-data="itemsData"
+			@close="toggleInventoryModal"
+			@equip="handleEquip"
+			@unequip="handleUnequip"
+			@swap="handleSwap"
+			@drop="handleDrop"
+		/>
+
+		<!-- Map Modal -->
+		<MapModal
+			:is-visible="showMapModal"
+			@close="toggleMapModal"
+		/>
+
+		<!-- Menu overlay that can be toggled with Esc -->
 		<div v-show="menuVisible" class="menu-overlay">
 			<div class="overlay-content">
 				<div class="content-area">
@@ -103,6 +112,7 @@ import VisualNovel from '../components/game/VisualNovel.vue'
 import CharacterStatsModal from '../components/game/characters/CharacterStatsModal.vue'
 import InventoryModal from '../components/game/inventory/InventoryModal.vue'
 import Topbar from '../components/game/ui/Topbar.vue'
+import MapModal from '../components/game/maps/MapModal.vue'
 import DynamicContentArea from '@/components/DynamicContentArea.vue'
 import MainMenu from '@/components/MainMenu.vue'
 import HistoryModal from '@/components/game/modals/HistoryModal.vue'
@@ -111,6 +121,7 @@ import Hotbar from '../components/game/ui/Hotbar.vue'
 import SettingsLeaveConfirmModal from '@/components/SettingsLeaveConfirmModal.vue'
 import { useSavesStore } from '@/stores/saves'
 import { useSettingsStore } from '@/stores/settings'
+import { SOUND_CLOTH } from '../constants/sounds'
 
 const router = useRouter()
 const route = useRoute()
@@ -119,6 +130,7 @@ const savesStore = useSavesStore()
 const visualNovel = ref(null)
 const showStatsModal = ref(false)
 const showInventoryModal = ref(false)
+const showMapModal = ref(false)
 const mcCharacter = ref(null)
 const itemsData = ref({})
 
@@ -224,6 +236,23 @@ function toggleInventoryModal() {
 	showInventoryModal.value = !showInventoryModal.value
 }
 
+function toggleMapModal() {
+	showMapModal.value = !showMapModal.value
+}
+
+function playClothSound() {
+	try {
+		const common = settingsStore.audio.commonVolume / 100
+		const sound = settingsStore.audio.soundVolume / 100
+		const volume = Math.max(0, Math.min(1, common * sound))
+		const audio = new Audio(SOUND_CLOTH)
+		audio.volume = volume
+		audio.play().catch(() => {})
+	} catch (e) {
+		console.warn('Failed to play cloth sound:', e)
+	}
+}
+
 function handleEquip({ slot, itemId, inventoryIndex }) {
 	console.log('Equipping:', { slot, itemId, inventoryIndex })
 	if (!mcCharacter.value?.equipment_slots || !mcCharacter.value?.inventory?.items) return
@@ -277,6 +306,7 @@ function handleEquip({ slot, itemId, inventoryIndex }) {
 	mcCharacter.value.equipment_slots[slot] = itemId
 	
 	rebuildEquipmentBySlot()
+	playClothSound()
 }
 
 function handleUnequip({ slot, itemId }) {
@@ -308,6 +338,7 @@ function handleUnequip({ slot, itemId }) {
 	}
 
 	rebuildEquipmentBySlot()
+	playClothSound()
 }
 
 function handleSwap({ from, to }) {
@@ -329,6 +360,7 @@ function handleSwap({ from, to }) {
 	mcCharacter.value.equipment_slots[to] = temp
 
 	rebuildEquipmentBySlot()
+	playClothSound()
 }
 
 function handleDrop({ itemId, source, slot, quantity = 1 }) {

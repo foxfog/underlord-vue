@@ -6,6 +6,9 @@
 		<button class="topbar-btn" @click="openInventory" title="Открыть инвентарь">
 			🎒 Инвентарь
 		</button>
+		<button class="topbar-btn" @click="openMap" title="Открыть карту мира">
+			🗺 Карта
+		</button>
 	</div>
 </template>
 
@@ -17,7 +20,7 @@ const props = defineProps({
 	}
 })
 
-const emit = defineEmits(['open-stats', 'open-inventory'])
+const emit = defineEmits(['open-stats', 'open-inventory', 'open-map'])
 
 function openStats() {
 	emit('open-stats')
@@ -25,6 +28,10 @@ function openStats() {
 
 function openInventory() {
 	emit('open-inventory')
+}
+
+function openMap() {
+	emit('open-map')
 }
 </script>
 

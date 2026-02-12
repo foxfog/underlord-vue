@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { useSavesStore } from '../stores/saves'
+import { SOUND_ALIASES } from '../constants/sounds'
 import { extractVisibleCharacterDisplay, applyVisibleCharacterDisplay } from '../utils/saveGameUtils'
 
 export function useVisualNovel({ src, emit, notificationComponent } = {}) {
@@ -163,6 +164,10 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 
 		if (!step.type && step.variable) {
 			applyVariable(step.variable)
+			// Optional one-shot sound for variable-only steps
+			if (step.sound) {
+				playVariableStepSound(step.sound)
+			}
 			stepIndex.value++
 			processStep()
 			return
@@ -467,6 +472,28 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		stopSound()
 		stopVoice()
 		stopMusic()
+	}
+
+	/**
+	 * Helper: play short sound from a variable-only step.
+	 * step.sound can be:
+	 * - simple name, e.g. "cloth" -> audio/sound/cloth.ogg
+	 * - full path, e.g. "audio/sound/cloth.ogg"
+	 */
+	function playVariableStepSound(soundName) {
+		if (!soundName) return
+
+		let file = soundName
+		if (!soundName.includes('/')) {
+			// Use shared alias map, fallback to audio/sound/<name>.ogg
+			file = SOUND_ALIASES[soundName] || `audio/sound/${soundName}.ogg`
+		}
+
+		playSound({
+			file,
+			loop: false,
+			stream: `var_${Date.now()}`
+		})
 	}
 
 	function getStream(streamId) {

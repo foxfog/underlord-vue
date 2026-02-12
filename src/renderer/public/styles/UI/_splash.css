@@ -9,6 +9,11 @@
 	._box {
 		max-width: 60%;
 	}
+	._logo-image {
+		width: 50%;
+		margin: auto;
+        height: auto;
+	}
 	._title {
 		display: flex;
 		flex-direction: column;
@@ -48,6 +53,10 @@
 		opacity: 0;
 		transition: opacity 1s var(--transition-easing, ease-in-out);
 		transition-delay: calc(var(--transition-duration, 500ms) + 1s);
+		&.__hide {
+			opacity: 0 !important;
+			transition: none !important;
+		}
 	}
 	.section {
 		position: absolute;

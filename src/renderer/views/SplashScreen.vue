@@ -26,8 +26,8 @@
 		>
 			<div class="_box ui-poscen">
 				<div class="_title">
-					<div class="_name">DarkiFox</div>
-					<div class="_desc">разработка</div>
+					<div class="_desc">Вдохнавлено</div>
+					<img class="_logo-image" src="/images/logo-overlord.svg">
 				</div>
 			</div>
 		</div>
@@ -37,12 +37,24 @@
 			:class="{ '__show': currentSection === 2 }"
 		>
 			<div class="_box ui-poscen">
+				<div class="_title">
+					<div class="_name">DarkiFox</div>
+					<div class="_desc">разработка</div>
+				</div>
+			</div>
+		</div>
+
+		<div 
+			class="section section-3"
+			:class="{ '__show': currentSection === 3 }"
+		>
+			<div class="_box ui-poscen">
 				<div class="_title _big">
 					<div class="_name">UnderlorD</div>
 					<div class="_version">0.1</div>
 				</div>
 			</div>
-			<div class="_box _gonext">
+			<div class="_box _gonext" :class="{ '__hide': hideGonext }">
 				Нажмите <b>«Esc»</b> чтобы продолжить
 			</div>
 		</div>
@@ -57,10 +69,11 @@ import { useSettingsStore } from '@/stores/settings'
 const router = useRouter()
 const store = useSettingsStore()
 	const splashMusic = 'audio/music/intro.mp3'
+	const leaveSound = 'audio/sound/bellwater.wav'
 
 	// =================== КОНФИГ ===================
 	const config = {
-		sectionTimes: [9, 6, 0],       // секунды для каждой секции (0 = нет авто)
+		sectionTimes: [9, 6, 6, 0],       // секунды для каждой секции (0 = нет авто)
 		transitions: {
 			enabled: true,             // включить плавные переходы
 			duration: 3000,             // длительность эффекта в мс
@@ -79,14 +92,26 @@ const store = useSettingsStore()
 	let transitionTimerId = null
 	const currentSection = ref(-1) // Начинаем с -1, чтобы первая секция тоже анимировалась
 	const isTransitioning = ref(false)
+	const hideGonext = ref(false) // скрыть _gonext мгновенно при закрытии последней секции
+
+	function playLeaveSound() {
+		const common = store.audio.commonVolume / 100
+		const sound = store.audio.soundVolume / 100
+		const volume = Math.max(0, Math.min(1, common * sound))
+		const audio = new Audio(leaveSound)
+		audio.volume = volume
+		audio.play().catch(() => {})
+	}
 
 	function goHome() {
 		clearTimer()
 		clearTransitionTimer()
 		removeListeners()
-		
+		playLeaveSound()
+
 		if (config.transitions.enabled && currentSection.value >= 0) {
-			// Сначала скрываем последнюю секцию с анимацией
+			// _gonext скрывается мгновенно, затем секция уходит с анимацией
+			hideGonext.value = true
 			currentSection.value = -1
 			
 			// Ждем длительность анимации, затем переходим на главную

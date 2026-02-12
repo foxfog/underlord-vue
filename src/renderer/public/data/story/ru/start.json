@@ -133,7 +133,8 @@
 		},
 
 		{
-			"variable": "character.mc.equipment_slots.mask = 'gasmask'"
+			"variable": "character.mc.equipment_slots.mask = 'gasmask'",
+			"sound": "cloth"
 		},
 
 		{
