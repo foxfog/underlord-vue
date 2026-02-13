@@ -15,50 +15,50 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+	import { computed, ref } from 'vue'
 
-const props = defineProps({
-	part: {
-		type: Object,
-		required: true
-	},
-	partName: {
-		type: String,
-		required: true
-	},
-	characterId: {
-		type: String,
-		required: true
-	}
-})
+	const props = defineProps({
+		part: {
+			type: Object,
+			required: true
+		},
+		partName: {
+			type: String,
+			required: true
+		},
+		characterId: {
+			type: String,
+			required: true
+		}
+	})
 
-const spriteHeight = ref('0')
+	const spriteHeight = ref('0')
 
-// Вычисляем стиль со смещениями из offset (если есть)
-const offsetStyle = computed(() => {
-	if (!props.part.offset) {
-		return {}
-	}
+	// Вычисляем стиль со смещениями из offset (если есть)
+	const offsetStyle = computed(() => {
+		if (!props.part.offset) {
+			return {}
+		}
 
-	const style = {}
-	if (props.part.offset.x !== undefined) {
-		style.left = `${props.part.offset.x}%`
-	}
-	if (props.part.offset.y !== undefined) {
-		style.top = `${props.part.offset.y}%`
-	}
-	return style
-})
+		const style = {}
+		if (props.part.offset.x !== undefined) {
+			style.left = `${props.part.offset.x}%`
+		}
+		if (props.part.offset.y !== undefined) {
+			style.top = `${props.part.offset.y}%`
+		}
+		return style
+	})
 
-// Вычисляем стиль с высотой спрайта
-// Для _body используем --charbodyspriteH, для остальных --charspriteH
-const styleWithHeight = computed(() => {
-	const heightVarName = props.partName === 'body' ? '--charbodyspriteH' : '--charspriteH'
-	return {
-		...offsetStyle.value,
-		[heightVarName]: spriteHeight.value
-	}
-})
+	// Вычисляем стиль с высотой спрайта
+	// Для _body используем --charbodyspriteH, для остальных --charspriteH
+	const styleWithHeight = computed(() => {
+		const heightVarName = props.partName === 'body' ? '--charbodyspriteH' : '--charspriteH'
+		return {
+			...offsetStyle.value,
+			[heightVarName]: spriteHeight.value
+		}
+	})
 
 	// Обработчик загрузки изображения для получения его высоты
 	const onImageLoad = (event) => {

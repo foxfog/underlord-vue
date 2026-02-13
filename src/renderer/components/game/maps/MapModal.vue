@@ -40,21 +40,21 @@
 </template>
 
 <script setup>
-const props = defineProps({
-	isVisible: {
-		type: Boolean,
-		default: false
+	const props = defineProps({
+		isVisible: {
+			type: Boolean,
+			default: false
+		}
+	})
+
+	const emit = defineEmits(['close'])
+
+	function close() {
+		emit('close')
 	}
-})
 
-const emit = defineEmits(['close'])
-
-function close() {
-	emit('close')
-}
-
-function onBackgroundClick() {
-	close()
-}
+	function onBackgroundClick() {
+		close()
+	}
 </script>
 

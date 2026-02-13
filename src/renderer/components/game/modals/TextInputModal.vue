@@ -28,68 +28,68 @@
 </template>
 
 <script setup>
-import { ref, watch, nextTick } from 'vue'
+	import { ref, watch, nextTick } from 'vue'
 
-const props = defineProps({
-	isVisible: {
-		type: Boolean,
-		default: false
-	},
-	title: {
-		type: String,
-		default: 'Введите текст'
-	},
-	description: {
-		type: String,
-		default: ''
-	},
-	placeholder: {
-		type: String,
-		default: 'Введите значение...'
-	},
-	initialValue: {
-		type: String,
-		default: ''
-	},
-	showCloseButton: {
-		type: Boolean,
-		default: true
-	},
-	showCancelButton: {
-		type: Boolean,
-		default: true
-	},
-	confirmButtonText: {
-		type: String,
-		default: 'Подтвердить'
+	const props = defineProps({
+		isVisible: {
+			type: Boolean,
+			default: false
+		},
+		title: {
+			type: String,
+			default: 'Введите текст'
+		},
+		description: {
+			type: String,
+			default: ''
+		},
+		placeholder: {
+			type: String,
+			default: 'Введите значение...'
+		},
+		initialValue: {
+			type: String,
+			default: ''
+		},
+		showCloseButton: {
+			type: Boolean,
+			default: true
+		},
+		showCancelButton: {
+			type: Boolean,
+			default: true
+		},
+		confirmButtonText: {
+			type: String,
+			default: 'Подтвердить'
+		}
+	})
+
+	const emit = defineEmits(['close', 'confirm'])
+
+	const inputValue = ref(props.initialValue)
+	const inputField = ref(null)
+
+	watch(() => props.isVisible, (newVal) => {
+		if (newVal) {
+			inputValue.value = props.initialValue
+			nextTick(() => {
+				if (inputField.value) {
+					inputField.value.focus()
+				}
+			})
+		}
+	})
+
+	function closeModal() {
+		emit('close')
 	}
-})
 
-const emit = defineEmits(['close', 'confirm'])
-
-const inputValue = ref(props.initialValue)
-const inputField = ref(null)
-
-watch(() => props.isVisible, (newVal) => {
-	if (newVal) {
-		inputValue.value = props.initialValue
-		nextTick(() => {
-			if (inputField.value) {
-				inputField.value.focus()
-			}
-		})
+	function confirmInput() {
+		if (inputValue.value.trim()) {
+			emit('confirm', inputValue.value.trim())
+			closeModal()
+		}
 	}
-})
-
-function closeModal() {
-	emit('close')
-}
-
-function confirmInput() {
-	if (inputValue.value.trim()) {
-		emit('confirm', inputValue.value.trim())
-		closeModal()
-	}
-}
 </script>
 

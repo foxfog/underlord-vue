@@ -62,12 +62,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
-import { useRouter } from 'vue-router'
-import { useSettingsStore } from '@/stores/settings'
+	import { ref, onMounted, onBeforeUnmount } from 'vue'
+	import { useRouter } from 'vue-router'
+	import { useSettingsStore } from '@/stores/settings'
 
-const router = useRouter()
-const store = useSettingsStore()
+	const router = useRouter()
+	const store = useSettingsStore()
 	const splashMusic = 'audio/music/intro.mp3'
 	const leaveSound = 'audio/sound/bellwater.wav'
 

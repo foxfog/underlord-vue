@@ -30,26 +30,26 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import UiRange from '../../UI/UiRange.vue'
+	import { ref } from 'vue'
+	import UiRange from '../../UI/UiRange.vue'
 
-const props = defineProps({
-	isVisible: { type: Boolean, default: false },
-	itemName: { type: String, default: 'предмет' },
-	maxQuantity: { type: Number, default: 1 }
-})
+	const props = defineProps({
+		isVisible: { type: Boolean, default: false },
+		itemName: { type: String, default: 'предмет' },
+		maxQuantity: { type: Number, default: 1 }
+	})
 
-const emit = defineEmits(['confirm', 'cancel'])
+	const emit = defineEmits(['confirm', 'cancel'])
 
-const selectedQuantity = ref(1)
+	const selectedQuantity = ref(1)
 
-function handleConfirm() {
-	emit('confirm', selectedQuantity.value)
-	selectedQuantity.value = 1
-}
+	function handleConfirm() {
+		emit('confirm', selectedQuantity.value)
+		selectedQuantity.value = 1
+	}
 
-function handleCancel() {
-	emit('cancel')
-	selectedQuantity.value = 1
-}
+	function handleCancel() {
+		emit('cancel')
+		selectedQuantity.value = 1
+	}
 </script>

@@ -24,22 +24,22 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+	import { ref, watch, onMounted } from 'vue'
 
-const props = defineProps({
-	isVisible: { type: Boolean, default: false },
-	entries: { type: Array, default: () => [] }
-})
+	const props = defineProps({
+		isVisible: { type: Boolean, default: false },
+		entries: { type: Array, default: () => [] }
+	})
 
-const listRef = ref(null)
+	const listRef = ref(null)
 
-watch(() => props.isVisible, (v) => {
-	if (v) {
-		// scroll to bottom when opened
-		setTimeout(() => {
-			if (listRef.value) listRef.value.scrollTop = listRef.value.scrollHeight
-		}, 50)
-	}
-})
+	watch(() => props.isVisible, (v) => {
+		if (v) {
+			// scroll to bottom when opened
+			setTimeout(() => {
+				if (listRef.value) listRef.value.scrollTop = listRef.value.scrollHeight
+			}, 50)
+		}
+	})
 </script>
 

@@ -2,19 +2,22 @@
 	{
 		"id": "ygdrasil-coin-old",
 		"weight": 0.02,
-		"stackable": true
+		"stackable": true,
+		"tags": ["currency", "junk"]
 	},
 	{
 		"id": "ygdrasil-coin-new",
 		"sprite": "images/sprites/items/other/ygdrasil-coin-new.png",
 		"weight": 0.02,
-		"stackable": true
+		"stackable": true,
+		"tags": ["currency"]
 	},
 	{
 		"id": "reestize-coin-gold",
 		"sprite": "images/sprites/items/other/reestize-coin-gold.png",
 		"weight": 0.01,
-		"stackable": true
+		"stackable": true,
+		"tags": ["currency"]
 	},
 	{
 		"id": "bread",

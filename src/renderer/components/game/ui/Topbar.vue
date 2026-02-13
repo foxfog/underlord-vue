@@ -13,25 +13,25 @@
 </template>
 
 <script setup>
-const props = defineProps({
-	character: {
-		type: Object,
-		default: null
+	const props = defineProps({
+		character: {
+			type: Object,
+			default: null
+		}
+	})
+
+	const emit = defineEmits(['open-stats', 'open-inventory', 'open-map'])
+
+	function openStats() {
+		emit('open-stats')
 	}
-})
 
-const emit = defineEmits(['open-stats', 'open-inventory', 'open-map'])
+	function openInventory() {
+		emit('open-inventory')
+	}
 
-function openStats() {
-	emit('open-stats')
-}
-
-function openInventory() {
-	emit('open-inventory')
-}
-
-function openMap() {
-	emit('open-map')
-}
+	function openMap() {
+		emit('open-map')
+	}
 </script>
 

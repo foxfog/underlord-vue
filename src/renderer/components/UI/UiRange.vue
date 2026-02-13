@@ -38,9 +38,9 @@
 <script setup>
 	import { ref, computed, onMounted, onUnmounted } from 'vue'
 	
-defineOptions({
-	name: 'UiRange'
-})
+	defineOptions({
+		name: 'UiRange'
+	})
 	
 	const props = defineProps({
 		modelValue: {

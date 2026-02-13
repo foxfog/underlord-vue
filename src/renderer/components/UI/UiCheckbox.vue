@@ -37,48 +37,48 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+	import { computed } from 'vue'
 
-defineOptions({
-	name: 'UiCheckbox'
-})
+	defineOptions({
+		name: 'UiCheckbox'
+	})
 
-const props = defineProps({
-	modelValue: {
-		type: Boolean,
-		default: false
-	},
-	label: {
-		type: String,
-		default: ''
-	},
-	// 'checkbox' | 'switch'
-	mode: {
-		type: String,
-		default: 'checkbox'
-	},
-	disabled: {
-		type: Boolean,
-		default: false
+	const props = defineProps({
+		modelValue: {
+			type: Boolean,
+			default: false
+		},
+		label: {
+			type: String,
+			default: ''
+		},
+		// 'checkbox' | 'switch'
+		mode: {
+			type: String,
+			default: 'checkbox'
+		},
+		disabled: {
+			type: Boolean,
+			default: false
+		}
+	})
+
+	const emit = defineEmits(['update:modelValue', 'change'])
+
+	const isChecked = computed(() => props.modelValue)
+
+	function update(value) {
+		if (props.disabled) return
+		emit('update:modelValue', value)
+		emit('change', value)
 	}
-})
 
-const emit = defineEmits(['update:modelValue', 'change'])
+	function toggle() {
+		update(!props.modelValue)
+	}
 
-const isChecked = computed(() => props.modelValue)
-
-function update(value) {
-	if (props.disabled) return
-	emit('update:modelValue', value)
-	emit('change', value)
-}
-
-function toggle() {
-	update(!props.modelValue)
-}
-
-function onNativeChange(event) {
-	update(event.target.checked)
-}
+	function onNativeChange(event) {
+		update(event.target.checked)
+	}
 </script>
 

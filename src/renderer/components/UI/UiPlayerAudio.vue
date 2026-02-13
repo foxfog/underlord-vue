@@ -52,8 +52,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch, readonly } from 'vue'
-import { useSettingsStore } from '@/stores/settings'
+	import { ref, computed, onMounted, onUnmounted, watch, readonly } from 'vue'
+	import { useSettingsStore } from '@/stores/settings'
 
 	defineOptions({
 		name: 'uiPlayerAudio',

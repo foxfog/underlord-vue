@@ -3,5 +3,5 @@
 </template>
 
 <script setup>
-const props = defineProps({ scene: { type: Object, default: null } })
+	const props = defineProps({ scene: { type: Object, default: null } })
 </script>

@@ -11,5 +11,5 @@
 </template>
 
 <script setup>
-const props = defineProps({ abilities: { type: Array, default: () => [] } })
+	const props = defineProps({ abilities: { type: Array, default: () => [] } })
 </script>

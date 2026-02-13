@@ -21,33 +21,33 @@
 </template>
 
 <script setup>
-defineProps({
-	visible: {
-		type: Boolean,
-		default: false
-	},
-	title: {
-		type: String,
-		default: ''
-	},
-	message: {
-		type: String,
-		required: true
-	},
-	yesText: {
-		type: String,
-		default: 'Да'
-	},
-	noText: {
-		type: String,
-		default: 'Нет'
-	},
-	cancelText: {
-		type: String,
-		default: 'Отмена'
-	}
-})
+	defineProps({
+		visible: {
+			type: Boolean,
+			default: false
+		},
+		title: {
+			type: String,
+			default: ''
+		},
+		message: {
+			type: String,
+			required: true
+		},
+		yesText: {
+			type: String,
+			default: 'Да'
+		},
+		noText: {
+			type: String,
+			default: 'Нет'
+		},
+		cancelText: {
+			type: String,
+			default: 'Отмена'
+		}
+	})
 
-defineEmits(['yes', 'no', 'cancel'])
+	defineEmits(['yes', 'no', 'cancel'])
 </script>
 

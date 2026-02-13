@@ -43,39 +43,39 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+	import { computed } from 'vue'
 
-const props = defineProps({
-	isVisible: {
-		type: Boolean,
-		default: false
-	},
-	character: {
-		type: Object,
-		default: null
+	const props = defineProps({
+		isVisible: {
+			type: Boolean,
+			default: false
+		},
+		character: {
+			type: Object,
+			default: null
+		}
+	})
+
+	const emit = defineEmits(['close'])
+
+	const hpPercentage = computed(() => {
+		if (!props.character) return 0
+		// Support both old format (character.stats.hp) and new format (character.hp)
+		const hp = props.character.stats?.hp ?? props.character.hp ?? 0
+		const hpmax = props.character.stats?.hpmax ?? props.character.hpmax ?? 0
+		return hpmax > 0 ? (hp / hpmax) * 100 : 0
+	})
+
+	const mpPercentage = computed(() => {
+		if (!props.character) return 0
+		// Support both old format (character.stats.mp) and new format (character.mp)
+		const mp = props.character.stats?.mp ?? props.character.mp ?? 0
+		const mpmax = props.character.stats?.mpmax ?? props.character.mpmax ?? 0
+		return mpmax > 0 ? (mp / mpmax) * 100 : 0
+	})
+
+	function closeModal() {
+		emit('close')
 	}
-})
-
-const emit = defineEmits(['close'])
-
-const hpPercentage = computed(() => {
-	if (!props.character) return 0
-	// Support both old format (character.stats.hp) and new format (character.hp)
-	const hp = props.character.stats?.hp ?? props.character.hp ?? 0
-	const hpmax = props.character.stats?.hpmax ?? props.character.hpmax ?? 0
-	return hpmax > 0 ? (hp / hpmax) * 100 : 0
-})
-
-const mpPercentage = computed(() => {
-	if (!props.character) return 0
-	// Support both old format (character.stats.mp) and new format (character.mp)
-	const mp = props.character.stats?.mp ?? props.character.mp ?? 0
-	const mpmax = props.character.stats?.mpmax ?? props.character.mpmax ?? 0
-	return mpmax > 0 ? (mp / mpmax) * 100 : 0
-})
-
-function closeModal() {
-	emit('close')
-}
 </script>
 

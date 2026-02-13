@@ -14,27 +14,27 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+	import { ref, computed } from 'vue'
 
-const notifications = ref([])
-let notificationCounter = 0
+	const notifications = ref([])
+	let notificationCounter = 0
 
-const showNotification = (html, type = 'info', duration = 3000) => {
-	const id = notificationCounter++
-	const notification = {
-		id,
-		html,
-		type
+	const showNotification = (html, type = 'info', duration = 3000) => {
+		const id = notificationCounter++
+		const notification = {
+			id,
+			html,
+			type
+		}
+		
+		notifications.value.push(notification)
+		
+		setTimeout(() => {
+			notifications.value = notifications.value.filter(n => n.id !== id)
+		}, duration)
 	}
-	
-	notifications.value.push(notification)
-	
-	setTimeout(() => {
-		notifications.value = notifications.value.filter(n => n.id !== id)
-	}, duration)
-}
 
-defineExpose({
-	showNotification
-})
+	defineExpose({
+		showNotification
+	})
 </script>

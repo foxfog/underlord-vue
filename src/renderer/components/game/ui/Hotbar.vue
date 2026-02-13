@@ -11,20 +11,20 @@
 </template>
 
 <script setup>
-defineProps({
-	visible: {
-		type: Boolean,
-		default: true
-	}
-})
+	defineProps({
+		visible: {
+			type: Boolean,
+			default: true
+		}
+	})
 
-defineEmits([
-	'open-history',
-	'open-menu',
-	'open-settings',
-	'open-save',
-	'open-load',
-	'quick-save',
-	'quick-load'
-])
+	defineEmits([
+		'open-history',
+		'open-menu',
+		'open-settings',
+		'open-save',
+		'open-load',
+		'quick-save',
+		'quick-load'
+	])
 </script>

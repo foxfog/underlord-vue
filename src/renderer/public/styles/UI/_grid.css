@@ -1,0 +1,16 @@
+:root {
+	--row-space: 1em;
+}
+
+.row {
+	width: calc(100% + (var(--row-space) * 1));
+	margin-left: calc(var(--row-space) * -0.5);
+	display: flex;
+	flex-wrap: wrap;
+	row-gap: var(--row-space);
+}
+
+.col {
+	padding-left: calc(var(--row-space) * 0.5);
+	padding-right: calc(var(--row-space) * 0.5);
+}

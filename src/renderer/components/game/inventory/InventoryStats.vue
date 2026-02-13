@@ -25,38 +25,38 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+	import { computed } from 'vue'
 
-const props = defineProps({ character: { type: Object, default: null } })
+	const props = defineProps({ character: { type: Object, default: null } })
 
-const hpPercentage = computed(() => {
-	if (!props.character) return 0
-	const hp = props.character.stats?.hp ?? props.character.hp ?? 0
-	const hpmax = props.character.stats?.hpmax ?? props.character.hpmax ?? 0
-	return hpmax > 0 ? (hp / hpmax) * 100 : 0
-})
+	const hpPercentage = computed(() => {
+		if (!props.character) return 0
+		const hp = props.character.stats?.hp ?? props.character.hp ?? 0
+		const hpmax = props.character.stats?.hpmax ?? props.character.hpmax ?? 0
+		return hpmax > 0 ? (hp / hpmax) * 100 : 0
+	})
 
-const mpPercentage = computed(() => {
-	if (!props.character) return 0
-	const mp = props.character.stats?.mp ?? props.character.mp ?? 0
-	const mpmax = props.character.stats?.mpmax ?? props.character.mpmax ?? 0
-	return mpmax > 0 ? (mp / mpmax) * 100 : 0
-})
+	const mpPercentage = computed(() => {
+		if (!props.character) return 0
+		const mp = props.character.stats?.mp ?? props.character.mp ?? 0
+		const mpmax = props.character.stats?.mpmax ?? props.character.mpmax ?? 0
+		return mpmax > 0 ? (mp / mpmax) * 100 : 0
+	})
 
-const hpDisplay = computed(() => {
-	if (!props.character) return '0 / 0'
-	const hp = props.character.stats?.hp ?? props.character.hp ?? 0
-	const hpmax = props.character.stats?.hpmax ?? props.character.hpmax ?? 0
-	return `${hp} / ${hpmax}`
-})
+	const hpDisplay = computed(() => {
+		if (!props.character) return '0 / 0'
+		const hp = props.character.stats?.hp ?? props.character.hp ?? 0
+		const hpmax = props.character.stats?.hpmax ?? props.character.hpmax ?? 0
+		return `${hp} / ${hpmax}`
+	})
 
-const mpDisplay = computed(() => {
-	if (!props.character) return '0 / 0'
-	const mp = props.character.stats?.mp ?? props.character.mp ?? 0
-	const mpmax = props.character.stats?.mpmax ?? props.character.mpmax ?? 0
-	return `${mp} / ${mpmax}`
-})
+	const mpDisplay = computed(() => {
+		if (!props.character) return '0 / 0'
+		const mp = props.character.stats?.mp ?? props.character.mp ?? 0
+		const mpmax = props.character.stats?.mpmax ?? props.character.mpmax ?? 0
+		return `${mp} / ${mpmax}`
+	})
 
-const attack = computed(() => props.character?.stats?.attack ?? props.character?.attack ?? 0)
-const defense = computed(() => props.character?.stats?.defense ?? props.character?.defense ?? 0)
+	const attack = computed(() => props.character?.stats?.attack ?? props.character?.attack ?? 0)
+	const defense = computed(() => props.character?.stats?.defense ?? props.character?.defense ?? 0)
 </script>

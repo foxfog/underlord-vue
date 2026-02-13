@@ -32,41 +32,41 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
-import TextInputModal from './modals/TextInputModal.vue'
-import StoryAudio from './StoryAudio.vue'
-import Background from './visual-novel/Background.vue'
-import CharacterList from './visual-novel/CharacterList.vue'
-import TitleBlock from './visual-novel/TitleBlock.vue'
-import DialogueBox from './visual-novel/DialogueBox.vue'
-import Notification from './visual-novel/Notification.vue'
-import { useVisualNovel } from '../../composables/useVisualNovel'
-import { useSavesStore } from '../../stores/saves'
+	import { onMounted, ref } from 'vue'
+	import TextInputModal from './modals/TextInputModal.vue'
+	import StoryAudio from './StoryAudio.vue'
+	import Background from './visual-novel/Background.vue'
+	import CharacterList from './visual-novel/CharacterList.vue'
+	import TitleBlock from './visual-novel/TitleBlock.vue'
+	import DialogueBox from './visual-novel/DialogueBox.vue'
+	import Notification from './visual-novel/Notification.vue'
+	import { useVisualNovel } from '../../composables/useVisualNovel'
+	import { useSavesStore } from '../../stores/saves'
 
-const props = defineProps({ src: { type: String, required: true } })
-const emit = defineEmits(['end', 'character-loaded'])
+	const props = defineProps({ src: { type: String, required: true } })
+	const emit = defineEmits(['end', 'character-loaded'])
 
-const notificationComponent = ref(null)
+	const notificationComponent = ref(null)
 
-const vn = useVisualNovel({ src: props.src, emit, notificationComponent })
+	const vn = useVisualNovel({ src: props.src, emit, notificationComponent })
 
-const {
-	currentScene, visibleCharacters, currentDialogue, currentNarration, currentTitle, currentTitleEffects,
-	currentSpeaker, currentChoices, multiStepPrintedLength, showTextInputModal, currentInputStep, uiVisibility,
-	audioStreams,
-	loadStory, processStep, advanceStory, selectChoice, getInitialValue, onTextInputConfirm,
-	getGameState, restoreGameState, resetGameState, getHistory, clearHistory,
-	pauseAllStreams, resumeAllStreams
-} = vn
+	const {
+		currentScene, visibleCharacters, currentDialogue, currentNarration, currentTitle, currentTitleEffects,
+		currentSpeaker, currentChoices, multiStepPrintedLength, showTextInputModal, currentInputStep, uiVisibility,
+		audioStreams,
+		loadStory, processStep, advanceStory, selectChoice, getInitialValue, onTextInputConfirm,
+		getGameState, restoreGameState, resetGameState, getHistory, clearHistory,
+		pauseAllStreams, resumeAllStreams
+	} = vn
 
-onMounted(async () => {
-	await loadStory()
-	const savesStore = useSavesStore()
-	if (!savesStore.getPendingLoad()) {
-		processStep()
-	}
-})
+	onMounted(async () => {
+		await loadStory()
+		const savesStore = useSavesStore()
+		if (!savesStore.getPendingLoad()) {
+			processStep()
+		}
+	})
 
-defineExpose({ getGameState, restoreGameState, resetGameState, startStory: () => processStep(), getHistory: () => getHistory(), clearHistory: () => clearHistory(), pauseAllStreams, resumeAllStreams, uiVisibility })
+	defineExpose({ getGameState, restoreGameState, resetGameState, startStory: () => processStep(), getHistory: () => getHistory(), clearHistory: () => clearHistory(), pauseAllStreams, resumeAllStreams, uiVisibility })
 
 </script>
