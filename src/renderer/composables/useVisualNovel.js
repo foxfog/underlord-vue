@@ -176,7 +176,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		try {
 			switch (step.type) {
 				case 'scene':
-					if (!isRestoringGameState.value) changeScene(step.id)
+					if (!isRestoringGameState.value) changeScene(step)
 					stepIndex.value++
 					processStep()
 					break
@@ -186,7 +186,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					processStep()
 					break
 				case 'hide':
-					if (!isRestoringGameState.value) hideCharacter(step.character)
+					if (!isRestoringGameState.value) hideCharacter(step)
 					stepIndex.value++
 					processStep()
 					break
@@ -327,7 +327,16 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		}
 	}
 
-	function changeScene(sceneId) { currentScene.value = sceneData.value[sceneId] }
+	function changeScene(sceneIdOrStep) {
+		if (typeof sceneIdOrStep === 'object') {
+			const scene = sceneData.value[sceneIdOrStep.id]
+			if (scene) {
+				currentScene.value = { ...scene, mods: sceneIdOrStep.mods || [] }
+			}
+		} else {
+			currentScene.value = sceneData.value[sceneIdOrStep]
+		}
+	}
 	function showCharacter(step) {
 		const characterId = typeof step === 'string' ? step : step.character
 		const character = characterData.value[characterId]
@@ -371,7 +380,45 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			}
 		}
 	}
-	function hideCharacter(characterId) { visibleCharacters.value = visibleCharacters.value.filter(c => c.id !== characterId) }
+	function hideCharacter(stepOrId) {
+		const characterId = typeof stepOrId === 'string' ? stepOrId : stepOrId.character
+		const character = characterData.value[characterId]
+		if (!character) {
+			visibleCharacters.value = visibleCharacters.value.filter(c => c.id !== characterId)
+			return
+		}
+
+		// If we have animation params, play hide animation first, then remove
+		if (typeof stepOrId === 'object' && stepOrId.to && stepOrId.duration) {
+			// Start from current position and animate to "to"
+			const currentPos = character.position ? { ...character.position } : null
+			character.fromPosition = currentPos
+			character.position = stepOrId.to
+			// Duration in seconds in JSON -> ms for CSS
+			const durationMs = (stepOrId.duration || 0) * 1000
+			character.animationDuration = durationMs
+
+			// Ensure character is visible during animation
+			if (!visibleCharacters.value.some(c => c.id === characterId)) {
+				visibleCharacters.value.push(character)
+			}
+
+			// After animation, actually hide character
+			if (durationMs > 0) {
+				setTimeout(() => {
+					visibleCharacters.value = visibleCharacters.value.filter(c => c.id !== characterId)
+					// Clean animation props so future shows are clean
+					character.fromPosition = null
+					character.animationDuration = null
+				}, durationMs)
+			} else {
+				visibleCharacters.value = visibleCharacters.value.filter(c => c.id !== characterId)
+			}
+		} else {
+			// Instant hide (old behaviour)
+			visibleCharacters.value = visibleCharacters.value.filter(c => c.id !== characterId)
+		}
+	}
 
 	function handleUIStep(step) {
 		const action = step.action // 'show' or 'hide'

@@ -93,10 +93,12 @@
 			"type": "show",
 			"character": "mc",
 			"orientation": "left",
+			"back": false,
 			"position": {"l": 20, "r": "auto"},
 			"scale": 1.3,
 			"from": {"l": -25},
-			"duration": 0.5
+			"duration": 0.5,
+			"class": "red big-char"
 		},
 
 		{
@@ -111,8 +113,17 @@
 		},
 
 		{
-			"type": "voice",
-			"file": "audio/voice/man_cough.mp3"
+			"type": "notification",
+			"text": "<p>⚠️ Воздух токсичен</p><p>Надеть маску обязательно</p>",
+			"notificationType": "warning",
+			"duration": 4000
+		},
+
+		{ 
+			"type": "show",
+			"character": "mc",
+			"orientation": "right",
+			"duration": 0.5
 		},
 
 		{
@@ -127,10 +138,30 @@
 		},
 
 		{
+			"type": "inventory-remove",
+			"character": "mc",
+			"itemId": "ygdrasil-coin-old",
+			"quantity": 7
+		},
+
+		{
+			"type": "inventory-add",
+			"character": "mc",
+			"itemId": "ygdrasil-coin-new",
+			"quantity": 4
+		},
+
+		{
 			"type": "notification",
-			"text": "<p>✓ Маска надета</p><p>Система фильтрации активна</p>",
+			"text": "<p class='notif-title'>{character.mc.name}: Монеты обменяны</p><p>7 старых → {character.mc.inventory.items[ygdrasil-coin-new].quantity} новых</p>",
 			"notificationType": "success",
-			"duration": 2500
+			"duration": 3000
+		},
+
+		{
+			"type": "inventory-remove",
+			"character": "mc",
+			"itemId": "gasmask"
 		},
 
 		{
@@ -140,53 +171,16 @@
 		},
 
 		{
-			"type": "dialogue",
-			"character": "mc",
-			"text": "<i>Глубокий вздох</i>"
-		},
-
-		{
-			"type": "voice",
-			"file": "audio/voice/man_cough.mp3"
-		},
-
-		{
 			"type": "notification",
-			"text": "<p><b>⚠️ Смените фильтр!</b></p><p>Износ фильтра: 146%</p>",
-			"notificationType": "warning",
-			"duration": 4000
+			"text": "<p>✓ Маска надета</p><p>Система фильтрации активна</p>",
+			"notificationType": "success",
+			"duration": 2500
 		},
 
 		{
 			"type": "dialogue",
 			"character": "mc",
-			"text": "<p>[кашель]</p><p>«Кх-кх!»</p>"
-		},
-
-		{
-			"type": "dialogue",
-			"character": "mc",
-			"text": "Надо побыстрее добраться до дома. Фильтр уже на грани."
-		},
-
-		{
-			"type": "dialogue",
-			"character": "mc",
-			"steps": [
-				{
-					"text": "<p>Еще пол года потерпеть на 2ом этаже и смогу претендавать на квартиру на 3ем. А это на 2.3% чище воздух.</p>"
-				},
-				{
-					"text": "<p>... если я конечно не откинусь раньше с такой работой.</p>"
-				}
-			]
-		},
-
-		{ 
-			"type": "hide",
-			"character": "mc",
-			"to": {"l": 120, "r": "auto"},
-			"duration": 1
+			"text": "Ураа, прошел."
 		},
 
 		{ "type": "end" }

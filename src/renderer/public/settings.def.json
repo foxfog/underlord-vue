@@ -12,7 +12,7 @@
 		"language": "ru"
 	},
 	"video": {
-		"fullscreen": false,
+		"fullscreen": true,
 		"resolution": "1920x1080"
 	}
 }
