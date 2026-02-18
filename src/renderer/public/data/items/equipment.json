@@ -1,5 +1,14 @@
 [
 	{
+		"id": "underpants",
+		"slot": "underpants",
+		"name": "трусы",
+		"characters": ["mc"],
+		"stackable": false,
+		"sprite": "images/sprites/items/equipments/underpants.png",
+		"weight": 0.3
+	},
+	{
 		"id": "tshirt",
 		"slot": "torso-1",
 		"characters": ["mc", "momonga"],

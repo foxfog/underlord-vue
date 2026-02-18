@@ -190,6 +190,11 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					stepIndex.value++
 					processStep()
 					break
+				case 'part-animate':
+					if (!isRestoringGameState.value) animateCharacterPart(step)
+					stepIndex.value++
+					processStep()
+					break
 				case 'sound':
 					if (!isRestoringGameState.value) playSound(step)
 					stepIndex.value++
@@ -279,7 +284,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					if (step.variable) applyVariable(step.variable)
 					// Check if dialogue has steps
 					if (step.steps && Array.isArray(step.steps)) {
-						processDialogueSteps(step.steps)
+						processDialogueSteps(step.steps, step.character)
 					} else if (step.character) {
 						showDialogue(step.character, step.text)
 					} else {
@@ -358,6 +363,12 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			// Duration in JSON is in seconds, convert to milliseconds for CSS
 			if (step.from && typeof step === 'object') {
 				character.animationDuration = ((step.duration ?? 1) * 1000)
+				// Clear fromPosition and animationDuration after animation completes
+				setTimeout(() => {
+					character.fromPosition = null
+					character.animationDuration = null
+					console.log(`🎬 [${characterId}] Animation cleanup: fromPosition and duration cleared`)
+				}, character.animationDuration)
 			} else if (step.duration && typeof step === 'object') {
 				character.animationDuration = (step.duration * 1000)
 			} else {
@@ -417,6 +428,41 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		} else {
 			// Instant hide (old behaviour)
 			visibleCharacters.value = visibleCharacters.value.filter(c => c.id !== characterId)
+		}
+	}
+
+	function animateCharacterPart(step) {
+		const characterId = step.character
+		const partName = step.part
+		const character = characterData.value[characterId]
+		
+		if (!character) return
+		
+		// Инициализируем объект partAnimations если его нет
+		if (!character.partAnimations) {
+			character.partAnimations = {}
+		}
+		
+		const animConfig = {
+			styles: step.styles || null,
+			class: step.class || null,
+			animationDuration: step.duration ? (step.duration * 1000) : null
+		}
+		
+		// Устанавливаем анимацию для части тела
+		character.partAnimations[partName] = animConfig
+		
+		console.log(`🎬 [${characterId}] Part animation: part=${partName}, class=${animConfig.class}, duration=${step.duration}s, styles=${JSON.stringify(animConfig.styles)}`)
+		
+		// Если есть длительность, то очищаем анимацию после её завершения
+		if (step.duration && step.duration > 0) {
+			const durationMs = step.duration * 1000
+			setTimeout(() => {
+				if (character.partAnimations && character.partAnimations[partName]) {
+					delete character.partAnimations[partName]
+					console.log(`🎬 [${characterId}] Part animation cleared: part=${partName}`)
+				}
+			}, durationMs)
 		}
 	}
 
@@ -825,7 +871,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		if (choiceStep.text) currentDialogue.value = substituteVariables(choiceStep.text)
 	}
 
-	function processDialogueSteps(steps) {
+	function processDialogueSteps(steps, parentCharacter = null) {
 		let tempIndex = 0
 		function processDialogueAction() {
 			if (tempIndex >= steps.length) { 
@@ -844,7 +890,9 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 						multiStepDialogueBuffer.value += ''
 					}
 					multiStepDialogueBuffer.value += action.text
-					if (action.character) showDialogue(action.character, multiStepDialogueBuffer.value)
+					// Use character from action, or fallback to parentCharacter
+					const characterForStep = action.character || parentCharacter
+					if (characterForStep) showDialogue(characterForStep, multiStepDialogueBuffer.value)
 					else showNarration(multiStepDialogueBuffer.value)
 					advanceStoryOverride = function() {
 						// When advancing, calculate how many plain text chars have been printed

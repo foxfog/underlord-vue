@@ -116,9 +116,23 @@
 		},
 
 		{
+			"type": "part-animate",
+			"character": "mc",
+			"part": "head",
+			"class": "shake-head",
+			"duration": 0.5
+		},
+
+		{
 			"type": "dialogue",
 			"character": "mc",
 			"text": "<p>[кашель]</p><p>«Кх-кх!»</p>"
+		},
+
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "..."
 		},
 
 		{
@@ -148,6 +162,14 @@
 		{
 			"type": "voice",
 			"file": "audio/voice/man_cough.mp3"
+		},
+
+		{
+			"type": "part-animate",
+			"character": "mc",
+			"part": "head",
+			"class": "shake-head",
+			"duration": 0.5
 		},
 
 		{
@@ -187,6 +209,12 @@
 			"character": "mc",
 			"to": {"l": 120, "r": "auto"},
 			"duration": 1
+		},
+
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "Ура, прошел"
 		},
 
 		{ "type": "end" }

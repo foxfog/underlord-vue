@@ -20,7 +20,7 @@
 			width: fit-content;
 			transform-origin: center center;
 			margin: auto;
-
+			z-index: 0;
 			&:not(._body) {
 				position: absolute;
 				height: calc(var(--charspriteH) / var(--charbodyspriteH) * var(--char-height));
@@ -72,3 +72,4 @@
 		}
 	}
 }
+

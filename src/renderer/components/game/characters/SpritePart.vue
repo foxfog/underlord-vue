@@ -1,7 +1,7 @@
 <template>
 	<div 
-		:class="`char-part _${spriteName}`"
-		:style="styleWithHeight"
+		:class="partClasses"
+		:style="computedStyle"
 	>
 		<div :class="`char-part-sprite _${spriteName}`">
 			<img 
@@ -33,6 +33,7 @@
 				:sprites="sprites"
 				:sprites-by-parent="spritesByParent"
 				:equipment-by-slot="equipmentBySlot"
+				:part-animations="partAnimations"
 			/>
 		</template>
 	</div>
@@ -66,6 +67,10 @@
 		equipmentBySlot: {
 			type: Object,
 			default: () => ({})
+		},
+		partAnimations: {
+			type: Object,
+			default: () => ({})
 		}
 	})
 
@@ -73,17 +78,25 @@
 
 	// Вычисляем стиль с смещениями из offset
 	const offsetStyle = computed(() => {
-		if (!props.sprite.offset) {
-			return {}
-		}
-
 		const style = {}
-		if (props.sprite.offset.x !== undefined) {
-			style.left = `${props.sprite.offset.x}%`
+		
+		// Смещения
+		if (props.sprite.offset) {
+			if (props.sprite.offset.x !== undefined) {
+				style.left = `${props.sprite.offset.x}%`
+			}
+			if (props.sprite.offset.y !== undefined) {
+				style.top = `${props.sprite.offset.y}%`
+			}
 		}
-		if (props.sprite.offset.y !== undefined) {
-			style.top = `${props.sprite.offset.y}%`
+		
+		// Z-index (может быть zindex или z-index в JSON)
+		if (props.sprite.zindex !== undefined) {
+			style.zIndex = props.sprite.zindex
+		} else if (props.sprite['z-index'] !== undefined) {
+			style.zIndex = props.sprite['z-index']
 		}
+		
 		return style
 	})
 
@@ -95,6 +108,42 @@
 			...offsetStyle.value,
 			[heightVarName]: spriteHeight.value
 		}
+	})
+
+	// Получаем анимацию для этой части тела
+	const partAnimation = computed(() => {
+		return props.partAnimations[props.spriteName] || null
+	})
+
+	// Вычисляем финальный стиль с учетом анимаций
+	const computedStyle = computed(() => {
+		const style = { ...styleWithHeight.value }
+
+		if (partAnimation.value) {
+			const anim = partAnimation.value
+
+			// Применяем прямые стили
+			if (anim.styles) {
+				Object.assign(style, anim.styles)
+			}
+
+			// Применяем класс и устанавливаем длительность анимации как CSS переменную
+			if (anim.animationDuration) {
+				const durationInSeconds = anim.animationDuration / 1000
+				style['--animation-duration'] = `${durationInSeconds}s`
+			}
+		}
+
+		return style
+	})
+
+	// Вычисляем классы
+	const partClasses = computed(() => {
+		const classes = [`char-part _${props.spriteName}`]
+		if (partAnimation.value?.class) {
+			classes.push(partAnimation.value.class)
+		}
+		return classes
 	})
 
 	// Обработчик загрузки изображения для получения его высоты

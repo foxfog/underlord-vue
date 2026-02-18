@@ -1,7 +1,7 @@
 {
 	"id": "mc",
 	"name": "Я",
-	"size": 1.3,
+	"size": 1,
 	"race": "human",
 	"gender": "male",
 	"hpmax": 10,
@@ -29,16 +29,11 @@
 		"weapon-hand-1": null,
 		"weapon-hand-2": null,
 		"hands": null,
-		"weapon_off": null
+		"weapon_off": null,
+		"underpants": "underpants"
 	},
 	"inventory": {
 		"items": [
-			{
-				"itemId": "gasmask"
-			},
-			{
-				"itemId": "gasmask"
-			},
 			{
 				"itemId": "ygdrasil-coin-old",
 				"quantity": 23

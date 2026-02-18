@@ -127,6 +127,17 @@
 		},
 
 		{
+			"type": "part-animate",
+			"character": "mc",
+			"part": "head",
+			"styles": {
+				"transform": "translateY(5%)",
+				"transition": "transform 0.2s ease-in-out"
+			},
+			"duration": 0.2
+		},
+
+		{
 			"type": "dialogue",
 			"character": "mc",
 			"text": "<p>[кашель]</p><p>«Кх-кх!»</p>"

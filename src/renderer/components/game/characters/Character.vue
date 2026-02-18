@@ -19,6 +19,7 @@
 				:sprites="character.sprites"
 				:sprites-by-parent="spritesByParent"
 				:equipment-by-slot="character.equipmentBySlot"
+				:part-animations="character.partAnimations || {}"
 			/>
 		</template>
 	</div>
@@ -39,6 +40,7 @@
 
 	const charBodyRef = ref(null)
 	const isAnimating = ref(false)
+	let animationTimeout = null
 
 	// Compute positioning style from character.position object
 	const characterStyle = computed(() => {
@@ -91,11 +93,26 @@
 			// Start with fromPosition (isAnimating = false)
 			isAnimating.value = false
 			
+			// Clear any existing animation timeout to prevent race conditions
+			if (animationTimeout) {
+				clearTimeout(animationTimeout)
+				animationTimeout = null
+			}
+			
 			// Next tick, apply animation to position
 			nextTick(() => {
 				const durationInSeconds = props.character.animationDuration ? (props.character.animationDuration / 1000) : 'unknown'
 				console.log(`🎬 [${props.character.id}] Frame 2: Animate to position=${JSON.stringify(props.character.position)} (transition: ${durationInSeconds}s)`)
 				isAnimating.value = true
+				
+				// After animation duration, remove transition CSS to prevent unwanted transitions
+				if (props.character.animationDuration) {
+					animationTimeout = setTimeout(() => {
+						console.log(`🎬 [${props.character.id}] Animation complete - removing transition`)
+						isAnimating.value = false
+						animationTimeout = null
+					}, props.character.animationDuration)
+				}
 			})
 		}
 	}, { immediate: true })
@@ -120,6 +137,11 @@
 
 		onUnmounted(() => {
 			resizeObserver.disconnect()
+			// Очищаем animation timeout при размонтировании
+			if (animationTimeout) {
+				clearTimeout(animationTimeout)
+				animationTimeout = null
+			}
 		})
 	})
 

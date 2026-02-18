@@ -1,0 +1,58 @@
+/* Part animations */
+
+/* Shake effect for coughing */
+.char-part._head.shake-head {
+	animation: shakeHead var(--animation-duration, 0.5s) ease-in-out;
+}
+
+@keyframes shakeHead {
+	0% {
+		transform: translateY(0);
+	}
+	25% {
+		transform: translateY(5%);
+	}
+	50% {
+		transform: translateY(0);
+	}
+	75% {
+		transform: translateY(5%);
+	}
+	100% {
+		transform: translateY(0);
+	}
+}
+
+/* Trembling/shaking effect */
+.char-part.tremble {
+	animation: tremble var(--animation-duration, 0.5s) ease-in-out;
+}
+
+@keyframes tremble {
+	0%, 100% {
+		transform: translate(0, 0);
+	}
+	25% {
+		transform: translate(-2%, -2%);
+	}
+	50% {
+		transform: translate(2%, 2%);
+	}
+	75% {
+		transform: translate(-2%, 2%);
+	}
+}
+
+/* Pulse effect */
+.char-part.pulse {
+	animation: pulse var(--animation-duration, 0.5s) ease-in-out;
+}
+
+@keyframes pulse {
+	0%, 100% {
+		transform: scale(1);
+	}
+	50% {
+		transform: scale(1.05);
+	}
+}
