@@ -13,6 +13,7 @@
 		"slot": "torso-1",
 		"characters": ["mc", "momonga"],
 		"stackable": false,
+		"sprite": "images/sprites/items/equipments/tshirt.png",
 		"weight": 0.5,
 		"stats": {
 			"hp": 5,
@@ -20,6 +21,13 @@
 			"attack": "50%",
 			"defense": "-50%"
 		}
+	},
+	{
+		"id": "jeans",
+		"slot": "legs-2",
+		"characters": ["mc"],
+		"stackable": false,
+		"sprite": "images/sprites/items/equipments/jeans.jpg"
 	},
 	{
 		"id": "gasmask",

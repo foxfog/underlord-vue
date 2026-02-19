@@ -21,6 +21,7 @@
 	"arm_left": {
 		"image": "images/sprites/characters/mc/arm_left.png",
 		"parent": "body",
+		"zindex": 10,
 		"offset": {
 			"x": 19.5,
 			"y": -42.5

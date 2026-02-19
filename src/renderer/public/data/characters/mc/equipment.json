@@ -1,6 +1,7 @@
 [
 	{
 		"id": "gasmask",
+		"zindex": 1,
 		"parts": [
 			{
 				"parent" : "head",
@@ -10,6 +11,7 @@
 	},
 	{
 		"id": "medicalmask",
+		"zindex": 1,
 		"parts": [
 			{
 				"parent" : "head",
@@ -19,10 +21,39 @@
 	},
 	{
 		"id": "underpants",
+		"zindex": 1,
 		"parts": [
 			{
 				"parent" : "body",
 				"image": "images/sprites/characters/mc/equipment/underpants.png"
+			}
+		]
+	},
+	{
+		"id": "tshirt",
+		"zindex": 3,
+		"parts": [
+			{
+				"parent" : "body",
+				"image": "images/sprites/characters/mc/equipment/tshirt_body.png"
+			},
+			{
+				"parent" : "arm_left",
+				"image": "images/sprites/characters/mc/equipment/tshirt_arm_left.png"
+			},
+			{
+				"parent" : "arm_right",
+				"image": "images/sprites/characters/mc/equipment/tshirt_arm_right.png"
+			}
+		]
+	},
+	{
+		"id": "jeans",
+		"zindex": 2,
+		"parts": [
+			{
+				"parent" : "body",
+				"image": "images/sprites/characters/mc/equipment/jeans.png"
 			}
 		]
 	}

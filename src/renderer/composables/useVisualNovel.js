@@ -247,6 +247,26 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					stepIndex.value++
 					processStep()
 					break
+				case 'goto':
+					if (step.delay) {
+						setTimeout(() => goToLabel(step.target), step.delay * 1000)
+					} else {
+						goToLabel(step.target)
+					}
+					break
+				case 'end':
+					if (step.delay) {
+						setTimeout(() => {
+							if (callStack.value.length > 0) handleContinue()
+							else emit && emit('end')
+							isRestoringGameState.value = false
+						}, step.delay * 1000)
+					} else {
+						if (callStack.value.length > 0) handleContinue()
+						else emit && emit('end')
+						isRestoringGameState.value = false
+					}
+					break
 				case 'inventory-add':
 					// Add item(s) to inventory: { character: "mc", itemId: "ygdrasil-coin-new", quantity: 4 }
 					if (!isRestoringGameState.value && step.character && step.itemId) {
@@ -312,15 +332,27 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					processStep()
 					break
 				case 'goto':
-					goToLabel(step.target)
+					if (step.delay) {
+						setTimeout(() => goToLabel(step.target), step.delay * 1000)
+					} else {
+						goToLabel(step.target)
+					}
 					break
 				case 'continue':
 					handleContinue()
 					break
 				case 'end':
-					if (callStack.value.length > 0) handleContinue()
-					else emit && emit('end')
-					isRestoringGameState.value = false
+					if (step.delay) {
+						setTimeout(() => {
+							if (callStack.value.length > 0) handleContinue()
+							else emit && emit('end')
+							isRestoringGameState.value = false
+						}, step.delay * 1000)
+					} else {
+						if (callStack.value.length > 0) handleContinue()
+						else emit && emit('end')
+						isRestoringGameState.value = false
+					}
 					break
 				default:
 					stepIndex.value++

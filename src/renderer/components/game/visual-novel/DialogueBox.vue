@@ -1,5 +1,5 @@
 <template>
-	<div class="dialogue-box" v-if="dialogue || narration || choices.length > 0">
+	<div :class="dialogueBoxClasses" v-if="dialogue || narration || choices.length > 0">
 		<div class="dialogue-in">
 			<div class="speaker" v-if="speaker">{{ speaker }}</div>
 			<div 
@@ -57,6 +57,12 @@
 		const speed = store.general.textSpeed || 100
 		return Math.round((101 - speed) * 1.6 + 20)
 	})
+
+	// Compute dialogue box classes
+	const dialogueBoxClasses = computed(() => ({
+		'dialogue-box': true,
+		'_choice-box': props.choices.length > 0
+	}))
 
 	function skipTypewriter() {
 		if (isTypewriting) {

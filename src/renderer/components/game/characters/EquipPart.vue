@@ -29,6 +29,10 @@
 		characterId: {
 			type: String,
 			required: true
+		},
+		zindex: {
+			type: Number,
+			default: undefined
 		}
 	})
 
@@ -54,10 +58,17 @@
 	// Для _body используем --charbodyspriteH, для остальных --charspriteH
 	const styleWithHeight = computed(() => {
 		const heightVarName = props.partName === 'body' ? '--charbodyspriteH' : '--charspriteH'
-		return {
+		const style = {
 			...offsetStyle.value,
 			[heightVarName]: spriteHeight.value
 		}
+		
+		// Применяем z-index из экипировки если указан
+		if (props.zindex !== undefined) {
+			style.zIndex = props.zindex
+		}
+		
+		return style
 	})
 
 	// Обработчик загрузки изображения для получения его высоты

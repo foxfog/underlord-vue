@@ -20,6 +20,7 @@
 					:part="part"
 					:part-name="`${equip.id}-${partIndex}`"
 					:character-id="characterId"
+					:zindex="equip.item.zindex"
 				/>
 			</template>
 		</template>

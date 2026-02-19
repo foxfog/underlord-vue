@@ -1,25 +1,36 @@
 /* Part animations */
 
-/* Shake effect for coughing */
-.char-part._head.shake-head {
-	animation: shakeHead var(--animation-duration, 0.5s) ease-in-out;
+/* cough effect for coughing */
+.char-part._neck.cough-head .char-part._head {
+	animation: coughHead var(--animation-duration, 0.3s) ease-in-out;
+}
+.char-part._neck.cough-head {
+	animation: coughNeck var(--animation-duration, 0.02s) ease-in-out;
 }
 
-@keyframes shakeHead {
+@keyframes coughHead {
 	0% {
-		transform: translateY(0);
+		transform: translate(0,0);
 	}
 	25% {
-		transform: translateY(5%);
+		transform: translate(-2.5%,3%);
 	}
 	50% {
-		transform: translateY(0);
+		transform: translate(0,0);
 	}
 	75% {
-		transform: translateY(5%);
+		transform: translate(-2.5%,3%);
 	}
 	100% {
-		transform: translateY(0);
+		transform: translate(0,0);
+	}
+}
+@keyframes coughNeck {
+	0% {
+		transform: rotate(0deg);
+	}
+	100% {
+		transform: rotate(-8deg);
 	}
 }
 

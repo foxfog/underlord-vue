@@ -103,23 +103,30 @@
 		margin-bottom: 10px;
 		line-height: 1.4;
 	}
-
-	.choices {
-		margin-top: 15px;
-		.choice-btn {
-			display: block;
-			width: 100%;
-			padding: 10px;
-			margin: 5px 0;
-			background: #444;
-			color: white;
-			border: 1px solid #666;
-			border-radius: 5px;
-			cursor: pointer;
-			transition: background-color 0.2s ease;
-
-			&:hover {
-				background-color: #555;
+	
+	&._choice-box {
+		min-height: 20%;
+		height: auto;
+		.dialogue-text {
+			position: static;
+		}
+		.choices {
+			margin-top: 15px;
+			pointer-events: all;
+			.choice-btn {
+				display: block;
+				width: 100%;
+				padding: 10px;
+				margin: 5px 0;
+				background: #444;
+				color: white;
+				border: 1px solid #666;
+				border-radius: 5px;
+				cursor: pointer;
+				transition: background-color 0.2s ease;
+				&:hover {
+					background-color: #555;
+				}
 			}
 		}
 	}
