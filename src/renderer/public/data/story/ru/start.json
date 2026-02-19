@@ -106,30 +106,14 @@
 			"character": "mc",
 			"text": "..."
 		},
+		
 		{
 			"type": "dialogue",
 			"character": "mc",
 			"text": "Еще один день в этом аду..."
 		},
 
-		{
-			"type": "voice",
-			"file": "audio/voice/man_cough.mp3"
-		},
-
-		{
-			"type": "part-animate",
-			"character": "mc",
-			"part": "neck",
-			"class": "cough-head",
-			"duration": 0.5
-		},
-
-		{
-			"type": "dialogue",
-			"character": "mc",
-			"text": "<p>[кашель]</p><p>«Кх-кх!»</p>"
-		},
+		{ "type": "goto", "target": "macros/cough" },
 
 		{
 			"type": "dialogue",
@@ -162,31 +146,15 @@
 		},
 
 		{
-			"type": "voice",
-			"file": "audio/voice/man_cough.mp3"
-		},
-
-		{
-			"type": "part-animate",
-			"character": "mc",
-			"part": "neck",
-			"class": "cough-head",
-			"duration": 0.5
-		},
-
-		{
 			"type": "notification",
 			"text": "<p><b>⚠️ Смените фильтр!</b></p><p>Износ фильтра: 146%</p>",
 			"notificationType": "warning",
 			"duration": 4000
 		},
 
-		{
-			"type": "dialogue",
-			"character": "mc",
-			"text": "<p>[кашель]</p><p>«Кх-кх!»</p>"
-		},
+		{ "type": "goto", "target": "macros/cough" },
 
+		
 		{
 			"type": "dialogue",
 			"character": "mc",

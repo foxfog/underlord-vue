@@ -1,5 +1,5 @@
 <template>
-	<div :class="dialogueBoxClasses" v-if="dialogue || narration || choices.length > 0">
+	<div :class="[dialogueBoxClasses, { invisible: !dialogue && !narration && !choices.length }]">
 		<div class="dialogue-in">
 			<div class="speaker" v-if="speaker">{{ speaker }}</div>
 			<div 

@@ -1,0 +1,24 @@
+{
+	"id": "cough",
+	"steps": [
+		{
+			"type": "voice",
+			"file": "audio/voice/man_cough.mp3"
+		},
+
+		{
+			"type": "part-animate",
+			"character": "mc",
+			"part": "neck",
+			"class": "cough-head",
+			"duration": 0.5
+		},
+
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "<p>[кашель]</p><p>«Кх-кх!»</p>"
+		},
+		{ "type": "continue" }
+	]
+}

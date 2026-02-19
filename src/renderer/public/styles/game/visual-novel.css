@@ -53,6 +53,15 @@
 	color: white;
 	height: 20%;
 	z-index: 2;
+	opacity: 1;
+	transition: opacity 0.3s ease-in-out;
+	pointer-events: auto;
+	
+	&.invisible {
+		opacity: 0;
+		pointer-events: none;
+	}
+	
 	&::before {
 		content: "";
 		position: absolute;

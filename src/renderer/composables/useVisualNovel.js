@@ -1000,45 +1000,57 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	}
 
 	function goToLabel(targetLabel) {
-		currentDialogue.value = ''
-		currentNarration.value = ''
-		currentSpeaker.value = ''
-		currentChoices.value = []
 		const targetStepIndex = storyData.value.steps.findIndex(step => step.id === targetLabel)
-		if (targetStepIndex !== -1) { stepIndex.value = targetStepIndex; processStep(); return }
+		if (targetStepIndex !== -1) { 
+			// Goto внутри текущей истории - очищаем диалоги
+			currentDialogue.value = ''
+			currentNarration.value = ''
+			currentSpeaker.value = ''
+			currentChoices.value = []
+			stepIndex.value = targetStepIndex
+			processStep()
+			return 
+		}
+		// Goto на другую историю - сохраняем позицию для return и загружаем новую историю
 		callStack.value.push({ storyId: storyData.value.id, stepIndex: stepIndex.value + 1 })
+		// НЕ очищаем диалоги при переходе на другую историю, чтобы избежать мерцания
 		loadTargetStory(targetLabel)
 	}
 
 	function handleContinue() {
 		if (callStack.value.length > 0) {
 			const returnPosition = callStack.value.pop()
+			// Очищаем диалоги при возврате из макроса/подстории
+			currentDialogue.value = ''
+			currentNarration.value = ''
+			currentSpeaker.value = ''
+			currentChoices.value = []
 			loadReturnStory(returnPosition.storyId, returnPosition.stepIndex)
 		} else emit && emit('end')
 	}
 
 	async function loadTargetStory(storyName) {
 		try {
-			const module = await loadDataFromPublic(`/data/story/ru/${storyName}.json`)
+			// Support both simple names (story) and paths (macros/cough)
+			const storyPath = storyName.includes('/') ? storyName : storyName
+			const module = await loadDataFromPublic(`/data/story/ru/${storyPath}.json`)
 			storyData.value = module
-			currentDialogue.value = ''
-			currentNarration.value = ''
-			currentSpeaker.value = ''
-			currentChoices.value = []
 			stepIndex.value = 0
+			// Small delay to ensure smooth transition without dialog flicker
+			await new Promise(resolve => setTimeout(resolve, 10))
 			processStep()
 		} catch (error) { console.error('Error loading target story:', error); emit && emit('end') }
 	}
 
 	async function loadReturnStory(storyName, returnStepIndex) {
 		try {
-			const module = await loadDataFromPublic(`/data/story/ru/${storyName}.json`)
+			// Support both simple names (story) and paths (macros/cough)
+			const storyPath = storyName.includes('/') ? storyName : storyName
+			const module = await loadDataFromPublic(`/data/story/ru/${storyPath}.json`)
 			storyData.value = module
-			currentDialogue.value = ''
-			currentNarration.value = ''
-			currentSpeaker.value = ''
-			currentChoices.value = []
 			stepIndex.value = returnStepIndex
+			// Small delay to ensure smooth transition without dialog flicker
+			await new Promise(resolve => setTimeout(resolve, 10))
 			processStep()
 		} catch (error) { console.error('Error loading return story:', error); emit && emit('end') }
 	}
