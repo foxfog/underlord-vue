@@ -2,23 +2,31 @@
 	"id": "suffocation",
 	"steps": [
 
-        {
-			"type": "voice",
-			"file": "audio/voice/man_cough.mp3"
+		{
+			"type": "notification",
+			"text": "<p>⚠️ Воздух токсичен</p><p>Срочно наденьте маску!</p>",
+			"notificationType": "warning",
+			"duration": 4000
 		},
 
-        {
-			"type": "part-animate",
-			"character": "mc",
-			"part": "neck",
-			"class": "cough-head",
-			"duration": 0.5
+		{
+			"type": "ui",
+			"target": ["all"],
+			"action": "hide"
 		},
 
-        {
-			"type": "dialogue",
-			"character": "mc",
-			"text": "<p>[кашель]</p><p>«Кх-кх!»</p>"
+        { "type": "goto", "target": "macros/cough" },
+
+		{
+			"type": "titles",
+			"text": "<span class='t-32 sw-text-blue'>ВЫ ПОГИБЛИ</span>",
+			"duration": 5,
+			"auto-end": true,
+			"effect": {	
+				"class": "fade-out",
+				"duration": 2,
+				"delay": 3
+			}
 		},
 
         { "type": "end" }

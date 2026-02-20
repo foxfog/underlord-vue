@@ -8,6 +8,8 @@
 			"action": "hide"
 		},
 
+		{ "type": "goto", "target": "test" },
+
 		{ "type": "goto", "target": "nameinput" },
 
 		{
@@ -113,6 +115,13 @@
 			"text": "Еще один день в этом аду..."
 		},
 
+		{
+			"type": "notification",
+			"text": "<p>⚠️ Воздух токсичен</p><p>Срочно наденьте маску!</p>",
+			"notificationType": "warning",
+			"duration": 4000
+		},
+
 		{ "type": "goto", "target": "macros/cough" },
 
 		{
@@ -124,6 +133,10 @@
 		{
 			"variable": "character.mc.equipment_slots.mask = 'gasmask'",
 			"sound": "cloth"
+		},
+
+		{
+			"variable": "global.toxic_gas = 1"
 		},
 
 		{

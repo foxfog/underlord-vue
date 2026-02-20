@@ -44,7 +44,7 @@
 	import { useSavesStore } from '../../stores/saves'
 
 	const props = defineProps({ src: { type: String, required: true } })
-	const emit = defineEmits(['end', 'character-loaded'])
+	const emit = defineEmits(['end', 'character-loaded', 'global-data-changed'])
 
 	const notificationComponent = ref(null)
 
@@ -56,7 +56,8 @@
 		audioStreams,
 		loadStory, processStep, advanceStory, selectChoice, getInitialValue, onTextInputConfirm,
 		getGameState, restoreGameState, resetGameState, getHistory, clearHistory,
-		pauseAllStreams, resumeAllStreams
+		pauseAllStreams, resumeAllStreams,
+		goto  // ← Добавляем goto method для Rules Engine
 	} = vn
 
 	onMounted(async () => {
@@ -67,6 +68,6 @@
 		}
 	})
 
-	defineExpose({ getGameState, restoreGameState, resetGameState, startStory: () => processStep(), getHistory: () => getHistory(), clearHistory: () => clearHistory(), pauseAllStreams, resumeAllStreams, uiVisibility })
+	defineExpose({ getGameState, restoreGameState, resetGameState, startStory: () => processStep(), getHistory: () => getHistory(), clearHistory: () => clearHistory(), pauseAllStreams, resumeAllStreams, uiVisibility, goto })
 
 </script>

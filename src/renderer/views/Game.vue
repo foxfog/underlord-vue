@@ -15,6 +15,7 @@
 				:src="novelsrc"
 				@end="onEnd"
 				@character-loaded="onCharacterLoaded"
+				@global-data-changed="onGlobalDataChanged"
 			/>
 		</div>
 
@@ -127,6 +128,9 @@
 	import { useSavesStore } from '@/stores/saves'
 	import { useSettingsStore } from '@/stores/settings'
 	import { SOUND_CLOTH } from '../constants/sounds'
+	import { useGameRules } from '@/composables/useGameRules'
+	import { allStoryRules } from '@/constants/storyRules'
+	import { reactive } from 'vue'
 
 	const router = useRouter()
 	const route = useRoute()
@@ -155,6 +159,33 @@
 	const confirmTitle = ref('')
 	const confirmMessage = ref('')
 	let confirmAction = null
+
+	// Game Rules Engine
+	const gameState = reactive({
+		character: {
+			mc: {
+				health: 100,
+				equipment_slots: {
+					mask: null
+				}
+			}
+		},
+		global: {},  // ← добавляем объект для глобальных переменных
+		game: {
+			location: 'city_street',
+			activeStory: 'start',
+			storyPlaying: true
+		},
+		storyEngine: null
+	})
+
+	const { 
+		registerRules, 
+		startRules, 
+		stopRules,
+		resetEngine,
+		stats
+	} = useGameRules(gameState)
 
 	const novelsrc = computed(() => {
 		return '/data/story/ru/start.json'
@@ -227,7 +258,56 @@
 		console.log(`Current view changed from "${oldView}" to "${newView}"`)
 	})
 
+	// Watch for character changes and update gameState
+	watch(() => mcCharacter.value, (newChar) => {
+		if (newChar) {
+			// Убедимся, что gameState указывает на реальный объект персонажа, а не копию
+			gameState.character.mc = newChar
+			gameState.storyEngine = visualNovel.value
+			
+			// Синхронизируем и с characterData из visualNovel
+			if (visualNovel.value?.characterData?.mc) {
+				gameState.character.mc = visualNovel.value.characterData.mc;
+			}
+		}
+	}, { deep: true })
+
+	// Watch for character data changes in visualNovel to stay in sync
+	watch(() => visualNovel.value?.characterData?.mc, (charData) => {
+		if (charData) {
+			console.log('✏️ characterData changed in visualNovel, syncing...');
+			gameState.character.mc = charData;
+			mcCharacter.value = charData;
+		}
+	}, { deep: true })
+
+	// Watch for global data changes from VisualNovel and sync to gameState
+	watch(() => visualNovel.value?.globalData, (newGlobalData) => {
+		if (newGlobalData) {
+			console.log('🌍 globalData changed in visualNovel:', newGlobalData);
+			Object.assign(gameState.global, newGlobalData)
+			console.log('✅ Updated gameState.global:', gameState.global);
+		}
+	}, { deep: true })
+
+	// Watch for equipment changes to debug sync issues
+	watch(() => mcCharacter.value?.equipment_slots?.mask, (newMask, oldMask) => {
+		if (newMask !== oldMask) {
+			console.log('👕 Mask status:', {
+				oldMask,
+				newMask,
+				gameStateMask: gameState.character.mc?.equipment_slots?.mask
+			});
+		}
+		// Убедимся что gameState синхронизирован
+		if (mcCharacter.value) {
+			gameState.character.mc = mcCharacter.value;
+		}
+	})
+
 	function onEnd() {
+		// Clear global variables (e.g. toxic_gas) so they don't bleed into the next game
+		Object.keys(gameState.global).forEach(key => delete gameState.global[key])
 		// Stop game music, restore background music
 		settingsStore.isMusicPlaying = true
 		router.push('/home')
@@ -259,7 +339,6 @@
 	}
 
 	function handleEquip({ slot, itemId, inventoryIndex }) {
-		console.log('Equipping:', { slot, itemId, inventoryIndex })
 		if (!mcCharacter.value?.equipment_slots || !mcCharacter.value?.inventory?.items) return
 
 		// Шаг 1: Проверить, что слот пуст ИЛИ нужен swap с инвентарём (запрещаем)
@@ -309,23 +388,48 @@
 		
 		// Шаг 4: Установить новый предмет в слот
 		mcCharacter.value.equipment_slots[slot] = itemId
+		console.log(`🔧 Set ${slot} = ${itemId}`, { 
+			slotValue: mcCharacter.value.equipment_slots[slot],
+			gameStateValue: gameState.character.mc?.equipment_slots[slot]
+		})
 		
 		rebuildEquipmentBySlot()
 		playClothSound()
+		
+		// Update gameState for Rules Engine
+		if (mcCharacter.value) {
+			gameState.character.mc = mcCharacter.value
+		}
 	}
 
 	function handleUnequip({ slot, itemId }) {
-		console.log('Unequipping:', { slot, itemId })
+		showInventoryModal.value = false
 		if (!mcCharacter.value?.equipment_slots || !mcCharacter.value?.inventory?.items) return
 
 		// Шаг 1: Убедиться, что в слоте именно этот предмет
-		if (mcCharacter.value.equipment_slots[slot] !== itemId) {
-			console.warn('Item in slot does not match itemId being unequipped')
+		const actualItem = mcCharacter.value.equipment_slots[slot];
+		
+		// Если слот уже очищен (например дефп watch перезаписал), просто добавляем в инвентарь
+		// Это может происходить из-за deep watch на visualNovel.characterData
+		if (actualItem === null && itemId) {
+			console.warn('⚠️ Slot already empty, but adding item to inventory anyway:', { slot, itemId });
+			// Продолжаем дальше к шагу 3 (добавлению в инвентарь)
+		} else if (actualItem !== itemId) {
+			console.error('❌ Item mismatch:', { 
+				slot, 
+				expectedItemId: itemId, 
+				actualItemId: actualItem,
+				allSlots: { ...mcCharacter.value.equipment_slots },  // Копируем для лучшего логирования
+				gameStateSlots: { ...gameState.character.mc?.equipment_slots },
+				currentStory: visualNovel.value?.storyData?.value?.id
+			});
 			return
 		}
 
-		// Шаг 2: Очистить слот
-		mcCharacter.value.equipment_slots[slot] = null
+		// Шаг 2: Очистить слот (если ещё не очищен)
+		if (mcCharacter.value.equipment_slots[slot] !== null) {
+			mcCharacter.value.equipment_slots[slot] = null
+		}
 
 		// Шаг 3: Добавить предмет в инвентарь
 		const itemDef = itemsData.value[itemId]
@@ -344,20 +448,26 @@
 
 		rebuildEquipmentBySlot()
 		playClothSound()
+		
+		// Update gameState for Rules Engine
+		if (mcCharacter.value) {
+			gameState.character.mc = mcCharacter.value
+			console.log(`🔄 handleUnequip: Removed ${itemId} from ${slot}`);
+			console.log('   gameState.character.mc.mask:', gameState.character.mc?.equipment_slots?.mask);
+			console.log('   gameState.global:', gameState.global);
+			console.log('   gameState.global.toxic_gas:', gameState.global?.toxic_gas);
+			console.log('   visualNovel.globalData:', visualNovel.value?.globalData);
+		}
 	}
 
 	function handleSwap({ from, to }) {
-		console.log('Swapping slots:', { from, to })
 		if (!mcCharacter.value?.equipment_slots) return
 
 		const fromItemId = mcCharacter.value.equipment_slots[from]
 		const toItemId = mcCharacter.value.equipment_slots[to]
 
 		// Проверяем, что оба предмета существуют (не null)
-		if (!fromItemId || !toItemId) {
-			console.warn('Cannot swap: one or both slots are empty', { from, to, fromItemId, toItemId })
-			return
-		}
+		if (!fromItemId || !toItemId) return
 
 		// Просто меняем местами
 		const temp = mcCharacter.value.equipment_slots[from]
@@ -366,6 +476,11 @@
 
 		rebuildEquipmentBySlot()
 		playClothSound()
+		
+		// Update gameState for Rules Engine
+		if (mcCharacter.value) {
+			gameState.character.mc = mcCharacter.value
+		}
 	}
 
 	function handleDrop({ itemId, source, slot, quantity = 1 }) {
@@ -384,6 +499,11 @@
 					mcCharacter.value.inventory.items.splice(itemIndex, 1)
 				}
 			}
+		}
+		
+		// Update gameState for Rules Engine
+		if (mcCharacter.value) {
+			gameState.character.mc = mcCharacter.value
 		}
 	}
 
@@ -415,7 +535,24 @@
 
 	function onCharacterLoaded(characterData) {
 		if (characterData?.mc) {
+			const oldMask = mcCharacter.value?.equipment_slots?.mask;
+			const newMask = characterData.mc?.equipment_slots?.mask;
+			console.log('🔄 onCharacterLoaded - updating mcCharacter', {
+				oldMask,
+				newMask,
+				stack: new Error().stack.split('\n').slice(1, 3).join(' | ')
+			});
 			mcCharacter.value = characterData.mc
+			// Также пересинхронизируем gameState чтобы Rules Engine видел актуальные данные
+			gameState.character.mc = characterData.mc
+		}
+	}
+
+	function onGlobalDataChanged(globalData) {
+		if (globalData) {
+			console.log('🌍 onGlobalDataChanged - updating gameState.global', globalData);
+			Object.assign(gameState.global, globalData);
+			console.log('✅ gameState.global updated:', gameState.global);
 		}
 	}
 
@@ -706,6 +843,13 @@
 		
 		window.addEventListener('keydown', onKeyDown)
 
+		// ВАЖНО: Инициализируем gameState.storyEngine ДО запуска Rules Engine
+		gameState.storyEngine = visualNovel.value
+
+		// Initialize Game Rules Engine
+		registerRules(allStoryRules)
+		startRules() // Check rules reactively on gameState changes
+
 		// Load items data (equipment and consumables)
 		const getFullPath = (path) => {
 			const basePath = typeof window !== 'undefined' && window.__APP_BASE__ ? window.__APP_BASE__ : ''
@@ -771,5 +915,8 @@
 
 	onUnmounted(() => {
 		window.removeEventListener('keydown', onKeyDown)
+		// Fully destroy the rules engine singleton so the next game session
+		// gets a fresh engine with the correct gameState reference
+		resetEngine()
 	})
 </script>

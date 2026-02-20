@@ -1,0 +1,74 @@
+{
+	"id": "test",
+	"steps": [
+		{
+			"type": "ui",
+			"target": ["all"],
+			"action": "show"
+		},
+
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "🧪 Тестовая сцена Rules Engine"
+		},
+
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "Откройте консоль (F12) для мониторинга gameState"
+		},
+
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "Надеваю маску и активирую токсичный газ..."
+		},
+
+		{
+			"variable": "character.mc.equipment_slots.mask = 'gasmask'",
+			"sound": "cloth"
+		},
+
+		{
+			"variable": "global.toxic_gas = 1"
+		},
+
+		{
+			"type": "notification",
+			"text": "<p>✓ Маска надета</p><p>Токсичный газ: ВКЛ</p>",
+			"notificationType": "success",
+			"duration": 2500
+		},
+
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "<i>Система фильтрации активна</i>"
+		},
+
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "Консоль покажет: gameState.global.toxic_gas = 1 и mask = 'gasmask'"
+		},
+
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "Снимите маску из инвентаря..."
+		},
+
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "...Rules Engine должен триггернуть условие и запустить goto death/suffocation"
+		},
+
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "и еще текст"
+		}
+	]
+}

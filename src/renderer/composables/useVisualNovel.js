@@ -46,6 +46,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	const globalData = ref({})
 	let advanceStoryOverride = null
 	const callStack = ref([])
+	let currentStoryPath = 'start' // tracks the file path used to load the current story
 
 	const showTextInputModal = ref(false)
 	const currentInputStep = ref(null)
@@ -97,6 +98,9 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			try {
 				const storyModule = await loadDataFromPublic(src)
 				storyData.value = storyModule
+				// Extract path relative to /data/story/ru/ for call stack tracking
+				const srcMatch = src.match(/\/data\/story\/ru\/(.+)\.json/)
+				if (srcMatch) currentStoryPath = srcMatch[1]
 
 				// Load characters (try split format, fallback to legacy file)
 				const characterIds = ['mc', 'albedo', 'momonga']
@@ -255,16 +259,14 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					}
 					break
 				case 'end':
+					// 'end' always terminates the game regardless of call stack.
+					// Use 'continue' to return from a macro/sub-story to the caller.
+					isRestoringGameState.value = false
+					callStack.value = []
 					if (step.delay) {
-						setTimeout(() => {
-							if (callStack.value.length > 0) handleContinue()
-							else emit && emit('end')
-							isRestoringGameState.value = false
-						}, step.delay * 1000)
+						setTimeout(() => { emit && emit('end') }, step.delay * 1000)
 					} else {
-						if (callStack.value.length > 0) handleContinue()
-						else emit && emit('end')
-						isRestoringGameState.value = false
+						emit && emit('end')
 					}
 					break
 				case 'inventory-add':
@@ -342,16 +344,14 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					handleContinue()
 					break
 				case 'end':
+					// 'end' always terminates the game regardless of call stack.
+					// Use 'continue' to return from a macro/sub-story to the caller.
+					isRestoringGameState.value = false
+					callStack.value = []
 					if (step.delay) {
-						setTimeout(() => {
-							if (callStack.value.length > 0) handleContinue()
-							else emit && emit('end')
-							isRestoringGameState.value = false
-						}, step.delay * 1000)
+						setTimeout(() => { emit && emit('end') }, step.delay * 1000)
 					} else {
-						if (callStack.value.length > 0) handleContinue()
-						else emit && emit('end')
-						isRestoringGameState.value = false
+						emit && emit('end')
 					}
 					break
 				default:
@@ -816,8 +816,22 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		if (resolved.root === 'character') {
 			console.log(`Applied variable: ${expr} -> ${resolved.id}.${key} =`, newValue)
 			updateCharacterData(targetPath, newValue)
+			// Эмитим событие если изменились данные персонажа (особенно equipment_slots)
+			// чтобы синхронизировать с Game.vue
+			if (emit && targetPath.includes('equipment_slots')) {
+				console.log(`📤 Emitting character-loaded after equipment change`, {
+					mask: characterData.value?.mc?.equipment_slots?.mask,
+					allSlots: { ...characterData.value?.mc?.equipment_slots }
+				});
+				emit('character-loaded', characterData.value);
+			}
 		} else {
 			console.log(`Applied global variable: ${expr} -> ${targetPath} =`, newValue)
+			// Также синхронизируем глобальные переменные
+			if (emit) {
+				console.log(`📤 Emitting global-data-changed after global variable change`, globalData.value);
+				emit('global-data-changed', globalData.value);
+			}
 		}
 	}
 
@@ -1012,7 +1026,8 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			return 
 		}
 		// Goto на другую историю - сохраняем позицию для return и загружаем новую историю
-		callStack.value.push({ storyId: storyData.value.id, stepIndex: stepIndex.value + 1 })
+		// Save the FULL PATH used to load the current story (not the JSON id field)
+		callStack.value.push({ storyId: currentStoryPath, stepIndex: stepIndex.value + 1 })
 		// НЕ очищаем диалоги при переходе на другую историю, чтобы избежать мерцания
 		loadTargetStory(targetLabel)
 	}
@@ -1031,11 +1046,39 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 
 	async function loadTargetStory(storyName) {
 		try {
+			// Сохраняем состояние персонажа И глобальные данные перед загрузкой новой истории
+			const savedCharacterState = characterData.value?.mc ? { ...characterData.value.mc } : null;
+			const savedGlobalData = { ...globalData.value };  // Сохраняем глобальные переменные (toxic_gas)
+			console.log('💾 Saving state before loading new story:', {
+				mask: savedCharacterState?.equipment_slots?.mask,
+				globalData: savedGlobalData
+			});
+			
 			// Support both simple names (story) and paths (macros/cough)
 			const storyPath = storyName.includes('/') ? storyName : storyName
 			const module = await loadDataFromPublic(`/data/story/ru/${storyPath}.json`)
+			currentStoryPath = storyPath // Track the full path for correct call stack return
 			storyData.value = module
 			stepIndex.value = 0
+			
+			// Восстанавливаем состояние персонажа и глобальные данные
+			if (savedCharacterState && characterData.value?.mc) {
+				characterData.value.mc.equipment_slots = savedCharacterState.equipment_slots;
+			}
+			// Восстанавливаем глобальные переменные
+			Object.assign(globalData.value, savedGlobalData);
+			
+			console.log('♻️ Restored state after story load:', {
+				mask: characterData.value.mc?.equipment_slots?.mask,
+				globalData: globalData.value
+			});
+			
+			// Эмитим событие чтобы Game.vue узнал об обновлении
+			if (emit) {
+				console.log('📤 Emitting character-loaded after story transition');
+				emit('character-loaded', characterData.value);
+			}
+			
 			// Small delay to ensure smooth transition without dialog flicker
 			await new Promise(resolve => setTimeout(resolve, 10))
 			processStep()
@@ -1044,11 +1087,39 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 
 	async function loadReturnStory(storyName, returnStepIndex) {
 		try {
+			// Сохраняем состояние персонажа И глобальные данные перед загрузкой новой истории
+			const savedCharacterState = characterData.value?.mc ? { ...characterData.value.mc } : null;
+			const savedGlobalData = { ...globalData.value };  // Сохраняем глобальные переменные (toxic_gas)
+			console.log('💾 Saving state before loading return story:', {
+				mask: savedCharacterState?.equipment_slots?.mask,
+				globalData: savedGlobalData
+			});
+			
 			// Support both simple names (story) and paths (macros/cough)
 			const storyPath = storyName.includes('/') ? storyName : storyName
 			const module = await loadDataFromPublic(`/data/story/ru/${storyPath}.json`)
+			currentStoryPath = storyPath // Track the full path for correct call stack return
 			storyData.value = module
 			stepIndex.value = returnStepIndex
+			
+			// Восстанавливаем состояние персонажа и глобальные данные
+			if (savedCharacterState && characterData.value?.mc) {
+				characterData.value.mc.equipment_slots = savedCharacterState.equipment_slots;
+			}
+			// Восстанавливаем глобальные переменные
+			Object.assign(globalData.value, savedGlobalData);
+			
+			console.log('♻️ Restored state after story load:', {
+				mask: characterData.value.mc?.equipment_slots?.mask,
+				globalData: globalData.value
+			});
+			
+			// Эмитим событие чтобы Game.vue узнал об обновлении
+			if (emit) {
+				console.log('📤 Emitting character-loaded after story transition');
+				emit('character-loaded', characterData.value);
+			}
+			
 			// Small delay to ensure smooth transition without dialog flicker
 			await new Promise(resolve => setTimeout(resolve, 10))
 			processStep()
@@ -1224,9 +1295,13 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		showTextInputModal, currentInputStep, uiVisibility,
 		// audio state
 		currentSound, currentVoice, currentMusic, audioStreams,
+		// game state for Rules Engine
+		characterData, globalData, sceneData,
 		// methods
 		loadStory, processStep, advanceStory, selectChoice, getGameState, restoreGameState, resetGameState,
 		getInitialValue, onTextInputConfirm,
+		// goto method for Rules Engine
+		goto: goToLabel,
 		// audio methods
 		playSound, playVoice, playMusic, stopSound, stopVoice, stopMusic,
 		stopStream, stopAllStreams, getStream, pauseAllStreams, resumeAllStreams,
