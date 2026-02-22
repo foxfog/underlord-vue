@@ -99,6 +99,7 @@ export function serializeGameState(gameState, characterDefaults = {}) {
 		characterDataDelta,
 		visibleCharacters: deepClone(gameState.visibleCharacters),
 		currentScene: gameState.currentScene,
+		currentSceneMods: gameState.currentSceneMods || [],
 		history: compactHistory,
 		audioStreams: deepClone(gameState.audioStreams || {})
 	}

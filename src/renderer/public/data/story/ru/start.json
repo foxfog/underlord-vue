@@ -8,8 +8,6 @@
 			"action": "hide"
 		},
 
-		{ "type": "goto", "target": "test" },
-
 		{ "type": "goto", "target": "nameinput" },
 
 		{

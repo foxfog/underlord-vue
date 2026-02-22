@@ -1158,6 +1158,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			characterData: characterData.value,
 			visibleCharacters: extractVisibleCharacterDisplay(visibleCharacters.value),
 			currentScene: currentScene.value?.id,
+			currentSceneMods: currentScene.value?.mods || [],
 			history: historyEntries.value.slice(),
 			audioStreams: activeLoopingStreams
 		}
@@ -1208,7 +1209,13 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					}
 				}
 			}
-			if (saveData.currentScene && sceneData.value[saveData.currentScene]) currentScene.value = sceneData.value[saveData.currentScene]
+			if (saveData.currentScene && sceneData.value[saveData.currentScene]) {
+				currentScene.value = sceneData.value[saveData.currentScene]
+				// Restore scene mods if they were saved
+				if (saveData.currentSceneMods && Array.isArray(saveData.currentSceneMods)) {
+					currentScene.value.mods = saveData.currentSceneMods
+				}
+			}
 			currentDialogue.value = ''
 			currentNarration.value = ''
 			multiStepDialogueBuffer.value = ''
