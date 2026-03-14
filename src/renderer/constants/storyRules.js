@@ -57,6 +57,10 @@ export const toxicGasRule = {
 
   actions: [
     {
+      type: 'closeModal',
+      modal: 'inventory'
+    },
+    {
       type: 'notification',
       text: '⚠️ Недостаток кислорода!',
       notificationType: 'danger',

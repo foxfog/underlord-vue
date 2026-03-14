@@ -313,7 +313,7 @@
 
 	function handleContextMenuDrop({ itemId, source, slot, quantity = 1 }) {
 		if (source === 'equipment') {
-			// Dropping from equipment - unequip first
+			// Dropping from equipment - unequip first (moves to inventory)
 			const itemDef = props.itemsData[itemId]
 			const isStackable = itemDef?.stackable !== false
 			emit('unequip', { slot, itemId, stackable: isStackable })
@@ -436,13 +436,7 @@
 						const target = event.target
 						resetItemPosition(target)
 						
-						// If dragging from equipment slot to somewhere else without hitting a valid dropzone,
-						// don't unequip. The drop handlers will mark dropWasSuccessful = true if valid.
-						// This prevents items from disappearing when dropped outside the inventory.
-						if (draggedFromType.value === 'slot' && dropWasSuccessful.value) {
-							// For unequip to inventory (if drop was in empty space), emit unequip
-							emit('unequip', { slot: draggedFromSlot.value, itemId: draggedItemId.value })
-						}
+						// Drop handlers already emit unequip if needed, so we don't need to do it here
 						
 						// Reset state
 						draggedItemId.value = null

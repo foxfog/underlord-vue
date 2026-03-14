@@ -350,6 +350,10 @@ class GameRulesEngine {
         this.showNotification(action);
         break;
 
+      case 'closeModal':
+        this.closeModal(action);
+        break;
+
       case 'dialogue':
         this.triggerDialogue(action);
         break;
@@ -412,6 +416,20 @@ class GameRulesEngine {
   triggerDialogue(action) {
     if (this.gameState.storyEngine?.showDialogue) {
       this.gameState.storyEngine.showDialogue(action);
+    }
+  }
+
+  /**
+   * Закрывает модальное окно
+   */
+  closeModal(action) {
+    const modalName = action.modal;
+    console.log(`📋 Closing modal: ${modalName}`);
+    
+    if (this.gameState.closeModal) {
+      this.gameState.closeModal(modalName);
+    } else {
+      console.warn(`closeModal callback not available in gameState`);
     }
   }
 

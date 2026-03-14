@@ -151,7 +151,17 @@
 					}
 					showDropModal.value = true
 				} else {
-					// Иначе сразу выбрасываем
+					// Для предметов из экипировки - сначала разэкипируем
+					if (currentItemSource.value === 'equipment') {
+						const itemDef = props.itemsData[currentItem.value]
+						const isStackable = itemDef?.stackable !== false
+						emit('unequip', {
+							slot: currentSlot.value,
+							itemId: currentItem.value,
+							stackable: isStackable
+						})
+					}
+					// Затем выбрасываем
 					emit('drop', {
 						itemId: currentItem.value,
 						source: currentItemSource.value,

@@ -176,7 +176,18 @@
 			activeStory: 'start',
 			storyPlaying: true
 		},
-		storyEngine: null
+		storyEngine: null,
+		closeModal: (modalName) => {
+			// Закрывает модальное окно по имени
+			if (modalName === 'inventory') {
+				showInventoryModal.value = false
+			} else if (modalName === 'stats') {
+				showStatsModal.value = false
+			} else if (modalName === 'map') {
+				showMapModal.value = false
+			}
+			console.log(`✓ Modal closed: ${modalName}`);
+		}
 	})
 
 	const { 
@@ -403,7 +414,6 @@
 	}
 
 	function handleUnequip({ slot, itemId }) {
-		showInventoryModal.value = false
 		if (!mcCharacter.value?.equipment_slots || !mcCharacter.value?.inventory?.items) return
 
 		// Шаг 1: Убедиться, что в слоте именно этот предмет
