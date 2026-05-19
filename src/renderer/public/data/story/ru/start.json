@@ -66,6 +66,10 @@
 		{ "type": "scene", "id": "city_street" , "mods": ["fog"] },
 
 		{
+			"variable": "global.currentMap = 'cybercity'"
+		},
+
+		{
 			"type": "ui",
 			"target": ["all"],
 			"action": "show"

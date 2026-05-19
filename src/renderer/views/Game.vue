@@ -298,8 +298,20 @@
 			console.log('🌍 globalData changed in visualNovel:', newGlobalData);
 			Object.assign(gameState.global, newGlobalData)
 			console.log('✅ Updated gameState.global:', gameState.global);
+			if (newGlobalData.currentMap && settingsStore.currentMap !== newGlobalData.currentMap) {
+				console.log('🔁 Syncing currentMap from story to Pinia:', newGlobalData.currentMap)
+				settingsStore.setCurrentMap(newGlobalData.currentMap)
+			}
 		}
 	}, { deep: true })
+
+	watch(() => settingsStore.currentMap, (newMap) => {
+		if (!visualNovel.value?.globalData) return
+		if (newMap && visualNovel.value.globalData.currentMap !== newMap) {
+			console.log('🔁 Syncing currentMap from Pinia to story globalData:', newMap)
+			visualNovel.value.globalData.currentMap = newMap
+		}
+	})
 
 	// Watch for equipment changes to debug sync issues
 	watch(() => mcCharacter.value?.equipment_slots?.mask, (newMask, oldMask) => {
@@ -563,12 +575,11 @@
 			console.log('🌍 onGlobalDataChanged - updating gameState.global', globalData);
 			Object.assign(gameState.global, globalData);
 			console.log('✅ gameState.global updated:', gameState.global);
+			if (globalData.currentMap && settingsStore.currentMap !== globalData.currentMap) {
+				console.log('🔁 Syncing currentMap from global-data-changed to Pinia:', globalData.currentMap);
+				settingsStore.setCurrentMap(globalData.currentMap);
+			}
 		}
-	}
-
-	// Navigation and view switching for DynamicContentArea / MainMenu
-	const showMainMenu = () => {
-		currentView.value = 'main-menu'
 	}
 
 	const showSettings = () => {

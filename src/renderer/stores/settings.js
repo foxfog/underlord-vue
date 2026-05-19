@@ -38,6 +38,7 @@ export function initSettingsStore(settings) {
 				fullscreen: settings?.video?.fullscreen ?? false,
 				resolution: settings?.video?.resolution ?? '1920x1080',
 			},
+			currentMap: settings?.game?.currentMap ?? 'default',
 		}),
 
 		getters: {
@@ -86,6 +87,10 @@ export function initSettingsStore(settings) {
 
 			setResolution(res) {
 				this.video.resolution = res
+			},
+
+			setCurrentMap(mapName) {
+				this.currentMap = mapName || 'default'
 			},
 
 			// Test audio control actions

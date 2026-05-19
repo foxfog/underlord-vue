@@ -4,6 +4,7 @@ import { app, shell, BrowserWindow, ipcMain, protocol } from 'electron'
 import { join } from 'path'
 import fs from 'fs/promises'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer'
 
 // Import icon path
 const icon = is.dev 
@@ -268,6 +269,17 @@ async function getInitialSettings() {
 	return JSON.parse(text)
 }
 
+async function installDevTools() {
+	if (is.dev) {
+		try {
+			await installExtension(VUEJS_DEVTOOLS)
+			console.log('✔ Vue DevTools успешно установлены')
+		} catch (err) {
+			console.error('⛔ Ошибка при установке Vue DevTools:', err)
+		}
+	}
+}
+
 async function createWindow() {
 	const settings = await getInitialSettings()
 	let width = 900, height = 670
@@ -289,7 +301,8 @@ async function createWindow() {
 		icon: icon, // Use icon on all platforms
 		webPreferences: {
 			preload: join(__dirname, '../preload/index.js'),
-			sandbox: false
+			sandbox: false,
+			devTools: true
 		}
 	})
 
@@ -334,6 +347,7 @@ async function createWindow() {
 app.whenReady().then(async () => {
 	electronApp.setAppUserModelId('com.electron')
 	await ensureSettingsFile()
+	await installDevTools()
 	
 	// Register protocol to serve static files
 	if (!is.dev) {
