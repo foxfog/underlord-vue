@@ -93,13 +93,14 @@ export function serializeGameState(gameState, characterDefaults = {}) {
 
 	const serialized = {
 		storyId: gameState.storyData?.id || 'start',
+		storyPath: gameState.storyPath || gameState.storyData?.id || 'start',
 		stepIndex: gameState.stepIndex,
 		callStack: deepClone(gameState.callStack),
 		globalData: deepClone(gameState.globalData),
 		characterDataDelta,
 		visibleCharacters: deepClone(gameState.visibleCharacters),
 		currentScene: gameState.currentScene,
-		currentSceneMods: gameState.currentSceneMods || [],
+		currentSceneMods: deepClone(gameState.currentSceneMods || []),
 		history: compactHistory,
 		audioStreams: deepClone(gameState.audioStreams || {})
 	}

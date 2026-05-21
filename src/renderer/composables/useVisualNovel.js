@@ -47,6 +47,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	let advanceStoryOverride = null
 	const callStack = ref([])
 	let currentStoryPath = 'start' // tracks the file path used to load the current story
+	let restoreSessionId = 0
 
 	const showTextInputModal = ref(false)
 	const currentInputStep = ref(null)
@@ -90,6 +91,21 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			console.error(`   Error: ${jsonError.message}`)
 			throw new Error(`Data file not found as JSON: ${jsonPath}`)
 		}
+	}
+
+	function getStoryPathCandidates(requestedStoryPath) {
+		const normalized = String(requestedStoryPath || 'start').replace(/^\/*/, '')
+		const candidates = [normalized]
+
+		if (!normalized.includes('/')) {
+			candidates.push(`macros/${normalized}`)
+		} else {
+			const baseName = normalized.split('/').pop()
+			if (baseName && baseName !== normalized) candidates.push(baseName)
+			if (baseName && !normalized.startsWith('macros/')) candidates.push(`macros/${baseName}`)
+		}
+
+		return Array.from(new Set(candidates))
 	}
 
 	async function loadStory() {
@@ -1045,6 +1061,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	}
 
 	async function loadTargetStory(storyName) {
+		const storyLoadSession = restoreSessionId
 		try {
 			// Сохраняем состояние персонажа И глобальные данные перед загрузкой новой истории
 			const savedCharacterState = characterData.value?.mc ? { ...characterData.value.mc } : null;
@@ -1054,10 +1071,30 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 				globalData: savedGlobalData
 			});
 			
-			// Support both simple names (story) and paths (macros/cough)
-			const storyPath = storyName.includes('/') ? storyName : storyName
-			const module = await loadDataFromPublic(`/data/story/ru/${storyPath}.json`)
-			currentStoryPath = storyPath // Track the full path for correct call stack return
+			const storyCandidates = getStoryPathCandidates(storyName)
+			let module = null
+			let loadError = null
+			for (const candidate of storyCandidates) {
+				if (storyLoadSession !== restoreSessionId) {
+					console.log(`✋ Aborting stale loadTargetStory before candidate load: ${candidate}`)
+					return
+				}
+				try {
+					module = await loadDataFromPublic(`/data/story/ru/${candidate}.json`)
+					if (storyLoadSession !== restoreSessionId) {
+						console.log(`✋ Aborting stale loadTargetStory after candidate load: ${candidate}`)
+						return
+					}
+					currentStoryPath = candidate
+					break
+				} catch (err) {
+					loadError = err
+					console.warn(`Failed to load story candidate: ${candidate}`, err)
+				}
+			}
+			if (!module) {
+				throw loadError || new Error(`Unable to load story: ${storyName}`)
+			}
 			storyData.value = module
 			stepIndex.value = 0
 			
@@ -1081,11 +1118,16 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			
 			// Small delay to ensure smooth transition without dialog flicker
 			await new Promise(resolve => setTimeout(resolve, 10))
+			if (storyLoadSession !== restoreSessionId) {
+				console.log('✋ Aborting stale loadTargetStory before processStep')
+				return
+			}
 			processStep()
 		} catch (error) { console.error('Error loading target story:', error); emit && emit('end') }
 	}
 
 	async function loadReturnStory(storyName, returnStepIndex) {
+		const storyLoadSession = restoreSessionId
 		try {
 			// Сохраняем состояние персонажа И глобальные данные перед загрузкой новой истории
 			const savedCharacterState = characterData.value?.mc ? { ...characterData.value.mc } : null;
@@ -1095,10 +1137,30 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 				globalData: savedGlobalData
 			});
 			
-			// Support both simple names (story) and paths (macros/cough)
-			const storyPath = storyName.includes('/') ? storyName : storyName
-			const module = await loadDataFromPublic(`/data/story/ru/${storyPath}.json`)
-			currentStoryPath = storyPath // Track the full path for correct call stack return
+			const storyCandidates = getStoryPathCandidates(storyName)
+			let module = null
+			let loadError = null
+			for (const candidate of storyCandidates) {
+				if (storyLoadSession !== restoreSessionId) {
+					console.log(`✋ Aborting stale loadReturnStory before candidate load: ${candidate}`)
+					return
+				}
+				try {
+					module = await loadDataFromPublic(`/data/story/ru/${candidate}.json`)
+					if (storyLoadSession !== restoreSessionId) {
+						console.log(`✋ Aborting stale loadReturnStory after candidate load: ${candidate}`)
+						return
+					}
+					currentStoryPath = candidate
+					break
+				} catch (err) {
+					loadError = err
+					console.warn(`Failed to load return story candidate: ${candidate}`, err)
+				}
+			}
+			if (!module) {
+				throw loadError || new Error(`Unable to load return story: ${storyName}`)
+			}
 			storyData.value = module
 			stepIndex.value = returnStepIndex
 			
@@ -1122,6 +1184,10 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			
 			// Small delay to ensure smooth transition without dialog flicker
 			await new Promise(resolve => setTimeout(resolve, 10))
+			if (storyLoadSession !== restoreSessionId) {
+				console.log('✋ Aborting stale loadReturnStory before processStep')
+				return
+			}
 			processStep()
 		} catch (error) { console.error('Error loading return story:', error); emit && emit('end') }
 	}
@@ -1152,6 +1218,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		
 		return {
 			storyData: storyData.value,
+			storyPath: currentStoryPath,
 			stepIndex: stepIndex.value,
 			callStack: callStack.value,
 			globalData: globalData.value,
@@ -1167,6 +1234,19 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	async function restoreGameState(saveData) {
 		try {
 			if (!isLoaded.value) { if (loadingPromise) await loadingPromise; else await loadStory() }
+			const restoreSession = ++restoreSessionId
+			// Clear any active UI state from the previous story run before restoring
+			if (titleTimeout) {
+				clearTimeout(titleTimeout)
+				titleTimeout = null
+			}
+			showTextInputModal.value = false
+			currentInputStep.value = null
+			currentDialogue.value = ''
+			currentNarration.value = ''
+			currentSpeaker.value = ''
+			currentChoices.value = []
+			advanceStoryOverride = null
 			isRestoringGameState.value = true
 			globalData.value = saveData.globalData
 			if (saveData.characterDataDelta) {
@@ -1226,8 +1306,24 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			currentChoices.value = []
 			callStack.value = saveData.callStack || []
 
-			const storyId = saveData.storyId || 'start'
-			const loadedStory = await loadDataFromPublic(`/data/story/ru/${storyId}.json`)
+			const requestedStoryPath = saveData.storyPath || saveData.storyId || 'start'
+			const storyCandidates = getStoryPathCandidates(requestedStoryPath)
+			let loadedStory = null
+			let loadError = null
+			for (const candidate of storyCandidates) {
+				try {
+					loadedStory = await loadDataFromPublic(`/data/story/ru/${candidate}.json`)
+					currentStoryPath = candidate
+					console.log(`✔ Loaded story from save using candidate: ${candidate}`)
+					break
+				} catch (err) {
+					loadError = err
+					console.warn(`Failed to load story candidate from save: ${candidate}`, err)
+				}
+			}
+			if (!loadedStory) {
+				throw loadError || new Error(`Unable to load story from save: ${requestedStoryPath}`)
+			}
 			storyData.value = loadedStory
 			stepIndex.value = saveData.stepIndex || 0
 

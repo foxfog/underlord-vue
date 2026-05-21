@@ -7,10 +7,6 @@
 			</div>
 
 			<div class="map-modal__body">
-				<div class="map-modal__hint">
-					Это схематичная версия карты. Здесь позже появится интерактив.
-				</div>
-
 				<div class="map-modal__dynamic-map">
 					<component :is="mapComponent" />
 				</div>

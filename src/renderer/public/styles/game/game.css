@@ -5,6 +5,7 @@
 @import './title-effects.css';
 @import './star-wars-titles.css';
 @import './saves.css';
+@import './maps.css';
 
 .game-area {
 	display: flex;
