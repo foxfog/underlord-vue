@@ -127,10 +127,29 @@ async function getSavesDirectory() {
 	return savesDir
 }
 
-ipcMain.handle('save-game', async (_event, slotNumber, saveFile) => {
+ipcMain.handle('save-game', async (event, slotNumber, saveFile, clipRect) => {
 	try {
 		const savesDir = await getSavesDirectory()
-		const { mcName, timestamp } = saveFile
+		const { mcName } = saveFile
+		
+		// Capture window screenshot for save slot thumbnail
+		const win = BrowserWindow.fromWebContents(event.sender)
+		if (win) {
+			try {
+				let image
+				if (clipRect && clipRect.width > 0 && clipRect.height > 0) {
+					image = await win.webContents.capturePage(clipRect)
+				} else {
+					image = await win.webContents.capturePage()
+				}
+				const thumbnail = image.resize({ width: 320 })
+				saveFile.screenshot = thumbnail.toDataURL('image/jpeg', 80)
+				console.log(`✔ Скриншот для сейва в слоте ${slotNumber} успешно создан`)
+			} catch (e) {
+				console.warn(`Не удалось создать скриншот для сейва ${slotNumber}:`, e)
+			}
+		}
+
 		// Remove any existing files for this slot to avoid duplicates
 		try {
 			const existing = await fs.readdir(savesDir, { withFileTypes: true })

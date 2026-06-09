@@ -73,6 +73,13 @@
 	backdrop-filter: blur(0.5em);
 }
 
+body.screenshot-mode .menu-overlay,
+body.screenshot-mode .confirm-overlay,
+body.screenshot-mode .modal-overlay,
+body.screenshot-mode .history-modal {
+	display: none !important;
+}
+
 .overlay-content {
 	display: flex;
 	width: 100%;

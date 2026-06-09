@@ -38,9 +38,17 @@
 				@click="onSlotClick(slot)"
 			>
 				<div class="thumb">
-					<span v-if="hasSaveInSlot(slot)" class="timestamp">
-						{{ saveMetadata(slot)?.timestampFormatted }}
-					</span>
+					<template v-if="hasSaveInSlot(slot)">
+						<img 
+							v-if="saveMetadata(slot)?.screenshot" 
+							:src="saveMetadata(slot)?.screenshot" 
+							class="screenshot-img" 
+							alt="Save screenshot"
+						/>
+						<span class="timestamp-overlay">
+							{{ saveMetadata(slot)?.timestampFormatted }}
+						</span>
+					</template>
 					<span v-else class="empty">{{ $t('empty') || 'Empty' }}</span>
 				</div>
 				<div class="seves-slot-info">
@@ -53,7 +61,7 @@
 						</span>
 					</div>
 					<div class="seves-slot-meta" v-if="hasSaveInSlot(slot)">
-						<div>{{ saveMetadata(slot)?.mcName }}</div>
+						<span class="mc-name-text">{{ saveMetadata(slot)?.mcName }}</span>
 						<button class="delete-btn" @click.stop="onDeleteClick(slot)" title="Delete save">
 							🗑️
 						</button>

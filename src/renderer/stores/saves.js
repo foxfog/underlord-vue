@@ -26,15 +26,15 @@ export const useSavesStore = defineStore('saves', () => {
 	}
 
 	// Save game state to slot — delegated to saveService
-	const saveGame = async (slotNumber, gameState, mcName) => {
+	const saveGame = async (slotNumber, gameState, mcName, clipRect) => {
 		try {
 			console.log('💾 saves.saveGame - gameState.audioStreams:', Object.keys(gameState.audioStreams || {}))
 			const saveFile = createSaveFile(slotNumber, gameState, mcName, characterDefaults.value)
 			console.log('💾 saves.saveGame - saveFile.gameState.audioStreams:', Object.keys(saveFile.gameState.audioStreams || {}))
-			const result = await saveService.saveGame(slotNumber, saveFile)
+			const result = await saveService.saveGame(slotNumber, saveFile, clipRect)
 
 			if (result.success) {
-				saves.value.set(slotNumber, saveFile)
+				saves.value.set(slotNumber, result.data)
 				currentSlotNumber.value = slotNumber
 				console.log('✔ Save added to store, slot:', slotNumber)
 				return { success: true, data: saveFile }
@@ -145,7 +145,7 @@ export const useSavesStore = defineStore('saves', () => {
 
 	// Быстрое сохранение: использует только слоты 0-8.
 	// Сначала заполняет все свободные слоты, затем перезаписывает самый старый.
-	const saveQuick = async (gameState, mcName) => {
+	const saveQuick = async (gameState, mcName, clipRect) => {
 		try {
 			// Обновляем список сохранений перед операцией
 			await listSaves()
@@ -178,7 +178,7 @@ export const useSavesStore = defineStore('saves', () => {
 				return { success: false, error: 'NO_AVAILABLE_QUICK_SLOT' }
 			}
 
-			return await saveGame(targetSlot, gameState, mcName)
+			return await saveGame(targetSlot, gameState, mcName, clipRect)
 		} catch (error) {
 			console.error('Failed to perform quick save:', error)
 			return { success: false, error: error.message }

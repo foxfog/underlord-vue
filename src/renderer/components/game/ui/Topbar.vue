@@ -3,10 +3,10 @@
 		<button class="topbar-btn" @click="openStats" title="Статистика персонажа">
 			📊 Статы
 		</button>
-		<button class="topbar-btn" @click="openInventory" title="Открыть инвентарь">
+		<button v-if="showInventoryButton" class="topbar-btn" @click="openInventory" title="Открыть инвентарь">
 			🎒 Инвентарь
 		</button>
-		<button class="topbar-btn" @click="openMap" title="Открыть карту мира">
+		<button v-if="showMapButton" class="topbar-btn" @click="openMap" title="Открыть карту мира">
 			🗺 Карта
 		</button>
 	</div>
@@ -17,6 +17,14 @@
 		character: {
 			type: Object,
 			default: null
+		},
+		showMapButton: {
+			type: Boolean,
+			default: true
+		},
+		showInventoryButton: {
+			type: Boolean,
+			default: true
 		}
 	})
 

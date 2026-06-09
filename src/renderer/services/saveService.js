@@ -122,7 +122,7 @@ export function createSaveFile(slotNumber, gameState, mcName, characterDefaults 
 
 // IPC wrappers and helpers. Keep these tiny so they are easy to mock in tests.
 export const saveService = {
-	async saveGame(slotNumber, saveFile) {
+	async saveGame(slotNumber, saveFile, clipRect) {
 		// Ensure serializable
 		const nonSerial = findNonSerializable(saveFile)
 		if (nonSerial) {
@@ -131,7 +131,7 @@ export const saveService = {
 
 		try {
 			console.log('💾 saveService.saveGame - audioStreams in saveFile:', Object.keys(saveFile.gameState.audioStreams || {}))
-			const result = await window.api.saveGame(slotNumber, saveFile)
+			const result = await window.api.saveGame(slotNumber, saveFile, clipRect)
 			return result
 		} catch (err) {
 			console.error('saveService.saveGame IPC failed:', err)

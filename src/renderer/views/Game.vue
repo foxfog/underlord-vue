@@ -4,6 +4,8 @@
 		<Topbar
 			v-if="showTopbar"
 			:character="mcCharacter"
+			:show-map-button="showMapButton"
+			:show-inventory-button="showInventoryButton"
 			@open-stats="toggleStatsModal"
 			@open-inventory="toggleInventoryModal"
 			@open-map="toggleMapModal"
@@ -225,21 +227,75 @@
 
 	// UI visibility states
 	const uiVisibility = ref({
-		all: true,
-		'stats-button': true,
-		topbar: true,
-		hotbar: true,
-		dialogue: true
+		all: false,
+		'stats-button': false,
+		'inventory-button': false,
+		'map-button': false,
+		topbar: false,
+		hotbar: false,
+		dialogue: false
 	})
 
 	// Computed properties for UI visibility
 	const showTopbar = computed(() => {
-		return uiVisibility.value.all && uiVisibility.value.topbar
+		if (uiVisibility.value.all) return true
+		if (!uiVisibility.value.topbar) {
+			return !!(
+				uiVisibility.value['stats-button'] ||
+				uiVisibility.value['inventory-button'] ||
+				uiVisibility.value['map-button']
+			)
+		}
+		return !!(
+			uiVisibility.value['stats-button'] ||
+			uiVisibility.value['inventory-button'] ||
+			uiVisibility.value['map-button']
+		)
 	})
 
 	const showHotbar = computed(() => {
 		return uiVisibility.value.all && uiVisibility.value.hotbar
 	})
+
+	const showMapButton = computed(() => {
+		return uiVisibility.value['map-button'] !== false
+	})
+
+	const showInventoryButton = computed(() => {
+		return uiVisibility.value['inventory-button'] !== false
+	})
+
+	const screenshotMode = ref(false)
+
+	watch(screenshotMode, (isScreenshotMode) => {
+		if (typeof document !== 'undefined' && document.body) {
+			document.body.classList.toggle('screenshot-mode', isScreenshotMode)
+		}
+	})
+
+	function getGameAreaClipRect() {
+		const gameArea = document.querySelector('.game')
+		if (!gameArea) return null
+		const rect = gameArea.getBoundingClientRect()
+		const dpr = window.devicePixelRatio || 1
+		return {
+			x: Math.round(rect.left * dpr),
+			y: Math.round(rect.top * dpr),
+			width: Math.max(0, Math.round(rect.width * dpr)),
+			height: Math.max(0, Math.round(rect.height * dpr))
+		}
+	}
+
+	async function saveWithHiddenOverlays(saveAction) {
+		screenshotMode.value = true
+		await nextTick()
+		await new Promise((resolve) => requestAnimationFrame(resolve))
+		try {
+			return await saveAction()
+		} finally {
+			screenshotMode.value = false
+		}
+	}
 
 	// Watch for uiVisibility changes from VisualNovel
 	watch(() => visualNovel.value?.uiVisibility, (newVisibility) => {
@@ -716,7 +772,10 @@
 					`Слот ${saveData.slot + 1} уже содержит сохранение. Перезаписать?`,
 					async () => {
 						console.log('Saving game to slot', saveData.slot)
-						const result = await savesStore.saveGame(saveData.slot, gameState, mcName)
+						const result = await saveWithHiddenOverlays(async () => {
+							const clipRect = getGameAreaClipRect()
+							return await savesStore.saveGame(saveData.slot, gameState, mcName, clipRect)
+						})
 						if (result.success) {
 							console.log('✔ Game saved to slot', saveData.slot)
 							await savesStore.listSaves()
@@ -731,7 +790,10 @@
 			}
 
 			console.log('Saving game to slot', saveData.slot)
-			const result = await savesStore.saveGame(saveData.slot, gameState, mcName)
+			const result = await saveWithHiddenOverlays(async () => {
+				const clipRect = getGameAreaClipRect()
+				return await savesStore.saveGame(saveData.slot, gameState, mcName, clipRect)
+			})
 
 			if (result.success) {
 				console.log('✔ Game saved to slot', saveData.slot)
@@ -757,7 +819,10 @@
 			const gameState = visualNovel.value.getGameState()
 			const mcName = gameState.characterData?.mc?.name || 'Unknown'
 
-			const result = await savesStore.saveQuick(gameState, mcName)
+			const result = await saveWithHiddenOverlays(async () => {
+				const clipRect = getGameAreaClipRect()
+				return await savesStore.saveQuick(gameState, mcName, clipRect)
+			})
 			if (result.success) {
 				console.log('✔ Quick save created')
 			} else {
@@ -915,20 +980,20 @@
 						await new Promise((r) => setTimeout(r, interval))
 						waited += interval
 					}
-					const pending = savesStore.getPendingLoad() ? savesStore.takePendingLoad() : null
+					const pending = savesStore.getPendingLoad()
 					if (!pending) return
 					if (!visualNovel.value) {
 						console.warn('VisualNovel not ready to restore save after waiting')
-						// put it back so user can try again (restore failed)
-						savesStore.pendingLoad = pending
 						return
 					}
 					await visualNovel.value.restoreGameState(pending.gameState)
+					savesStore.takePendingLoad()
 					menuVisible.value = false
 					currentView.value = 'main-menu'
 				} catch (err) {
 					console.error('Failed to restore pending save:', err)
 					alert(`Failed to restore save: ${err.message}`)
+					savesStore.takePendingLoad()
 				}
 			})
 		}

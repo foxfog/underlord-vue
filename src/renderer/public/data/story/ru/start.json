@@ -71,8 +71,13 @@
 
 		{
 			"type": "ui",
-			"target": ["all"],
+			"target": ["stats-button", "inventory-button"],
 			"action": "show"
+		},
+		{
+			"type": "ui",
+			"target": ["map-button"],
+			"action": "hide"
 		},
 
 		{
@@ -187,6 +192,11 @@
 					"text": "<p>... если я конечно не откинусь раньше с такой работой.</p>"
 				}
 			]
+		},
+		{
+			"type": "ui",
+			"target": ["map-button"],
+			"action": "show"
 		},
 
 		{ 

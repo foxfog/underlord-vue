@@ -54,11 +54,13 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 
 	// UI visibility state
 	const uiVisibility = ref({
-		all: true,
-		'stats-button': true,
-		topbar: true,
-		hotbar: true,
-		dialogue: true
+		all: false,
+		'stats-button': false,
+		'inventory-button': false,
+		'map-button': false,
+		topbar: false,
+		hotbar: false,
+		dialogue: false
 	})
 
 	const isRestoringGameState = ref(false)
@@ -517,11 +519,20 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	function handleUIStep(step) {
 		const action = step.action // 'show' or 'hide'
 		const targets = step.target || [] // Array of target IDs
+		const show = action === 'show'
+		const knownTargets = ['topbar', 'hotbar', 'dialogue', 'stats-button', 'inventory-button', 'map-button']
+
+		function setAllUi(value) {
+			uiVisibility.value['all'] = value
+			knownTargets.forEach((target) => {
+				uiVisibility.value[target] = value
+			})
+		}
 
 		// If target is not specified or empty, apply to all UI
 		if (!targets || targets.length === 0) {
 			console.log(`UI ${action}: all elements`)
-			uiVisibility.value['all'] = action === 'show'
+			setAllUi(show)
 			return
 		}
 
@@ -529,14 +540,20 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		targets.forEach(target => {
 			console.log(`UI ${action}: ${target}`)
 			if (target === 'all') {
-				uiVisibility.value['all'] = action === 'show'
+				setAllUi(show)
 			} else {
-				// Skip topbar - it should always be visible during gameplay
-				if (target === 'topbar') {
-					console.log(`UI ${action}: ${target} - skipped (topbar always visible)`)
+				if (!knownTargets.includes(target)) {
+					console.warn(`UI target not recognized: ${target}`)
 					return
 				}
-				uiVisibility.value[target] = action === 'show'
+				if (target === 'topbar' && !show) {
+					uiVisibility.value.topbar = false
+					return
+				}
+				uiVisibility.value[target] = show
+				if (show && ['stats-button', 'inventory-button', 'map-button', 'hotbar'].includes(target)) {
+					uiVisibility.value.topbar = true
+				}
 			}
 		})
 	}
@@ -1227,7 +1244,8 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			currentScene: currentScene.value?.id,
 			currentSceneMods: currentScene.value?.mods || [],
 			history: historyEntries.value.slice(),
-			audioStreams: activeLoopingStreams
+			audioStreams: activeLoopingStreams,
+			uiVisibility: { ...uiVisibility.value }
 		}
 	}
 
@@ -1295,6 +1313,12 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 				if (saveData.currentSceneMods && Array.isArray(saveData.currentSceneMods)) {
 					currentScene.value.mods = saveData.currentSceneMods
 				}
+			}
+			if (saveData.uiVisibility && typeof saveData.uiVisibility === 'object') {
+				uiVisibility.value = { ...uiVisibility.value, ...saveData.uiVisibility }
+			}
+			if (saveData.uiVisibility && typeof saveData.uiVisibility === 'object') {
+				uiVisibility.value = { ...uiVisibility.value, ...saveData.uiVisibility }
 			}
 			currentDialogue.value = ''
 			currentNarration.value = ''
