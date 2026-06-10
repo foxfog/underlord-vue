@@ -1314,11 +1314,11 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					currentScene.value.mods = saveData.currentSceneMods
 				}
 			}
+			// Restore UI visibility if present in save; otherwise enable core UI by default
 			if (saveData.uiVisibility && typeof saveData.uiVisibility === 'object') {
 				uiVisibility.value = { ...uiVisibility.value, ...saveData.uiVisibility }
-			}
-			if (saveData.uiVisibility && typeof saveData.uiVisibility === 'object') {
-				uiVisibility.value = { ...uiVisibility.value, ...saveData.uiVisibility }
+			} else {
+				uiVisibility.value = { ...uiVisibility.value, topbar: true, hotbar: true, dialogue: true }
 			}
 			currentDialogue.value = ''
 			currentNarration.value = ''

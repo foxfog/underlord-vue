@@ -78,17 +78,11 @@ export function serializeGameState(gameState, characterDefaults = {}) {
 		characterDefaults
 	)
 
-	// Compact history to reduce save size: remove empty speaker and stepIndex, clean Vue attributes
-	const rawHistory = deepClone(gameState.history || [])
-	const compactHistory = rawHistory.map(entry => {
-		const e = { ...entry }
-		// Clean HTML from Vue attributes
-		if (e.text && typeof e.text === 'string') {
-			e.text = cleanHTMLFromVueAttributes(e.text)
+	const serializedUiVisibility = {}
+	Object.entries(gameState.uiVisibility || {}).forEach(([key, value]) => {
+		if (value === true) {
+			serializedUiVisibility[key] = true
 		}
-		if (e.speaker === '') delete e.speaker
-		if (e.stepIndex !== undefined) delete e.stepIndex
-		return e
 	})
 
 	const serialized = {
@@ -101,8 +95,11 @@ export function serializeGameState(gameState, characterDefaults = {}) {
 		visibleCharacters: deepClone(gameState.visibleCharacters),
 		currentScene: gameState.currentScene,
 		currentSceneMods: deepClone(gameState.currentSceneMods || []),
-		history: compactHistory,
 		audioStreams: deepClone(gameState.audioStreams || {})
+	}
+
+	if (gameState.uiVisibility) {
+		serialized.uiVisibility = serializedUiVisibility
 	}
 	console.log('💾 serializeGameState - audioStreams:', Object.keys(serialized.audioStreams))
 	return serialized
