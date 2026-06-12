@@ -351,6 +351,10 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					stepIndex.value++
 					processStep()
 					break
+				case 'hold':
+					// Keep the current scene/dialogue visible and do not advance further.
+					// Use this at the end of a story to prevent the engine from emitting `end`.
+					return
 				case 'goto':
 					if (step.delay) {
 						setTimeout(() => goToLabel(step.target), step.delay * 1000)
@@ -1267,6 +1271,11 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			advanceStoryOverride = null
 			isRestoringGameState.value = true
 			globalData.value = saveData.globalData
+			// Notify outside listeners (Game.vue) about restored global data
+			if (emit) {
+				console.log('📤 Emitting global-data-changed after restoreGameState', globalData.value)
+				emit('global-data-changed', globalData.value)
+			}
 			if (saveData.characterDataDelta) {
 				Object.keys(saveData.characterDataDelta).forEach(characterId => {
 					if (characterData.value[characterId]) Object.assign(characterData.value[characterId], saveData.characterDataDelta[characterId])

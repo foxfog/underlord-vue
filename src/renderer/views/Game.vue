@@ -254,7 +254,7 @@
 	})
 
 	const showHotbar = computed(() => {
-		return uiVisibility.value.all && uiVisibility.value.hotbar
+		return uiVisibility.value.all || uiVisibility.value.hotbar
 	})
 
 	const showMapButton = computed(() => {
@@ -664,6 +664,10 @@
 		} else if (view === 'home-screen') {
 			router.push('/home')
 		}
+	}
+
+	function showMainMenu() {
+		openMainMenu()
 	}
 
 	function onSavesTabChange(tab) {

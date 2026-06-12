@@ -71,13 +71,8 @@
 
 		{
 			"type": "ui",
-			"target": ["stats-button", "inventory-button"],
+			"target": ["stats-button", "inventory-button", "hotbar"],
 			"action": "show"
-		},
-		{
-			"type": "ui",
-			"target": ["map-button"],
-			"action": "hide"
 		},
 
 		{
@@ -198,17 +193,8 @@
 			"target": ["map-button"],
 			"action": "show"
 		},
-
-		{ 
-			"type": "hide",
-			"character": "mc",
-			"to": {"l": 120, "r": "auto"},
-			"duration": 1
-		},
-
-		{ 
-			"type": "end",
-			"delay": 1
+		{
+			"type": "hold"
 		}
 	]
 }
