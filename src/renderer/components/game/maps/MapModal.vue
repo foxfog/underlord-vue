@@ -36,7 +36,12 @@
 				:class="{ '_dragging': isDragging, '_zoomable': isZoomed }"
 			>
 				<div class="map-modal__dynamic-map" :style="transformStyle">
-					<component :is="mapComponent" />
+				<component
+					:is="mapComponent"
+					:current-location="props.globalData.currentLocation || 'factory'"
+					:global-data="props.globalData"
+					@goto="onChildGoto"
+				/>
 				</div>
 			</div>
 		</div>
@@ -52,10 +57,14 @@ const props = defineProps({
 	isVisible: {
 		type: Boolean,
 		default: false
+	},
+	globalData: {
+		type: Object,
+		default: () => ({})
 	}
 })
 
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'goto'])
 const settingsStore = useSettingsStore()
 
 const {
@@ -85,6 +94,10 @@ function close() {
 
 function onBackgroundClick() {
 	close()
+}
+
+function onChildGoto(target) {
+    emit('goto', target)
 }
 </script>
 

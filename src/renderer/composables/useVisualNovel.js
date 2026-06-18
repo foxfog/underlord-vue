@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { useSavesStore } from '../stores/saves'
+import { useSettingsStore } from '../stores/settings'
 import { SOUND_ALIASES } from '../constants/sounds'
 import { extractVisibleCharacterDisplay, applyVisibleCharacterDisplay } from '../utils/saveGameUtils'
 
@@ -48,10 +49,15 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	const callStack = ref([])
 	let currentStoryPath = 'start' // tracks the file path used to load the current story
 	let restoreSessionId = 0
-
 	const showTextInputModal = ref(false)
 	const currentInputStep = ref(null)
-
+ 
+ 	const settingsStore = useSettingsStore()
+ 
+ 	function buildStoryFilePath(candidate) {
+ 		const language = settingsStore.general.language || 'ru'
+ 		return `/data/story/${language}/${candidate}.json`
+ 	}
 	// UI visibility state
 	const uiVisibility = ref({
 		all: false,
@@ -116,8 +122,8 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			try {
 				const storyModule = await loadDataFromPublic(src)
 				storyData.value = storyModule
-				// Extract path relative to /data/story/ru/ for call stack tracking
-				const srcMatch = src.match(/\/data\/story\/ru\/(.+)\.json/)
+// Extract path relative to /data/story/<lang>/ for call stack tracking
+					const srcMatch = src.match(/\/data\/story\/[^/]+\/(.+)\.json/)
 				if (srcMatch) currentStoryPath = srcMatch[1]
 
 				// Load characters (try split format, fallback to legacy file)
@@ -387,14 +393,17 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	}
 
 	function changeScene(sceneIdOrStep) {
-		if (typeof sceneIdOrStep === 'object') {
-			const scene = sceneData.value[sceneIdOrStep.id]
-			if (scene) {
-				currentScene.value = { ...scene, mods: sceneIdOrStep.mods || [] }
-			}
-		} else {
-			currentScene.value = sceneData.value[sceneIdOrStep]
+		const scene = typeof sceneIdOrStep === 'object'
+			? sceneData.value[sceneIdOrStep.id]
+			: sceneData.value[sceneIdOrStep]
+		if (!scene) {
+			console.warn('Scene not found:', sceneIdOrStep)
+			return
 		}
+		const mods = typeof sceneIdOrStep === 'object'
+			? sceneIdOrStep.mods || []
+			: scene.mods || []
+		currentScene.value = { ...scene, mods }
 	}
 	function showCharacter(step) {
 		const characterId = typeof step === 'string' ? step : step.character
@@ -1101,7 +1110,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					return
 				}
 				try {
-					module = await loadDataFromPublic(`/data/story/ru/${candidate}.json`)
+					module = await loadDataFromPublic(buildStoryFilePath(candidate))
 					if (storyLoadSession !== restoreSessionId) {
 						console.log(`✋ Aborting stale loadTargetStory after candidate load: ${candidate}`)
 						return
@@ -1143,6 +1152,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 				console.log('✋ Aborting stale loadTargetStory before processStep')
 				return
 			}
+			isRestoringGameState.value = false
 			processStep()
 		} catch (error) { console.error('Error loading target story:', error); emit && emit('end') }
 	}
@@ -1167,7 +1177,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					return
 				}
 				try {
-					module = await loadDataFromPublic(`/data/story/ru/${candidate}.json`)
+					module = await loadDataFromPublic(buildStoryFilePath(candidate))
 					if (storyLoadSession !== restoreSessionId) {
 						console.log(`✋ Aborting stale loadReturnStory after candidate load: ${candidate}`)
 						return
@@ -1209,6 +1219,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 				console.log('✋ Aborting stale loadReturnStory before processStep')
 				return
 			}
+			isRestoringGameState.value = false
 			processStep()
 		} catch (error) { console.error('Error loading return story:', error); emit && emit('end') }
 	}
@@ -1345,7 +1356,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			let loadError = null
 			for (const candidate of storyCandidates) {
 				try {
-					loadedStory = await loadDataFromPublic(`/data/story/ru/${candidate}.json`)
+					loadedStory = await loadDataFromPublic(buildStoryFilePath(candidate))
 					currentStoryPath = candidate
 					console.log(`✔ Loaded story from save using candidate: ${candidate}`)
 					break
@@ -1404,6 +1415,8 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 				})
 			}
 
+			isRestoringGameState.value = false
+			isRestoringGameState.value = false
 			processStep()
 		} catch (error) { console.error('Error restoring game state:', error); isRestoringGameState.value = false; throw error }
 	}

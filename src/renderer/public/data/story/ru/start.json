@@ -70,6 +70,14 @@
 		},
 
 		{
+			"variable": "global.currentLocation = 'factory'"
+		},
+
+		{
+			"variable": "global.nowevent = 'mcoutfactory'"
+		},
+
+		{
 			"type": "ui",
 			"target": ["stats-button", "inventory-button", "hotbar"],
 			"action": "show"

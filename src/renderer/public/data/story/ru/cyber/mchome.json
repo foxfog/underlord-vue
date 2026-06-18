@@ -1,0 +1,27 @@
+{
+	"id": "cyber/mchome",
+	"steps": [
+		{
+			"type": "scene",
+			"id": "mc_apartment"
+		},
+		{
+			"type": "ui",
+			"target": ["all"],
+			"action": "hide"
+		},
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "Наконец дома. Можно снять маску и попробовать отдохнуть."
+		},
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "Завтра снова на завод. А пока..."
+		},
+		{
+			"type": "hold"
+		}
+	]
+}

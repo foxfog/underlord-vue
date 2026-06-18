@@ -43,7 +43,9 @@
 		<!-- Map Modal -->
 		<MapModal
 			:is-visible="showMapModal"
+			:global-data="gameState.global"
 			@close="toggleMapModal"
+			@goto="handleMapGoto"
 		/>
 
 		<!-- Menu overlay that can be toggled with Esc -->
@@ -201,7 +203,8 @@
 	} = useGameRules(gameState)
 
 	const novelsrc = computed(() => {
-		return '/data/story/ru/start.json'
+		const language = settingsStore.general.language || 'ru'
+		return `/data/story/${language}/start.json`
 	})
 
 	function showConfirm(title, message, action) {
@@ -402,6 +405,13 @@
 
 	function toggleMapModal() {
 		showMapModal.value = !showMapModal.value
+	}
+
+	function handleMapGoto(target) {
+		if (visualNovel.value?.goto) {
+			visualNovel.value.goto(target)
+		}
+		showMapModal.value = false
 	}
 
 	function playClothSound() {
