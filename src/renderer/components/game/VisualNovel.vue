@@ -57,7 +57,8 @@
 		loadStory, processStep, advanceStory, selectChoice, getInitialValue, onTextInputConfirm,
 		getGameState, restoreGameState, resetGameState, getHistory, clearHistory,
 		pauseAllStreams, resumeAllStreams,
-		goto  // ← Добавляем goto method для Rules Engine
+		goto, // ← Добавляем goto method для Rules Engine
+		setDialogueHideUI // ← Система скрытия UI при диалоге
 	} = vn
 
 	onMounted(async () => {
@@ -68,6 +69,6 @@
 		}
 	})
 
-	defineExpose({ getGameState, restoreGameState, resetGameState, startStory: () => processStep(), getHistory: () => getHistory(), clearHistory: () => clearHistory(), pauseAllStreams, resumeAllStreams, uiVisibility, goto })
+	defineExpose({ getGameState, restoreGameState, resetGameState, startStory: () => processStep(), getHistory: () => getHistory(), clearHistory: () => clearHistory(), pauseAllStreams, resumeAllStreams, uiVisibility, goto, setDialogueHideUI })
 
 </script>

@@ -8,7 +8,7 @@
 			:key="place.id"
 			class="map-place"
 			@click="onPlaceClick(place)"
-			:class="[place.class, { '_active': place.active }]"
+			:class="[place.class, { '_active': place.active, '_disabled': place.active }]"
 			:style="{ left: place.x + '%', top: place.y + '%' }"
 		>
 			<div class="map-place-image"></div>
@@ -26,7 +26,7 @@
 	const props = defineProps({
 		currentLocation: {
 			type: String,
-			default: 'factory'
+			default: ''
 		},
 		globalData: {
 			type: Object,
@@ -69,8 +69,12 @@ function getPlaceTarget(place) {
 }
 
 function onPlaceClick(place) {
+	if (place.id === props.currentLocation) {
+		return
+	}
+
 	const target = getPlaceTarget(place)
 	if (!target) return
-	emit('goto', target)
+	emit('goto', { target, locationId: place.id })
 }
 </script>

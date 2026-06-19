@@ -65,17 +65,11 @@
 
 		{ "type": "scene", "id": "city_street" , "mods": ["fog"] },
 
-		{
-			"variable": "global.currentMap = 'cybercity'"
-		},
+		{ "variable": "global.currentMap = 'cybercity'" },
 
-		{
-			"variable": "global.currentLocation = 'factory'"
-		},
+		{ "variable": "global.currentLocation = 'factory'" },
 
-		{
-			"variable": "global.nowevent = 'mcoutfactory'"
-		},
+		{ "variable": "global.nowevent = 'mcoutfactory'" },
 
 		{
 			"type": "ui",

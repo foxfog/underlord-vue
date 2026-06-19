@@ -200,5 +200,49 @@ src/renderer/components/game/          # Компоненты
 
 ---
 
-*Навигатор обновлён: 18 февраля 2026*  
+## 🎙️ СИСТЕМА СКРЫТИЯ UI ПРИ ДИАЛОГЕ (НОВОЕ!)
+
+### 📄 Документация
+- **[`DIALOGUE_HIDE_UI.md`](./DIALOGUE_HIDE_UI.md)** - 📋 Полная документация
+  - Описание системы (глобальная конфигурация!)
+  - Примеры использования
+  - Доступные элементы
+  - Отладка и советы
+
+- **[`DIALOGUE_HIDE_UI_EXAMPLE.md`](./DIALOGUE_HIDE_UI_EXAMPLE.md)** - 🎯 Примеры и FAQ
+  - Как отредактировать конфиг
+  - Примеры конфигурации
+  - Проверка в DevTools
+  - Полезные команды
+
+### 💡 Быстрый старт (30 сек)
+
+**Файл:** `src/renderer/constants/dialogue.js`
+
+```javascript
+export const DIALOGUE_HIDE_UI_CONFIG = [
+  'hotbar',      // ← Отредактируйте один раз
+  'map-button'   // ← И готово!
+]
+```
+
+Всё! Теперь при любом диалоге будут скрыты hotbar и map-button.
+
+### 🎯 Для разных ролей
+
+#### 🎬 Я СЦЕНАРИСТ
+1. Больше не нужно вписывать в JSON! ✅
+2. Просто отредактируйте `src/renderer/constants/dialogue.js`
+3. Готово — работает на всех диалогах!
+4. Примеры: [`DIALOGUE_HIDE_UI_EXAMPLE.md`](./DIALOGUE_HIDE_UI_EXAMPLE.md)
+
+#### 💻 Я ПРОГРАММИСТ
+1. Конфигурация в: [`src/renderer/constants/dialogue.js`](../src/renderer/constants/dialogue.js)
+2. Логика в: [`src/renderer/composables/useVisualNovel.js`](../src/renderer/composables/useVisualNovel.js)
+3. API: `setDialogueHideUI(targets)` для динамического управления
+4. Состояние: `visualNovel.value.uiVisibility.dialogueHideUI`
+
+---
+
+*Навигатор обновлён: 19 июня 2026*  
 *Все документы синхронизированы: ✅*

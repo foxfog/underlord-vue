@@ -407,8 +407,18 @@
 		showMapModal.value = !showMapModal.value
 	}
 
-	function handleMapGoto(target) {
-		if (visualNovel.value?.goto) {
+function handleMapGoto(gotoPayload) {
+	const target = typeof gotoPayload === 'string' ? gotoPayload : gotoPayload?.target
+	const locationId = typeof gotoPayload === 'object' ? gotoPayload?.locationId : null
+
+	if (locationId) {
+		if (visualNovel.value?.globalData) {
+			visualNovel.value.globalData.currentLocation = locationId
+		}
+		gameState.global.currentLocation = locationId
+	}
+
+	if (target && visualNovel.value?.goto) {
 			visualNovel.value.goto(target)
 		}
 		showMapModal.value = false

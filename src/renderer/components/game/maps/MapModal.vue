@@ -38,7 +38,7 @@
 				<div class="map-modal__dynamic-map" :style="transformStyle">
 				<component
 					:is="mapComponent"
-					:current-location="props.globalData.currentLocation || 'factory'"
+					:current-location="props.globalData.currentLocation || ''"
 					:global-data="props.globalData"
 					@goto="onChildGoto"
 				/>

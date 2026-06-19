@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import { useSavesStore } from '../stores/saves'
 import { useSettingsStore } from '../stores/settings'
 import { SOUND_ALIASES } from '../constants/sounds'
+import { DIALOGUE_HIDE_UI_CONFIG } from '../constants/dialogue'
 import { extractVisibleCharacterDisplay, applyVisibleCharacterDisplay } from '../utils/saveGameUtils'
 
 export function useVisualNovel({ src, emit, notificationComponent } = {}) {
@@ -66,7 +67,9 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		'map-button': false,
 		topbar: false,
 		hotbar: false,
-		dialogue: false
+		dialogue: false,
+		dialogueHideUI: DIALOGUE_HIDE_UI_CONFIG, // Глобальная конфигурация для скрытия при диалоге
+		hasDialogue: false // Флаг: активен ли сейчас диалог/выборы/титры
 	})
 
 	const isRestoringGameState = ref(false)
@@ -183,6 +186,11 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	}
 
 	function processStep() {
+		// Очищаем автоматическое скрытие диалога если нет активного диалога на новом шаге
+		if (!currentDialogue.value && !currentNarration.value && !currentTitle.value && currentChoices.value.length === 0) {
+			clearDialogueHiding()
+		}
+
 		if (!storyData.value || stepIndex.value >= storyData.value.steps.length) {
 			emit && emit('end')
 			return
@@ -571,6 +579,71 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		})
 	}
 
+	/**
+	 * Установить какие UI элементы должны быть скрыты во время активного диалога
+	 * @param {string[]} targets - Массив ID элементов для скрытия при диалоге
+	 */
+	function setDialogueHideUI(targets) {
+		uiVisibility.value.dialogueHideUI = Array.isArray(targets) ? targets : []
+		console.log(`📌 Dialogue hide UI configured:`, uiVisibility.value.dialogueHideUI)
+	}
+
+	/**
+	 * Применить скрытие элементов для активного диалога
+	 * Скрывает элементы из dialogueHideUI, но НЕ переопределяет явное скрытие из UI команд
+	 */
+	function applyDialogueHiding() {
+		if (!uiVisibility.value.dialogueHideUI || uiVisibility.value.dialogueHideUI.length === 0) {
+			return
+		}
+
+		uiVisibility.value.hasDialogue = true
+
+		uiVisibility.value.dialogueHideUI.forEach(target => {
+			// Только скрываем, не показываем (чтобы не переопределять явное скрытие)
+			if (target === 'all') {
+				// 'all' означает скрыть все, кроме диалога
+				Object.keys(uiVisibility.value).forEach(key => {
+					if (key !== 'dialogueHideUI' && key !== 'hasDialogue' && key !== 'all') {
+						uiVisibility.value[key] = false
+					}
+				})
+				uiVisibility.value.dialogue = true
+			} else if (target !== 'dialogueHideUI' && target !== 'hasDialogue') {
+				uiVisibility.value[target] = false
+			}
+		})
+	}
+
+	/**
+	 * Убрать автоматическое скрытие элементов для диалога
+	 * Если элемент был явно скрыт командой UI, останется скрыт
+	 */
+	function clearDialogueHiding() {
+		if (!uiVisibility.value.dialogueHideUI || uiVisibility.value.dialogueHideUI.length === 0) {
+			uiVisibility.value.hasDialogue = false
+			return
+		}
+
+		uiVisibility.value.hasDialogue = false
+
+		// Восстанавливаем элементы которые были скрыты диалогом, но проверяем что они не скрыты явно
+		// В идеале нам нужно отслеживать какие элементы были скрыты явными командами vs диалогом
+		// Пока используем логику: если элемент в dialogueHideUI, показываем его
+		uiVisibility.value.dialogueHideUI.forEach(target => {
+			if (target === 'all') {
+				// Если было 'all', показываем все кроме явно скрытых
+				Object.keys(uiVisibility.value).forEach(key => {
+					if (key !== 'dialogueHideUI' && key !== 'hasDialogue' && key !== 'all') {
+						uiVisibility.value[key] = true
+					}
+				})
+			} else if (target !== 'dialogueHideUI' && target !== 'hasDialogue') {
+				uiVisibility.value[target] = true
+			}
+		})
+	}
+
 	// Audio handlers
 	function playSound(soundData) {
 		// soundData: { file: "path/to/sound.mp3", loop: false, stream: "id" }
@@ -694,6 +767,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		currentNarration.value = ''
 		currentDialogue.value = substituteVariables(text)
 		addToHistory({ type: 'dialogue', speaker: currentSpeaker.value, text: currentDialogue.value, stepIndex: stepIndex.value })
+		applyDialogueHiding()
 	}
 
 	function showNarration(text) {
@@ -701,6 +775,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		currentSpeaker.value = ''
 		currentDialogue.value = ''
 		addToHistory({ type: 'narration', speaker: '', text: currentNarration.value, stepIndex: stepIndex.value })
+		applyDialogueHiding()
 	}
 
 	function showTitle(step) {
@@ -728,6 +803,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		currentSpeaker.value = ''
 		currentChoices.value = []
 		addToHistory({ type: 'titles', speaker: '', text: titleText, stepIndex: stepIndex.value })
+		applyDialogueHiding()
 		if (step.duration && typeof step.duration === 'number' && step.duration > 0) {
 			titleTimeout = setTimeout(() => { 
 				titleTimeout = null
@@ -961,6 +1037,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		currentChoices.value = choiceStep.options.map(option => ({ ...option, text: substituteVariables(option.text) }))
 		currentSpeaker.value = choiceStep.speaker ? characterData.value[choiceStep.speaker]?.name : ''
 		if (choiceStep.text) currentDialogue.value = substituteVariables(choiceStep.text)
+		applyDialogueHiding()
 	}
 
 	function processDialogueSteps(steps, parentCharacter = null) {
@@ -1086,6 +1163,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			currentNarration.value = ''
 			currentSpeaker.value = ''
 			currentChoices.value = []
+			clearDialogueHiding()
 			loadReturnStory(returnPosition.storyId, returnPosition.stepIndex)
 		} else emit && emit('end')
 	}
@@ -1454,6 +1532,8 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		// audio methods
 		playSound, playVoice, playMusic, stopSound, stopVoice, stopMusic,
 		stopStream, stopAllStreams, getStream, pauseAllStreams, resumeAllStreams,
+		// UI methods for dialogue hiding
+		setDialogueHideUI,
 		// history helpers
 		getHistory: () => historyEntries.value.slice(),
 		clearHistory: () => { historyEntries.value = [] }
