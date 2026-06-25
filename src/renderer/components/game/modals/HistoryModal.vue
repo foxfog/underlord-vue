@@ -1,6 +1,6 @@
 <template>
-	<div class="history-modal" v-if="isVisible">
-		<div class="history-inner">
+	<div v-if="isVisible" class="modal history-modal">
+		<div class="modal-content history-inner">
 			<div class="history-header">
 				<div class="title">История диалогов</div>
 				<button class="close-btn" @click="$emit('close')">✖</button>

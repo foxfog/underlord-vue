@@ -61,3 +61,44 @@ if (result.success) {
 // Список
 const list = await savesStore.listSaves()
 ```
+
+### Service Layer API
+
+Сохранение реализовано слоистой архитектурой для тестируемости и переиспользования:
+
+**`saveService`** (`src/renderer/services/saveService.js`) — низкоуровневый модуль для работы с файлами и IPC:
+
+#### Экспортируемые функции:
+- **`createSaveFile(slotNumber, gameState, mcName, characterDefaults)`**  
+  Формирует объект `saveFile`, минимизируя данные (вычисляет дельту `characterData`).
+  
+- **`saveService.saveGame(slotNumber, saveFile)`**  
+  Вызывает `window.api.saveGame`, возвращает `{ success, data?, error? }`
+  
+- **`saveService.loadGame(slotNumber)`**  
+  Загружает сохранение по номеру слота.
+  
+- **`saveService.deleteSave(slotNumber)`**  
+  Удаляет сохранение.
+  
+- **`saveService.listSaves()`**  
+  Возвращает список всех сохранений.
+
+#### Пример использования в сторе:
+```javascript
+import { saveService, createSaveFile } from '@/services/saveService'
+
+const saveGame = async (slot, gameState, mcName, characterDefaults) => {
+  const saveFile = createSaveFile(slot, gameState, mcName, characterDefaults)
+  const result = await saveService.saveGame(slot, saveFile)
+  if (result.success) {
+    // обновляем локальное состояние стора
+  }
+}
+```
+
+**Примечание**: `saveService` не знает о Pinia; он возвращает чистые результаты IPC. Store отвечает за управление состоянием приложения.
+
+#### Тестирование:
+- `createSaveFile` и `findNonSerializable` легко тестируемы и должны иметь unit-тесты для проверки сериализации, корректной дельты `characterData` и обработки несериализуемых полей.
+

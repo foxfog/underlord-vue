@@ -9,6 +9,7 @@
 			@open-stats="toggleStatsModal"
 			@open-inventory="toggleInventoryModal"
 			@open-map="toggleMapModal"
+			@open-journal="toggleJournalModal"
 		/>
 
 		<div class="game">
@@ -47,6 +48,8 @@
 			@close="toggleMapModal"
 			@goto="handleMapGoto"
 		/>
+
+		<JournalModal :isVisible="showJournalModal" @close="showJournalModal = false" />
 
 		<!-- Menu overlay that can be toggled with Esc -->
 		<div v-show="menuVisible" class="menu-overlay">
@@ -116,7 +119,7 @@
 </template>
 
 <script setup>
-	import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue'
+	import { ref, onMounted, onUnmounted, nextTick, watch, computed, reactive } from 'vue'
 	import { useRouter, useRoute } from 'vue-router'
 	import VisualNovel from '../components/game/VisualNovel.vue'
 	import CharacterStatsModal from '../components/game/characters/CharacterStatsModal.vue'
@@ -125,7 +128,8 @@
 	import MapModal from '../components/game/maps/MapModal.vue'
 	import DynamicContentArea from '@/components/DynamicContentArea.vue'
 	import MainMenu from '@/components/MainMenu.vue'
-	import HistoryModal from '@/components/game/modals/HistoryModal.vue'
+	import HistoryModal from '../components/game/modals/HistoryModal.vue'
+	import JournalModal from '../components/game/modals/JournalModal.vue'
 	import ConfirmModal from '@/components/ConfirmModal.vue'
 	import Hotbar from '../components/game/ui/Hotbar.vue'
 	import SettingsLeaveConfirmModal from '@/components/SettingsLeaveConfirmModal.vue'
@@ -134,7 +138,11 @@
 	import { SOUND_CLOTH } from '../constants/sounds'
 	import { useGameRules } from '@/composables/useGameRules'
 	import { allStoryRules } from '@/constants/storyRules'
-	import { reactive } from 'vue'
+	import { useSettingsNavigation } from '@/composables/useSettingsNavigation'
+	import { useScreenshotMode } from '@/composables/useScreenshotMode'
+	import { useConfirmDialog } from '@/composables/useConfirmDialog'
+	import { useGameOverlay } from '@/composables/useGameOverlay'
+	import { useCharacterEquipment } from '@/composables/useCharacterEquipment'
 
 	const router = useRouter()
 	const route = useRoute()
@@ -144,25 +152,62 @@
 	const showStatsModal = ref(false)
 	const showInventoryModal = ref(false)
 	const showMapModal = ref(false)
+	const showJournalModal = ref(false)
 	const mcCharacter = ref(null)
 	const itemsData = ref({})
-
-	const savesTab = ref('load')
-
-	// Menu and view state for the overlay
-	const menuVisible = ref(false)
-	const currentView = ref('main-menu')
 	const dynamicContentAreaRef = ref(null)
-	const isSettingsDirty = ref(false)
-	const showLeaveConfirm = ref(false)
-	const pendingView = ref(null)
 	const showHistoryModal = ref(false)
 	const historyList = ref([])
 
-	const confirmVisible = ref(false)
-	const confirmTitle = ref('')
-	const confirmMessage = ref('')
-	let confirmAction = null
+	const {
+		menuVisible,
+		currentView,
+		savesTab,
+		showMainMenu,
+		openSettings,
+		openSave,
+		openLoad,
+		navigateImmediate: overlayNavigateImmediate,
+		onSavesTabChange
+	} = useGameOverlay()
+
+	const openMainMenu = showMainMenu
+
+	function navigateImmediate(view) {
+		if (view === 'home-screen') {
+			router.push('/home')
+			return
+		}
+		overlayNavigateImmediate(view)
+	}
+
+	const {
+		confirmVisible,
+		confirmTitle,
+		confirmMessage,
+		showConfirm,
+		onConfirm,
+		onCancel
+	} = useConfirmDialog()
+
+	const {
+		screenshotMode,
+		saveWithHiddenOverlays
+	} = useScreenshotMode()
+
+	const {
+		showLeaveConfirm,
+		isSettingsDirty,
+		handleNavigation: handleNavigationInternal,
+		onSettingsSaved,
+		onSettingsReset,
+		onSettingsDirtyChange,
+		handleLeaveYes,
+		handleLeaveNo,
+		handleLeaveCancel
+	} = useSettingsNavigation(navigateImmediate, dynamicContentAreaRef)
+
+	const handleNavigation = (view) => handleNavigationInternal(view, currentView.value)
 
 	// Game Rules Engine
 	const gameState = reactive({
@@ -207,33 +252,13 @@
 		return `/data/story/${language}/start.json`
 	})
 
-	function showConfirm(title, message, action) {
-		confirmTitle.value = title
-		confirmMessage.value = message
-		confirmAction = action
-		confirmVisible.value = true
-	}
-
-	function onConfirm() {
-		confirmVisible.value = false
-		if (confirmAction) {
-			const act = confirmAction
-			confirmAction = null
-			act()
-		}
-	}
-
-	function onCancel() {
-		confirmVisible.value = false
-		confirmAction = null
-	}
-
 	// UI visibility states
 	const uiVisibility = ref({
 		all: false,
 		'stats-button': false,
 		'inventory-button': false,
 		'map-button': false,
+		'journal-button': false,
 		topbar: false,
 		hotbar: false,
 		dialogue: false
@@ -246,13 +271,15 @@
 			return !!(
 				uiVisibility.value['stats-button'] ||
 				uiVisibility.value['inventory-button'] ||
-				uiVisibility.value['map-button']
+				uiVisibility.value['map-button'] ||
+				uiVisibility.value['journal-button']
 			)
 		}
 		return !!(
 			uiVisibility.value['stats-button'] ||
 			uiVisibility.value['inventory-button'] ||
-			uiVisibility.value['map-button']
+			uiVisibility.value['map-button'] ||
+			uiVisibility.value['journal-button']
 		)
 	})
 
@@ -268,14 +295,6 @@
 		return uiVisibility.value['inventory-button'] !== false
 	})
 
-	const screenshotMode = ref(false)
-
-	watch(screenshotMode, (isScreenshotMode) => {
-		if (typeof document !== 'undefined' && document.body) {
-			document.body.classList.toggle('screenshot-mode', isScreenshotMode)
-		}
-	})
-
 	function getGameAreaClipRect() {
 		const gameArea = document.querySelector('.game')
 		if (!gameArea) return null
@@ -286,17 +305,6 @@
 			y: Math.round(rect.top * dpr),
 			width: Math.max(0, Math.round(rect.width * dpr)),
 			height: Math.max(0, Math.round(rect.height * dpr))
-		}
-	}
-
-	async function saveWithHiddenOverlays(saveAction) {
-		screenshotMode.value = true
-		await nextTick()
-		await new Promise((resolve) => requestAnimationFrame(resolve))
-		try {
-			return await saveAction()
-		} finally {
-			screenshotMode.value = false
 		}
 	}
 
@@ -407,6 +415,10 @@
 		showMapModal.value = !showMapModal.value
 	}
 
+	function toggleJournalModal() {
+		showJournalModal.value = !showJournalModal.value
+	}
+
 function handleMapGoto(gotoPayload) {
 	const target = typeof gotoPayload === 'string' ? gotoPayload : gotoPayload?.target
 	const locationId = typeof gotoPayload === 'object' ? gotoPayload?.locationId : null
@@ -437,199 +449,13 @@ function handleMapGoto(gotoPayload) {
 		}
 	}
 
-	function handleEquip({ slot, itemId, inventoryIndex }) {
-		if (!mcCharacter.value?.equipment_slots || !mcCharacter.value?.inventory?.items) return
-
-		// Шаг 1: Проверить, что слот пуст ИЛИ нужен swap с инвентарём (запрещаем)
-		const currentItemInSlot = mcCharacter.value.equipment_slots[slot]
-		
-		// Слот может быть ТОЛЬКО пустым или содержать ДРУГОЙ предмет для swap'а
-		// Если слот занят ИМ ЖЕ предметом - это ошибка (нельзя положить второй)
-		if (currentItemInSlot === itemId) {
-			console.warn(`Cannot equip: slot ${slot} already contains the same item ${itemId}. Use swap instead.`)
-			return
-		}
-		
-		// Шаг 2: Если слот содержит ДРУГОЙ предмет - вернуть его в инвентарь
-		// (это означает, что пользователь заменяет предмет)
-		if (currentItemInSlot) {
-			console.log('Replacing item in slot:', { slot, oldItem: currentItemInSlot, newItem: itemId })
-			const oldItemDef = itemsData.value[currentItemInSlot]
-			const oldItemStackable = oldItemDef?.stackable !== false
-			
-			if (oldItemStackable) {
-				const existingItem = mcCharacter.value.inventory.items.find(item => item.itemId === currentItemInSlot)
-				if (existingItem) {
-					existingItem.quantity = (existingItem.quantity ?? 1) + 1
-				} else {
-					mcCharacter.value.inventory.items.push({ itemId: currentItemInSlot, quantity: 1 })
-				}
-			} else {
-				mcCharacter.value.inventory.items.push({ itemId: currentItemInSlot, quantity: 1 })
-			}
-		}
-		
-		// Шаг 3: Удалить новый предмет из инвентаря
-		let itemIndex = inventoryIndex ?? -1
-		if (itemIndex === -1) {
-			itemIndex = mcCharacter.value.inventory.items.findIndex(item => item.itemId === itemId)
-		}
-		
-		if (itemIndex !== -1) {
-			const item = mcCharacter.value.inventory.items[itemIndex]
-			if (item) {
-				item.quantity = (item.quantity ?? 1) - 1
-				if (item.quantity <= 0) {
-					mcCharacter.value.inventory.items.splice(itemIndex, 1)
-				}
-			}
-		}
-		
-		// Шаг 4: Установить новый предмет в слот
-		mcCharacter.value.equipment_slots[slot] = itemId
-		console.log(`🔧 Set ${slot} = ${itemId}`, { 
-			slotValue: mcCharacter.value.equipment_slots[slot],
-			gameStateValue: gameState.character.mc?.equipment_slots[slot]
-		})
-		
-		rebuildEquipmentBySlot()
-		playClothSound()
-		
-		// Update gameState for Rules Engine
-		if (mcCharacter.value) {
-			gameState.character.mc = mcCharacter.value
-		}
-	}
-
-	function handleUnequip({ slot, itemId }) {
-		if (!mcCharacter.value?.equipment_slots || !mcCharacter.value?.inventory?.items) return
-
-		// Шаг 1: Убедиться, что в слоте именно этот предмет
-		const actualItem = mcCharacter.value.equipment_slots[slot];
-		
-		// Если слот уже очищен (например дефп watch перезаписал), просто добавляем в инвентарь
-		// Это может происходить из-за deep watch на visualNovel.characterData
-		if (actualItem === null && itemId) {
-			console.warn('⚠️ Slot already empty, but adding item to inventory anyway:', { slot, itemId });
-			// Продолжаем дальше к шагу 3 (добавлению в инвентарь)
-		} else if (actualItem !== itemId) {
-			console.error('❌ Item mismatch:', { 
-				slot, 
-				expectedItemId: itemId, 
-				actualItemId: actualItem,
-				allSlots: { ...mcCharacter.value.equipment_slots },  // Копируем для лучшего логирования
-				gameStateSlots: { ...gameState.character.mc?.equipment_slots },
-				currentStory: visualNovel.value?.storyData?.value?.id
-			});
-			return
-		}
-
-		// Шаг 2: Очистить слот (если ещё не очищен)
-		if (mcCharacter.value.equipment_slots[slot] !== null) {
-			mcCharacter.value.equipment_slots[slot] = null
-		}
-
-		// Шаг 3: Добавить предмет в инвентарь
-		const itemDef = itemsData.value[itemId]
-		const isStackable = itemDef?.stackable !== false
-
-		if (isStackable) {
-			const existingItem = mcCharacter.value.inventory.items.find(item => item.itemId === itemId)
-			if (existingItem) {
-				existingItem.quantity += 1
-			} else {
-				mcCharacter.value.inventory.items.push({ itemId, quantity: 1 })
-			}
-		} else {
-			mcCharacter.value.inventory.items.push({ itemId, quantity: 1 })
-		}
-
-		rebuildEquipmentBySlot()
-		playClothSound()
-		
-		// Update gameState for Rules Engine
-		if (mcCharacter.value) {
-			gameState.character.mc = mcCharacter.value
-			console.log(`🔄 handleUnequip: Removed ${itemId} from ${slot}`);
-			console.log('   gameState.character.mc.mask:', gameState.character.mc?.equipment_slots?.mask);
-			console.log('   gameState.global:', gameState.global);
-			console.log('   gameState.global.toxic_gas:', gameState.global?.toxic_gas);
-			console.log('   visualNovel.globalData:', visualNovel.value?.globalData);
-		}
-	}
-
-	function handleSwap({ from, to }) {
-		if (!mcCharacter.value?.equipment_slots) return
-
-		const fromItemId = mcCharacter.value.equipment_slots[from]
-		const toItemId = mcCharacter.value.equipment_slots[to]
-
-		// Проверяем, что оба предмета существуют (не null)
-		if (!fromItemId || !toItemId) return
-
-		// Просто меняем местами
-		const temp = mcCharacter.value.equipment_slots[from]
-		mcCharacter.value.equipment_slots[from] = mcCharacter.value.equipment_slots[to]
-		mcCharacter.value.equipment_slots[to] = temp
-
-		rebuildEquipmentBySlot()
-		playClothSound()
-		
-		// Update gameState for Rules Engine
-		if (mcCharacter.value) {
-			gameState.character.mc = mcCharacter.value
-		}
-	}
-
-	function handleDrop({ itemId, source, slot, quantity = 1 }) {
-		console.log('Dropping item:', { itemId, source, slot, quantity })
-		if (mcCharacter.value?.inventory?.items) {
-			// Найти и удалить предмет из инвентаря
-			const itemIndex = mcCharacter.value.inventory.items.findIndex(item => item.itemId === itemId)
-			if (itemIndex !== -1) {
-				const item = mcCharacter.value.inventory.items[itemIndex]
-				
-				// Если есть quantity > удаляемого количества, просто уменьшить
-				if (item.quantity && item.quantity > quantity) {
-					item.quantity -= quantity
-				} else {
-					// Иначе удалить полностью
-					mcCharacter.value.inventory.items.splice(itemIndex, 1)
-				}
-			}
-		}
-		
-		// Update gameState for Rules Engine
-		if (mcCharacter.value) {
-			gameState.character.mc = mcCharacter.value
-		}
-	}
-
-	function rebuildEquipmentBySlot() {
-		if (!mcCharacter.value) return
-
-		const equipmentMap = {}
-		if (Array.isArray(mcCharacter.value.equipment)) {
-			mcCharacter.value.equipment.forEach(item => {
-				if (item && item.id) equipmentMap[item.id] = item
-			})
-		}
-
-		const equipmentBySlot = {}
-		const slots = mcCharacter.value.equipment_slots || {}
-		for (const [slotName, itemRef] of Object.entries(slots)) {
-			let itemId = null
-			if (itemRef === null || typeof itemRef === 'undefined') itemId = null
-			else if (typeof itemRef === 'string' || typeof itemRef === 'number') itemId = itemRef
-			else if (typeof itemRef === 'object' && itemRef.id) itemId = itemRef.id
-			else if (typeof itemRef === 'object' && itemRef.item && itemRef.item.id) itemId = itemRef.item.id
-			if (itemId && equipmentMap[itemId]) {
-				equipmentBySlot[slotName] = { id: itemId, item: equipmentMap[itemId], parts: equipmentMap[itemId].parts || [] }
-			}
-		}
-
-		mcCharacter.value.equipmentBySlot = equipmentBySlot
-	}
+	const {
+		handleEquip,
+		handleUnequip,
+		handleSwap,
+		handleDrop,
+		rebuildEquipmentBySlot
+	} = useCharacterEquipment(mcCharacter, itemsData, gameState, playClothSound)
 
 	function onCharacterLoaded(characterData) {
 		if (characterData?.mc) {
@@ -656,95 +482,6 @@ function handleMapGoto(gotoPayload) {
 				settingsStore.setCurrentMap(globalData.currentMap);
 			}
 		}
-	}
-
-	const showSettings = () => {
-		currentView.value = 'settings'
-	}
-
-	const showSaves = () => {
-		currentView.value = 'saves'
-	}
-
-	function navigateImmediate(view) {
-		if (view === 'settings') {
-			showSettings()
-		} else if (view === 'save') {
-			savesTab.value = 'save'
-			currentView.value = 'saves'
-			menuVisible.value = true
-		} else if (view === 'load') {
-			savesTab.value = 'load'
-			currentView.value = 'saves'
-			menuVisible.value = true
-		} else if (view === 'saves') {
-			showSaves()
-		} else if (view === 'main-menu') {
-			showMainMenu()
-		} else if (view === 'home-screen') {
-			router.push('/home')
-		}
-	}
-
-	function showMainMenu() {
-		openMainMenu()
-	}
-
-	function onSavesTabChange(tab) {
-		savesTab.value = tab
-	}
-
-	const handleNavigation = (view) => {
-		// Leaving settings with unsaved changes → ask first
-		if (currentView.value === 'settings' && view !== 'settings' && isSettingsDirty.value) {
-			pendingView.value = view
-			showLeaveConfirm.value = true
-			return
-		}
-		navigateImmediate(view)
-	}
-
-	function onSettingsSaved() {
-		console.log('Settings saved')
-		isSettingsDirty.value = false
-	}
-
-	function onSettingsReset() {
-		console.log('Settings reset to default')
-		isSettingsDirty.value = false
-	}
-
-	function onSettingsDirtyChange(val) {
-		isSettingsDirty.value = val
-	}
-
-	async function handleLeaveYes() {
-		showLeaveConfirm.value = false
-		if (dynamicContentAreaRef.value?.saveSettingsFromOutside) {
-			await dynamicContentAreaRef.value.saveSettingsFromOutside()
-			isSettingsDirty.value = false
-		}
-		if (pendingView.value) {
-			navigateImmediate(pendingView.value)
-			pendingView.value = null
-		}
-	}
-
-	function handleLeaveNo() {
-		showLeaveConfirm.value = false
-		if (dynamicContentAreaRef.value?.revertSettingsFromOutside) {
-			dynamicContentAreaRef.value.revertSettingsFromOutside()
-		}
-		isSettingsDirty.value = false
-		if (pendingView.value) {
-			navigateImmediate(pendingView.value)
-			pendingView.value = null
-		}
-	}
-
-	function handleLeaveCancel() {
-		showLeaveConfirm.value = false
-		pendingView.value = null
 	}
 
 	// Handler for MainMenu "Continue"
@@ -904,40 +641,6 @@ function handleMapGoto(gotoPayload) {
 			historyList.value = visualNovel.value.getHistory()
 		}
 		showHistoryModal.value = true
-	}
-
-	function openMainMenu() {
-		menuVisible.value = true
-		currentView.value = 'main-menu'
-	}
-
-	function openSettings() {
-		menuVisible.value = true
-		currentView.value = 'settings'
-	}
-
-	function openSave() {
-		// If leaving settings with unsaved changes, ask first
-		if (currentView.value === 'settings' && isSettingsDirty.value) {
-			pendingView.value = 'save'
-			showLeaveConfirm.value = true
-			return
-		}
-		savesTab.value = 'save'
-		menuVisible.value = true
-		currentView.value = 'saves'
-	}
-
-	function openLoad() {
-		// If leaving settings with unsaved changes, ask first
-		if (currentView.value === 'settings' && isSettingsDirty.value) {
-			pendingView.value = 'load'
-			showLeaveConfirm.value = true
-			return
-		}
-		savesTab.value = 'load'
-		menuVisible.value = true
-		currentView.value = 'saves'
 	}
 
 	// Toggle menu visibility via Escape key

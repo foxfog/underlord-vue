@@ -65,6 +65,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		'stats-button': false,
 		'inventory-button': false,
 		'map-button': false,
+		'journal-button': false,
 		topbar: false,
 		hotbar: false,
 		dialogue: false,
@@ -541,7 +542,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		const action = step.action // 'show' or 'hide'
 		const targets = step.target || [] // Array of target IDs
 		const show = action === 'show'
-		const knownTargets = ['topbar', 'hotbar', 'dialogue', 'stats-button', 'inventory-button', 'map-button']
+		const knownTargets = ['topbar', 'hotbar', 'dialogue', 'stats-button', 'inventory-button', 'map-button', 'journal-button']
 
 		function setAllUi(value) {
 			uiVisibility.value['all'] = value
@@ -572,7 +573,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					return
 				}
 				uiVisibility.value[target] = show
-				if (show && ['stats-button', 'inventory-button', 'map-button', 'hotbar'].includes(target)) {
+				if (show && ['stats-button', 'inventory-button', 'map-button', 'journal-button', 'hotbar'].includes(target)) {
 					uiVisibility.value.topbar = true
 				}
 			}

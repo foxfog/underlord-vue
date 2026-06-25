@@ -5,8 +5,9 @@
 		</button>
 		<button v-if="showInventoryButton" class="topbar-btn" @click="openInventory" title="Открыть инвентарь">
 			🎒 Инвентарь
-		</button>
-		<button v-if="showMapButton" class="topbar-btn" @click="openMap" title="Открыть карту мира">
+		</button>	<button class="topbar-btn" @click="openJournal" title="Открыть журнал">
+		📔 Журнал
+	</button>		<button v-if="showMapButton" class="topbar-btn" @click="openMap" title="Открыть карту мира">
 			🗺 Карта
 		</button>
 	</div>
@@ -28,7 +29,7 @@
 		}
 	})
 
-	const emit = defineEmits(['open-stats', 'open-inventory', 'open-map'])
+	const emit = defineEmits(['open-stats', 'open-inventory', 'open-map', 'open-journal'])
 
 	function openStats() {
 		emit('open-stats')
@@ -40,6 +41,10 @@
 
 	function openMap() {
 		emit('open-map')
+	}
+
+	function openJournal() {
+		emit('open-journal')
 	}
 </script>
 

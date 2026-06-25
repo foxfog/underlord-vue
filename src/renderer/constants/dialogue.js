@@ -4,5 +4,6 @@
  */
 export const DIALOGUE_HIDE_UI_CONFIG = [
 	'map-button',
-    'inventory-button'
+    'inventory-button',
+    'journal-button'
 ]

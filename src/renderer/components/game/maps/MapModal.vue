@@ -1,6 +1,6 @@
 <template>
-	<div v-if="isVisible" class="map-modal" @click="onBackgroundClick">
-		<div class="map-modal__content" @click.stop>
+	<div v-if="isVisible" class="modal map-modal" @click="onBackgroundClick">
+		<div class="modal-content map-modal__content" @click.stop>
 			<div class="map-modal__header">
 				<h2 class="map-modal__title">Карта мира</h2>
 				<div class="map-modal__controls">
