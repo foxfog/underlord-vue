@@ -1,0 +1,70 @@
+{
+	"id": "cyber/factory/factory_main",
+	"steps": [
+		{
+			"type": "scene",
+			"id": "mc_factory"
+		},
+
+		{
+			"type": "sound",
+			"file": "audio/background/factory-noise.mp3",
+			"loop": true,
+			"stream": "factory"
+		},
+
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "Завод. Снова здесь..."
+		},
+
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "Есть время. Что сейчас делать?"
+		},
+
+		{
+			"type": "choice",
+			"options": [
+				{
+					"text": "Поработать на станке",
+					"disabled": "{global.factory?.work_done === true}",
+					"actions": [
+						{ "type": "goto", "target": "cyber/factory/work_on_machine" }
+					]
+				},
+				{
+					"text": "Пообедать в столовой",
+					"disabled": "{global.factory?.eat_done === true}",
+					"actions": [
+						{ "type": "goto", "target": "cyber/factory/go_to_cafeteria" }
+					]
+				},
+				{
+					"text": "Отдохнуть в комнате для перерывов",
+					"disabled": "{global.factory?.break_done === true}",
+					"actions": [
+						{ "type": "goto", "target": "cyber/factory/take_break" }
+					]
+				}
+			]
+		},
+
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "Смена подходит к концу. Пора домой."
+		},
+
+		{
+			"type": "stop-stream",
+			"stream": "factory"
+		},
+
+		{
+			"type": "hold"
+		}
+	]
+}

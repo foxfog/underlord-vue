@@ -3,6 +3,7 @@
  * Эти элементы будут скрыты при активном диалоге независимо от истории
  */
 export const DIALOGUE_HIDE_UI_CONFIG = [
+	'stats-button',
 	'map-button',
     'inventory-button',
     'journal-button'

@@ -958,6 +958,78 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		}
 	}
 
+	function evaluateCondition(conditionStr) {
+		if (!conditionStr || typeof conditionStr !== 'string') return false
+		
+		// Extract content from braces: "{condition}" → "condition"
+		const match = conditionStr.match(/^\{(.+)\}$/)
+		if (!match) return false
+		
+		const condition = match[1]
+		
+		// Replace global.xxx.yyy with actual values from globalData.value
+		let evaluatedCondition = condition.replace(/global\.[\w.?]+/g, (match) => {
+			const path = match.replace('global.', '').split('?').join('') // Remove optional chaining
+			const parts = path.split('.')
+			let target = globalData.value
+			for (let i = 0; i < parts.length; i++) {
+				if (target === null || target === undefined) return 'undefined'
+				target = target[parts[i]]
+			}
+			
+			// Return JSON representation for proper evaluation
+			if (typeof target === 'string') return `"${target}"`
+			if (target === null) return 'null'
+			if (target === undefined) return 'undefined'
+			return String(target)
+		})
+		
+		// Replace character.xxx.yyy with actual values
+		evaluatedCondition = evaluatedCondition.replace(/character\.\w+[\w.?[\]]*(?:\[[^\]]+\])?/g, (match) => {
+			const parts = match.split('.')
+			if (parts[0] !== 'character' || parts.length < 3) return match
+			
+			const characterId = parts[1]
+			const propertyPath = parts.slice(2)
+			if (characterData.value[characterId]) {
+				let target = characterData.value[characterId]
+				for (let i = 0; i < propertyPath.length; i++) {
+					const part = propertyPath[i]
+					const arrayMatch = part.match(/^(\w+)\[([^\]]+)\]$/)
+					if (arrayMatch) {
+						const arrayName = arrayMatch[1]
+						const indexExpr = arrayMatch[2]
+						if (target[arrayName] === undefined) return 'undefined'
+						let index = parseInt(indexExpr)
+						if (isNaN(index)) {
+							const searchValue = indexExpr.replace(/^['"]|['"]$/g, '')
+							if (Array.isArray(target[arrayName])) {
+								index = target[arrayName].findIndex(item => item.itemId === searchValue)
+								if (index === -1) return 'undefined'
+							}
+						}
+						target = Array.isArray(target[arrayName]) ? target[arrayName][index] : undefined
+					} else {
+						if (target[part] === undefined) return 'undefined'
+						target = target[part]
+					}
+				}
+				if (typeof target === 'string') return `"${target}"`
+				if (target === null) return 'null'
+				if (target === undefined) return 'undefined'
+				return String(target)
+			}
+			return match
+		})
+		
+		try {
+			return Boolean(eval(evaluatedCondition))
+		} catch (error) {
+			console.warn('Error evaluating condition:', conditionStr, error)
+			return false
+		}
+	}
+
 	function substituteVariables(text) {
 		if (!text) return ''
 		return text.replace(/\{([^}]+)\}/g, (match, variablePath) => {
@@ -1035,7 +1107,11 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	}
 
 	function showChoices(choiceStep) {
-		currentChoices.value = choiceStep.options.map(option => ({ ...option, text: substituteVariables(option.text) }))
+		currentChoices.value = choiceStep.options.map(option => ({
+			...option,
+			text: substituteVariables(option.text),
+			disabled: option.disabled ? evaluateCondition(option.disabled) : false
+		}))
 		currentSpeaker.value = choiceStep.speaker ? characterData.value[choiceStep.speaker]?.name : ''
 		if (choiceStep.text) currentDialogue.value = substituteVariables(choiceStep.text)
 		applyDialogueHiding()
@@ -1093,6 +1169,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 
 	function selectChoice(index) {
 		const choice = currentChoices.value[index]
+		if (choice.disabled) return // Prevent selecting disabled choices
 		if (choice.actions) processChoiceActions(choice.actions)
 		else {
 			currentChoices.value = []

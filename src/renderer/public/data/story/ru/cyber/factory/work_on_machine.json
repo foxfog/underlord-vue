@@ -1,0 +1,46 @@
+{
+	"id": "cyber/factory/work_on_machine",
+	"steps": [
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "Лучше поработать. Нужны деньги на новый фильтр."
+		},
+
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "<i>Включаю станок и начинаю обработку деталей...</i>"
+		},
+
+		{
+			"type": "notification",
+			"text": "<p>+50 ₽ Заработок</p>",
+			"notificationType": "success",
+			"duration": 2000
+		},
+
+		{
+			"variable": "character.mc.money = (character.mc.money || 0) + 50"
+		},
+
+		{
+			"variable": "global.factory = global.factory || {}"
+		},
+
+		{
+			"variable": "global.factory.work_done = true"
+		},
+
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "Еще пару часов работы и можно будет уйти."
+		},
+
+		{
+			"type": "goto",
+			"target": "cyber/factory/factory_main"
+		}
+	]
+}

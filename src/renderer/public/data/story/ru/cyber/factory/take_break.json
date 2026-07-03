@@ -1,0 +1,46 @@
+{
+	"id": "cyber/factory/take_break",
+	"steps": [
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "Нужно немного отдохнуть..."
+		},
+
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "<i>Садюсь в комнате отдыха и закрываю глаза...</i>"
+		},
+
+		{
+			"type": "notification",
+			"text": "<p>✓ Отдохнул</p><p>Стресс снижен</p>",
+			"notificationType": "success",
+			"duration": 2000
+		},
+
+		{
+			"variable": "character.mc.stress = Math.max(0, (character.mc.stress || 50) - 25)"
+		},
+
+		{
+			"variable": "global.factory = global.factory || {}"
+		},
+
+		{
+			"variable": "global.factory.break_done = true"
+		},
+
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "Лучше. Можно продолжать работу."
+		},
+
+		{
+			"type": "goto",
+			"target": "cyber/factory/factory_main"
+		}
+	]
+}

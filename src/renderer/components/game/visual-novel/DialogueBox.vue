@@ -16,7 +16,14 @@
 			></div>
 
 			<div class="choices" v-if="choices.length > 0">
-				<button v-for="(choice, index) in choices" :key="index" @click="$emit('selectChoice', index)" class="choice-btn">
+				<button 
+					v-for="(choice, index) in choices" 
+					:key="index" 
+					@click="$emit('selectChoice', index)" 
+					class="choice-btn"
+					:class="{ '_disabled': choice.disabled }"
+					:disabled="choice.disabled"
+				>
 					{{ choice.text }}
 				</button>
 			</div>

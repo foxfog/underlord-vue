@@ -1,0 +1,46 @@
+{
+	"id": "cyber/factory/go_to_cafeteria",
+	"steps": [
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "Уже голоден. Пора в столовую."
+		},
+
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "<i>Направляюсь в столовую...</i>"
+		},
+
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "Обычный суп и хлеб. Ничего не меняется..."
+		},
+
+		{
+			"type": "notification",
+			"text": "<p>✓ Пообедал</p><p>Энергия восстановлена</p>",
+			"notificationType": "success",
+			"duration": 2000
+		},
+
+		{
+			"variable": "character.mc.stamina = 100"
+		},
+
+		{
+			"variable": "global.factory = global.factory || {}"
+		},
+
+		{
+			"variable": "global.factory.eat_done = true"
+		},
+
+		{
+			"type": "goto",
+			"target": "cyber/factory/factory_main"
+		}
+	]
+}

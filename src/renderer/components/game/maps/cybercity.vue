@@ -62,6 +62,9 @@ const emit = defineEmits(['goto'])
 	})
 
 function getPlaceTarget(place) {
+	if (place.id === 'factory') {
+		return 'cyber/factory/factory_main'
+	}
 	if (place.id === 'home' && props.globalData?.nowevent === 'mcoutfactory') {
 		return 'cyber/mchome'
 	}
