@@ -1,9 +1,9 @@
 <template>
-	<div v-if="isVisible" class="modal history-modal">
-		<div class="modal-content history-inner">
+	<div v-if="isVisible" class="modal history-modal" @click="$emit('close')">
+		<div class="modal-content history-inner" @click.stop>
 			<div class="history-header">
-				<div class="title">История диалогов</div>
-				<button class="close-btn" @click="$emit('close')">✖</button>
+				<h2 class="title">История диалогов</h2>
+				<button class="btn-close" @click="$emit('close')">×</button>
 			</div>
 			<div class="history-list" ref="listRef">
 				<div v-for="(entry, index) in entries" :key="index" class="history-entry">
@@ -17,19 +17,21 @@
 				<div v-if="!entries || entries.length === 0" class="empty">История пуста</div>
 			</div>
 			<div class="history-footer">
-				<button @click="$emit('close')">Закрыть</button>
+				<button class="btn btn-primary" @click="$emit('close')">Закрыть</button>
 			</div>
 		</div>
 	</div>
 </template>
 
 <script setup>
-	import { ref, watch, onMounted } from 'vue'
+	import { ref, watch } from 'vue'
 
 	const props = defineProps({
 		isVisible: { type: Boolean, default: false },
 		entries: { type: Array, default: () => [] }
 	})
+
+	defineEmits(['close'])
 
 	const listRef = ref(null)
 
@@ -42,4 +44,3 @@
 		}
 	})
 </script>
-

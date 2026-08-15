@@ -3,7 +3,7 @@
 		<div class="modal-content journal-modal__content" @click.stop>
 			<div class="modal-header">
 				<h2 class="modal-title">Журнал</h2>
-				<button class="btn-close" @click="$emit('close')">✖</button>
+				<button class="btn-close" @click="$emit('close')">×</button>
 			</div>
 
 			<div class="modal-tabs">
@@ -65,7 +65,7 @@
 <script setup>
 import { ref } from 'vue'
 
-const props = defineProps({
+defineProps({
 	isVisible: { type: Boolean, default: false }
 })
 

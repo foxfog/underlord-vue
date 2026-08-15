@@ -88,22 +88,22 @@
 
 	// Global event handlers for pause/resume
 	function handlePauseAllAudio() {
-		console.log('🎧 handlePauseAllAudio fired, pausing', Object.keys(audioRefs.value).length, 'audio elements')
+		console.log('🎧 handlePauseAllAudio fired, pausing active audio elements')
 		Object.entries(audioRefs.value).forEach(([streamId, audio]) => {
-			// Only pause if stream is still active
-			if (audio && !audio.paused && props.audioStreams[streamId]) {
-				console.log(`⏸️  Pausing stream: ${streamId}`)
+			// Only pause if stream is still active, playing, and not ended
+			if (audio && !audio.paused && !audio.ended && props.audioStreams[streamId]) {
+				console.log(`⏸️  Pausing stream: ${streamId} at ${audio.currentTime}s`)
 				audio.pause()
 			}
 		})
 	}
 
 	function handleResumeAllAudio() {
-		console.log('🎧 handleResumeAllAudio fired, resuming', Object.keys(audioRefs.value).length, 'audio elements')
+		console.log('🎧 handleResumeAllAudio fired, resuming active audio elements')
 		Object.entries(audioRefs.value).forEach(([streamId, audio]) => {
-			// Only resume if stream is still active
-			if (audio && audio.paused && props.audioStreams[streamId]) {
-				console.log(`▶️  Resuming stream: ${streamId}`)
+			// Only resume if stream is still active, paused, and has not ended
+			if (audio && audio.paused && !audio.ended && props.audioStreams[streamId]) {
+				console.log(`▶️  Resuming stream: ${streamId} from ${audio.currentTime}s`)
 				audio.play().catch(() => {})
 			}
 		})
@@ -139,6 +139,7 @@
 
 	function onStreamEnded(streamId, type) {
 		console.log(`✔ ${type} stream finished: ${streamId}`)
+		delete audioRefs.value[streamId]
 		emit('stream-ended', { streamId, type })
 	}
 

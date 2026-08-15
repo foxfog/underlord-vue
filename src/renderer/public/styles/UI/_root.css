@@ -156,4 +156,26 @@
 	/* Range colors - reusing existing */
 	--color-range-disabled-bg: #ccc;
 	--color-range-disabled-border: #999;
+
+	/* Modal & Overlay tokens */
+	--modal-overlay-bg: rgba(0, 0, 0, 0.75);
+	--modal-backdrop-blur: blur(0.4em);
+	--modal-bg: #1a1a1f;
+	--modal-bg-glass: rgba(24, 24, 28, 0.95);
+	--modal-border: rgba(212, 175, 55, 0.35);
+	--modal-border-subtle: rgba(255, 255, 255, 0.1);
+	--modal-shadow: 0 1em 3em rgba(0, 0, 0, 0.8), 0 0 1.5em rgba(0, 0, 0, 0.5);
+	--modal-border-radius: 0.6em;
+
+	/* Card tokens */
+	--card-bg: rgba(255, 255, 255, 0.04);
+	--card-bg-hover: rgba(255, 255, 255, 0.08);
+	--card-border: rgba(255, 255, 255, 0.1);
+	--card-border-active: var(--color-primary);
+
+	/* Input tokens */
+	--input-bg: rgba(0, 0, 0, 0.45);
+	--input-border: rgba(255, 255, 255, 0.15);
+	--input-border-focus: var(--color-primary);
+	--input-focus-glow: 0 0 0.5em var(--color-primary-alpha);
 }

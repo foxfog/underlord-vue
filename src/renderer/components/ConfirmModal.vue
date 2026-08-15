@@ -1,12 +1,12 @@
 <template>
 	<teleport to="body">
-		<div v-if="visible" class="confirm-overlay">
-			<div class="confirm-box">
+		<div v-if="visible" class="confirm-overlay" @click="onCancel">
+			<div class="confirm-box" @click.stop>
 				<div class="confirm-title" v-if="title">{{ title }}</div>
 				<div class="confirm-message">{{ message }}</div>
 				<div class="confirm-actions">
-					<button class="btn cancel" @click="onCancel">{{ cancelText }}</button>
-					<button class="btn confirm" @click="onConfirm">{{ confirmText }}</button>
+					<button class="btn btn-secondary" @click="onCancel">{{ cancelText }}</button>
+					<button class="btn btn-primary" @click="onConfirm">{{ confirmText }}</button>
 				</div>
 			</div>
 		</div>
@@ -14,7 +14,7 @@
 </template>
 
 <script setup>
-	const props = defineProps({
+	defineProps({
 		visible: { type: Boolean, default: false },
 		title: { type: String, default: '' },
 		message: { type: String, required: true },
@@ -32,5 +32,3 @@
 		emit('cancel')
 	}
 </script>
-
-

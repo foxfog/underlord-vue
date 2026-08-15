@@ -63,7 +63,7 @@
 					<div class="seves-slot-meta" v-if="hasSaveInSlot(slot)">
 						<span class="mc-name-text">{{ saveMetadata(slot)?.mcName }}</span>
 						<button class="delete-btn" @click.stop="onDeleteClick(slot)" title="Delete save">
-							🗑️
+							<i class="icon-trash"></i>
 						</button>
 					</div>
 					<div class="seves-slot-meta" v-else>— пусто —</div>

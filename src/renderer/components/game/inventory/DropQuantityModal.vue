@@ -2,7 +2,7 @@
 	<div v-if="isVisible" class="modal-overlay" @click="handleCancel">
 		<div class="modal-drop-quantity" @click.stop>
 			<div class="modal-header">
-				<h4>Выбросить {{ itemName }}</h4>
+				<h4 class="modal-title">Выбросить {{ itemName }}</h4>
 				<button class="btn-close" @click="handleCancel">×</button>
 			</div>
 
@@ -22,8 +22,8 @@
 			</div>
 
 			<div class="modal-footer">
-				<button class="btn btn-cancel btn-secondary" @click="handleCancel">Отмена</button>
-				<button class="btn btn-drop btn-primary" @click="handleConfirm">Выбросить</button>
+				<button class="btn btn-secondary" @click="handleCancel">Отмена</button>
+				<button class="btn btn-primary" @click="handleConfirm">Выбросить</button>
 			</div>
 		</div>
 	</div>

@@ -1,13 +1,12 @@
 <template>
 	<div class="topbar">
-		<button class="topbar-btn" @click="openStats" title="Статистика персонажа">
-			📊 Статы
-		</button>
 		<button v-if="showInventoryButton" class="topbar-btn" @click="openInventory" title="Открыть инвентарь">
 			🎒 Инвентарь
-		</button>	<button class="topbar-btn" @click="openJournal" title="Открыть журнал">
-		📔 Журнал
-	</button>		<button v-if="showMapButton" class="topbar-btn" @click="openMap" title="Открыть карту мира">
+		</button>
+		<button v-if="showJournalButton" class="topbar-btn" @click="openJournal" title="Открыть журнал">
+			📔 Журнал
+		</button>
+		<button v-if="showMapButton" class="topbar-btn" @click="openMap" title="Открыть карту мира">
 			🗺 Карта
 		</button>
 	</div>
@@ -19,21 +18,21 @@
 			type: Object,
 			default: null
 		},
-		showMapButton: {
-			type: Boolean,
-			default: true
-		},
 		showInventoryButton: {
 			type: Boolean,
-			default: true
+			default: false
+		},
+		showJournalButton: {
+			type: Boolean,
+			default: false
+		},
+		showMapButton: {
+			type: Boolean,
+			default: false
 		}
 	})
 
-	const emit = defineEmits(['open-stats', 'open-inventory', 'open-map', 'open-journal'])
-
-	function openStats() {
-		emit('open-stats')
-	}
+	const emit = defineEmits(['open-inventory', 'open-map', 'open-journal'])
 
 	function openInventory() {
 		emit('open-inventory')
@@ -47,4 +46,3 @@
 		emit('open-journal')
 	}
 </script>
-

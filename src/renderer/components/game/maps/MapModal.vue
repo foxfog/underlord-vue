@@ -22,7 +22,7 @@
 						+
 					</button>
 				</div>
-				<button class="map-modal__close" @click="close">✖</button>
+				<button class="btn-close" @click="close">×</button>
 			</div>
 
 			<div 
@@ -36,12 +36,12 @@
 				:class="{ '_dragging': isDragging, '_zoomable': isZoomed }"
 			>
 				<div class="map-modal__dynamic-map" :style="transformStyle">
-				<component
-					:is="mapComponent"
-					:current-location="props.globalData.currentLocation || ''"
-					:global-data="props.globalData"
-					@goto="onChildGoto"
-				/>
+					<component
+						:is="mapComponent"
+						:current-location="props.globalData.currentLocation || ''"
+						:global-data="props.globalData"
+						@goto="onChildGoto"
+					/>
 				</div>
 			</div>
 		</div>
@@ -100,4 +100,3 @@ function onChildGoto(target) {
     emit('goto', target)
 }
 </script>
-

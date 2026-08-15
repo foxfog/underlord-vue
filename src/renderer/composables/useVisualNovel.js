@@ -1,9 +1,10 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useSavesStore } from '../stores/saves'
 import { useSettingsStore } from '../stores/settings'
 import { SOUND_ALIASES } from '../constants/sounds'
 import { DIALOGUE_HIDE_UI_CONFIG } from '../constants/dialogue'
 import { extractVisibleCharacterDisplay, applyVisibleCharacterDisplay } from '../utils/saveGameUtils'
+import { evaluateExpression } from '../utils/expressionEvaluator'
 
 export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	// State
@@ -60,7 +61,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
  		return `/data/story/${language}/${candidate}.json`
  	}
 	// UI visibility state
-	const uiVisibility = ref({
+	const baseUiVisibility = ref({
 		all: false,
 		'stats-button': false,
 		'inventory-button': false,
@@ -69,8 +70,53 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		topbar: false,
 		hotbar: false,
 		dialogue: false,
-		dialogueHideUI: DIALOGUE_HIDE_UI_CONFIG, // Глобальная конфигурация для скрытия при диалоге
-		hasDialogue: false // Флаг: активен ли сейчас диалог/выборы/титры
+		dialogueHideUI: DIALOGUE_HIDE_UI_CONFIG // Глобальная конфигурация для скрытия при диалоге
+	})
+
+	const isInDialogueMode = ref(false)
+
+	const isDialogueActive = computed(() => {
+		return isInDialogueMode.value || !!(
+			currentDialogue.value ||
+			currentNarration.value ||
+			currentTitle.value ||
+			(currentChoices.value && currentChoices.value.length > 0) ||
+			showTextInputModal.value
+		)
+	})
+
+	const uiVisibility = computed(() => {
+		const base = baseUiVisibility.value
+		const hideList = base.dialogueHideUI || DIALOGUE_HIDE_UI_CONFIG || []
+		const inDialogue = isDialogueActive.value
+
+		function isTargetHiddenByDialogue(target) {
+			if (!inDialogue) return false
+			return hideList.includes('all') || hideList.includes(target)
+		}
+
+		const statsButton = isTargetHiddenByDialogue('stats-button') ? false : !!(base.all || base['stats-button'])
+		const inventoryButton = isTargetHiddenByDialogue('inventory-button') ? false : !!(base.all || base['inventory-button'])
+		const mapButton = isTargetHiddenByDialogue('map-button') ? false : !!(base.all || base['map-button'])
+		const journalButton = isTargetHiddenByDialogue('journal-button') ? false : !!(base.all || base['journal-button'])
+		const hotbar = isTargetHiddenByDialogue('hotbar') ? false : !!(base.all || base.hotbar)
+		const topbar = isTargetHiddenByDialogue('topbar')
+			? false
+			: (inventoryButton || mapButton || journalButton || !!base.topbar)
+		const dialogue = isTargetHiddenByDialogue('dialogue') ? false : (base.dialogue !== false)
+
+		return {
+			all: !!base.all,
+			'stats-button': statsButton,
+			'inventory-button': inventoryButton,
+			'map-button': mapButton,
+			'journal-button': journalButton,
+			topbar,
+			hotbar,
+			dialogue,
+			dialogueHideUI: hideList,
+			hasDialogue: inDialogue
+		}
 	})
 
 	const isRestoringGameState = ref(false)
@@ -187,12 +233,9 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	}
 
 	function processStep() {
-		// Очищаем автоматическое скрытие диалога если нет активного диалога на новом шаге
-		if (!currentDialogue.value && !currentNarration.value && !currentTitle.value && currentChoices.value.length === 0) {
-			clearDialogueHiding()
-		}
-
 		if (!storyData.value || stepIndex.value >= storyData.value.steps.length) {
+			isInDialogueMode.value = false
+			clearDialogueHiding()
 			emit && emit('end')
 			return
 		}
@@ -369,6 +412,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 				case 'hold':
 					// Keep the current scene/dialogue visible and do not advance further.
 					// Use this at the end of a story to prevent the engine from emitting `end`.
+					isInDialogueMode.value = false
 					return
 				case 'goto':
 					if (step.delay) {
@@ -383,6 +427,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 				case 'end':
 					// 'end' always terminates the game regardless of call stack.
 					// Use 'continue' to return from a macro/sub-story to the caller.
+					isInDialogueMode.value = false
 					isRestoringGameState.value = false
 					callStack.value = []
 					if (step.delay) {
@@ -545,9 +590,9 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		const knownTargets = ['topbar', 'hotbar', 'dialogue', 'stats-button', 'inventory-button', 'map-button', 'journal-button']
 
 		function setAllUi(value) {
-			uiVisibility.value['all'] = value
+			baseUiVisibility.value.all = value
 			knownTargets.forEach((target) => {
-				uiVisibility.value[target] = value
+				baseUiVisibility.value[target] = value
 			})
 		}
 
@@ -568,13 +613,23 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					console.warn(`UI target not recognized: ${target}`)
 					return
 				}
+				if (!show && baseUiVisibility.value.all) {
+					baseUiVisibility.value.all = false
+					knownTargets.forEach((k) => {
+						baseUiVisibility.value[k] = true
+					})
+				}
 				if (target === 'topbar' && !show) {
-					uiVisibility.value.topbar = false
+					baseUiVisibility.value.topbar = false
+					baseUiVisibility.value['stats-button'] = false
+					baseUiVisibility.value['inventory-button'] = false
+					baseUiVisibility.value['map-button'] = false
+					baseUiVisibility.value['journal-button'] = false
 					return
 				}
-				uiVisibility.value[target] = show
-				if (show && ['stats-button', 'inventory-button', 'map-button', 'journal-button', 'hotbar'].includes(target)) {
-					uiVisibility.value.topbar = true
+				baseUiVisibility.value[target] = show
+				if (show && ['stats-button', 'inventory-button', 'map-button', 'journal-button'].includes(target)) {
+					baseUiVisibility.value.topbar = true
 				}
 			}
 		})
@@ -585,64 +640,24 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	 * @param {string[]} targets - Массив ID элементов для скрытия при диалоге
 	 */
 	function setDialogueHideUI(targets) {
-		uiVisibility.value.dialogueHideUI = Array.isArray(targets) ? targets : []
-		console.log(`📌 Dialogue hide UI configured:`, uiVisibility.value.dialogueHideUI)
+		baseUiVisibility.value.dialogueHideUI = Array.isArray(targets) ? targets : []
+		console.log(`📌 Dialogue hide UI configured:`, baseUiVisibility.value.dialogueHideUI)
 	}
 
-	/**
-	 * Применить скрытие элементов для активного диалога
-	 * Скрывает элементы из dialogueHideUI, но НЕ переопределяет явное скрытие из UI команд
-	 */
 	function applyDialogueHiding() {
-		if (!uiVisibility.value.dialogueHideUI || uiVisibility.value.dialogueHideUI.length === 0) {
-			return
-		}
-
-		uiVisibility.value.hasDialogue = true
-
-		uiVisibility.value.dialogueHideUI.forEach(target => {
-			// Только скрываем, не показываем (чтобы не переопределять явное скрытие)
-			if (target === 'all') {
-				// 'all' означает скрыть все, кроме диалога
-				Object.keys(uiVisibility.value).forEach(key => {
-					if (key !== 'dialogueHideUI' && key !== 'hasDialogue' && key !== 'all') {
-						uiVisibility.value[key] = false
-					}
-				})
-				uiVisibility.value.dialogue = true
-			} else if (target !== 'dialogueHideUI' && target !== 'hasDialogue') {
-				uiVisibility.value[target] = false
-			}
-		})
+		// Handled reactively via computed uiVisibility
 	}
 
-	/**
-	 * Убрать автоматическое скрытие элементов для диалога
-	 * Если элемент был явно скрыт командой UI, останется скрыт
-	 */
 	function clearDialogueHiding() {
-		if (!uiVisibility.value.dialogueHideUI || uiVisibility.value.dialogueHideUI.length === 0) {
-			uiVisibility.value.hasDialogue = false
-			return
+		// Handled reactively via computed uiVisibility
+	}
+
+	function onStreamEnded({ streamId, type }) {
+		const stream = audioStreams.value[streamId]
+		if (stream && !stream.loop) {
+			stopStream(streamId)
+			console.log(`🧹 Cleaned up finished non-looping ${type} stream: ${streamId}`)
 		}
-
-		uiVisibility.value.hasDialogue = false
-
-		// Восстанавливаем элементы которые были скрыты диалогом, но проверяем что они не скрыты явно
-		// В идеале нам нужно отслеживать какие элементы были скрыты явными командами vs диалогом
-		// Пока используем логику: если элемент в dialogueHideUI, показываем его
-		uiVisibility.value.dialogueHideUI.forEach(target => {
-			if (target === 'all') {
-				// Если было 'all', показываем все кроме явно скрытых
-				Object.keys(uiVisibility.value).forEach(key => {
-					if (key !== 'dialogueHideUI' && key !== 'hasDialogue' && key !== 'all') {
-						uiVisibility.value[key] = true
-					}
-				})
-			} else if (target !== 'dialogueHideUI' && target !== 'hasDialogue') {
-				uiVisibility.value[target] = true
-			}
-		})
 	}
 
 	// Audio handlers
@@ -763,6 +778,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	}
 
 	function showDialogue(characterId, text) {
+		isInDialogueMode.value = true
 		const character = characterData.value[characterId]
 		currentSpeaker.value = character ? character.name : ''
 		currentNarration.value = ''
@@ -772,6 +788,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	}
 
 	function showNarration(text) {
+		isInDialogueMode.value = true
 		currentNarration.value = substituteVariables(text)
 		currentSpeaker.value = ''
 		currentDialogue.value = ''
@@ -780,6 +797,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	}
 
 	function showTitle(step) {
+		isInDialogueMode.value = true
 		if (titleTimeout) { clearTimeout(titleTimeout); titleTimeout = null }
 		let titleText = substituteVariables(step.text)
 		let titleTextForDisplay = titleText
@@ -823,6 +841,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	}
 
 	function showTextInput(step) {
+		isInDialogueMode.value = true
 		currentDialogue.value = ''
 		currentNarration.value = ''
 		currentSpeaker.value = ''
@@ -881,7 +900,9 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			if (!characterData.value[characterId]) return null
 			let target = characterData.value[characterId]
 			for (let i = 0; i < propertyPath.length - 1; i++) {
-				if (target[propertyPath[i]] === undefined) target[propertyPath[i]] = {}
+				if (target[propertyPath[i]] === undefined || typeof target[propertyPath[i]] !== 'object' || target[propertyPath[i]] === null) {
+					target[propertyPath[i]] = {}
+				}
 				target = target[propertyPath[i]]
 			}
 			return { container: target, key: propertyPath[propertyPath.length - 1], root: 'character', id: characterId }
@@ -890,7 +911,9 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			const propertyPath = parts.slice(1)
 			let target = globalData.value
 			for (let i = 0; i < propertyPath.length - 1; i++) {
-				if (target[propertyPath[i]] === undefined) target[propertyPath[i]] = {}
+				if (target[propertyPath[i]] === undefined || typeof target[propertyPath[i]] !== 'object' || target[propertyPath[i]] === null) {
+					target[propertyPath[i]] = {}
+				}
 				target = target[propertyPath[i]]
 			}
 			return { container: target, key: propertyPath[propertyPath.length - 1], root: 'global' }
@@ -909,19 +932,10 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		const resolved = resolvePath(targetPath)
 		if (!resolved) { console.warn('Could not resolve target path for variable:', targetPath); return }
 
-		let rhsValue = null
-		const num = Number(rhsRaw)
-		if (!isNaN(num) && rhsRaw.trim() !== '') rhsValue = num
-		else {
-			const strMatch = rhsRaw.match(/^['"]([\s\S]*)['"]$/)
-			if (strMatch) rhsValue = strMatch[1]
-			else {
-				const ref = resolvePath(rhsRaw)
-				if (ref && ref.container && ref.container[ref.key] !== undefined) rhsValue = ref.container[ref.key]
-				else rhsValue = rhsRaw
-			}
-		}
-
+		const rhsValue = evaluateExpression(rhsRaw, {
+			global: globalData.value,
+			character: characterData.value
+		})
 		const container = resolved.container
 		const key = resolved.key
 		const current = container[key]
@@ -960,70 +974,11 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 
 	function evaluateCondition(conditionStr) {
 		if (!conditionStr || typeof conditionStr !== 'string') return false
-		
-		// Extract content from braces: "{condition}" → "condition"
-		const match = conditionStr.match(/^\{(.+)\}$/)
-		if (!match) return false
-		
-		const condition = match[1]
-		
-		// Replace global.xxx.yyy with actual values from globalData.value
-		let evaluatedCondition = condition.replace(/global\.[\w.?]+/g, (match) => {
-			const path = match.replace('global.', '').split('?').join('') // Remove optional chaining
-			const parts = path.split('.')
-			let target = globalData.value
-			for (let i = 0; i < parts.length; i++) {
-				if (target === null || target === undefined) return 'undefined'
-				target = target[parts[i]]
-			}
-			
-			// Return JSON representation for proper evaluation
-			if (typeof target === 'string') return `"${target}"`
-			if (target === null) return 'null'
-			if (target === undefined) return 'undefined'
-			return String(target)
-		})
-		
-		// Replace character.xxx.yyy with actual values
-		evaluatedCondition = evaluatedCondition.replace(/character\.\w+[\w.?[\]]*(?:\[[^\]]+\])?/g, (match) => {
-			const parts = match.split('.')
-			if (parts[0] !== 'character' || parts.length < 3) return match
-			
-			const characterId = parts[1]
-			const propertyPath = parts.slice(2)
-			if (characterData.value[characterId]) {
-				let target = characterData.value[characterId]
-				for (let i = 0; i < propertyPath.length; i++) {
-					const part = propertyPath[i]
-					const arrayMatch = part.match(/^(\w+)\[([^\]]+)\]$/)
-					if (arrayMatch) {
-						const arrayName = arrayMatch[1]
-						const indexExpr = arrayMatch[2]
-						if (target[arrayName] === undefined) return 'undefined'
-						let index = parseInt(indexExpr)
-						if (isNaN(index)) {
-							const searchValue = indexExpr.replace(/^['"]|['"]$/g, '')
-							if (Array.isArray(target[arrayName])) {
-								index = target[arrayName].findIndex(item => item.itemId === searchValue)
-								if (index === -1) return 'undefined'
-							}
-						}
-						target = Array.isArray(target[arrayName]) ? target[arrayName][index] : undefined
-					} else {
-						if (target[part] === undefined) return 'undefined'
-						target = target[part]
-					}
-				}
-				if (typeof target === 'string') return `"${target}"`
-				if (target === null) return 'null'
-				if (target === undefined) return 'undefined'
-				return String(target)
-			}
-			return match
-		})
-		
 		try {
-			return Boolean(eval(evaluatedCondition))
+			return Boolean(evaluateExpression(conditionStr, {
+				global: globalData.value,
+				character: characterData.value
+			}))
 		} catch (error) {
 			console.warn('Error evaluating condition:', conditionStr, error)
 			return false
@@ -1107,6 +1062,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	}
 
 	function showChoices(choiceStep) {
+		isInDialogueMode.value = true
 		currentChoices.value = choiceStep.options.map(option => ({
 			...option,
 			text: substituteVariables(option.text),
@@ -1241,9 +1197,11 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			currentNarration.value = ''
 			currentSpeaker.value = ''
 			currentChoices.value = []
-			clearDialogueHiding()
 			loadReturnStory(returnPosition.storyId, returnPosition.stepIndex)
-		} else emit && emit('end')
+		} else {
+			clearDialogueHiding()
+			emit && emit('end')
+		}
 	}
 
 	async function loadTargetStory(storyName) {
@@ -1416,7 +1374,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			currentSceneMods: currentScene.value?.mods || [],
 			history: historyEntries.value.slice(),
 			audioStreams: activeLoopingStreams,
-			uiVisibility: { ...uiVisibility.value }
+			uiVisibility: { ...baseUiVisibility.value }
 		}
 	}
 
@@ -1492,9 +1450,9 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			}
 			// Restore UI visibility if present in save; otherwise enable core UI by default
 			if (saveData.uiVisibility && typeof saveData.uiVisibility === 'object') {
-				uiVisibility.value = { ...uiVisibility.value, ...saveData.uiVisibility }
+				baseUiVisibility.value = { ...baseUiVisibility.value, ...saveData.uiVisibility }
 			} else {
-				uiVisibility.value = { ...uiVisibility.value, topbar: true, hotbar: true, dialogue: true }
+				baseUiVisibility.value = { ...baseUiVisibility.value, topbar: true, hotbar: true, dialogue: true }
 			}
 			currentDialogue.value = ''
 			currentNarration.value = ''
@@ -1578,6 +1536,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	}
 
 	function resetGameState() {
+		isInDialogueMode.value = false
 		stepIndex.value = 0
 		callStack.value = []
 		currentDialogue.value = ''
@@ -1609,7 +1568,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		goto: goToLabel,
 		// audio methods
 		playSound, playVoice, playMusic, stopSound, stopVoice, stopMusic,
-		stopStream, stopAllStreams, getStream, pauseAllStreams, resumeAllStreams,
+		stopStream, stopAllStreams, getStream, pauseAllStreams, resumeAllStreams, onStreamEnded,
 		// UI methods for dialogue hiding
 		setDialogueHideUI,
 		// history helpers

@@ -1,5 +1,5 @@
 <template>
-	<StoryAudio :audio-streams="audioStreams" />
+	<StoryAudio :audio-streams="audioStreams" @stream-ended="onStreamEnded" />
 	
 	<Background :scene="currentScene" />
 	<CharacterList :characters="visibleCharacters" />
@@ -56,7 +56,7 @@
 		audioStreams,
 		loadStory, processStep, advanceStory, selectChoice, getInitialValue, onTextInputConfirm,
 		getGameState, restoreGameState, resetGameState, getHistory, clearHistory,
-		pauseAllStreams, resumeAllStreams,
+		pauseAllStreams, resumeAllStreams, onStreamEnded,
 		goto, // ← Добавляем goto method для Rules Engine
 		setDialogueHideUI // ← Система скрытия UI при диалоге
 	} = vn

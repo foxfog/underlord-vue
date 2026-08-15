@@ -1,6 +1,6 @@
 <template>
-	<div v-if="isVisible" class="modal">
-		<div class="modal-content">
+	<div v-if="isVisible" class="modal" @click="handleBackdropClick">
+		<div class="modal-content" @click.stop>
 			<div class="modal-header" v-if="showCloseButton">
 				<h2 class="modal-title">{{ title }}</h2>
 				<button class="btn-close" @click="closeModal">×</button>
@@ -9,7 +9,7 @@
 				<h2 class="modal-title">{{ title }}</h2>
 			</div>
 			<div class="modal-body">
-				<p class="input-description">{{ description }}</p>
+				<p class="input-description" v-if="description">{{ description }}</p>
 				<input 
 					v-model="inputValue"
 					type="text" 
@@ -70,16 +70,34 @@
 	const inputValue = ref(props.initialValue)
 	const inputField = ref(null)
 
+	function focusAndSelect() {
+		nextTick(() => {
+			if (inputField.value) {
+				inputField.value.focus()
+				inputField.value.select()
+			}
+		})
+	}
+
 	watch(() => props.isVisible, (newVal) => {
 		if (newVal) {
 			inputValue.value = props.initialValue
-			nextTick(() => {
-				if (inputField.value) {
-					inputField.value.focus()
-				}
-			})
+			focusAndSelect()
 		}
 	})
+
+	watch(() => props.initialValue, (newVal) => {
+		inputValue.value = newVal || ''
+		if (props.isVisible) {
+			focusAndSelect()
+		}
+	})
+
+	function handleBackdropClick() {
+		if (props.showCancelButton || props.showCloseButton) {
+			closeModal()
+		}
+	}
 
 	function closeModal() {
 		emit('close')
@@ -92,4 +110,3 @@
 		}
 	}
 </script>
-

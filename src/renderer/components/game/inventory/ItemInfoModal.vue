@@ -107,7 +107,6 @@
 
 	const isStackable = computed(() => {
 		if (!props.itemDef) return null
-		// по умолчанию предмет складируемый, если не указано stackable: false
 		return props.itemDef.stackable !== false
 	})
 
@@ -166,4 +165,3 @@
 		emit('close')
 	}
 </script>
-

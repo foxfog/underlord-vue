@@ -1,14 +1,14 @@
 <template>
 	<teleport to="body">
-		<div v-if="visible" class="confirm-overlay">
-			<div class="confirm-box">
+		<div v-if="visible" class="confirm-overlay" @click="$emit('cancel')">
+			<div class="confirm-box" @click.stop>
 				<div class="confirm-title" v-if="title">{{ title }}</div>
 				<div class="confirm-message">{{ message }}</div>
 				<div class="confirm-actions">
-					<button class="btn btn-confirm btn-primary" @click="$emit('yes')">
+					<button class="btn btn-primary" @click="$emit('yes')">
 						{{ yesText }}
 					</button>
-					<button class="btn btn-no btn-secondary" @click="$emit('no')">
+					<button class="btn btn-secondary" @click="$emit('no')">
 						{{ noText }}
 					</button>
 					<button class="btn btn-cancel" @click="$emit('cancel')">
@@ -50,4 +50,3 @@
 
 	defineEmits(['yes', 'no', 'cancel'])
 </script>
-

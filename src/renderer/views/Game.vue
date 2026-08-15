@@ -4,9 +4,9 @@
 		<Topbar
 			v-if="showTopbar"
 			:character="mcCharacter"
-			:show-map-button="showMapButton"
 			:show-inventory-button="showInventoryButton"
-			@open-stats="toggleStatsModal"
+			:show-journal-button="showJournalButton"
+			:show-map-button="showMapButton"
 			@open-inventory="toggleInventoryModal"
 			@open-map="toggleMapModal"
 			@open-journal="toggleJournalModal"
@@ -21,13 +21,6 @@
 				@global-data-changed="onGlobalDataChanged"
 			/>
 		</div>
-
-		<!-- Stats Modal -->
-		<CharacterStatsModal
-			:is-visible="showStatsModal"
-			:character="mcCharacter"
-			@close="toggleStatsModal"
-		/>
 
 		<!-- Inventory Modal -->
 		<InventoryModal
@@ -122,7 +115,6 @@
 	import { ref, onMounted, onUnmounted, nextTick, watch, computed, reactive } from 'vue'
 	import { useRouter, useRoute } from 'vue-router'
 	import VisualNovel from '../components/game/VisualNovel.vue'
-	import CharacterStatsModal from '../components/game/characters/CharacterStatsModal.vue'
 	import InventoryModal from '../components/game/inventory/InventoryModal.vue'
 	import Topbar from '../components/game/ui/Topbar.vue'
 	import MapModal from '../components/game/maps/MapModal.vue'
@@ -149,9 +141,8 @@
 	const settingsStore = useSettingsStore()
 	const savesStore = useSavesStore()
 	const visualNovel = ref(null)
-	const showStatsModal = ref(false)
-	const showInventoryModal = ref(false)
 	const showMapModal = ref(false)
+	const showInventoryModal = ref(false)
 	const showJournalModal = ref(false)
 	const mcCharacter = ref(null)
 	const itemsData = ref({})
@@ -252,47 +243,44 @@
 		return `/data/story/${language}/start.json`
 	})
 
-	// UI visibility states
-	const uiVisibility = ref({
-		all: false,
-		'stats-button': false,
-		'inventory-button': false,
-		'map-button': false,
-		'journal-button': false,
-		topbar: false,
-		hotbar: false,
-		dialogue: false
+	// UI visibility states from VisualNovel
+	const currentUiVisibility = computed(() => {
+		const vn = visualNovel.value
+		if (!vn || !vn.uiVisibility) return {}
+		return vn.uiVisibility.value || vn.uiVisibility || {}
 	})
 
-	// Computed properties for UI visibility
+	const showInventoryButton = computed(() => {
+		const v = currentUiVisibility.value
+		if (v.all) return true
+		return !!v['inventory-button']
+	})
+
+	const showJournalButton = computed(() => {
+		const v = currentUiVisibility.value
+		if (v.all) return true
+		return !!v['journal-button']
+	})
+
+	const showMapButton = computed(() => {
+		const v = currentUiVisibility.value
+		if (v.all) return true
+		return !!v['map-button']
+	})
+
 	const showTopbar = computed(() => {
-		if (uiVisibility.value.all) return true
-		if (!uiVisibility.value.topbar) {
-			return !!(
-				uiVisibility.value['stats-button'] ||
-				uiVisibility.value['inventory-button'] ||
-				uiVisibility.value['map-button'] ||
-				uiVisibility.value['journal-button']
-			)
-		}
-		return !!(
-			uiVisibility.value['stats-button'] ||
-			uiVisibility.value['inventory-button'] ||
-			uiVisibility.value['map-button'] ||
-			uiVisibility.value['journal-button']
+		const v = currentUiVisibility.value
+		if (v.all) return true
+		return (
+			showInventoryButton.value ||
+			showJournalButton.value ||
+			showMapButton.value
 		)
 	})
 
 	const showHotbar = computed(() => {
-		return uiVisibility.value.all || uiVisibility.value.hotbar
-	})
-
-	const showMapButton = computed(() => {
-		return uiVisibility.value['map-button'] !== false
-	})
-
-	const showInventoryButton = computed(() => {
-		return uiVisibility.value['inventory-button'] !== false
+		const v = currentUiVisibility.value
+		return !!(v.all || v.hotbar)
 	})
 
 	function getGameAreaClipRect() {
@@ -307,13 +295,6 @@
 			height: Math.max(0, Math.round(rect.height * dpr))
 		}
 	}
-
-	// Watch for uiVisibility changes from VisualNovel
-	watch(() => visualNovel.value?.uiVisibility, (newVisibility) => {
-		if (newVisibility) {
-			uiVisibility.value = newVisibility
-		}
-	}, { deep: true })
 
 	// Watch menu visibility changes
 	watch(menuVisible, (isVisible) => {
@@ -401,10 +382,6 @@
 		// Stop game music, restore background music
 		settingsStore.isMusicPlaying = true
 		router.push('/home')
-	}
-
-	function toggleStatsModal() {
-		showStatsModal.value = !showStatsModal.value
 	}
 
 	function toggleInventoryModal() {
