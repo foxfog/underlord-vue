@@ -15,7 +15,7 @@
 	"exp": 9000201,
 	"skill_points": 1,
 	"stat_points": 90,
-	"fractions": ["nazaric","sorcerer-kingdom"],
+	"fractions": ["nazaric", "sorcerer-kingdom"],
 	"tags": ["guardian-overseer"],
 	"equipment_slots": {
 		"head": null,

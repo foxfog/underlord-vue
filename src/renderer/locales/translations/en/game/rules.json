@@ -1,0 +1,36 @@
+{
+	"game": {
+		"rules": {
+			"toxic_gas_no_mask": {
+				"name": "Death from toxic gas poisoning",
+				"description": "If player is in a toxic gas location without a mask - instant death",
+				"notification": "⚠️ Lack of oxygen!"
+			},
+			"no_protection_damage": {
+				"name": "Radiation damage without protection",
+				"description": "If player is in a dangerous location without a hazmat suit - takes damage",
+				"notification": "☢️ Radiation causes damage!"
+			},
+			"filter_wearing_warning": {
+				"name": "Filter replacement reminder",
+				"description": "If filter wear is above 80% - show warning",
+				"notification": "⚠️ Mask filter is worn out!"
+			},
+			"health_critical": {
+				"name": "Critical health",
+				"description": "When health is below 10% - red screen effect",
+				"notification": "🚨 CRITICAL CONDITION"
+			},
+			"environmental_damage": {
+				"name": "Environmental damage",
+				"description": "Damage when in multiple dangerous locations",
+				"notification": "🔥 Environment causes damage!"
+			},
+			"complex_custom_rule": {
+				"name": "Example with custom function",
+				"description": "Demonstration of using custom function for checks",
+				"dialogue": "I need to find shelter... I can barely hold on..."
+			}
+		}
+	}
+}

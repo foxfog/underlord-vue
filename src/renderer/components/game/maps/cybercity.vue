@@ -3,12 +3,12 @@
 		<img src="/images/sprites/maps/city.webp" class="map-bg-image" />
 	</div>
 	<div class="map-overlay">
-		<div 
+		<div
 			v-for="place in locationsWithActive"
 			:key="place.id"
 			class="map-place"
 			@click="onPlaceClick(place)"
-			:class="[place.class, { '_active': place.active, '_disabled': place.active }]"
+			:class="[place.class, { _active: place.active, _disabled: place.active }]"
 			:style="{ left: place.x + '%', top: place.y + '%' }"
 		>
 			<div class="map-place-image"></div>
@@ -21,45 +21,45 @@
 </template>
 
 <script setup>
-	import { ref, computed } from 'vue'
+import { ref, computed } from 'vue'
 
-	const props = defineProps({
-		currentLocation: {
-			type: String,
-			default: ''
-		},
-		globalData: {
-			type: Object,
-			default: () => ({})
-		}
-	})
+const props = defineProps({
+	currentLocation: {
+		type: String,
+		default: ''
+	},
+	globalData: {
+		type: Object,
+		default: () => ({})
+	}
+})
 
 const emit = defineEmits(['goto'])
 
-	const locations = ref([
-		{
-			id: 'factory',
-			name: 'Завод',
-			x: 47,
-			y: 30,
-			class: 'map-place-factory'
-		},
-		{
-			id: 'home',
-			name: 'Дом',
-			x: 85,
-			y: 73,
-			class: 'map-place-mchome'
-		}
-	])
+const locations = ref([
+	{
+		id: 'factory',
+		name: 'Завод',
+		x: 47,
+		y: 30,
+		class: 'map-place-factory'
+	},
+	{
+		id: 'home',
+		name: 'Дом',
+		x: 85,
+		y: 73,
+		class: 'map-place-mchome'
+	}
+])
 
-	// Вычисляем активную точку на основе переменной
-	const locationsWithActive = computed(() => {
-		return locations.value.map(location => ({
-			...location,
-			active: location.id === props.currentLocation
-		}))
-	})
+// Вычисляем активную точку на основе переменной
+const locationsWithActive = computed(() => {
+	return locations.value.map((location) => ({
+		...location,
+		active: location.id === props.currentLocation
+	}))
+})
 
 function getPlaceTarget(place) {
 	if (place.id === 'factory') {

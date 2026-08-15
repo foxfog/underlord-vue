@@ -71,14 +71,14 @@
 			"text": "и еще текст"
 		},
 
-		{ 
+		{
 			"type": "hide",
 			"character": "mc",
-			"to": {"l": 120, "r": "auto"},
+			"to": { "l": 120, "r": "auto" },
 			"duration": 1
 		},
 
-		{ 
+		{
 			"type": "end",
 			"delay": 1
 		}

@@ -14,31 +14,36 @@
 	font-family: Tahoma;
 }
 
-.sw-stars, .sw-twinkling {
-  position:absolute;
-  top:0;
-  left:0;
-  right:0;
-  bottom:0;
-  width:100%;
-  height:100%;
-  display:block;
+.sw-stars,
+.sw-twinkling {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	width: 100%;
+	height: 100%;
+	display: block;
 }
 
 .sw-stars {
-  background:#000 url('/images/sw/space.png') repeat top center;
-  z-index: 0;
+	background: #000 url('/images/sw/space.png') repeat top center;
+	z-index: 0;
 }
 
 .sw-twinkling {
-  background-image: url('/images/sw/twinkling.png');
-  animation: 3s twinkle infinite;
-  animation-timing-function: linear;
+	background-image: url('/images/sw/twinkling.png');
+	animation: 3s twinkle infinite;
+	animation-timing-function: linear;
 }
 
 @keyframes twinkle {
-  from {backrgound-position: 0}
-  to {background-position: -100px 0}
+	from {
+		backrgound-position: 0;
+	}
+	to {
+		background-position: -100px 0;
+	}
 }
 
 .sw-old-filter {
@@ -62,43 +67,42 @@
 	animation: logohide 12s ease-out forwards;
 	color: #f9d43e;
 	font-size: 10em;
-    font-family: Overlord;
+	font-family: Overlord;
 	img {
 		width: 100%;
 		height: auto;
-	};
+	}
 }
-
 
 .sw-inner {
 	display: flex;
-    justify-content: center;
-    position: relative;
-    height: 100%;
-    transform: rotateX(45deg) translateZ(-10em);
+	justify-content: center;
+	position: relative;
+	height: 100%;
+	transform: rotateX(45deg) translateZ(-10em);
 }
 
 .sw-crawl {
 	position: relative;
-    width: 86%;
-    top: 72%;
-    transform-origin: 50% 100%;
-    animation: crawl 260s linear;
-    font-size: 2.4em;
-    font-weight: 800;
-    letter-spacing: 0.1em;
-    line-height: 100%;
-    text-align: justify;
-    font-family: Tahoma;
-    color: #f9d43e;
-    text-shadow: 0 0 0.5em #ae5509;
+	width: 86%;
+	top: 72%;
+	transform-origin: 50% 100%;
+	animation: crawl 260s linear;
+	font-size: 2.4em;
+	font-weight: 800;
+	letter-spacing: 0.1em;
+	line-height: 100%;
+	text-align: justify;
+	font-family: Tahoma;
+	color: #f9d43e;
+	text-shadow: 0 0 0.5em #ae5509;
 }
 
 @keyframes crawl {
 	0% {
 		top: 100%;
 	}
-	100% { 
+	100% {
 		top: -600%;
 	}
 }
@@ -110,7 +114,7 @@
 	50% {
 		opacity: 1;
 	}
-	100% { 
+	100% {
 		scale: 0;
 		opacity: 0;
 	}

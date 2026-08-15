@@ -7,10 +7,9 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer'
 
 // Import icon path
-const icon = is.dev 
+const icon = is.dev
 	? join(__dirname, '../../build/icon.png')
 	: join(process.resourcesPath, 'icon.png')
-
 
 // Проверка и создание settings.json
 async function ensureSettingsFile() {
@@ -65,15 +64,15 @@ ipcMain.on('set-fullscreen', (event, flag) => {
 ipcMain.handle('list-files', async (_event, folderPath) => {
 	try {
 		const audioFiles = []
-		
+
 		// Функция для рекурсивного сканирования папки
 		async function scanDirectory(dirPath, relativePath = '') {
 			const entries = await fs.readdir(dirPath, { withFileTypes: true })
-			
+
 			for (const entry of entries) {
 				const fullPath = join(dirPath, entry.name)
 				const relativeFilePath = join(relativePath, entry.name)
-				
+
 				if (entry.isDirectory()) {
 					// Рекурсивно сканируем подпапки
 					await scanDirectory(fullPath, relativeFilePath)
@@ -88,12 +87,12 @@ ipcMain.handle('list-files', async (_event, folderPath) => {
 				}
 			}
 		}
-		
+
 		// Строим абсолютный путь к папке с файлами
-		const fullPath = is.dev 
+		const fullPath = is.dev
 			? join(__dirname, '../../src/renderer/public', folderPath)
 			: join(process.resourcesPath, 'app', 'out', 'renderer', folderPath)
-		
+
 		console.log(`Scanning audio directory: ${fullPath}`)
 		await scanDirectory(fullPath)
 		console.log(`Found ${audioFiles.length} audio files:`, audioFiles)
@@ -131,7 +130,7 @@ ipcMain.handle('save-game', async (event, slotNumber, saveFile, clipRect) => {
 	try {
 		const savesDir = await getSavesDirectory()
 		const { mcName } = saveFile
-		
+
 		// Capture window screenshot for save slot thumbnail
 		const win = BrowserWindow.fromWebContents(event.sender)
 		if (win) {
@@ -173,7 +172,7 @@ ipcMain.handle('save-game', async (event, slotNumber, saveFile, clipRect) => {
 
 		const fileName = `${slotNumber}_${mcName}_${saveFile.timestampFormatted}.json`
 		const filePath = join(savesDir, fileName)
-		
+
 		await fs.writeFile(filePath, JSON.stringify(saveFile, null, 2), 'utf-8')
 		console.log(`✔ Сохранение создано: ${fileName}`)
 		return { success: true, data: saveFile }
@@ -187,21 +186,21 @@ ipcMain.handle('load-game', async (_event, slotNumber) => {
 	try {
 		const savesDir = await getSavesDirectory()
 		const entries = await fs.readdir(savesDir, { withFileTypes: true })
-		
+
 		// Найти файл сохранения с нужным номером слота
-		const saveFile = entries.find(entry => {
+		const saveFile = entries.find((entry) => {
 			const nameMatch = entry.name.match(/^(\d+)_/)
 			return entry.isFile() && nameMatch && parseInt(nameMatch[1]) === slotNumber
 		})
-		
+
 		if (!saveFile) {
 			return { success: false, error: 'Сохранение не найдено' }
 		}
-		
+
 		const filePath = join(savesDir, saveFile.name)
 		const data = await fs.readFile(filePath, 'utf-8')
 		const saveData = JSON.parse(data)
-		
+
 		console.log(`✔ Сохранение загружено: ${saveFile.name}`)
 		return { success: true, data: saveData }
 	} catch (error) {
@@ -215,7 +214,7 @@ ipcMain.handle('list-saves', async (_event) => {
 		const savesDir = await getSavesDirectory()
 		const entries = await fs.readdir(savesDir, { withFileTypes: true })
 		const savesMap = new Map() // Map to track latest save per slot
-		
+
 		for (const entry of entries) {
 			if (entry.isFile() && entry.name.endsWith('.json')) {
 				try {
@@ -225,15 +224,15 @@ ipcMain.handle('list-saves', async (_event) => {
 						console.warn(`File doesn't match save pattern: ${entry.name}`)
 						continue
 					}
-					
+
 					const slot = parseInt(nameMatch[1])
 					const filePath = join(savesDir, entry.name)
 					const data = await fs.readFile(filePath, 'utf-8')
 					const saveData = JSON.parse(data)
-					
+
 					// Ensure slot number in data matches filename
 					saveData.slot = slot
-					
+
 					// Keep only the latest save for each slot (compare timestamps)
 					if (!savesMap.has(slot) || saveData.timestamp > savesMap.get(slot).timestamp) {
 						savesMap.set(slot, saveData)
@@ -244,7 +243,7 @@ ipcMain.handle('list-saves', async (_event) => {
 				}
 			}
 		}
-		
+
 		// Convert map to array
 		const saves = Array.from(savesMap.values()).sort((a, b) => a.slot - b.slot)
 		console.log(`✔ Найдено ${saves.length} сохранений`)
@@ -259,20 +258,20 @@ ipcMain.handle('delete-save', async (_event, slotNumber) => {
 	try {
 		const savesDir = await getSavesDirectory()
 		const entries = await fs.readdir(savesDir, { withFileTypes: true })
-		
+
 		// Найти файл сохранения с нужным номером слота
-		const saveFile = entries.find(entry => {
+		const saveFile = entries.find((entry) => {
 			const nameMatch = entry.name.match(/^(\d+)_/)
 			return entry.isFile() && nameMatch && parseInt(nameMatch[1]) === slotNumber
 		})
-		
+
 		if (!saveFile) {
 			return { success: false, error: 'Сохранение не найдено' }
 		}
-		
+
 		const filePath = join(savesDir, saveFile.name)
 		await fs.unlink(filePath)
-		
+
 		console.log(`✔ Сохранение удалено: ${saveFile.name}`)
 		return { success: true }
 	} catch (error) {
@@ -280,7 +279,6 @@ ipcMain.handle('delete-save', async (_event, slotNumber) => {
 		return { success: false, error: error.message }
 	}
 })
-
 
 async function getInitialSettings() {
 	const file = join(app.getPath('userData'), 'settings.json')
@@ -301,7 +299,8 @@ async function installDevTools() {
 
 async function createWindow() {
 	const settings = await getInitialSettings()
-	let width = 900, height = 670
+	let width = 900,
+		height = 670
 	if (settings?.video?.resolution) {
 		const [w, h] = String(settings.video.resolution).split('x').map(Number)
 		if (w && h) {
@@ -333,7 +332,7 @@ async function createWindow() {
 		}
 	})
 
-	mainWindow.webContents.setWindowOpenHandler(details => {
+	mainWindow.webContents.setWindowOpenHandler((details) => {
 		shell.openExternal(details.url)
 		return { action: 'deny' }
 	})
@@ -341,16 +340,20 @@ async function createWindow() {
 	mainWindow.webContents.on('before-input-event', (event, input) => {
 		if (
 			(input.key === 'F12' && input.type === 'keyDown') ||
-			(input.control && input.shift && input.key.toLowerCase() === 'i' && input.type === 'keyDown')
+			(input.control &&
+				input.shift &&
+				input.key.toLowerCase() === 'i' &&
+				input.type === 'keyDown')
 		) {
 			mainWindow.webContents.openDevTools({ mode: 'detach' })
 			event.preventDefault()
 		}
 		// Добавить поддержку F5 и Ctrl+R для dev-режима
-		if (is.dev && (
-			(input.key === 'F5' && input.type === 'keyDown') ||
-			(input.control && input.key.toLowerCase() === 'r' && input.type === 'keyDown')
-		)) {
+		if (
+			is.dev &&
+			((input.key === 'F5' && input.type === 'keyDown') ||
+				(input.control && input.key.toLowerCase() === 'r' && input.type === 'keyDown'))
+		) {
 			mainWindow.reload()
 			event.preventDefault()
 		}
@@ -367,7 +370,7 @@ app.whenReady().then(async () => {
 	electronApp.setAppUserModelId('com.electron')
 	await ensureSettingsFile()
 	await installDevTools()
-	
+
 	// Register protocol to serve static files
 	if (!is.dev) {
 		protocol.registerFileProtocol('file', (request, callback) => {
@@ -376,7 +379,7 @@ app.whenReady().then(async () => {
 			callback(filePath)
 		})
 	}
-	
+
 	app.on('browser-window-created', (_, window) => optimizer.watchWindowShortcuts(window))
 	createWindow()
 	app.on('activate', () => {

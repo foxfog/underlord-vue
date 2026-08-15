@@ -56,14 +56,14 @@
 	opacity: 1;
 	transition: opacity 0.3s ease-in-out;
 	pointer-events: auto;
-	
+
 	&.invisible {
 		opacity: 0;
 		pointer-events: none;
 	}
-	
+
 	&::before {
-		content: "";
+		content: '';
 		position: absolute;
 		bottom: 0;
 		left: 0;
@@ -92,10 +92,10 @@
 		line-height: 1.4;
 		font-size: 1.35em;
 		position: absolute;
-		top: calc(var(--size)* 3.5);
+		top: calc(var(--size) * 3.5);
 		p {
 			margin-block-start: 0.2em;
-    		margin-block-end: 0.2em;
+			margin-block-end: 0.2em;
 		}
 		.blink {
 			animation: blink 1s step-start infinite;
@@ -112,7 +112,7 @@
 		margin-bottom: 10px;
 		line-height: 1.4;
 	}
-	
+
 	&._choice-box {
 		min-height: 20%;
 		height: auto;
@@ -155,10 +155,10 @@
 		bottom: 2em;
 		border-radius: 100%;
 		aspect-ratio: 1;
-		padding: 0.2em 1em;	
+		padding: 0.2em 1em;
 		display: flex;
-        align-items: center;
-        justify-content: center;
+		align-items: center;
+		justify-content: center;
 	}
 	.hidden-continue {
 		width: 100%;
@@ -172,10 +172,12 @@
 }
 
 @keyframes blink {
-	0%, 50% {
+	0%,
+	50% {
 		opacity: 1;
 	}
-	50.01%, 100% {
+	50.01%,
+	100% {
 		opacity: 0;
 	}
 }

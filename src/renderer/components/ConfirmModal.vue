@@ -14,21 +14,21 @@
 </template>
 
 <script setup>
-	defineProps({
-		visible: { type: Boolean, default: false },
-		title: { type: String, default: '' },
-		message: { type: String, required: true },
-		confirmText: { type: String, default: 'OK' },
-		cancelText: { type: String, default: 'Cancel' }
-	})
+defineProps({
+	visible: { type: Boolean, default: false },
+	title: { type: String, default: '' },
+	message: { type: String, required: true },
+	confirmText: { type: String, default: 'OK' },
+	cancelText: { type: String, default: 'Cancel' }
+})
 
-	const emit = defineEmits(['confirm', 'cancel'])
+const emit = defineEmits(['confirm', 'cancel'])
 
-	function onConfirm() {
-		emit('confirm')
-	}
+function onConfirm() {
+	emit('confirm')
+}
 
-	function onCancel() {
-		emit('cancel')
-	}
+function onCancel() {
+	emit('cancel')
+}
 </script>

@@ -38,11 +38,11 @@
 	z-index: 249;
 
 	.hotbar-btn {
-		text-shadow: 
+		text-shadow:
 			-1px -1px 0 rgba(0, 0, 0, 0.7),
 			1px -1px 0 rgba(0, 0, 0, 0.7),
-			-1px  1px 0 rgba(0, 0, 0, 0.7),
-			1px  1px 0 rgba(0, 0, 0, 0.7);
+			-1px 1px 0 rgba(0, 0, 0, 0.7),
+			1px 1px 0 rgba(0, 0, 0, 0.7);
 		background: none;
 		color: #e0e0e0;
 		border: 0;
@@ -55,11 +55,11 @@
 		&:hover {
 			outline: 0;
 			color: #fff;
-			text-shadow: 
+			text-shadow:
 				0 0 0.8em var(--color-primary),
 				1px -1px 0 var(--color-primary),
-				-1px  1px 0 var(--color-primary),
-				1px  1px 0 var(--color-primary);
+				-1px 1px 0 var(--color-primary),
+				1px 1px 0 var(--color-primary);
 			transform: translateY(-1px);
 		}
 

@@ -73,10 +73,7 @@ export function findNonSerializable(obj, path = '') {
 
 // Create a normalized save file object (serializable)
 export function serializeGameState(gameState, characterDefaults = {}) {
-	const characterDataDelta = extractCharacterDataDelta(
-		gameState.characterData,
-		characterDefaults
-	)
+	const characterDataDelta = extractCharacterDataDelta(gameState.characterData, characterDefaults)
 
 	const serializedUiVisibility = {}
 	Object.entries(gameState.uiVisibility || {}).forEach(([key, value]) => {
@@ -127,7 +124,10 @@ export const saveService = {
 		}
 
 		try {
-			console.log('💾 saveService.saveGame - audioStreams in saveFile:', Object.keys(saveFile.gameState.audioStreams || {}))
+			console.log(
+				'💾 saveService.saveGame - audioStreams in saveFile:',
+				Object.keys(saveFile.gameState.audioStreams || {})
+			)
 			const result = await window.api.saveGame(slotNumber, saveFile, clipRect)
 			return result
 		} catch (err) {

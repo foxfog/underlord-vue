@@ -1,20 +1,23 @@
 {
-    "scenes": [
-        {
-            "id": "city_street",
-            "bg": "images/sprites/backgrounds/2138/street.jpg"
-        },
-        {
-            "id": "mc_apartment",
-            "bg": "images/sprites/backgrounds/mc-apartment/default.jpg"
-        },
-        {
-            "id": "mc_apartment_door",
-            "bg": "images/sprites/backgrounds/mc-apartment/door.png"
-        },
-        {
-            "id": "mc_apartment_door_open",
-            "bg": "images/sprites/backgrounds/mc-apartment/door-open.png"
-        }
-    ]
+	"scenes": [
+		{
+			"id": "city_street",
+			"bg": "images/sprites/backgrounds/2138/street.jpg"
+		},
+		{
+			"id": "mc_apartment",
+			"bg": "images/sprites/backgrounds/mc-apartment/default.jpg",
+			"variables": ["global.toxic_gas = 0"]
+		},
+		{
+			"id": "mc_apartment_door",
+			"bg": "images/sprites/backgrounds/mc-apartment/door.png",
+			"variables": ["global.toxic_gas = 0"]
+		},
+		{
+			"id": "mc_apartment_door_open",
+			"bg": "images/sprites/backgrounds/mc-apartment/door-open.png",
+			"variables": ["global.toxic_gas = 0"]
+		}
+	]
 }

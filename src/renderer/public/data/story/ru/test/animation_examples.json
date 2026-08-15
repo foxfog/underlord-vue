@@ -17,7 +17,7 @@
 			"type": "show",
 			"character": "mc",
 			"orientation": "left",
-			"position": {"l": 20, "r": "auto"},
+			"position": { "l": 20, "r": "auto" },
 			"scale": 1.3
 		},
 
@@ -133,7 +133,7 @@
 		{
 			"type": "hide",
 			"character": "mc",
-			"to": {"l": -30, "r": "auto"},
+			"to": { "l": -30, "r": "auto" },
 			"duration": 1
 		},
 

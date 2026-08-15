@@ -1,11 +1,13 @@
 /**
  * Story Rules Configuration
- * 
- * Система правил для игры с читаемым синтаксисом
+ *
+ * Система правил для игры с читаемым синтаксисом и поддержкой i18n.
+ * Тексты для правил хранятся в locales/translations/<lang>/game/rules.json
+ *
  * Каждое правило имеет:
  * - id: уникальный идентификатор
- * - name: описательное имя
- * - description: подробное описание что делает правило
+ * - name: ключ перевода или имя
+ * - description: ключ перевода или описание
  * - enabled: включено ли правило
  * - conditions: массив условий (должны быть ВСЕ истинны)
  * - actions: массив действий для выполнения
@@ -18,10 +20,10 @@
 // ============================================
 export const toxicGasRule = {
 	id: 'toxic_gas_no_mask',
-	name: 'Смерть от отравления газом',
-	description: 'Если игрок в локации с токсичным газом без маски - мгновенная смерть',
+	name: 'game.rules.toxic_gas_no_mask.name',
+	description: 'game.rules.toxic_gas_no_mask.description',
 	enabled: true,
-	triggerMode: 'on-change',  // ← Срабатывает только когда условие ИЗМЕНЯЕТСЯ (false → true)
+	triggerMode: 'on-change', // ← Срабатывает только когда условие ИЗМЕНЯЕТСЯ (false → true)
 	debounce: 100,
 
 	conditions: [
@@ -62,7 +64,7 @@ export const toxicGasRule = {
 		},
 		{
 			type: 'notification',
-			text: '⚠️ Недостаток кислорода!',
+			text: 'game.rules.toxic_gas_no_mask.notification',
 			notificationType: 'danger',
 			duration: 2000
 		},
@@ -71,15 +73,15 @@ export const toxicGasRule = {
 			target: 'death/suffocation'
 		}
 	]
-};
+}
 
 // ============================================
 // ПРИМЕР 2: Снижение здоровья без оборудования
 // ============================================
 export const noProtectionRule = {
 	id: 'no_protection_damage',
-	name: 'Урон от радиации без защиты',
-	description: 'Если игрок без защитного костюма на опасной локации - получает урон',
+	name: 'game.rules.no_protection_damage.name',
+	description: 'game.rules.no_protection_damage.description',
 	enabled: false, // Отключено по умолчанию
 	debounce: 2000, // Проверяем раз в 2 секунды
 
@@ -106,20 +108,20 @@ export const noProtectionRule = {
 		},
 		{
 			type: 'notification',
-			text: '☢️ Радиация наносит урон!',
+			text: 'game.rules.no_protection_damage.notification',
 			notificationType: 'warning',
 			duration: 1500
 		}
 	]
-};
+}
 
 // ============================================
 // ПРИМЕР 3: Профилактика - напоминание менять фильтр
 // ============================================
 export const filterWearingRule = {
 	id: 'filter_wearing_warning',
-	name: 'Напоминание о замене фильтра',
-	description: 'Если износ фильтра выше 80% - показываем предупреждение',
+	name: 'game.rules.filter_wearing_warning.name',
+	description: 'game.rules.filter_wearing_warning.description',
 	enabled: true,
 	debounce: 5000, // Не чаще чем раз в 5 секунд
 
@@ -141,30 +143,30 @@ export const filterWearingRule = {
 	actions: [
 		{
 			type: 'notification',
-			text: '⚠️ Фильтр маски изношен!',
+			text: 'game.rules.filter_wearing_warning.notification',
 			notificationType: 'warning',
 			duration: 3000
 		}
 	]
-};
+}
 
 // ============================================
 // ПРИМЕР 4: Кастомное условие - сложная логика
 // ============================================
 export const customLogicRule = {
 	id: 'complex_custom_rule',
-	name: 'Пример с кастомной функцией',
-	description: 'Демонстрация использования своей функции для проверки',
+	name: 'game.rules.complex_custom_rule.name',
+	description: 'game.rules.complex_custom_rule.description',
 	enabled: false,
 
 	conditions: [
 		{
 			type: 'custom',
 			check: (gameState) => {
-				const health = gameState.character?.mc?.health || 100;
-				const isInDanger = gameState.game?.location === 'factory';
+				const health = gameState.character?.mc?.health || 100
+				const isInDanger = gameState.game?.location === 'factory'
 				// Если здоровье ниже 30% И находимся на опасной локации
-				return health < 30 && isInDanger;
+				return health < 30 && isInDanger
 			}
 		}
 	],
@@ -173,18 +175,18 @@ export const customLogicRule = {
 		{
 			type: 'dialogue',
 			character: 'mc',
-			text: 'Мне нужно найти укрытие... я еле держусь...'
+			text: 'game.rules.complex_custom_rule.dialogue'
 		}
 	]
-};
+}
 
 // ============================================
 // ПРИМЕР 5: Правило с колбэком
 // ============================================
 export const healthCriticalRule = {
 	id: 'health_critical',
-	name: 'Критическое здоровье',
-	description: 'Когда здоровье ниже 10% - красный экран эффект',
+	name: 'game.rules.health_critical.name',
+	description: 'game.rules.health_critical.description',
 	enabled: true,
 	once: false,
 	debounce: 1000,
@@ -207,7 +209,7 @@ export const healthCriticalRule = {
 	actions: [
 		{
 			type: 'notification',
-			text: '🚨 КРИТИЧЕСКОЕ СОСТОЯНИЕ',
+			text: 'game.rules.health_critical.notification',
 			notificationType: 'danger',
 			duration: 1000
 		}
@@ -215,19 +217,19 @@ export const healthCriticalRule = {
 
 	// Пользовательский callback
 	onTriggered: (gameState) => {
-		console.log('⚠️ Здоровье критически низко!', gameState.character.mc.health);
+		console.log('⚠️ Здоровье критически низко!', gameState.character.mc.health)
 		// Можно вызвать эффект красного экрана
 		// gameState.vfxEngine.redScreen();
 	}
-};
+}
 
 // ============================================
 // ПРИМЕР 6: Условие с несколькими вариантами
 // ============================================
 export const environmentalRule = {
 	id: 'environmental_damage',
-	name: 'Урон от окружения',
-	description: 'Урон если находимся в нескольких опасных локациях',
+	name: 'game.rules.environmental_damage.name',
+	description: 'game.rules.environmental_damage.description',
 	enabled: true,
 	debounce: 3000,
 
@@ -256,11 +258,11 @@ export const environmentalRule = {
 		},
 		{
 			type: 'notification',
-			text: '🔥 Окружение наносит урон!',
+			text: 'game.rules.environmental_damage.notification',
 			notificationType: 'warning'
 		}
 	]
-};
+}
 
 // ============================================
 // ГЛАВНЫЙ МАССИВ ВСЕХ ПРАВИЛ
@@ -272,11 +274,11 @@ export const allStoryRules = [
 
 	// Уведомления и напоминания
 	filterWearingRule,
-	environmentalRule,
+	environmentalRule
 
 	// Примеры расширенного использования
 	// noProtectionRule,
 	// customLogicRule
-];
+]
 
-export default allStoryRules;
+export default allStoryRules

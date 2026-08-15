@@ -10,8 +10,8 @@
 	&.__overlay {
 		width: 20em;
 		border-left: 1px solid var(--color-border);
-        padding: 2em;
-        backdrop-filter: blur(0.5em);
+		padding: 2em;
+		backdrop-filter: blur(0.5em);
 	}
 	.mainmenu {
 		margin-top: auto;

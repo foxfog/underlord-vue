@@ -12,10 +12,11 @@ const api = {
 	listFiles: (folderPath) => ipcRenderer.invoke('list-files', folderPath),
 	setResolution: (res) => ipcRenderer.send('set-resolution', res),
 	// Save/Load game
-	saveGame: (slotNumber, saveFile, clipRect) => ipcRenderer.invoke('save-game', slotNumber, saveFile, clipRect),
+	saveGame: (slotNumber, saveFile, clipRect) =>
+		ipcRenderer.invoke('save-game', slotNumber, saveFile, clipRect),
 	loadGame: (slotNumber) => ipcRenderer.invoke('load-game', slotNumber),
 	listSaves: () => ipcRenderer.invoke('list-saves'),
-	deleteSave: (slotNumber) => ipcRenderer.invoke('delete-save', slotNumber),
+	deleteSave: (slotNumber) => ipcRenderer.invoke('delete-save', slotNumber)
 }
 
 if (process.contextIsolated) {

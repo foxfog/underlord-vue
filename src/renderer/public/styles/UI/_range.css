@@ -10,7 +10,6 @@
 		position: relative;
 		width: 100%;
 		height: calc(0.3 * var(--size));
-		
 	}
 
 	.ui-range-track {
@@ -118,7 +117,7 @@
 
 /* Settings page range styles */
 .option {
-	input[type="range"],
+	input[type='range'],
 	.ui-range {
 		width: calc(12 * var(--size));
 		margin: calc(0.5 * var(--size)) 0;
@@ -126,7 +125,7 @@
 }
 
 /* Legacy support for native range inputs */
-input[type="range"] {
+input[type='range'] {
 	width: calc(10 * var(--size));
 	height: calc(2 * var(--size));
 	-webkit-appearance: none;
@@ -180,7 +179,6 @@ input[type="range"] {
 /* Dark theme adjustments */
 .page-area {
 	&.__dark {
-
 		.ui-range-thumb {
 			background: var(--color-black);
 		}
@@ -189,7 +187,13 @@ input[type="range"] {
 
 /* Animation for smooth interactions */
 @keyframes range-pulse {
-	0% { transform: translateY(-50%) scale(1); }
-	50% { transform: translateY(-50%) scale(1.1); }
-	100% { transform: translateY(-50%) scale(1); }
+	0% {
+		transform: translateY(-50%) scale(1);
+	}
+	50% {
+		transform: translateY(-50%) scale(1.1);
+	}
+	100% {
+		transform: translateY(-50%) scale(1);
+	}
 }

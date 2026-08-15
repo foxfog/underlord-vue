@@ -14,8 +14,8 @@
 		{
 			"type": "show",
 			"character": "mc",
-			"position": {"l": 20},
-			"from": {"l": -25},
+			"position": { "l": 20 },
+			"from": { "l": -25 },
 			"duration": 2000,
 			"class": "big-char"
 		},
@@ -34,8 +34,8 @@
 		{
 			"type": "show",
 			"character": "albedo",
-			"position": {"r": 15},
-			"from": {"r": -30},
+			"position": { "r": 15 },
+			"from": { "r": -30 },
 			"duration": 1500,
 			"class": "big-char"
 		},
@@ -60,8 +60,8 @@
 		{
 			"type": "show",
 			"character": "momonga",
-			"position": {"l": 50},
-			"from": {"l": 0}
+			"position": { "l": 50 },
+			"from": { "l": 0 }
 		},
 
 		{

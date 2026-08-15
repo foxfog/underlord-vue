@@ -7,4 +7,3 @@ export const SOUND_CLOTH = 'audio/sound/cloth.ogg'
 export const SOUND_ALIASES = {
 	cloth: SOUND_CLOTH
 }
-

@@ -2,7 +2,7 @@
 
 <template>
 	<audio ref="audioPlayer" id="bgmusic" autoplay loop>
-		<source :src="currentMusicFile"/>
+		<source :src="currentMusicFile" />
 	</audio>
 </template>
 
@@ -43,7 +43,7 @@ watch(musicVolume, (newVolume) => {
 watch(isTestAudioPlaying, async (isPlaying) => {
 	if (!audioPlayer.value) return
 	if (fadeInOutLock.value) return
-	
+
 	if (isPlaying) {
 		// Test audio started - fade out background music over 0.5s
 		await fadeOutForTestAudio()
@@ -106,7 +106,7 @@ async function playMusicWithFadeIn() {
 }
 
 function pauseMusicWithFadeOut(onlyFade = false) {
-	return new Promise(resolve => {
+	return new Promise((resolve) => {
 		clearInterval(volumeInterval.value)
 		if (!audioPlayer.value) return resolve()
 		volumeInterval.value = setInterval(async () => {
@@ -127,19 +127,19 @@ function pauseMusicWithFadeOut(onlyFade = false) {
 
 // Fade out background music for test audio (0.5 seconds)
 function fadeOutForTestAudio() {
-	return new Promise(resolve => {
+	return new Promise((resolve) => {
 		clearInterval(volumeInterval.value)
 		if (!audioPlayer.value) return resolve()
-		
+
 		const startVolume = audioPlayer.value.volume
 		const fadeSteps = 20 // 20 steps over 0.5 seconds (25ms intervals)
 		const volumeDecrement = startVolume / fadeSteps
 		let currentStep = 0
-		
+
 		volumeInterval.value = setInterval(() => {
 			currentStep++
 			if (currentStep < fadeSteps && audioPlayer.value.volume > 0.01) {
-				audioPlayer.value.volume = Math.max(startVolume - (volumeDecrement * currentStep), 0)
+				audioPlayer.value.volume = Math.max(startVolume - volumeDecrement * currentStep, 0)
 			} else {
 				clearInterval(volumeInterval.value)
 				audioPlayer.value.volume = 0
@@ -155,21 +155,21 @@ function fadeOutForTestAudio() {
 
 // Fade in background music after test audio (0.5 seconds)
 function fadeInAfterTestAudio() {
-	return new Promise(resolve => {
+	return new Promise((resolve) => {
 		clearInterval(volumeInterval.value)
 		if (!audioPlayer.value || !isMusicPlaying.value) return resolve()
-		
+
 		// Resume playback
 		try {
 			audioPlayer.value.play()
 		} catch {}
-		
+
 		audioPlayer.value.volume = 0
 		const targetVolume = musicVolume.value
 		const fadeSteps = 20 // 20 steps over 0.5 seconds
 		const volumeIncrement = targetVolume / fadeSteps
 		let currentStep = 0
-		
+
 		volumeInterval.value = setInterval(() => {
 			currentStep++
 			if (currentStep < fadeSteps && audioPlayer.value.volume < targetVolume) {

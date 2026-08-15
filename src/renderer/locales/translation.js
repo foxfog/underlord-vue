@@ -1,10 +1,10 @@
 // src/renderer/locales/translation.js
 
-import i18n from "./index.js"
+import i18n from './index.js'
 
 const Trans = {
 	get supportedLocales() {
-		return "ru,en"
+		return 'ru,en'
 	},
 
 	set currentLocale(newLocale) {
@@ -13,7 +13,7 @@ const Trans = {
 
 	async switchLanguage(newLocale) {
 		Trans.currentLocale = newLocale
-		document.querySelector("html").setAttribute("lang", newLocale)
+		document.querySelector('html').setAttribute('lang', newLocale)
 	}
 }
 

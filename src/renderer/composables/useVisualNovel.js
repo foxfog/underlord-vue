@@ -3,7 +3,10 @@ import { useSavesStore } from '../stores/saves'
 import { useSettingsStore } from '../stores/settings'
 import { SOUND_ALIASES } from '../constants/sounds'
 import { DIALOGUE_HIDE_UI_CONFIG } from '../constants/dialogue'
-import { extractVisibleCharacterDisplay, applyVisibleCharacterDisplay } from '../utils/saveGameUtils'
+import {
+	extractVisibleCharacterDisplay,
+	applyVisibleCharacterDisplay
+} from '../utils/saveGameUtils'
 import { evaluateExpression } from '../utils/expressionEvaluator'
 
 export function useVisualNovel({ src, emit, notificationComponent } = {}) {
@@ -53,13 +56,13 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	let restoreSessionId = 0
 	const showTextInputModal = ref(false)
 	const currentInputStep = ref(null)
- 
- 	const settingsStore = useSettingsStore()
- 
- 	function buildStoryFilePath(candidate) {
- 		const language = settingsStore.general.language || 'ru'
- 		return `/data/story/${language}/${candidate}.json`
- 	}
+
+	const settingsStore = useSettingsStore()
+
+	function buildStoryFilePath(candidate) {
+		const language = settingsStore.general.language || 'ru'
+		return `/data/story/${language}/${candidate}.json`
+	}
 	// UI visibility state
 	const baseUiVisibility = ref({
 		all: false,
@@ -76,12 +79,15 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	const isInDialogueMode = ref(false)
 
 	const isDialogueActive = computed(() => {
-		return isInDialogueMode.value || !!(
-			currentDialogue.value ||
-			currentNarration.value ||
-			currentTitle.value ||
-			(currentChoices.value && currentChoices.value.length > 0) ||
-			showTextInputModal.value
+		return (
+			isInDialogueMode.value ||
+			!!(
+				currentDialogue.value ||
+				currentNarration.value ||
+				currentTitle.value ||
+				(currentChoices.value && currentChoices.value.length > 0) ||
+				showTextInputModal.value
+			)
 		)
 	})
 
@@ -95,15 +101,23 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			return hideList.includes('all') || hideList.includes(target)
 		}
 
-		const statsButton = isTargetHiddenByDialogue('stats-button') ? false : !!(base.all || base['stats-button'])
-		const inventoryButton = isTargetHiddenByDialogue('inventory-button') ? false : !!(base.all || base['inventory-button'])
-		const mapButton = isTargetHiddenByDialogue('map-button') ? false : !!(base.all || base['map-button'])
-		const journalButton = isTargetHiddenByDialogue('journal-button') ? false : !!(base.all || base['journal-button'])
+		const statsButton = isTargetHiddenByDialogue('stats-button')
+			? false
+			: !!(base.all || base['stats-button'])
+		const inventoryButton = isTargetHiddenByDialogue('inventory-button')
+			? false
+			: !!(base.all || base['inventory-button'])
+		const mapButton = isTargetHiddenByDialogue('map-button')
+			? false
+			: !!(base.all || base['map-button'])
+		const journalButton = isTargetHiddenByDialogue('journal-button')
+			? false
+			: !!(base.all || base['journal-button'])
 		const hotbar = isTargetHiddenByDialogue('hotbar') ? false : !!(base.all || base.hotbar)
 		const topbar = isTargetHiddenByDialogue('topbar')
 			? false
-			: (inventoryButton || mapButton || journalButton || !!base.topbar)
-		const dialogue = isTargetHiddenByDialogue('dialogue') ? false : (base.dialogue !== false)
+			: inventoryButton || mapButton || journalButton || !!base.topbar
+		const dialogue = isTargetHiddenByDialogue('dialogue') ? false : base.dialogue !== false
 
 		return {
 			all: !!base.all,
@@ -130,9 +144,10 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		try {
 			// Use the base path set in index.html for file:// protocol
 			// In dev mode, window.__APP_BASE__ will be '/', in production it will be the file path
-			const basePath = typeof window !== 'undefined' && window.__APP_BASE__ ? window.__APP_BASE__ : ''
+			const basePath =
+				typeof window !== 'undefined' && window.__APP_BASE__ ? window.__APP_BASE__ : ''
 			const fullPath = basePath ? basePath + jsonPath.replace(/^\//, '') : jsonPath
-			
+
 			console.log(`📥 Loading: ${fullPath}`)
 			const response = await fetch(fullPath)
 			if (!response.ok) {
@@ -172,40 +187,65 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			try {
 				const storyModule = await loadDataFromPublic(src)
 				storyData.value = storyModule
-// Extract path relative to /data/story/<lang>/ for call stack tracking
-					const srcMatch = src.match(/\/data\/story\/[^/]+\/(.+)\.json/)
+				// Extract path relative to /data/story/<lang>/ for call stack tracking
+				const srcMatch = src.match(/\/data\/story\/[^/]+\/(.+)\.json/)
 				if (srcMatch) currentStoryPath = srcMatch[1]
 
 				// Load characters (try split format, fallback to legacy file)
 				const characterIds = ['mc', 'albedo', 'momonga']
 				for (const charId of characterIds) {
 					try {
-						const valuesData = await loadDataFromPublic(`/data/characters/${charId}/values.json`)
-						const bodyData = await loadDataFromPublic(`/data/characters/${charId}/body.json`)
-						const equipmentData = await loadDataFromPublic(`/data/characters/${charId}/equipment.json`)
+						const valuesData = await loadDataFromPublic(
+							`/data/characters/${charId}/values.json`
+						)
+						const bodyData = await loadDataFromPublic(
+							`/data/characters/${charId}/body.json`
+						)
+						const equipmentData = await loadDataFromPublic(
+							`/data/characters/${charId}/equipment.json`
+						)
 
 						const equipmentMap = {}
-						equipmentData.forEach(item => { equipmentMap[item.id] = item })
+						equipmentData.forEach((item) => {
+							equipmentMap[item.id] = item
+						})
 
 						const equipmentBySlot = {}
 						if (valuesData.equipment_slots) {
-							for (const [slotName, itemId] of Object.entries(valuesData.equipment_slots)) {
+							for (const [slotName, itemId] of Object.entries(
+								valuesData.equipment_slots
+							)) {
 								if (itemId && equipmentMap[itemId]) {
-									equipmentBySlot[slotName] = { id: itemId, item: equipmentMap[itemId], parts: equipmentMap[itemId].parts || [] }
+									equipmentBySlot[slotName] = {
+										id: itemId,
+										item: equipmentMap[itemId],
+										parts: equipmentMap[itemId].parts || []
+									}
 								}
 							}
 						}
 
-						const mergedCharacter = { ...valuesData, sprites: bodyData, equipment: equipmentData, equipmentBySlot }
+						const mergedCharacter = {
+							...valuesData,
+							sprites: bodyData,
+							equipment: equipmentData,
+							equipmentBySlot
+						}
 						characterData.value[charId] = mergedCharacter
 						console.log(`✔ Loaded character ${charId} from split files`)
 					} catch (splitFormatError) {
 						try {
-							const charModule = await loadDataFromPublic(`/data/characters/${charId}.json`)
+							const charModule = await loadDataFromPublic(
+								`/data/characters/${charId}.json`
+							)
 							characterData.value[charId] = charModule
 							console.log(`✔ Loaded character ${charId} from legacy format`)
 						} catch (legacyFormatError) {
-							console.warn(`✘ Could not load character ${charId} in either format:`, splitFormatError, legacyFormatError)
+							console.warn(
+								`✘ Could not load character ${charId} in either format:`,
+								splitFormatError,
+								legacyFormatError
+							)
 						}
 					}
 				}
@@ -217,7 +257,9 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 				savesStore.setCharacterDefaults(characterData.value)
 
 				const scenesModule = await loadDataFromPublic('/data/scenes/scenes.json')
-				scenesModule.scenes.forEach(scene => { sceneData.value[scene.id] = scene })
+				scenesModule.scenes.forEach((scene) => {
+					sceneData.value[scene.id] = scene
+				})
 
 				isLoaded.value = true
 				console.log('✔ All story data loaded, ready to start')
@@ -307,17 +349,25 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 						if (char && char.inventory && Array.isArray(char.inventory.items)) {
 							const itemQtyToRemove = step.quantity || 1
 							let remainingToRemove = itemQtyToRemove
-							for (let i = char.inventory.items.length - 1; i >= 0 && remainingToRemove > 0; i--) {
+							for (
+								let i = char.inventory.items.length - 1;
+								i >= 0 && remainingToRemove > 0;
+								i--
+							) {
 								const item = char.inventory.items[i]
 								if (item.itemId === step.itemId) {
 									const itemQty = item.quantity || 1
 									if (itemQty <= remainingToRemove) {
 										remainingToRemove -= itemQty
 										char.inventory.items.splice(i, 1)
-										console.log(`📦 Removed ${itemQty}x ${step.itemId} from ${step.character}'s inventory`)
+										console.log(
+											`📦 Removed ${itemQty}x ${step.itemId} from ${step.character}'s inventory`
+										)
 									} else {
 										item.quantity = itemQty - remainingToRemove
-										console.log(`📦 Reduced ${step.itemId} quantity by ${remainingToRemove} (now ${item.quantity})`)
+										console.log(
+											`📦 Reduced ${step.itemId} quantity by ${remainingToRemove} (now ${item.quantity})`
+										)
 										remainingToRemove = 0
 									}
 								}
@@ -340,7 +390,9 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					isRestoringGameState.value = false
 					callStack.value = []
 					if (step.delay) {
-						setTimeout(() => { emit && emit('end') }, step.delay * 1000)
+						setTimeout(() => {
+							emit && emit('end')
+						}, step.delay * 1000)
 					} else {
 						emit && emit('end')
 					}
@@ -352,14 +404,23 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 						if (char && char.inventory && Array.isArray(char.inventory.items)) {
 							const itemQtyToAdd = step.quantity || 1
 							// Try to stack with existing item
-							const existingIndex = char.inventory.items.findIndex(item => item.itemId === step.itemId)
+							const existingIndex = char.inventory.items.findIndex(
+								(item) => item.itemId === step.itemId
+							)
 							if (existingIndex !== -1) {
 								const existing = char.inventory.items[existingIndex]
 								existing.quantity = (existing.quantity || 1) + itemQtyToAdd
-								console.log(`📦 Added ${itemQtyToAdd}x ${step.itemId} to ${step.character}'s inventory (new qty: ${existing.quantity})`)
+								console.log(
+									`📦 Added ${itemQtyToAdd}x ${step.itemId} to ${step.character}'s inventory (new qty: ${existing.quantity})`
+								)
 							} else {
-								char.inventory.items.push({ itemId: step.itemId, quantity: itemQtyToAdd })
-								console.log(`📦 Added new item ${itemQtyToAdd}x ${step.itemId} to ${step.character}'s inventory`)
+								char.inventory.items.push({
+									itemId: step.itemId,
+									quantity: itemQtyToAdd
+								})
+								console.log(
+									`📦 Added new item ${itemQtyToAdd}x ${step.itemId} to ${step.character}'s inventory`
+								)
 							}
 						}
 					}
@@ -372,7 +433,11 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 						const html = substituteVariables(step.text)
 						const notificationType = step.notificationType || 'info'
 						const duration = step.duration || 3000
-						notificationComponent.value.showNotification(html, notificationType, duration)
+						notificationComponent.value.showNotification(
+							html,
+							notificationType,
+							duration
+						)
 						console.log(`📢 Notification: ${html}`)
 					}
 					stepIndex.value++
@@ -391,7 +456,11 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					isRestoringGameState.value = false
 					break
 				case 'titles':
-					if (isRestoringGameState.value) { stepIndex.value++; processStep(); break }
+					if (isRestoringGameState.value) {
+						stepIndex.value++
+						processStep()
+						break
+					}
 					if (step.variable) applyVariable(step.variable)
 					showTitle(step)
 					isRestoringGameState.value = false
@@ -431,7 +500,9 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					isRestoringGameState.value = false
 					callStack.value = []
 					if (step.delay) {
-						setTimeout(() => { emit && emit('end') }, step.delay * 1000)
+						setTimeout(() => {
+							emit && emit('end')
+						}, step.delay * 1000)
 					} else {
 						emit && emit('end')
 					}
@@ -447,17 +518,36 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	}
 
 	function changeScene(sceneIdOrStep) {
-		const scene = typeof sceneIdOrStep === 'object'
-			? sceneData.value[sceneIdOrStep.id]
-			: sceneData.value[sceneIdOrStep]
+		const scene =
+			typeof sceneIdOrStep === 'object'
+				? sceneData.value[sceneIdOrStep.id]
+				: sceneData.value[sceneIdOrStep]
 		if (!scene) {
 			console.warn('Scene not found:', sceneIdOrStep)
 			return
 		}
-		const mods = typeof sceneIdOrStep === 'object'
-			? sceneIdOrStep.mods || []
-			: scene.mods || []
+		const mods = typeof sceneIdOrStep === 'object' ? sceneIdOrStep.mods || [] : scene.mods || []
 		currentScene.value = { ...scene, mods }
+
+		// Apply scene-level variables if specified in scene definition or step
+		const sceneVars =
+			scene.variables ||
+			scene.variable ||
+			(typeof sceneIdOrStep === 'object'
+				? sceneIdOrStep.variables || sceneIdOrStep.variable
+				: null)
+		if (sceneVars) {
+			if (Array.isArray(sceneVars)) {
+				sceneVars.forEach((v) => applyVariable(v))
+			} else if (typeof sceneVars === 'string') {
+				applyVariable(sceneVars)
+			} else if (typeof sceneVars === 'object') {
+				for (const [key, val] of Object.entries(sceneVars)) {
+					const formattedVal = typeof val === 'string' ? `'${val}'` : val
+					applyVariable(`${key} = ${formattedVal}`)
+				}
+			}
+		}
 	}
 	function showCharacter(step) {
 		const characterId = typeof step === 'string' ? step : step.character
@@ -466,44 +556,48 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			// Set initial position from 'from' if provided
 			if (step.from && typeof step === 'object') {
 				character.fromPosition = step.from
-				console.log(`🎬 [${characterId}] Animation started: from=${JSON.stringify(step.from)} to=${JSON.stringify(step.position)} duration=${step.duration ?? 1}s`)
+				console.log(
+					`🎬 [${characterId}] Animation started: from=${JSON.stringify(step.from)} to=${JSON.stringify(step.position)} duration=${step.duration ?? 1}s`
+				)
 			} else {
 				character.fromPosition = null
 			}
-			
+
 			// Set target position
 			if (step.position && typeof step === 'object') {
 				character.position = step.position
 			}
-			
+
 			// Set animation duration (default 1000ms if from is specified but duration is not)
 			// Duration in JSON is in seconds, convert to milliseconds for CSS
 			if (step.from && typeof step === 'object') {
-				character.animationDuration = ((step.duration ?? 1) * 1000)
+				character.animationDuration = (step.duration ?? 1) * 1000
 				// Clear fromPosition and animationDuration after animation completes
 				setTimeout(() => {
 					character.fromPosition = null
 					character.animationDuration = null
-					console.log(`🎬 [${characterId}] Animation cleanup: fromPosition and duration cleared`)
+					console.log(
+						`🎬 [${characterId}] Animation cleanup: fromPosition and duration cleared`
+					)
 				}, character.animationDuration)
 			} else if (step.duration && typeof step === 'object') {
-				character.animationDuration = (step.duration * 1000)
+				character.animationDuration = step.duration * 1000
 			} else {
 				character.animationDuration = null
 			}
-			
+
 			// Set orientation (default 'right' if not specified)
 			character.orientation = step.orientation || 'right'
-			
+
 			// Set back flag (default false if not specified)
 			character.back = step.back ?? false
-			
+
 			// Apply class if provided
 			if (step.class && typeof step === 'object') {
 				character.customClass = step.class
 			}
-			
-			if (!visibleCharacters.value.some(c => c.id === characterId)) {
+
+			if (!visibleCharacters.value.some((c) => c.id === characterId)) {
 				visibleCharacters.value.push(character)
 			}
 		}
@@ -512,7 +606,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		const characterId = typeof stepOrId === 'string' ? stepOrId : stepOrId.character
 		const character = characterData.value[characterId]
 		if (!character) {
-			visibleCharacters.value = visibleCharacters.value.filter(c => c.id !== characterId)
+			visibleCharacters.value = visibleCharacters.value.filter((c) => c.id !== characterId)
 			return
 		}
 
@@ -527,24 +621,28 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			character.animationDuration = durationMs
 
 			// Ensure character is visible during animation
-			if (!visibleCharacters.value.some(c => c.id === characterId)) {
+			if (!visibleCharacters.value.some((c) => c.id === characterId)) {
 				visibleCharacters.value.push(character)
 			}
 
 			// After animation, actually hide character
 			if (durationMs > 0) {
 				setTimeout(() => {
-					visibleCharacters.value = visibleCharacters.value.filter(c => c.id !== characterId)
+					visibleCharacters.value = visibleCharacters.value.filter(
+						(c) => c.id !== characterId
+					)
 					// Clean animation props so future shows are clean
 					character.fromPosition = null
 					character.animationDuration = null
 				}, durationMs)
 			} else {
-				visibleCharacters.value = visibleCharacters.value.filter(c => c.id !== characterId)
+				visibleCharacters.value = visibleCharacters.value.filter(
+					(c) => c.id !== characterId
+				)
 			}
 		} else {
 			// Instant hide (old behaviour)
-			visibleCharacters.value = visibleCharacters.value.filter(c => c.id !== characterId)
+			visibleCharacters.value = visibleCharacters.value.filter((c) => c.id !== characterId)
 		}
 	}
 
@@ -552,25 +650,27 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		const characterId = step.character
 		const partName = step.part
 		const character = characterData.value[characterId]
-		
+
 		if (!character) return
-		
+
 		// Инициализируем объект partAnimations если его нет
 		if (!character.partAnimations) {
 			character.partAnimations = {}
 		}
-		
+
 		const animConfig = {
 			styles: step.styles || null,
 			class: step.class || null,
-			animationDuration: step.duration ? (step.duration * 1000) : null
+			animationDuration: step.duration ? step.duration * 1000 : null
 		}
-		
+
 		// Устанавливаем анимацию для части тела
 		character.partAnimations[partName] = animConfig
-		
-		console.log(`🎬 [${characterId}] Part animation: part=${partName}, class=${animConfig.class}, duration=${step.duration}s, styles=${JSON.stringify(animConfig.styles)}`)
-		
+
+		console.log(
+			`🎬 [${characterId}] Part animation: part=${partName}, class=${animConfig.class}, duration=${step.duration}s, styles=${JSON.stringify(animConfig.styles)}`
+		)
+
 		// Если есть длительность, то очищаем анимацию после её завершения
 		if (step.duration && step.duration > 0) {
 			const durationMs = step.duration * 1000
@@ -587,7 +687,15 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		const action = step.action // 'show' or 'hide'
 		const targets = step.target || [] // Array of target IDs
 		const show = action === 'show'
-		const knownTargets = ['topbar', 'hotbar', 'dialogue', 'stats-button', 'inventory-button', 'map-button', 'journal-button']
+		const knownTargets = [
+			'topbar',
+			'hotbar',
+			'dialogue',
+			'stats-button',
+			'inventory-button',
+			'map-button',
+			'journal-button'
+		]
 
 		function setAllUi(value) {
 			baseUiVisibility.value.all = value
@@ -604,7 +712,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		}
 
 		// Apply action to specified targets
-		targets.forEach(target => {
+		targets.forEach((target) => {
 			console.log(`UI ${action}: ${target}`)
 			if (target === 'all') {
 				setAllUi(show)
@@ -628,7 +736,12 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					return
 				}
 				baseUiVisibility.value[target] = show
-				if (show && ['stats-button', 'inventory-button', 'map-button', 'journal-button'].includes(target)) {
+				if (
+					show &&
+					['stats-button', 'inventory-button', 'map-button', 'journal-button'].includes(
+						target
+					)
+				) {
 					baseUiVisibility.value.topbar = true
 				}
 			}
@@ -700,15 +813,21 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		currentMusic.value = audioData
 	}
 
-	function stopSound() { currentSound.value = null }
-	function stopVoice() { currentVoice.value = null }
-	function stopMusic() { currentMusic.value = null }
+	function stopSound() {
+		currentSound.value = null
+	}
+	function stopVoice() {
+		currentVoice.value = null
+	}
+	function stopMusic() {
+		currentMusic.value = null
+	}
 
 	// Stream management by ID
 	function stopStream(streamId) {
 		const stream = audioStreams.value[streamId]
 		if (!stream) return
-		
+
 		switch (stream.type) {
 			case 'sound':
 				if (currentSound.value?.stream === streamId) stopSound()
@@ -783,7 +902,12 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		currentSpeaker.value = character ? character.name : ''
 		currentNarration.value = ''
 		currentDialogue.value = substituteVariables(text)
-		addToHistory({ type: 'dialogue', speaker: currentSpeaker.value, text: currentDialogue.value, stepIndex: stepIndex.value })
+		addToHistory({
+			type: 'dialogue',
+			speaker: currentSpeaker.value,
+			text: currentDialogue.value,
+			stepIndex: stepIndex.value
+		})
 		applyDialogueHiding()
 	}
 
@@ -792,21 +916,29 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		currentNarration.value = substituteVariables(text)
 		currentSpeaker.value = ''
 		currentDialogue.value = ''
-		addToHistory({ type: 'narration', speaker: '', text: currentNarration.value, stepIndex: stepIndex.value })
+		addToHistory({
+			type: 'narration',
+			speaker: '',
+			text: currentNarration.value,
+			stepIndex: stepIndex.value
+		})
 		applyDialogueHiding()
 	}
 
 	function showTitle(step) {
 		isInDialogueMode.value = true
-		if (titleTimeout) { clearTimeout(titleTimeout); titleTimeout = null }
+		if (titleTimeout) {
+			clearTimeout(titleTimeout)
+			titleTimeout = null
+		}
 		let titleText = substituteVariables(step.text)
 		let titleTextForDisplay = titleText
-		
+
 		// Apply wrap if provided
 		if (step.wrap) {
 			titleTextForDisplay = step.wrap.replace('%text%', titleText)
 		}
-		
+
 		currentTitle.value = titleTextForDisplay
 		currentTitleEffects.value = {
 			effectStart: step['effect-start'] || null,
@@ -824,7 +956,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		addToHistory({ type: 'titles', speaker: '', text: titleText, stepIndex: stepIndex.value })
 		applyDialogueHiding()
 		if (step.duration && typeof step.duration === 'number' && step.duration > 0) {
-			titleTimeout = setTimeout(() => { 
+			titleTimeout = setTimeout(() => {
 				titleTimeout = null
 				// If there's an effect-end, trigger it on the component and let it handle the advance
 				if (step['effect-end']) {
@@ -855,7 +987,10 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		if (!char) return
 
 		const equipmentMap = {}
-		if (Array.isArray(char.equipment)) char.equipment.forEach(item => { if (item && item.id) equipmentMap[item.id] = item })
+		if (Array.isArray(char.equipment))
+			char.equipment.forEach((item) => {
+				if (item && item.id) equipmentMap[item.id] = item
+			})
 
 		const equipmentBySlot = {}
 		const slots = char.equipment_slots || {}
@@ -864,9 +999,14 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			if (itemRef === null || typeof itemRef === 'undefined') itemId = null
 			else if (typeof itemRef === 'string' || typeof itemRef === 'number') itemId = itemRef
 			else if (typeof itemRef === 'object' && itemRef.id) itemId = itemRef.id
-			else if (typeof itemRef === 'object' && itemRef.item && itemRef.item.id) itemId = itemRef.item.id
+			else if (typeof itemRef === 'object' && itemRef.item && itemRef.item.id)
+				itemId = itemRef.item.id
 			if (itemId && equipmentMap[itemId]) {
-				equipmentBySlot[slotName] = { id: itemId, item: equipmentMap[itemId], parts: equipmentMap[itemId].parts || [] }
+				equipmentBySlot[slotName] = {
+					id: itemId,
+					item: equipmentMap[itemId],
+					parts: equipmentMap[itemId].parts || []
+				}
 			}
 		}
 
@@ -886,7 +1026,12 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 				}
 				const finalProperty = propertyPath[propertyPath.length - 1]
 				target[finalProperty] = value
-				if (propertyPath[0] === 'equipment_slots' || finalProperty === 'equipment_slots' || propertyPath.includes('equipment_slots')) rebuildEquipmentBySlot(characterId)
+				if (
+					propertyPath[0] === 'equipment_slots' ||
+					finalProperty === 'equipment_slots' ||
+					propertyPath.includes('equipment_slots')
+				)
+					rebuildEquipmentBySlot(characterId)
 			}
 		}
 	}
@@ -900,18 +1045,31 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			if (!characterData.value[characterId]) return null
 			let target = characterData.value[characterId]
 			for (let i = 0; i < propertyPath.length - 1; i++) {
-				if (target[propertyPath[i]] === undefined || typeof target[propertyPath[i]] !== 'object' || target[propertyPath[i]] === null) {
+				if (
+					target[propertyPath[i]] === undefined ||
+					typeof target[propertyPath[i]] !== 'object' ||
+					target[propertyPath[i]] === null
+				) {
 					target[propertyPath[i]] = {}
 				}
 				target = target[propertyPath[i]]
 			}
-			return { container: target, key: propertyPath[propertyPath.length - 1], root: 'character', id: characterId }
+			return {
+				container: target,
+				key: propertyPath[propertyPath.length - 1],
+				root: 'character',
+				id: characterId
+			}
 		}
 		if (root === 'global' && parts.length >= 2) {
 			const propertyPath = parts.slice(1)
 			let target = globalData.value
 			for (let i = 0; i < propertyPath.length - 1; i++) {
-				if (target[propertyPath[i]] === undefined || typeof target[propertyPath[i]] !== 'object' || target[propertyPath[i]] === null) {
+				if (
+					target[propertyPath[i]] === undefined ||
+					typeof target[propertyPath[i]] !== 'object' ||
+					target[propertyPath[i]] === null
+				) {
 					target[propertyPath[i]] = {}
 				}
 				target = target[propertyPath[i]]
@@ -924,13 +1082,19 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	function applyVariable(expr) {
 		if (!expr || typeof expr !== 'string') return
 		const m = expr.match(/^\s*([a-zA-Z0-9_\.]+)\s*(\+=|-=|=|\*=|\/=)\s*(.+)\s*$/)
-		if (!m) { console.warn('Unsupported variable expression:', expr); return }
+		if (!m) {
+			console.warn('Unsupported variable expression:', expr)
+			return
+		}
 		const targetPath = m[1]
 		const op = m[2]
 		const rhsRaw = m[3]
 
 		const resolved = resolvePath(targetPath)
-		if (!resolved) { console.warn('Could not resolve target path for variable:', targetPath); return }
+		if (!resolved) {
+			console.warn('Could not resolve target path for variable:', targetPath)
+			return
+		}
 
 		const rhsValue = evaluateExpression(rhsRaw, {
 			global: globalData.value,
@@ -941,12 +1105,31 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		const current = container[key]
 		let newValue
 		switch (op) {
-			case '=': newValue = rhsValue; break
-			case '+=': newValue = (typeof current === 'number' ? current : Number(current) || 0) + (typeof rhsValue === 'number' ? rhsValue : Number(rhsValue) || 0); break
-			case '-=': newValue = (typeof current === 'number' ? current : Number(current) || 0) - (typeof rhsValue === 'number' ? rhsValue : Number(rhsValue) || 0); break
-			case '*=': newValue = (typeof current === 'number' ? current : Number(current) || 0) * (typeof rhsValue === 'number' ? rhsValue : Number(rhsValue) || 0); break
-			case '/=': newValue = (typeof current === 'number' ? current : Number(current) || 0) / (typeof rhsValue === 'number' ? rhsValue : Number(rhsValue) || 1); break
-			default: newValue = rhsValue
+			case '=':
+				newValue = rhsValue
+				break
+			case '+=':
+				newValue =
+					(typeof current === 'number' ? current : Number(current) || 0) +
+					(typeof rhsValue === 'number' ? rhsValue : Number(rhsValue) || 0)
+				break
+			case '-=':
+				newValue =
+					(typeof current === 'number' ? current : Number(current) || 0) -
+					(typeof rhsValue === 'number' ? rhsValue : Number(rhsValue) || 0)
+				break
+			case '*=':
+				newValue =
+					(typeof current === 'number' ? current : Number(current) || 0) *
+					(typeof rhsValue === 'number' ? rhsValue : Number(rhsValue) || 0)
+				break
+			case '/=':
+				newValue =
+					(typeof current === 'number' ? current : Number(current) || 0) /
+					(typeof rhsValue === 'number' ? rhsValue : Number(rhsValue) || 1)
+				break
+			default:
+				newValue = rhsValue
 		}
 
 		container[key] = newValue
@@ -959,15 +1142,18 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 				console.log(`📤 Emitting character-loaded after equipment change`, {
 					mask: characterData.value?.mc?.equipment_slots?.mask,
 					allSlots: { ...characterData.value?.mc?.equipment_slots }
-				});
-				emit('character-loaded', characterData.value);
+				})
+				emit('character-loaded', characterData.value)
 			}
 		} else {
 			console.log(`Applied global variable: ${expr} -> ${targetPath} =`, newValue)
 			// Также синхронизируем глобальные переменные
 			if (emit) {
-				console.log(`📤 Emitting global-data-changed after global variable change`, globalData.value);
-				emit('global-data-changed', globalData.value);
+				console.log(
+					`📤 Emitting global-data-changed after global variable change`,
+					globalData.value
+				)
+				emit('global-data-changed', globalData.value)
 			}
 		}
 	}
@@ -975,10 +1161,12 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	function evaluateCondition(conditionStr) {
 		if (!conditionStr || typeof conditionStr !== 'string') return false
 		try {
-			return Boolean(evaluateExpression(conditionStr, {
-				global: globalData.value,
-				character: characterData.value
-			}))
+			return Boolean(
+				evaluateExpression(conditionStr, {
+					global: globalData.value,
+					character: characterData.value
+				})
+			)
 		} catch (error) {
 			console.warn('Error evaluating condition:', conditionStr, error)
 			return false
@@ -1008,11 +1196,15 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 								// Look for an item by itemId: items[gasmask] or items['gasmask']
 								const searchValue = indexExpr.replace(/^['"]|['"]$/g, '')
 								if (Array.isArray(target[arrayName])) {
-									index = target[arrayName].findIndex(item => item.itemId === searchValue)
+									index = target[arrayName].findIndex(
+										(item) => item.itemId === searchValue
+									)
 									if (index === -1) return match
 								}
 							}
-							target = Array.isArray(target[arrayName]) ? target[arrayName][index] : undefined
+							target = Array.isArray(target[arrayName])
+								? target[arrayName][index]
+								: undefined
 							if (target === undefined) return match
 						} else {
 							if (target[part] === undefined) return match
@@ -1054,7 +1246,8 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	}
 
 	function onTextInputConfirm(value) {
-		if (currentInputStep.value?.variable) updateCharacterData(currentInputStep.value.variable, value)
+		if (currentInputStep.value?.variable)
+			updateCharacterData(currentInputStep.value.variable, value)
 		showTextInputModal.value = false
 		currentInputStep.value = null
 		stepIndex.value++
@@ -1063,12 +1256,14 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 
 	function showChoices(choiceStep) {
 		isInDialogueMode.value = true
-		currentChoices.value = choiceStep.options.map(option => ({
+		currentChoices.value = choiceStep.options.map((option) => ({
 			...option,
 			text: substituteVariables(option.text),
 			disabled: option.disabled ? evaluateCondition(option.disabled) : false
 		}))
-		currentSpeaker.value = choiceStep.speaker ? characterData.value[choiceStep.speaker]?.name : ''
+		currentSpeaker.value = choiceStep.speaker
+			? characterData.value[choiceStep.speaker]?.name
+			: ''
 		if (choiceStep.text) currentDialogue.value = substituteVariables(choiceStep.text)
 		applyDialogueHiding()
 	}
@@ -1076,12 +1271,15 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	function processDialogueSteps(steps, parentCharacter = null) {
 		let tempIndex = 0
 		function processDialogueAction() {
-			if (tempIndex >= steps.length) { 
+			if (tempIndex >= steps.length) {
 				multiStepDialogueBuffer.value = ''
 				multiStepPrintedLength.value = 0
-				stepIndex.value++; processStep(); return 
+				stepIndex.value++
+				processStep()
+				return
 			}
-			const action = steps[tempIndex]; tempIndex++
+			const action = steps[tempIndex]
+			tempIndex++
 			const actionType = action.type || (action.text ? 'text' : 'unknown')
 			switch (actionType) {
 				case 'text':
@@ -1094,15 +1292,18 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					multiStepDialogueBuffer.value += action.text
 					// Use character from action, or fallback to parentCharacter
 					const characterForStep = action.character || parentCharacter
-					if (characterForStep) showDialogue(characterForStep, multiStepDialogueBuffer.value)
+					if (characterForStep)
+						showDialogue(characterForStep, multiStepDialogueBuffer.value)
 					else showNarration(multiStepDialogueBuffer.value)
-					advanceStoryOverride = function() {
+					advanceStoryOverride = function () {
 						// When advancing, calculate how many plain text chars have been printed
 						const tempDiv = document.createElement('div')
 						tempDiv.innerHTML = multiStepDialogueBuffer.value
 						const plainTextLength = tempDiv.textContent?.length || 0
 						multiStepPrintedLength.value = plainTextLength
-						console.log(`📝 Multi-step advance: buffer length=${multiStepDialogueBuffer.value.length}, plain text length=${plainTextLength}`)
+						console.log(
+							`📝 Multi-step advance: buffer length=${multiStepDialogueBuffer.value.length}, plain text length=${plainTextLength}`
+						)
 						currentDialogue.value = ''
 						currentNarration.value = ''
 						processDialogueAction()
@@ -1117,7 +1318,9 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					}
 					processDialogueAction()
 					break
-				default: processDialogueAction(); break
+				default:
+					processDialogueAction()
+					break
 			}
 		}
 		processDialogueAction()
@@ -1139,19 +1342,27 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	function processChoiceActions(actions) {
 		let tempIndex = 0
 		function processAction() {
-			if (tempIndex >= actions.length) { stepIndex.value++; processStep(); return }
-			const action = actions[tempIndex]; tempIndex++
+			if (tempIndex >= actions.length) {
+				stepIndex.value++
+				processStep()
+				return
+			}
+			const action = actions[tempIndex]
+			tempIndex++
 			switch (action.type) {
 				case 'dialogue':
 					const remaining = actions.slice(tempIndex)
 					currentChoices.value = []
 					if (action.character) showDialogue(action.character, action.text)
 					else showNarration(action.text)
-					advanceStoryOverride = function() {
+					advanceStoryOverride = function () {
 						currentDialogue.value = ''
 						currentNarration.value = ''
 						if (remaining.length > 0) processChoiceActions(remaining)
-						else { stepIndex.value++; processStep() }
+						else {
+							stepIndex.value++
+							processStep()
+						}
 						advanceStoryOverride = null
 					}
 					break
@@ -1162,17 +1373,25 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					currentChoices.value = []
 					goToLabel(action.target)
 					break
-				case 'show': showCharacter(action); processAction(); break
-				case 'hide': hideCharacter(action.character); processAction(); break
-				default: processAction(); break
+				case 'show':
+					showCharacter(action)
+					processAction()
+					break
+				case 'hide':
+					hideCharacter(action.character)
+					processAction()
+					break
+				default:
+					processAction()
+					break
 			}
 		}
 		processAction()
 	}
 
 	function goToLabel(targetLabel) {
-		const targetStepIndex = storyData.value.steps.findIndex(step => step.id === targetLabel)
-		if (targetStepIndex !== -1) { 
+		const targetStepIndex = storyData.value.steps.findIndex((step) => step.id === targetLabel)
+		if (targetStepIndex !== -1) {
 			// Goto внутри текущей истории - очищаем диалоги
 			currentDialogue.value = ''
 			currentNarration.value = ''
@@ -1180,7 +1399,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			currentChoices.value = []
 			stepIndex.value = targetStepIndex
 			processStep()
-			return 
+			return
 		}
 		// Goto на другую историю - сохраняем позицию для return и загружаем новую историю
 		// Save the FULL PATH used to load the current story (not the JSON id field)
@@ -1208,25 +1427,31 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		const storyLoadSession = restoreSessionId
 		try {
 			// Сохраняем состояние персонажа И глобальные данные перед загрузкой новой истории
-			const savedCharacterState = characterData.value?.mc ? { ...characterData.value.mc } : null;
-			const savedGlobalData = { ...globalData.value };  // Сохраняем глобальные переменные (toxic_gas)
+			const savedCharacterState = characterData.value?.mc
+				? { ...characterData.value.mc }
+				: null
+			const savedGlobalData = { ...globalData.value } // Сохраняем глобальные переменные (toxic_gas)
 			console.log('💾 Saving state before loading new story:', {
 				mask: savedCharacterState?.equipment_slots?.mask,
 				globalData: savedGlobalData
-			});
-			
+			})
+
 			const storyCandidates = getStoryPathCandidates(storyName)
 			let module = null
 			let loadError = null
 			for (const candidate of storyCandidates) {
 				if (storyLoadSession !== restoreSessionId) {
-					console.log(`✋ Aborting stale loadTargetStory before candidate load: ${candidate}`)
+					console.log(
+						`✋ Aborting stale loadTargetStory before candidate load: ${candidate}`
+					)
 					return
 				}
 				try {
 					module = await loadDataFromPublic(buildStoryFilePath(candidate))
 					if (storyLoadSession !== restoreSessionId) {
-						console.log(`✋ Aborting stale loadTargetStory after candidate load: ${candidate}`)
+						console.log(
+							`✋ Aborting stale loadTargetStory after candidate load: ${candidate}`
+						)
 						return
 					}
 					currentStoryPath = candidate
@@ -1241,59 +1466,68 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			}
 			storyData.value = module
 			stepIndex.value = 0
-			
+
 			// Восстанавливаем состояние персонажа и глобальные данные
 			if (savedCharacterState && characterData.value?.mc) {
-				characterData.value.mc.equipment_slots = savedCharacterState.equipment_slots;
+				characterData.value.mc.equipment_slots = savedCharacterState.equipment_slots
 			}
 			// Восстанавливаем глобальные переменные
-			Object.assign(globalData.value, savedGlobalData);
-			
+			Object.assign(globalData.value, savedGlobalData)
+
 			console.log('♻️ Restored state after story load:', {
 				mask: characterData.value.mc?.equipment_slots?.mask,
 				globalData: globalData.value
-			});
-			
+			})
+
 			// Эмитим событие чтобы Game.vue узнал об обновлении
 			if (emit) {
-				console.log('📤 Emitting character-loaded after story transition');
-				emit('character-loaded', characterData.value);
+				console.log('📤 Emitting character-loaded after story transition')
+				emit('character-loaded', characterData.value)
 			}
-			
+
 			// Small delay to ensure smooth transition without dialog flicker
-			await new Promise(resolve => setTimeout(resolve, 10))
+			await new Promise((resolve) => setTimeout(resolve, 10))
 			if (storyLoadSession !== restoreSessionId) {
 				console.log('✋ Aborting stale loadTargetStory before processStep')
 				return
 			}
 			isRestoringGameState.value = false
 			processStep()
-		} catch (error) { console.error('Error loading target story:', error); emit && emit('end') }
+		} catch (error) {
+			console.error('Error loading target story:', error)
+			emit && emit('end')
+		}
 	}
 
 	async function loadReturnStory(storyName, returnStepIndex) {
 		const storyLoadSession = restoreSessionId
 		try {
 			// Сохраняем состояние персонажа И глобальные данные перед загрузкой новой истории
-			const savedCharacterState = characterData.value?.mc ? { ...characterData.value.mc } : null;
-			const savedGlobalData = { ...globalData.value };  // Сохраняем глобальные переменные (toxic_gas)
+			const savedCharacterState = characterData.value?.mc
+				? { ...characterData.value.mc }
+				: null
+			const savedGlobalData = { ...globalData.value } // Сохраняем глобальные переменные (toxic_gas)
 			console.log('💾 Saving state before loading return story:', {
 				mask: savedCharacterState?.equipment_slots?.mask,
 				globalData: savedGlobalData
-			});
-			
+			})
+
 			const storyCandidates = getStoryPathCandidates(storyName)
 			let module = null
 			let loadError = null
 			for (const candidate of storyCandidates) {
 				if (storyLoadSession !== restoreSessionId) {
-					console.log(`✋ Aborting stale loadReturnStory before candidate load: ${candidate}`)
+					console.log(
+						`✋ Aborting stale loadReturnStory before candidate load: ${candidate}`
+					)
 					return
 				}
 				try {
 					module = await loadDataFromPublic(buildStoryFilePath(candidate))
 					if (storyLoadSession !== restoreSessionId) {
-						console.log(`✋ Aborting stale loadReturnStory after candidate load: ${candidate}`)
+						console.log(
+							`✋ Aborting stale loadReturnStory after candidate load: ${candidate}`
+						)
 						return
 					}
 					currentStoryPath = candidate
@@ -1308,41 +1542,62 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			}
 			storyData.value = module
 			stepIndex.value = returnStepIndex
-			
+
 			// Восстанавливаем состояние персонажа и глобальные данные
 			if (savedCharacterState && characterData.value?.mc) {
-				characterData.value.mc.equipment_slots = savedCharacterState.equipment_slots;
+				characterData.value.mc.equipment_slots = savedCharacterState.equipment_slots
 			}
 			// Восстанавливаем глобальные переменные
-			Object.assign(globalData.value, savedGlobalData);
-			
+			Object.assign(globalData.value, savedGlobalData)
+
 			console.log('♻️ Restored state after story load:', {
 				mask: characterData.value.mc?.equipment_slots?.mask,
 				globalData: globalData.value
-			});
-			
+			})
+
 			// Эмитим событие чтобы Game.vue узнал об обновлении
 			if (emit) {
-				console.log('📤 Emitting character-loaded after story transition');
-				emit('character-loaded', characterData.value);
+				console.log('📤 Emitting character-loaded after story transition')
+				emit('character-loaded', characterData.value)
 			}
-			
+
 			// Small delay to ensure smooth transition without dialog flicker
-			await new Promise(resolve => setTimeout(resolve, 10))
+			await new Promise((resolve) => setTimeout(resolve, 10))
 			if (storyLoadSession !== restoreSessionId) {
 				console.log('✋ Aborting stale loadReturnStory before processStep')
 				return
 			}
 			isRestoringGameState.value = false
 			processStep()
-		} catch (error) { console.error('Error loading return story:', error); emit && emit('end') }
+		} catch (error) {
+			console.error('Error loading return story:', error)
+			emit && emit('end')
+		}
 	}
 
 	function advanceStory() {
-		if (advanceStoryOverride) { const f = advanceStoryOverride; advanceStoryOverride = null; try { f() } catch (e) { console.error('Error in override:', e); currentDialogue.value=''; currentNarration.value=''; multiStepDialogueBuffer.value=''; multiStepPrintedLength.value=0; stepIndex.value++; processStep() } return }
+		if (advanceStoryOverride) {
+			const f = advanceStoryOverride
+			advanceStoryOverride = null
+			try {
+				f()
+			} catch (e) {
+				console.error('Error in override:', e)
+				currentDialogue.value = ''
+				currentNarration.value = ''
+				multiStepDialogueBuffer.value = ''
+				multiStepPrintedLength.value = 0
+				stepIndex.value++
+				processStep()
+			}
+			return
+		}
 		currentTitle.value = ''
 		currentTitleEffects.value = null
-		if (titleTimeout) { clearTimeout(titleTimeout); titleTimeout = null }
+		if (titleTimeout) {
+			clearTimeout(titleTimeout)
+			titleTimeout = null
+		}
 		currentDialogue.value = ''
 		currentNarration.value = ''
 		multiStepDialogueBuffer.value = ''
@@ -1360,8 +1615,11 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 				activeLoopingStreams[streamId] = { ...stream }
 			}
 		})
-		console.log('💾 getGameState called, saving audio streams:', Object.keys(activeLoopingStreams))
-		
+		console.log(
+			'💾 getGameState called, saving audio streams:',
+			Object.keys(activeLoopingStreams)
+		)
+
 		return {
 			storyData: storyData.value,
 			storyPath: currentStoryPath,
@@ -1380,7 +1638,10 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 
 	async function restoreGameState(saveData) {
 		try {
-			if (!isLoaded.value) { if (loadingPromise) await loadingPromise; else await loadStory() }
+			if (!isLoaded.value) {
+				if (loadingPromise) await loadingPromise
+				else await loadStory()
+			}
 			const restoreSession = ++restoreSessionId
 			// Clear any active UI state from the previous story run before restoring
 			if (titleTimeout) {
@@ -1398,43 +1659,63 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			globalData.value = saveData.globalData
 			// Notify outside listeners (Game.vue) about restored global data
 			if (emit) {
-				console.log('📤 Emitting global-data-changed after restoreGameState', globalData.value)
+				console.log(
+					'📤 Emitting global-data-changed after restoreGameState',
+					globalData.value
+				)
 				emit('global-data-changed', globalData.value)
 			}
 			if (saveData.characterDataDelta) {
-				Object.keys(saveData.characterDataDelta).forEach(characterId => {
-					if (characterData.value[characterId]) Object.assign(characterData.value[characterId], saveData.characterDataDelta[characterId])
+				Object.keys(saveData.characterDataDelta).forEach((characterId) => {
+					if (characterData.value[characterId])
+						Object.assign(
+							characterData.value[characterId],
+							saveData.characterDataDelta[characterId]
+						)
 				})
 			}
 			if (saveData.characterData && !saveData.characterDataDelta) {
-				Object.keys(saveData.characterData).forEach(characterId => { if (characterData.value[characterId]) Object.assign(characterData.value[characterId], saveData.characterData[characterId]) })
+				Object.keys(saveData.characterData).forEach((characterId) => {
+					if (characterData.value[characterId])
+						Object.assign(
+							characterData.value[characterId],
+							saveData.characterData[characterId]
+						)
+				})
 			}
 			// Rebuild equipment BEFORE restoring visible characters so they get the updated equipmentBySlot
-			Object.keys(characterData.value).forEach(charId => { rebuildEquipmentBySlot(charId) })
-			
+			Object.keys(characterData.value).forEach((charId) => {
+				rebuildEquipmentBySlot(charId)
+			})
+
 			visibleCharacters.value = []
 			if (saveData.visibleCharacters && Array.isArray(saveData.visibleCharacters)) {
 				// Handle both old format (array of IDs) and new format (array of display objects)
 				if (saveData.visibleCharacters.length > 0) {
 					const firstItem = saveData.visibleCharacters[0]
-					
+
 					if (typeof firstItem === 'string') {
 						// Old format: array of character IDs - just get the character from characterData
-						saveData.visibleCharacters.forEach(characterId => { 
+						saveData.visibleCharacters.forEach((characterId) => {
 							const character = characterData.value[characterId]
-							if (character) visibleCharacters.value.push(character) 
+							if (character) visibleCharacters.value.push(character)
 						})
 					} else if (typeof firstItem === 'object' && firstItem.id) {
 						// New format: array of display objects - restore characters with display properties
-						saveData.visibleCharacters.forEach(displayData => {
+						saveData.visibleCharacters.forEach((displayData) => {
 							const character = characterData.value[displayData.id]
 							if (character) {
 								// Apply display properties from saved data directly to original character
-								if (displayData.position !== undefined) character.position = displayData.position
-								if (displayData.orientation !== undefined) character.orientation = displayData.orientation
-								if (displayData.back !== undefined) character.back = displayData.back
-								if (displayData.customClass !== undefined) character.customClass = displayData.customClass
-								if (displayData.scale !== undefined) character.scale = displayData.scale
+								if (displayData.position !== undefined)
+									character.position = displayData.position
+								if (displayData.orientation !== undefined)
+									character.orientation = displayData.orientation
+								if (displayData.back !== undefined)
+									character.back = displayData.back
+								if (displayData.customClass !== undefined)
+									character.customClass = displayData.customClass
+								if (displayData.scale !== undefined)
+									character.scale = displayData.scale
 								visibleCharacters.value.push(character)
 							}
 						})
@@ -1452,14 +1733,22 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			if (saveData.uiVisibility && typeof saveData.uiVisibility === 'object') {
 				baseUiVisibility.value = { ...baseUiVisibility.value, ...saveData.uiVisibility }
 			} else {
-				baseUiVisibility.value = { ...baseUiVisibility.value, topbar: true, hotbar: true, dialogue: true }
+				baseUiVisibility.value = {
+					...baseUiVisibility.value,
+					topbar: true,
+					hotbar: true,
+					dialogue: true
+				}
 			}
 			currentDialogue.value = ''
 			currentNarration.value = ''
 			multiStepDialogueBuffer.value = ''
 			multiStepPrintedLength.value = 0
 			currentTitle.value = ''
-			if (titleTimeout) { clearTimeout(titleTimeout); titleTimeout = null }
+			if (titleTimeout) {
+				clearTimeout(titleTimeout)
+				titleTimeout = null
+			}
 			currentSpeaker.value = ''
 			currentChoices.value = []
 			callStack.value = saveData.callStack || []
@@ -1480,15 +1769,22 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 				}
 			}
 			if (!loadedStory) {
-				throw loadError || new Error(`Unable to load story from save: ${requestedStoryPath}`)
+				throw (
+					loadError || new Error(`Unable to load story from save: ${requestedStoryPath}`)
+				)
 			}
 			storyData.value = loadedStory
 			stepIndex.value = saveData.stepIndex || 0
 
-			if (saveData.history && Array.isArray(saveData.history)) historyEntries.value = saveData.history.slice(-HISTORY_MAX)
+			if (saveData.history && Array.isArray(saveData.history))
+				historyEntries.value = saveData.history.slice(-HISTORY_MAX)
 			else {
 				historyEntries.value = []
-				for (let i = 0; i < stepIndex.value && i < (storyData.value.steps || []).length; i++) {
+				for (
+					let i = 0;
+					i < stepIndex.value && i < (storyData.value.steps || []).length;
+					i++
+				) {
 					const s = storyData.value.steps[i]
 					if (!s) continue
 					switch (s.type) {
@@ -1497,25 +1793,53 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 							if (s.steps && Array.isArray(s.steps)) {
 								s.steps.forEach((step, stepIdx) => {
 									if (step.text) {
-										const speaker = step.character ? (characterData.value[step.character]?.name || step.character) : ''
+										const speaker = step.character
+											? characterData.value[step.character]?.name ||
+												step.character
+											: ''
 										const text = substituteVariables(step.text)
-										historyEntries.value.push({ type: 'dialogue', speaker, text, stepIndex: `${i}_${stepIdx}` })
+										historyEntries.value.push({
+											type: 'dialogue',
+											speaker,
+											text,
+											stepIndex: `${i}_${stepIdx}`
+										})
 									}
 								})
 							} else if (s.character) {
-								const speaker = characterData.value[s.character]?.name || s.character
+								const speaker =
+									characterData.value[s.character]?.name || s.character
 								const text = substituteVariables(s.text || '')
-								historyEntries.value.push({ type: 'dialogue', speaker, text, stepIndex: i })
+								historyEntries.value.push({
+									type: 'dialogue',
+									speaker,
+									text,
+									stepIndex: i
+								})
 							} else {
 								const text = substituteVariables(s.text || '')
-								historyEntries.value.push({ type: 'narration', speaker: '', text, stepIndex: i })
+								historyEntries.value.push({
+									type: 'narration',
+									speaker: '',
+									text,
+									stepIndex: i
+								})
 							}
 							break
-						case 'titles': historyEntries.value.push({ type: 'titles', speaker: '', text: substituteVariables(s.text || ''), stepIndex: i }); break
-						default: break
+						case 'titles':
+							historyEntries.value.push({
+								type: 'titles',
+								speaker: '',
+								text: substituteVariables(s.text || ''),
+								stepIndex: i
+							})
+							break
+						default:
+							break
 					}
 				}
-				if (historyEntries.value.length > HISTORY_MAX) historyEntries.value = historyEntries.value.slice(-HISTORY_MAX)
+				if (historyEntries.value.length > HISTORY_MAX)
+					historyEntries.value = historyEntries.value.slice(-HISTORY_MAX)
 			}
 
 			// Restore audio streams (only looping ones)
@@ -1532,7 +1856,11 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			isRestoringGameState.value = false
 			isRestoringGameState.value = false
 			processStep()
-		} catch (error) { console.error('Error restoring game state:', error); isRestoringGameState.value = false; throw error }
+		} catch (error) {
+			console.error('Error restoring game state:', error)
+			isRestoringGameState.value = false
+			throw error
+		}
 	}
 
 	function resetGameState() {
@@ -1553,26 +1881,70 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		pausedStreams.value = {}
 	}
 
+	function showNotification(text, type = 'info', duration = 3000) {
+		if (notificationComponent?.value && text) {
+			const html = substituteVariables(text)
+			notificationComponent.value.showNotification(html, type, duration)
+		}
+	}
+
 	return {
 		// state
-		currentScene, visibleCharacters, currentDialogue, currentNarration, currentTitle, currentTitleEffects, currentSpeaker, currentChoices, multiStepDialogueBuffer, multiStepPrintedLength,
-		showTextInputModal, currentInputStep, uiVisibility,
+		currentScene,
+		visibleCharacters,
+		currentDialogue,
+		currentNarration,
+		currentTitle,
+		currentTitleEffects,
+		currentSpeaker,
+		currentChoices,
+		multiStepDialogueBuffer,
+		multiStepPrintedLength,
+		showTextInputModal,
+		currentInputStep,
+		uiVisibility,
 		// audio state
-		currentSound, currentVoice, currentMusic, audioStreams,
+		currentSound,
+		currentVoice,
+		currentMusic,
+		audioStreams,
 		// game state for Rules Engine
-		characterData, globalData, sceneData,
+		characterData,
+		globalData,
+		sceneData,
 		// methods
-		loadStory, processStep, advanceStory, selectChoice, getGameState, restoreGameState, resetGameState,
-		getInitialValue, onTextInputConfirm,
+		loadStory,
+		processStep,
+		advanceStory,
+		selectChoice,
+		getGameState,
+		restoreGameState,
+		resetGameState,
+		getInitialValue,
+		onTextInputConfirm,
+		// notification method
+		showNotification,
 		// goto method for Rules Engine
 		goto: goToLabel,
 		// audio methods
-		playSound, playVoice, playMusic, stopSound, stopVoice, stopMusic,
-		stopStream, stopAllStreams, getStream, pauseAllStreams, resumeAllStreams, onStreamEnded,
+		playSound,
+		playVoice,
+		playMusic,
+		stopSound,
+		stopVoice,
+		stopMusic,
+		stopStream,
+		stopAllStreams,
+		getStream,
+		pauseAllStreams,
+		resumeAllStreams,
+		onStreamEnded,
 		// UI methods for dialogue hiding
 		setDialogueHideUI,
 		// history helpers
 		getHistory: () => historyEntries.value.slice(),
-		clearHistory: () => { historyEntries.value = [] }
+		clearHistory: () => {
+			historyEntries.value = []
+		}
 	}
 }

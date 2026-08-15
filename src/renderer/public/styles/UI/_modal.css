@@ -37,7 +37,9 @@
 	background: var(--modal-bg-glass);
 	border: 1px solid var(--modal-border);
 	border-radius: var(--modal-border-radius);
-	box-shadow: var(--modal-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+	box-shadow:
+		var(--modal-shadow),
+		inset 0 1px 0 rgba(255, 255, 255, 0.08);
 	color: #fff;
 	position: relative;
 	display: flex;
@@ -49,7 +51,7 @@
 /* General Modal Window Styles */
 .modal {
 	.modal-content {
-		width: min(560px, 92vw);
+		width: min(35em, 92vw);
 		max-height: 90vh;
 	}
 
@@ -108,7 +110,10 @@
 			font-family: Kurale, sans-serif;
 			font-size: 1.05em;
 			box-sizing: border-box;
-			transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+			transition:
+				border-color 0.2s ease,
+				box-shadow 0.2s ease,
+				background-color 0.2s ease;
 
 			&:focus {
 				outline: none;
@@ -190,7 +195,7 @@
 		border-radius: var(--modal-border-radius);
 		box-shadow: var(--modal-shadow);
 		padding: 1.5em;
-		width: min(460px, 90vw);
+		width: min(28.75em, 90vw);
 		color: #eee;
 
 		.confirm-title {
@@ -221,8 +226,8 @@
 /* Journal Modal */
 .journal-modal {
 	.journal-modal__content {
-		width: min(1020px, 94vw);
-		height: min(740px, 86vh);
+		width: min(63.75em, 94vw);
+		height: min(46.25em, 86vh);
 	}
 
 	.journal-body {
@@ -276,7 +281,7 @@
 
 /* Item Info Modal Card */
 .modal-item-info {
-	width: min(480px, 92vw);
+	width: min(30em, 92vw);
 
 	.modal-header {
 		padding: 0.9em 1.2em;
@@ -393,7 +398,7 @@
 
 /* Drop Quantity Modal */
 .modal-drop-quantity {
-	width: min(400px, 92vw);
+	width: min(25em, 92vw);
 
 	.modal-header {
 		padding: 0.9em 1.2em;
@@ -478,22 +483,38 @@
 
 		&.info {
 			border-left-color: #4a9eff;
-			background: linear-gradient(135deg, rgba(20, 35, 55, 0.95) 0%, rgba(22, 22, 26, 0.95) 100%);
+			background: linear-gradient(
+				135deg,
+				rgba(20, 35, 55, 0.95) 0%,
+				rgba(22, 22, 26, 0.95) 100%
+			);
 		}
 
 		&.success {
 			border-left-color: var(--color-secondary);
-			background: linear-gradient(135deg, rgba(15, 45, 30, 0.95) 0%, rgba(22, 22, 26, 0.95) 100%);
+			background: linear-gradient(
+				135deg,
+				rgba(15, 45, 30, 0.95) 0%,
+				rgba(22, 22, 26, 0.95) 100%
+			);
 		}
 
 		&.warning {
 			border-left-color: var(--color-primary);
-			background: linear-gradient(135deg, rgba(45, 38, 15, 0.95) 0%, rgba(22, 22, 26, 0.95) 100%);
+			background: linear-gradient(
+				135deg,
+				rgba(45, 38, 15, 0.95) 0%,
+				rgba(22, 22, 26, 0.95) 100%
+			);
 		}
 
 		&.error {
 			border-left-color: var(--color-tertiary);
-			background: linear-gradient(135deg, rgba(45, 15, 22, 0.95) 0%, rgba(22, 22, 26, 0.95) 100%);
+			background: linear-gradient(
+				135deg,
+				rgba(45, 15, 22, 0.95) 0%,
+				rgba(22, 22, 26, 0.95) 100%
+			);
 		}
 
 		.notification-content {

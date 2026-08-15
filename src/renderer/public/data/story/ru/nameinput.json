@@ -18,9 +18,7 @@
 				},
 				{
 					"text": "Нет",
-					"actions": [
-						{ "type": "goto", "target": "nameinput" }
-					]
+					"actions": [{ "type": "goto", "target": "nameinput" }]
 				}
 			]
 		},

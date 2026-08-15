@@ -4,7 +4,7 @@
 		"zindex": 1,
 		"parts": [
 			{
-				"parent" : "head",
+				"parent": "head",
 				"image": "images/sprites/characters/mc/equipment/gasmask.png"
 			}
 		]
@@ -14,7 +14,7 @@
 		"zindex": 1,
 		"parts": [
 			{
-				"parent" : "head",
+				"parent": "head",
 				"image": "images/sprites/characters/mc/equipment/medicalmask.png"
 			}
 		]
@@ -24,7 +24,7 @@
 		"zindex": 1,
 		"parts": [
 			{
-				"parent" : "body",
+				"parent": "body",
 				"image": "images/sprites/characters/mc/equipment/underpants.png"
 			}
 		]
@@ -34,15 +34,15 @@
 		"zindex": 3,
 		"parts": [
 			{
-				"parent" : "body",
+				"parent": "body",
 				"image": "images/sprites/characters/mc/equipment/tshirt_body.png"
 			},
 			{
-				"parent" : "arm_left",
+				"parent": "arm_left",
 				"image": "images/sprites/characters/mc/equipment/tshirt_arm_left.png"
 			},
 			{
-				"parent" : "arm_right",
+				"parent": "arm_right",
 				"image": "images/sprites/characters/mc/equipment/tshirt_arm_right.png"
 			}
 		]
@@ -52,7 +52,7 @@
 		"zindex": 2,
 		"parts": [
 			{
-				"parent" : "body",
+				"parent": "body",
 				"image": "images/sprites/characters/mc/equipment/jeans.png"
 			}
 		]

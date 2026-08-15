@@ -57,9 +57,7 @@
 					</div>
 				</div>
 
-				<div v-else class="item-info-empty">
-					Нет подробной информации об этом предмете.
-				</div>
+				<div v-else class="item-info-empty">Нет подробной информации об этом предмете.</div>
 			</div>
 
 			<div class="modal-footer">
@@ -70,98 +68,99 @@
 </template>
 
 <script setup>
-	import { computed } from 'vue'
+import { computed } from 'vue'
 
-	const props = defineProps({
-		isVisible: {
-			type: Boolean,
-			default: false
-		},
-		itemId: {
-			type: String,
-			default: null
-		},
-		itemDef: {
-			type: Object,
-			default: null
-		},
-		quantity: {
-			type: Number,
-			default: 1
-		},
-		source: {
-			type: String,
-			default: null  // 'inventory' | 'equipment'
-		},
-		slot: {
-			type: String,
-			default: null
-		}
-	})
-
-	const emit = defineEmits(['close'])
-
-	const displayName = computed(() => {
-		return props.itemDef?.name || props.itemId || 'предмет'
-	})
-
-	const isStackable = computed(() => {
-		if (!props.itemDef) return null
-		return props.itemDef.stackable !== false
-	})
-
-	const slotDisplay = computed(() => {
-		if (!props.itemDef?.slot) return null
-		if (Array.isArray(props.itemDef.slot)) {
-			return props.itemDef.slot.join(', ')
-		}
-		return props.itemDef.slot
-	})
-
-	const statsEntries = computed(() => {
-		const stats = props.itemDef?.stats
-		if (!stats || typeof stats !== 'object') return []
-
-		return Object.entries(stats).map(([key, value]) => ({
-			key,
-			label: mapStatKeyToLabel(key),
-			value
-		}))
-	})
-
-	const effectsEntries = computed(() => {
-		const effects = props.itemDef?.effects
-		if (!effects || typeof effects !== 'object') return []
-
-		return Object.entries(effects).map(([key, value]) => ({
-			key,
-			label: mapStatKeyToLabel(key),
-			value
-		}))
-	})
-
-	const sourceLabel = computed(() => {
-		if (props.source === 'inventory') return 'в инвентаре'
-		if (props.source === 'equipment') return props.slot ? `надето в слоте "${props.slot}"` : 'надето на персонаже'
-		return null
-	})
-
-	function mapStatKeyToLabel(key) {
-		switch (key) {
-			case 'hp':
-				return 'HP'
-			case 'mp':
-				return 'MP'
-			case 'attack':
-				return 'Атака'
-			case 'defense':
-				return 'Защита'
-			default:
-				return key
-		}
+const props = defineProps({
+	isVisible: {
+		type: Boolean,
+		default: false
+	},
+	itemId: {
+		type: String,
+		default: null
+	},
+	itemDef: {
+		type: Object,
+		default: null
+	},
+	quantity: {
+		type: Number,
+		default: 1
+	},
+	source: {
+		type: String,
+		default: null // 'inventory' | 'equipment'
+	},
+	slot: {
+		type: String,
+		default: null
 	}
+})
 
-	function handleClose() {
-		emit('close')
+const emit = defineEmits(['close'])
+
+const displayName = computed(() => {
+	return props.itemDef?.name || props.itemId || 'предмет'
+})
+
+const isStackable = computed(() => {
+	if (!props.itemDef) return null
+	return props.itemDef.stackable !== false
+})
+
+const slotDisplay = computed(() => {
+	if (!props.itemDef?.slot) return null
+	if (Array.isArray(props.itemDef.slot)) {
+		return props.itemDef.slot.join(', ')
 	}
+	return props.itemDef.slot
+})
+
+const statsEntries = computed(() => {
+	const stats = props.itemDef?.stats
+	if (!stats || typeof stats !== 'object') return []
+
+	return Object.entries(stats).map(([key, value]) => ({
+		key,
+		label: mapStatKeyToLabel(key),
+		value
+	}))
+})
+
+const effectsEntries = computed(() => {
+	const effects = props.itemDef?.effects
+	if (!effects || typeof effects !== 'object') return []
+
+	return Object.entries(effects).map(([key, value]) => ({
+		key,
+		label: mapStatKeyToLabel(key),
+		value
+	}))
+})
+
+const sourceLabel = computed(() => {
+	if (props.source === 'inventory') return 'в инвентаре'
+	if (props.source === 'equipment')
+		return props.slot ? `надето в слоте "${props.slot}"` : 'надето на персонаже'
+	return null
+})
+
+function mapStatKeyToLabel(key) {
+	switch (key) {
+		case 'hp':
+			return 'HP'
+		case 'mp':
+			return 'MP'
+		case 'attack':
+			return 'Атака'
+		case 'defense':
+			return 'Защита'
+		default:
+			return key
+	}
+}
+
+function handleClose() {
+	emit('close')
+}
 </script>

@@ -10,9 +10,9 @@
 			</div>
 			<div class="modal-body">
 				<p class="input-description" v-if="description">{{ description }}</p>
-				<input 
+				<input
 					v-model="inputValue"
-					type="text" 
+					type="text"
 					class="text-input"
 					:placeholder="placeholder"
 					@keyup.enter="confirmInput"
@@ -20,93 +20,107 @@
 				/>
 			</div>
 			<div class="modal-footer">
-				<button v-if="showCancelButton" class="btn btn-secondary" @click="closeModal">Отмена</button>
-				<button class="btn btn-primary" @click="confirmInput" :disabled="!inputValue.trim()">{{ confirmButtonText }}</button>
+				<button v-if="showCancelButton" class="btn btn-secondary" @click="closeModal">
+					Отмена
+				</button>
+				<button
+					class="btn btn-primary"
+					@click="confirmInput"
+					:disabled="!inputValue.trim()"
+				>
+					{{ confirmButtonText }}
+				</button>
 			</div>
 		</div>
 	</div>
 </template>
 
 <script setup>
-	import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick } from 'vue'
 
-	const props = defineProps({
-		isVisible: {
-			type: Boolean,
-			default: false
-		},
-		title: {
-			type: String,
-			default: 'Введите текст'
-		},
-		description: {
-			type: String,
-			default: ''
-		},
-		placeholder: {
-			type: String,
-			default: 'Введите значение...'
-		},
-		initialValue: {
-			type: String,
-			default: ''
-		},
-		showCloseButton: {
-			type: Boolean,
-			default: true
-		},
-		showCancelButton: {
-			type: Boolean,
-			default: true
-		},
-		confirmButtonText: {
-			type: String,
-			default: 'Подтвердить'
+const props = defineProps({
+	isVisible: {
+		type: Boolean,
+		default: false
+	},
+	title: {
+		type: String,
+		default: 'Введите текст'
+	},
+	description: {
+		type: String,
+		default: ''
+	},
+	placeholder: {
+		type: String,
+		default: 'Введите значение...'
+	},
+	initialValue: {
+		type: String,
+		default: ''
+	},
+	showCloseButton: {
+		type: Boolean,
+		default: true
+	},
+	showCancelButton: {
+		type: Boolean,
+		default: true
+	},
+	confirmButtonText: {
+		type: String,
+		default: 'Подтвердить'
+	}
+})
+
+const emit = defineEmits(['close', 'confirm'])
+
+const inputValue = ref(props.initialValue)
+const inputField = ref(null)
+
+function focusAndSelect() {
+	nextTick(() => {
+		if (inputField.value) {
+			inputField.value.focus()
+			inputField.value.select()
 		}
 	})
+}
 
-	const emit = defineEmits(['close', 'confirm'])
-
-	const inputValue = ref(props.initialValue)
-	const inputField = ref(null)
-
-	function focusAndSelect() {
-		nextTick(() => {
-			if (inputField.value) {
-				inputField.value.focus()
-				inputField.value.select()
-			}
-		})
-	}
-
-	watch(() => props.isVisible, (newVal) => {
+watch(
+	() => props.isVisible,
+	(newVal) => {
 		if (newVal) {
 			inputValue.value = props.initialValue
 			focusAndSelect()
 		}
-	})
+	}
+)
 
-	watch(() => props.initialValue, (newVal) => {
+watch(
+	() => props.initialValue,
+	(newVal) => {
 		inputValue.value = newVal || ''
 		if (props.isVisible) {
 			focusAndSelect()
 		}
-	})
-
-	function handleBackdropClick() {
-		if (props.showCancelButton || props.showCloseButton) {
-			closeModal()
-		}
 	}
+)
 
-	function closeModal() {
-		emit('close')
+function handleBackdropClick() {
+	if (props.showCancelButton || props.showCloseButton) {
+		closeModal()
 	}
+}
 
-	function confirmInput() {
-		if (inputValue.value.trim()) {
-			emit('confirm', inputValue.value.trim())
-			closeModal()
-		}
+function closeModal() {
+	emit('close')
+}
+
+function confirmInput() {
+	if (inputValue.value.trim()) {
+		emit('confirm', inputValue.value.trim())
+		closeModal()
 	}
+}
 </script>

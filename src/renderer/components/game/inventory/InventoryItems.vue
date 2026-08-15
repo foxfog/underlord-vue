@@ -13,17 +13,13 @@
 			<div class="char-preview">
 				<Character :character="characterPreview" />
 			</div>
-			<div class="inventory-grid row">
+			<div class="equipment-grid">
 				<div
 					v-for="(value, slot) in allAvailableSlots"
 					:key="slot"
-					class="inventory-grid-item col"
+					class="inventory-grid-item"
 				>
-					<div
-						class="inventory-grid-slot"
-						:data-slot="slot"
-						data-panel="equipment"
-					>
+					<div class="inventory-grid-slot" :data-slot="slot" data-panel="equipment">
 						<div
 							v-if="value"
 							class="inventory-item draggable-item"
@@ -66,16 +62,13 @@
 				</div>
 
 				<!-- Inventory Grid with Empty Slots -->
-				<div class="inventory-grid inventory-grid-main row">
+				<div class="inventory-grid inventory-grid-main">
 					<div
 						v-for="(item, index) in currentPageSlots"
 						:key="`slot-${(currentPage - 1) * SLOTS_PER_PAGE + index}`"
-						class="inventory-grid-item col"
+						class="inventory-grid-item"
 					>
-						<div
-							class="inventory-grid-slot"
-							data-panel="inventory"
-						>
+						<div class="inventory-grid-slot" data-panel="inventory">
 							<div
 								v-if="item"
 								class="inventory-item draggable-item"
@@ -85,17 +78,32 @@
 								touch-action="none"
 								@mouseenter="onItemHover(item.itemId)"
 								@mouseleave="onItemLeave"
-								@contextmenu.prevent="showInventoryContextMenu($event, item.itemId, (currentPage - 1) * SLOTS_PER_PAGE + currentPageSlots.indexOf(item))"
+								@contextmenu.prevent="
+									showInventoryContextMenu(
+										$event,
+										item.itemId,
+										(currentPage - 1) * SLOTS_PER_PAGE +
+											currentPageSlots.indexOf(item)
+									)
+								"
 							>
 								<div class="inventory-item-content">
 									<div v-if="getItemSprite(item.itemId)" class="item-icon">
-										<img :src="getItemSprite(item.itemId)" :alt="getItemName(item.itemId)" />
+										<img
+											:src="getItemSprite(item.itemId)"
+											:alt="getItemName(item.itemId)"
+										/>
 									</div>
 									<div v-else class="item-icon">📦</div>
 									<div class="item-info">
 										<div class="item-name">{{ getItemName(item.itemId) }}</div>
 									</div>
-									<div v-if="isItemStackable(item.itemId) && item.quantity > 1" class="item-quantity">x{{ item.quantity }}</div>
+									<div
+										v-if="isItemStackable(item.itemId) && item.quantity > 1"
+										class="item-quantity"
+									>
+										x{{ item.quantity }}
+									</div>
 								</div>
 							</div>
 							<div v-else class="empty-slot"></div>
@@ -113,9 +121,7 @@
 						← Назад
 					</button>
 
-					<div class="page-info">
-						Страница {{ currentPage }} / {{ totalPages }}
-					</div>
+					<div class="page-info">Страница {{ currentPage }} / {{ totalPages }}</div>
 
 					<button
 						:disabled="currentPage >= totalPages"
@@ -131,496 +137,468 @@
 </template>
 
 <script setup>
-	import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
-	import Character from '../characters/Character.vue'
-	import InventoryContextMenu from './InventoryContextMenu.vue'
-	import interact from 'interactjs'
+import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
+import Character from '../characters/Character.vue'
+import InventoryContextMenu from './InventoryContextMenu.vue'
+import interact from 'interactjs'
 
-	const props = defineProps({
-		character: { type: Object, default: null },
-		items: { type: Array, default: () => [] },
-		itemsData: { type: Object, default: () => ({}) },
-		equipmentSlots: { type: Object, default: () => ({}) }
-	})
+const props = defineProps({
+	character: { type: Object, default: null },
+	items: { type: Array, default: () => [] },
+	itemsData: { type: Object, default: () => ({}) },
+	equipmentSlots: { type: Object, default: () => ({}) }
+})
 
-	const emit = defineEmits(['drag-inventory-drop', 'equip', 'unequip', 'swap', 'drop'])
+const emit = defineEmits(['drag-inventory-drop', 'equip', 'unequip', 'swap', 'drop'])
 
-	const contextMenu = ref(null)
+const contextMenu = ref(null)
 
-	const filters = [
-		{ value: 'all', label: 'Все' },
-		{ value: 'equipment', label: 'Экипировка' },
-		{ value: 'other', label: 'Остальное' },
-		{ value: 'junk', label: 'Мусор' },
-		{ value: 'currency', label: 'Валюта' }
-	]
+const filters = [
+	{ value: 'all', label: 'Все' },
+	{ value: 'equipment', label: 'Экипировка' },
+	{ value: 'other', label: 'Остальное' },
+	{ value: 'junk', label: 'Мусор' },
+	{ value: 'currency', label: 'Валюта' }
+]
 
-	const currentFilter = ref('all')
+const currentFilter = ref('all')
 
-	const draggedItemSlots = ref([])
-	const isDragging = ref(false)
-	const draggedElement = ref(null)
-	const draggedItemId = ref(null)
-	const draggedFromType = ref(null)
-	const draggedFromSlot = ref(null)
-	const currentCompatibleSlots = ref([])  // Сохраняем совместимые слоты отдельно
-	const dropWasSuccessful = ref(false)  // Track if drop landed on valid zone
+const draggedItemSlots = ref([])
+const isDragging = ref(false)
+const draggedElement = ref(null)
+const draggedItemId = ref(null)
+const draggedFromType = ref(null)
+const draggedFromSlot = ref(null)
+const currentCompatibleSlots = ref([])
+const dropWasSuccessful = ref(false)
 
-	// Inventory pagination
-	const SLOTS_PER_PAGE = 60
-	const currentPage = ref(1)
+let dragAvatar = null
+let dragDelta = { x: 0, y: 0 }
 
-	const filteredItems = computed(() => {
-		// Filter items first, then add empty slots
-		const filtered = props.items.filter(item => matchesFilter(item))
-		
-		// Add empty slots to fill current page
-		const totalSlots = SLOTS_PER_PAGE * 10  // 300 total slots (10 pages)
-		const slots = [...filtered]
-		
-		// Fill remaining slots with null
-		while (slots.length < totalSlots) {
-			slots.push(null)
-		}
-		
-		return slots
-	})
+// Inventory pagination
+const SLOTS_PER_PAGE = 60
+const currentPage = ref(1)
 
-	const currentPageSlots = computed(() => {
-		const startIdx = (currentPage.value - 1) * SLOTS_PER_PAGE
-		const endIdx = startIdx + SLOTS_PER_PAGE
-		return filteredItems.value.slice(startIdx, endIdx)
-	})
-
-	const totalPages = computed(() => {
-		return Math.ceil(filteredItems.value.length / SLOTS_PER_PAGE)
-	})
-
-	function setFilter(value) {
-		currentFilter.value = value
-		currentPage.value = 1
+const filteredItems = computed(() => {
+	const filtered = props.items.filter((item) => matchesFilter(item))
+	const totalSlots = SLOTS_PER_PAGE * 10
+	const slots = [...filtered]
+	while (slots.length < totalSlots) {
+		slots.push(null)
 	}
+	return slots
+})
 
-	// Получаем все доступные слоты (всегда показываем все слоты, даже если они пусты)
-	const allAvailableSlots = computed(() => {
-		if (!props.character?.equipment_slots) return {}
-		// Возвращаем ВСЕ слоты с их текущими значениями из equipmentSlots
-		return props.character.equipment_slots
-	})
+const currentPageSlots = computed(() => {
+	const startIdx = (currentPage.value - 1) * SLOTS_PER_PAGE
+	const endIdx = startIdx + SLOTS_PER_PAGE
+	return filteredItems.value.slice(startIdx, endIdx)
+})
 
-	// Создаём объект персонажа для превью с дефолтной ориентацией
-	const characterPreview = computed(() => {
-		if (!props.character) return null
-		
-		// Копируем все свойства персонажа, но переопределяем ориентацию на дефолтную
-		return {
-			...props.character,
-			orientation: 'right',      // Всегда смотрит вправо в превью
-			back: false,               // Всегда спереди в превью
-			position: { l: 0, t: 0 },  // Центрируем в превью
-			fromPosition: null,        // Отключаем анимацию входа в превью
-			animationDuration: 0,      // Нет длительности анимации в превью
-		}
-	})
+const totalPages = computed(() => {
+	return Math.ceil(filteredItems.value.length / SLOTS_PER_PAGE)
+})
 
-	function goToPage(page) {
-		const validPage = Math.max(1, Math.min(page, totalPages.value))
-		currentPage.value = validPage
+function setFilter(value) {
+	currentFilter.value = value
+	currentPage.value = 1
+}
+
+const allAvailableSlots = computed(() => {
+	if (!props.character?.equipment_slots) return {}
+	return props.character.equipment_slots
+})
+
+const characterPreview = computed(() => {
+	if (!props.character) return null
+	return {
+		...props.character,
+		orientation: 'right',
+		back: false,
+		position: { l: 0, t: 0 },
+		fromPosition: null,
+		animationDuration: 0
 	}
+})
 
-	function getItemName(id) {
-		const def = props.itemsData[id]
-		if (!def) return id
-		return def.name || def.id || id
+function goToPage(page) {
+	const validPage = Math.max(1, Math.min(page, totalPages.value))
+	currentPage.value = validPage
+}
+
+function getItemName(id) {
+	const def = props.itemsData[id]
+	if (!def) return id
+	return def.name || def.id || id
+}
+
+function getItemSprite(id) {
+	const def = props.itemsData[id]
+	return def?.sprite || null
+}
+
+function isItemStackable(id) {
+	const def = props.itemsData[id]
+	return def?.stackable !== false
+}
+
+function getItemTags(id) {
+	const def = props.itemsData[id]
+	if (!def || !def.tags) return []
+	if (Array.isArray(def.tags)) return def.tags
+	if (typeof def.tags === 'string') return [def.tags]
+	return []
+}
+
+function isEquipmentItem(id) {
+	const def = props.itemsData[id]
+	return !!def?.slot
+}
+
+function matchesFilter(item) {
+	if (!item) return false
+	const itemId = item.itemId
+	const tags = getItemTags(itemId)
+
+	switch (currentFilter.value) {
+		case 'equipment':
+			return isEquipmentItem(itemId)
+		case 'other':
+			return !isEquipmentItem(itemId)
+		case 'junk':
+			return tags.includes('junk')
+		case 'currency':
+			return tags.includes('currency')
+		default:
+			return true
 	}
+}
 
-	function getItemSprite(id) {
-		const def = props.itemsData[id]
-		return def?.sprite || null
-	}
-
-	function isItemStackable(id) {
-		const def = props.itemsData[id]
-		return def?.stackable !== false  // по умолчанию stackable если не указано false
-	}
-
-	function getItemTags(id) {
-		const def = props.itemsData[id]
-		if (!def || !def.tags) return []
-		if (Array.isArray(def.tags)) return def.tags
-		if (typeof def.tags === 'string') return [def.tags]
+function getItemSlots(itemId) {
+	const def = props.itemsData[itemId]
+	if (!def) {
+		console.warn(`Item ${itemId} not found in itemsData!`)
 		return []
 	}
+	const slot = def.slot
+	if (Array.isArray(slot)) return slot
+	if (slot) return [slot]
+	return []
+}
 
-	function isEquipmentItem(id) {
-		const def = props.itemsData[id]
-		return !!def?.slot
+function showEquipmentContextMenu(event, itemId, slot) {
+	contextMenu.value?.show(event, itemId, 'equipment', slot)
+}
+
+function showInventoryContextMenu(event, itemId, inventoryIndex) {
+	contextMenu.value?.show(event, itemId, 'inventory', null, inventoryIndex)
+}
+
+function handleContextMenuEquip({ itemId, slot, inventoryIndex }) {
+	emit('equip', { slot, itemId, inventoryIndex })
+}
+
+function handleContextMenuUnequip({ slot, itemId, stackable }) {
+	emit('unequip', { slot, itemId, stackable })
+}
+
+function handleContextMenuDrop({ itemId, source, slot, quantity = 1 }) {
+	if (source === 'equipment') {
+		const itemDef = props.itemsData[itemId]
+		const isStackable = itemDef?.stackable !== false
+		emit('unequip', { slot, itemId, stackable: isStackable })
 	}
+	emit('drop', { itemId, source, slot, quantity })
+}
 
-	function matchesFilter(item) {
-		if (!item) return false
-
-		const itemId = item.itemId
-		const tags = getItemTags(itemId)
-
-		switch (currentFilter.value) {
-			case 'equipment':
-				return isEquipmentItem(itemId)
-			case 'other':
-				return !isEquipmentItem(itemId)
-			case 'junk':
-				return tags.includes('junk')
-			case 'currency':
-				return tags.includes('currency')
-			default:
-				return true
-		}
+function highlightCompatibleSlots(itemId) {
+	if (!itemId) {
+		clearSlotHighlights()
+		return
 	}
+	const compatibleSlots = getItemSlots(itemId)
+	currentCompatibleSlots.value = compatibleSlots
 
-	function getItemSlots(itemId) {
-		const def = props.itemsData[itemId]
-		console.log('getItemSlots:', { 
-			itemId, 
-			found: !!def, 
-			def, 
-			propsItemsDataKeys: Object.keys(props.itemsData)
-		})
-		if (!def) {
-			console.warn(`Item ${itemId} not found in itemsData!`)
-			return []
-		}
-		const slot = def.slot
-		if (Array.isArray(slot)) return slot
-		if (slot) return [slot]
-		return []
-	}
-
-	function showEquipmentContextMenu(event, itemId, slot) {
-		contextMenu.value?.show(event, itemId, 'equipment', slot)
-	}
-
-	function showInventoryContextMenu(event, itemId, inventoryIndex) {
-		contextMenu.value?.show(event, itemId, 'inventory', null, inventoryIndex)
-	}
-
-	function handleContextMenuEquip({ itemId, slot, inventoryIndex }) {
-		emit('equip', { slot, itemId, inventoryIndex })
-	}
-
-	function handleContextMenuUnequip({ slot, itemId, stackable }) {
-		emit('unequip', { slot, itemId, stackable })
-	}
-
-	function handleContextMenuDrop({ itemId, source, slot, quantity = 1 }) {
-		if (source === 'equipment') {
-			// Dropping from equipment - unequip first (moves to inventory)
-			const itemDef = props.itemsData[itemId]
-			const isStackable = itemDef?.stackable !== false
-			emit('unequip', { slot, itemId, stackable: isStackable })
-		}
-		// After unequipping (or if from inventory), emit drop event
-		emit('drop', { itemId, source, slot, quantity })
-	}
-
-	function onItemHover(itemId) {
-		draggedItemSlots.value = [...getItemSlots(itemId)]
-		
-		// Подсвечиваем только слоты оборудования в левой панели
-		document.querySelectorAll('.left-panel .inventory-grid-slot').forEach(slot => {
-			const slotName = slot.getAttribute('data-slot')
-			if (draggedItemSlots.value.includes(slotName)) {
-				slot.classList.add('compatible')
-			} else {
-				slot.classList.add('incompatible')
-			}
-		})
-	}
-
-	function onItemLeave() {
-		draggedItemSlots.value = []
-		// Очищаем подсвечивание только в левой панели
-		document.querySelectorAll('.left-panel .inventory-grid-slot').forEach(slot => {
-			slot.classList.remove('compatible')
+	document.querySelectorAll('.left-panel .inventory-grid-slot').forEach((slot) => {
+		const slotName = slot.getAttribute('data-slot')
+		if (compatibleSlots.includes(slotName)) {
+			slot.classList.add('compatible')
 			slot.classList.remove('incompatible')
-		})
+		} else {
+			slot.classList.remove('compatible')
+			slot.classList.add('incompatible')
+		}
+	})
+}
+
+function clearSlotHighlights() {
+	document.querySelectorAll('.left-panel .inventory-grid-slot').forEach((slot) => {
+		slot.classList.remove('compatible')
+		slot.classList.remove('incompatible')
+		slot.classList.remove('drag-over')
+		slot.classList.remove('invalid-drag-over')
+	})
+	document.querySelectorAll('.inventory-grid-main .inventory-grid-slot').forEach((slot) => {
+		slot.classList.remove('drag-over')
+	})
+	currentCompatibleSlots.value = []
+	draggedItemSlots.value = []
+}
+
+function onItemHover(itemId) {
+	if (isDragging.value) return
+	highlightCompatibleSlots(itemId)
+}
+
+function onItemLeave() {
+	if (isDragging.value) return
+	clearSlotHighlights()
+}
+
+function isDropAllowed(targetSlot, targetPanel) {
+	if (!draggedItemId.value) return false
+
+	if (targetPanel === 'inventory') {
+		return true
 	}
 
-	function dragMoveListener(event) {
-		const target = event.target
-		const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.delta.x
-		const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.delta.y
+	if (targetPanel === 'equipment') {
+		const compatibleSlots = getItemSlots(draggedItemId.value)
+		if (!compatibleSlots.includes(targetSlot)) {
+			return false
+		}
 
-		target.style.transform = `translate(${x}px, ${y}px)`
-		target.setAttribute('data-x', x)
-		target.setAttribute('data-y', y)
-		target.style.zIndex = 1000
+		if (draggedFromType.value === 'slot') {
+			const fromSlot = draggedFromSlot.value
+			if (fromSlot === targetSlot) return false
+
+			const toItemId = allAvailableSlots.value[targetSlot]
+			if (toItemId) {
+				const toItemSlots = getItemSlots(toItemId)
+				if (!toItemSlots.includes(fromSlot)) {
+					return false
+				}
+			}
+		}
+
+		return true
 	}
 
-	function resetItemPosition(element) {
-		element.style.transform = 'translate(0px, 0px)'
+	return false
+}
+
+function resetItemPosition(element) {
+	if (element) {
+		element.style.transform = ''
 		element.removeAttribute('data-x')
 		element.removeAttribute('data-y')
 		element.style.zIndex = ''
-		
-		// Очищаем подсвечивание слотов
-		isDragging.value = false
-		draggedItemSlots.value = []
-		// НЕ очищаем currentCompatibleSlots здесь, так как он используется в drop событии
-		document.querySelectorAll('.left-panel .inventory-grid-slot').forEach(slot => {
-			slot.classList.remove('compatible')
-			slot.classList.remove('incompatible')
+		element.style.opacity = ''
+	}
+
+	isDragging.value = false
+	clearSlotHighlights()
+}
+
+function setupDragAndDrop() {
+	interact('.draggable-item')
+		.resizable(false)
+		.draggable({
+			inertia: false,
+			autoScroll: false,
+			listeners: {
+				start: (event) => {
+					dropWasSuccessful.value = false
+					const originalEl = event.target
+					draggedElement.value = originalEl
+					const itemId = originalEl.getAttribute('data-item-id')
+					const fromType = originalEl.getAttribute('data-type')
+					const fromSlot = originalEl.getAttribute('data-from')
+
+					draggedItemId.value = itemId
+					draggedFromType.value = fromType
+					draggedFromSlot.value = fromSlot
+					isDragging.value = true
+
+					// Highlight equipment slots for the dragged item
+					highlightCompatibleSlots(itemId)
+
+					// Create unconstrained drag avatar on body so it is not hidden by overflow
+					const rect = originalEl.getBoundingClientRect()
+					dragAvatar = originalEl.cloneNode(true)
+					dragAvatar.classList.add('_drag-avatar')
+					dragAvatar.style.position = 'fixed'
+					dragAvatar.style.left = `${rect.left}px`
+					dragAvatar.style.top = `${rect.top}px`
+					dragAvatar.style.width = `${rect.width}px`
+					dragAvatar.style.height = `${rect.height}px`
+					dragAvatar.style.zIndex = '99999'
+					dragAvatar.style.pointerEvents = 'none'
+					dragAvatar.style.margin = '0'
+					dragAvatar.style.transform = 'translate3d(0, 0, 0)'
+					dragAvatar.style.boxShadow =
+						'0 0.6em 1.8em rgba(0, 0, 0, 0.8), 0 0 0.8em var(--color-primary-alpha)'
+					dragAvatar.style.opacity = '0.95'
+					dragAvatar.style.borderRadius = '0.35em'
+					dragAvatar.style.backgroundColor = 'var(--card-bg)'
+					dragAvatar.style.border = '1px solid var(--color-primary)'
+
+					document.body.appendChild(dragAvatar)
+					originalEl.style.opacity = '0.25'
+					dragDelta = { x: 0, y: 0 }
+				},
+				move: (event) => {
+					dragDelta.x += event.delta.x
+					dragDelta.y += event.delta.y
+					if (dragAvatar) {
+						dragAvatar.style.transform = `translate3d(${dragDelta.x}px, ${dragDelta.y}px, 0)`
+					}
+				},
+				end: (event) => {
+					if (dragAvatar && dragAvatar.parentNode) {
+						dragAvatar.parentNode.removeChild(dragAvatar)
+					}
+					dragAvatar = null
+
+					const target = event.target
+					resetItemPosition(target)
+
+					draggedItemId.value = null
+					draggedFromType.value = null
+					draggedFromSlot.value = null
+					draggedElement.value = null
+					dropWasSuccessful.value = false
+				}
+			}
 		})
-		
-		// Очищаем currentCompatibleSlots после небольшой задержки
-		setTimeout(() => {
-			currentCompatibleSlots.value = []
-		}, 100)
+
+	interact('.inventory-grid-slot').dropzone({
+		accept: '.draggable-item',
+		overlap: 'pointer',
+		listeners: {
+			dragenter: (event) => {
+				const targetPanel = event.target.getAttribute('data-panel')
+				const slot = event.target.getAttribute('data-slot')
+
+				if (isDropAllowed(slot, targetPanel)) {
+					event.target.classList.add('drag-over')
+					event.target.classList.remove('invalid-drag-over')
+				} else if (targetPanel === 'equipment') {
+					event.target.classList.add('invalid-drag-over')
+					event.target.classList.remove('drag-over')
+				}
+			},
+			dragleave: (event) => {
+				event.target.classList.remove('drag-over')
+				event.target.classList.remove('invalid-drag-over')
+			},
+			drop: (event) => {
+				event.preventDefault()
+				event.target.classList.remove('drag-over')
+				event.target.classList.remove('invalid-drag-over')
+				const slot = event.target.getAttribute('data-slot')
+				const targetPanel = event.target.getAttribute('data-panel')
+
+				if (!isDropAllowed(slot, targetPanel)) {
+					if (draggedElement.value) resetItemPosition(draggedElement.value)
+					return
+				}
+
+				dropWasSuccessful.value = true
+
+				if (draggedFromType.value === 'slot' && targetPanel === 'inventory') {
+					const itemDef = props.itemsData[draggedItemId.value]
+					const isStackable = itemDef?.stackable !== false
+					emit('unequip', {
+						slot: draggedFromSlot.value,
+						itemId: draggedItemId.value,
+						stackable: isStackable
+					})
+				} else if (draggedFromType.value === 'item' && targetPanel === 'equipment') {
+					const currentItemInSlot = allAvailableSlots.value[slot]
+					if (currentItemInSlot === draggedItemId.value) {
+						if (draggedElement.value) resetItemPosition(draggedElement.value)
+						return
+					}
+					const inventoryIndex = props.items.findIndex(
+						(item) => item && item.itemId === draggedItemId.value
+					)
+					emit('equip', { slot, itemId: draggedItemId.value, inventoryIndex })
+				} else if (draggedFromType.value === 'slot' && targetPanel === 'equipment') {
+					const fromItemId = draggedItemId.value
+					const fromSlot = draggedFromSlot.value
+					const toItemId = allAvailableSlots.value[slot]
+
+					if (!toItemId) {
+						if (draggedElement.value) resetItemPosition(draggedElement.value)
+						return
+					}
+					emit('swap', { from: fromSlot, to: slot })
+				}
+
+				if (draggedElement.value) {
+					resetItemPosition(draggedElement.value)
+				}
+			}
+		}
+	})
+
+	interact('.inventory-grid-main').dropzone({
+		accept: '.draggable-item',
+		overlap: 'pointer',
+		listeners: {
+			drop: (event) => {
+				event.preventDefault()
+				if (draggedFromType.value === 'slot') {
+					dropWasSuccessful.value = true
+					const itemDef = props.itemsData[draggedItemId.value]
+					const isStackable = itemDef?.stackable !== false
+					emit('unequip', {
+						slot: draggedFromSlot.value,
+						itemId: draggedItemId.value,
+						stackable: isStackable
+					})
+				}
+				if (draggedElement.value) {
+					resetItemPosition(draggedElement.value)
+				}
+			}
+		}
+	})
+}
+
+function cleanupDragAndDrop() {
+	if (dragAvatar && dragAvatar.parentNode) {
+		dragAvatar.parentNode.removeChild(dragAvatar)
 	}
-
-	// Watch for itemsData changes
-	watch(() => props.itemsData, (newData) => {
-		console.log('InventoryItems: itemsData updated', Object.keys(newData), newData)
-	}, { deep: true })
-
-	function setupDragAndDrop() {
-		// Setup draggable items
-		interact('.draggable-item')
-			.resizable(false)
-			.draggable({
-				inertia: false,
-				autoScroll: true,
-				listeners: {
-					start: (event) => {
-						// Reset drop tracking
-						dropWasSuccessful.value = false
-						
-						// Сохраняем информацию о перетаскиваемом элементе
-						draggedElement.value = event.target
-						const itemId = event.target.getAttribute('data-item-id')
-						const fromType = event.target.getAttribute('data-type')
-						const fromSlot = event.target.getAttribute('data-from')
-						
-						draggedItemId.value = itemId
-						draggedFromType.value = fromType
-						draggedFromSlot.value = fromSlot
-						
-						console.log('Drag start - before getItemSlots:', { 
-							itemId, 
-							fromType, 
-							fromSlot,
-							itemsDataKeys: Object.keys(props.itemsData),
-							itemsDataLength: Object.keys(props.itemsData).length,
-							itemsData: props.itemsData
-						})
-						
-						// Сохраняем совместимые слоты для последующей проверки
-						const slots = [...getItemSlots(itemId)]
-						draggedItemSlots.value = slots
-						currentCompatibleSlots.value = slots  // Сохраняем отдельно для drop события
-						isDragging.value = true
-						
-						console.log('Drag start:', { itemId, fromType, fromSlot, slots })
-						
-						// Подсвечиваем только слоты оборудования в левой панели при перетаскивании
-						document.querySelectorAll('.left-panel .inventory-grid-slot').forEach(slot => {
-							const slotName = slot.getAttribute('data-slot')
-							if (slots.includes(slotName)) {
-								slot.classList.add('compatible')
-							} else {
-								slot.classList.add('incompatible')
-							}
-						})
-					},
-					move: dragMoveListener,
-					end: (event) => {
-						const target = event.target
-						resetItemPosition(target)
-						
-						// Drop handlers already emit unequip if needed, so we don't need to do it here
-						
-						// Reset state
-						draggedItemId.value = null
-						draggedFromType.value = null
-						draggedFromSlot.value = null
-						draggedElement.value = null
-						dropWasSuccessful.value = false
-					}
-				}
-			})
-
-		// Setup dropzones for slots
-		interact('.inventory-grid-slot')
-			.dropzone({
-				accept: '.draggable-item',
-				overlap: 0.5,
-				listeners: {
-					dragenter: (event) => {
-						// Подсвечиваем желтым только совместимые слоты
-						const targetPanel = event.target.getAttribute('data-panel')
-						if (targetPanel === 'equipment') {
-							const slot = event.target.getAttribute('data-slot')
-							const compatibleSlots = currentCompatibleSlots.value
-							if (compatibleSlots.includes(slot)) {
-								event.target.classList.add('drag-over')
-							}
-						} else {
-							// Для инвентаря подсвечиваем всегда
-							event.target.classList.add('drag-over')
-						}
-					},
-					dragleave: (event) => {
-						event.target.classList.remove('drag-over')
-					},
-					drop: (event) => {
-						event.preventDefault()
-						event.target.classList.remove('drag-over')
-						const slot = event.target.getAttribute('data-slot')
-						const targetPanel = event.target.getAttribute('data-panel')
-						
-						// Mark drop as successful since we reached a valid dropzone
-						dropWasSuccessful.value = true
-						
-						// Используем сохраненные совместимые слоты
-						const compatibleSlots = currentCompatibleSlots.value
-						
-						console.log('Drop event:', { 
-							slot, 
-							targetPanel,
-							draggedItemId: draggedItemId.value, 
-							draggedFromType: draggedFromType.value, 
-							compatibleSlots,
-							match: compatibleSlots.includes(slot)
-						})
-						
-						// Если из слота перетаскиваем в инвентарь - разэкипируем
-						if (draggedFromType.value === 'slot' && targetPanel === 'inventory') {
-						const itemDef = props.itemsData[draggedItemId.value]
-							const isStackable = itemDef?.stackable !== false  // по умолчанию stackable если не указано false
-							console.log('Unequipping from slot to inventory:', { 
-								slot: draggedFromSlot.value, 
-								itemId: draggedItemId.value,
-								stackable: isStackable
-							})
-							emit('unequip', { slot: draggedFromSlot.value, itemId: draggedItemId.value, stackable: isStackable })
-						}
-						// Если из инвентаря в слот - экипируем
-						else if (draggedFromType.value === 'item' && targetPanel === 'equipment') {
-							// Проверяем совместимость слота
-							if (!compatibleSlots.includes(slot)) {
-								console.warn(`Item ${draggedItemId.value} is not compatible with slot ${slot}`)
-								if (draggedElement.value) {
-									resetItemPosition(draggedElement.value)
-								}
-								return
-							}
-							
-							// Проверяем, что слот либо пуст, либо содержит другой предмет
-							const currentItemInSlot = allAvailableSlots.value[slot]
-							if (currentItemInSlot === draggedItemId.value) {
-								console.warn(`Cannot equip: slot ${slot} already contains the same item. Use swap to exchange items.`)
-								if (draggedElement.value) {
-									resetItemPosition(draggedElement.value)
-								}
-								return
-							}
-							
-							// Находим индекс предмета в оригинальном инвентаре
-							const inventoryIndex = props.items.findIndex(item => 
-								item && item.itemId === draggedItemId.value
-							)
-							console.log('Equipping item from inventory:', { slot, itemId: draggedItemId.value, inventoryIndex })
-							emit('equip', { slot, itemId: draggedItemId.value, inventoryIndex })
-						}
-						// Если из слота в другой слот - меняем их местами только если оба содержат предметы
-						else if (draggedFromType.value === 'slot' && targetPanel === 'equipment') {
-							const fromItemId = draggedItemId.value
-							const fromSlot = draggedFromSlot.value
-							const toItemId = allAvailableSlots.value[slot]
-							
-							// Swap возможен ТОЛЬКО если в обоих слотах есть предметы
-							if (!toItemId) {
-								console.warn('Cannot swap: target slot is empty. Use unequip to move to inventory.')
-								if (draggedElement.value) {
-									resetItemPosition(draggedElement.value)
-								}
-								return
-							}
-							
-							// Проверяем совместимость ПЕРЕМЕЩАЕМОГО предмета с целевым слотом
-							const fromItemSlots = currentCompatibleSlots.value
-							if (!fromItemSlots.includes(slot)) {
-								console.warn(`Item ${fromItemId} is not compatible with slot ${slot}`)
-								if (draggedElement.value) {
-									resetItemPosition(draggedElement.value)
-								}
-								return
-							}
-							
-							// Проверяем совместимость ЦЕЛЕВОГО предмета с исходным слотом
-							const toItemSlots = getItemSlots(toItemId)
-							if (!toItemSlots.includes(fromSlot)) {
-								console.warn(`Item ${toItemId} cannot be placed in slot ${fromSlot}`)
-								if (draggedElement.value) {
-									resetItemPosition(draggedElement.value)
-								}
-								return
-							}
-							
-							console.log('Swapping items between slots:', { from: fromSlot, to: slot, fromItem: fromItemId, toItem: toItemId })
-							emit('swap', { from: fromSlot, to: slot })
-						}
-
-						if (draggedElement.value) {
-							resetItemPosition(draggedElement.value)
-						}
-					}
-				}
-			})
-
-		// Setup dropzone for inventory - only handle drops that specifically missed other dropzones
-		interact('.inventory-grid-main')
-			.dropzone({
-				accept: '.draggable-item',
-				overlap: 0.5,
-				listeners: {
-					drop: (event) => {
-						event.preventDefault()
-						
-						// Mark that drop was successful on inventory grid container
-						// This handles drops in empty spaces of the inventory
-						if (draggedFromType.value === 'slot') {
-							dropWasSuccessful.value = true
-						}
-
-						if (draggedElement.value) {
-							resetItemPosition(draggedElement.value)
-						}
-					}
-				}
-			})
-	}
-
-	function cleanupDragAndDrop() {
+	dragAvatar = null
+	try {
 		interact('.draggable-item').unset()
 		interact('.inventory-grid-slot').unset()
 		interact('.inventory-grid-main').unset()
+	} catch (e) {
+		// ignore
 	}
+}
 
-	onMounted(() => {
-		setTimeout(() => {
-			setupDragAndDrop()
-		}, 100)
-	})
+onMounted(() => {
+	setTimeout(() => {
+		setupDragAndDrop()
+	}, 100)
+})
 
-	onBeforeUnmount(() => {
-		cleanupDragAndDrop()
-	})
+onBeforeUnmount(() => {
+	cleanupDragAndDrop()
+})
 
-	// Re-setup when items change
-	watch(() => [props.items, props.equipmentSlots], () => {
+watch(
+	() => [props.items, props.equipmentSlots],
+	() => {
 		cleanupDragAndDrop()
 		setTimeout(() => {
 			setupDragAndDrop()
 		}, 50)
-	}, { deep: true })
+	},
+	{ deep: true }
+)
 </script>

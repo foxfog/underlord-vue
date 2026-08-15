@@ -9,8 +9,8 @@
 				<div v-for="(entry, index) in entries" :key="index" class="history-entry">
 					<div class="meta">
 						<span class="speaker" v-if="entry.speaker">{{ entry.speaker }}:</span>
-						<span class="type" v-else-if="entry.type==='titles'">[Заголовок]</span>
-						<span class="type" v-else-if="entry.type==='narration'">[Наррация]</span>
+						<span class="type" v-else-if="entry.type === 'titles'">[Заголовок]</span>
+						<span class="type" v-else-if="entry.type === 'narration'">[Наррация]</span>
 					</div>
 					<div class="text" v-html="entry.text"></div>
 				</div>
@@ -24,23 +24,26 @@
 </template>
 
 <script setup>
-	import { ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 
-	const props = defineProps({
-		isVisible: { type: Boolean, default: false },
-		entries: { type: Array, default: () => [] }
-	})
+const props = defineProps({
+	isVisible: { type: Boolean, default: false },
+	entries: { type: Array, default: () => [] }
+})
 
-	defineEmits(['close'])
+defineEmits(['close'])
 
-	const listRef = ref(null)
+const listRef = ref(null)
 
-	watch(() => props.isVisible, (v) => {
+watch(
+	() => props.isVisible,
+	(v) => {
 		if (v) {
 			// scroll to bottom when opened
 			setTimeout(() => {
 				if (listRef.value) listRef.value.scrollTop = listRef.value.scrollHeight
 			}, 50)
 		}
-	})
+	}
+)
 </script>

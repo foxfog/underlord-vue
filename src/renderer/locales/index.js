@@ -18,9 +18,15 @@ function deepMerge(target, source) {
 
 function loadLocaleMessages() {
 	// Load all JSON files in the translations directory
-	const locales = import.meta.glob('./translations/*/**/*.json', { eager: true, import: 'default' })
-	const mainLocales = import.meta.glob('./translations/*/*.json', { eager: true, import: 'default' })
-	
+	const locales = import.meta.glob('./translations/*/**/*.json', {
+		eager: true,
+		import: 'default'
+	})
+	const mainLocales = import.meta.glob('./translations/*/*.json', {
+		eager: true,
+		import: 'default'
+	})
+
 	const messages = {}
 
 	// Process nested JSON files first (ui/common.json, game/characters.json, etc.)
@@ -29,10 +35,10 @@ function loadLocaleMessages() {
 		if (match) {
 			const [, locale, filepath] = match
 			messages[locale] ??= {}
-			
+
 			// Get the translation data
 			const data = locales[path]
-			
+
 			// Deep merge the data into the messages object
 			if (typeof data === 'object' && data !== null) {
 				deepMerge(messages[locale], data)
@@ -45,10 +51,11 @@ function loadLocaleMessages() {
 		const match = path.match(/\.\/translations\/([^/]+)\/([^/]+)\.json$/)
 		if (match) {
 			const [, locale, filename] = match
-			if (filename === locale) { // Only process main files like en/en.json
+			if (filename === locale) {
+				// Only process main files like en/en.json
 				messages[locale] ??= {}
 				const data = mainLocales[path]
-				
+
 				// Deep merge the data into the messages object
 				if (typeof data === 'object' && data !== null) {
 					deepMerge(messages[locale], data)

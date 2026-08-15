@@ -41,7 +41,9 @@ export function resolveVariablePath(path, context = {}) {
 				if (!isNaN(numIdx)) {
 					current = current[numIdx]
 				} else {
-					current = current.find(item => item && (item.id === key || item.itemId === key))
+					current = current.find(
+						(item) => item && (item.id === key || item.itemId === key)
+					)
 				}
 			} else if (typeof current === 'object') {
 				current = current[key]
@@ -58,14 +60,19 @@ export function evaluateExpression(expr, context = {}) {
 	if (expr === null || expr === undefined) return undefined
 	if (typeof expr !== 'string') return expr
 
-	const raw = expr.trim().replace(/^\{|\}$/g, '').trim()
+	const raw = expr
+		.trim()
+		.replace(/^\{|\}$/g, '')
+		.trim()
 	if (!raw) return false
 
 	const tokens = tokenize(raw)
 	if (tokens.length === 0) return false
 
 	let cursor = 0
-	function peek() { return tokens[cursor] }
+	function peek() {
+		return tokens[cursor]
+	}
 	function consume(expected) {
 		const token = tokens[cursor]
 		if (expected && token !== expected) {
@@ -101,7 +108,10 @@ export function evaluateExpression(expr, context = {}) {
 		if (token === '[]') return []
 
 		// String literals
-		if ((token.startsWith("'") && token.endsWith("'")) || (token.startsWith('"') && token.endsWith('"'))) {
+		if (
+			(token.startsWith("'") && token.endsWith("'")) ||
+			(token.startsWith('"') && token.endsWith('"'))
+		) {
 			return token.slice(1, -1)
 		}
 
@@ -143,14 +153,30 @@ export function evaluateExpression(expr, context = {}) {
 			const op = consume()
 			const right = parseAdditive()
 			switch (op) {
-				case '===': left = (left === right); break
-				case '!==': left = (left !== right); break
-				case '==': left = (left == right); break
-				case '!=': left = (left != right); break
-				case '<=': left = (left <= right); break
-				case '>=': left = (left >= right); break
-				case '<': left = (left < right); break
-				case '>': left = (left > right); break
+				case '===':
+					left = left === right
+					break
+				case '!==':
+					left = left !== right
+					break
+				case '==':
+					left = left == right
+					break
+				case '!=':
+					left = left != right
+					break
+				case '<=':
+					left = left <= right
+					break
+				case '>=':
+					left = left >= right
+					break
+				case '<':
+					left = left < right
+					break
+				case '>':
+					left = left > right
+					break
 			}
 		}
 		return left
@@ -223,7 +249,14 @@ function tokenize(input) {
 			i += 3
 			continue
 		}
-		if (input.startsWith('==', i) || input.startsWith('!=', i) || input.startsWith('<=', i) || input.startsWith('>=', i) || input.startsWith('&&', i) || input.startsWith('||', i)) {
+		if (
+			input.startsWith('==', i) ||
+			input.startsWith('!=', i) ||
+			input.startsWith('<=', i) ||
+			input.startsWith('>=', i) ||
+			input.startsWith('&&', i) ||
+			input.startsWith('||', i)
+		) {
 			tokens.push(input.slice(i, i + 2))
 			i += 2
 			continue
@@ -260,7 +293,13 @@ function tokenize(input) {
 		}
 
 		let token = ''
-		while (i < len && !/\s/.test(input[i]) && !['(', ')', '=', '!', '<', '>', '&', '|', '+', '-', '*', '/', ',', ';'].includes(input[i])) {
+		while (
+			i < len &&
+			!/\s/.test(input[i]) &&
+			!['(', ')', '=', '!', '<', '>', '&', '|', '+', '-', '*', '/', ',', ';'].includes(
+				input[i]
+			)
+		) {
 			if (input[i] === '[') {
 				while (i < len && input[i] !== ']') {
 					token += input[i]

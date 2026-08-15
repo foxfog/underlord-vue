@@ -31,23 +31,17 @@
 				{
 					"text": "Поработать на станке",
 					"disabled": "{global.factory?.work_done === true}",
-					"actions": [
-						{ "type": "goto", "target": "cyber/factory/work_on_machine" }
-					]
+					"actions": [{ "type": "goto", "target": "cyber/factory/work_on_machine" }]
 				},
 				{
 					"text": "Пообедать в столовой",
 					"disabled": "{global.factory?.eat_done === true}",
-					"actions": [
-						{ "type": "goto", "target": "cyber/factory/go_to_cafeteria" }
-					]
+					"actions": [{ "type": "goto", "target": "cyber/factory/go_to_cafeteria" }]
 				},
 				{
 					"text": "Отдохнуть в комнате для перерывов",
 					"disabled": "{global.factory?.break_done === true}",
-					"actions": [
-						{ "type": "goto", "target": "cyber/factory/take_break" }
-					]
+					"actions": [{ "type": "goto", "target": "cyber/factory/take_break" }]
 				}
 			]
 		},

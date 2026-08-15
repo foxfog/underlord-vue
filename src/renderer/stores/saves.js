@@ -28,9 +28,15 @@ export const useSavesStore = defineStore('saves', () => {
 	// Save game state to slot — delegated to saveService
 	const saveGame = async (slotNumber, gameState, mcName, clipRect) => {
 		try {
-			console.log('💾 saves.saveGame - gameState.audioStreams:', Object.keys(gameState.audioStreams || {}))
+			console.log(
+				'💾 saves.saveGame - gameState.audioStreams:',
+				Object.keys(gameState.audioStreams || {})
+			)
 			const saveFile = createSaveFile(slotNumber, gameState, mcName, characterDefaults.value)
-			console.log('💾 saves.saveGame - saveFile.gameState.audioStreams:', Object.keys(saveFile.gameState.audioStreams || {}))
+			console.log(
+				'💾 saves.saveGame - saveFile.gameState.audioStreams:',
+				Object.keys(saveFile.gameState.audioStreams || {})
+			)
 			const result = await saveService.saveGame(slotNumber, saveFile, clipRect)
 
 			if (result.success) {
@@ -97,7 +103,12 @@ export const useSavesStore = defineStore('saves', () => {
 			if (result.success) {
 				saves.value.clear()
 				result.data.forEach((saveFile) => {
-					console.log('Loading save from disk - slot:', saveFile.slot, 'mcName:', saveFile.mcName)
+					console.log(
+						'Loading save from disk - slot:',
+						saveFile.slot,
+						'mcName:',
+						saveFile.mcName
+					)
 					saves.value.set(saveFile.slot, saveFile)
 				})
 				console.log('✔ Saves list updated, total:', saves.value.size)
@@ -120,21 +131,23 @@ export const useSavesStore = defineStore('saves', () => {
 	// Быстрые сохранения (только слоты 0-8), отсортированы по дате (сначала самые свежие)
 	const quickSaves = computed(() => {
 		return Array.from(saves.value.values())
-			.filter((saveFile) => (
-				typeof saveFile.slot === 'number' &&
-				saveFile.slot >= QUICK_SAVE_MIN_SLOT &&
-				saveFile.slot <= QUICK_SAVE_MAX_SLOT
-			))
+			.filter(
+				(saveFile) =>
+					typeof saveFile.slot === 'number' &&
+					saveFile.slot >= QUICK_SAVE_MIN_SLOT &&
+					saveFile.slot <= QUICK_SAVE_MAX_SLOT
+			)
 			.sort((a, b) => b.timestamp - a.timestamp)
 	})
 
 	// Все обычные сохранения (без быстрых), отсортированы по номеру слота
 	const allSaves = computed(() => {
 		return Array.from(saves.value.values())
-			.filter((saveFile) => (
-				typeof saveFile.slot === 'number' &&
-				(saveFile.slot < QUICK_SAVE_MIN_SLOT || saveFile.slot > QUICK_SAVE_MAX_SLOT)
-			))
+			.filter(
+				(saveFile) =>
+					typeof saveFile.slot === 'number' &&
+					(saveFile.slot < QUICK_SAVE_MIN_SLOT || saveFile.slot > QUICK_SAVE_MAX_SLOT)
+			)
 			.sort((a, b) => a.slot - b.slot)
 	})
 
@@ -232,6 +245,6 @@ export const useSavesStore = defineStore('saves', () => {
 		setCharacterDefaults,
 		pendingLoad,
 		getPendingLoad,
-		takePendingLoad,
+		takePendingLoad
 	}
 })

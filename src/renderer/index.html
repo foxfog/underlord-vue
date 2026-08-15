@@ -10,23 +10,24 @@
 			// In Electron, __dirname is available in preload context
 			// But for fetch requests, we need to calculate from window.location
 			window.__APP_BASE__ = (() => {
-				const url = new URL(window.location.href);
+				const url = new URL(window.location.href)
 				// For file:// protocol, get the directory containing index.html
 				if (url.protocol === 'file:') {
-					const pathname = url.pathname;
+					const pathname = url.pathname
 					// Remove trailing /index.html and return with trailing slash
-					const dir = pathname.substring(0, pathname.lastIndexOf('/') + 1);
-					return dir;
+					const dir = pathname.substring(0, pathname.lastIndexOf('/') + 1)
+					return dir
 				}
 				// For http:// protocol (dev server), return root
-				return '/';
-			})();
-			console.log('App base path:', window.__APP_BASE__);
+				return '/'
+			})()
+			console.log('App base path:', window.__APP_BASE__)
 		</script>
 		<meta
 			http-equiv="Content-Security-Policy"
 			content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
 		/>
+		<link rel="stylesheet" href="/styles/main.css" />
 	</head>
 
 	<body>

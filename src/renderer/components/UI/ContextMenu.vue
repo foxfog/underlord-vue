@@ -19,61 +19,61 @@
 </template>
 
 <script setup>
-	import { ref, onBeforeUnmount } from 'vue'
+import { ref, onBeforeUnmount } from 'vue'
 
-	const props = defineProps({
-		actions: { type: Array, default: () => [] }
-	})
+const props = defineProps({
+	actions: { type: Array, default: () => [] }
+})
 
-	const emit = defineEmits(['action'])
+const emit = defineEmits(['action'])
 
-	const isVisible = ref(false)
-	const menuRef = ref(null)
-	const position = ref({ x: 0, y: 0 })
+const isVisible = ref(false)
+const menuRef = ref(null)
+const position = ref({ x: 0, y: 0 })
 
-	function show(event, actions = null) {
-		// Можно передать actions при вызове show или использовать из props
-		if (actions) {
-			// Дочерний компонент передал свои actions
-		}
-
-		// Получаем позицию мыши
-		position.value = {
-			x: event.clientX,
-			y: event.clientY
-		}
-
-		isVisible.value = true
-
-		// Закрываем меню при клике вне него (используем capture, чтобы не мешали .stop)
-		setTimeout(() => {
-			document.addEventListener('mousedown', handleClickOutside, true)
-		}, 0)
+function show(event, actions = null) {
+	// Можно передать actions при вызове show или использовать из props
+	if (actions) {
+		// Дочерний компонент передал свои actions
 	}
 
-	function hide() {
-		isVisible.value = false
-		document.removeEventListener('mousedown', handleClickOutside, true)
+	// Получаем позицию мыши
+	position.value = {
+		x: event.clientX,
+		y: event.clientY
 	}
 
-	function handleClickOutside(event) {
-		// Если клик был вне самого меню — закрываем
-		if (menuRef.value && !menuRef.value.contains(event.target)) {
-			hide()
-		}
-	}
+	isVisible.value = true
 
-	function handleAction(action) {
-		emit('action', action)
+	// Закрываем меню при клике вне него (используем capture, чтобы не мешали .stop)
+	setTimeout(() => {
+		document.addEventListener('mousedown', handleClickOutside, true)
+	}, 0)
+}
+
+function hide() {
+	isVisible.value = false
+	document.removeEventListener('mousedown', handleClickOutside, true)
+}
+
+function handleClickOutside(event) {
+	// Если клик был вне самого меню — закрываем
+	if (menuRef.value && !menuRef.value.contains(event.target)) {
 		hide()
 	}
+}
 
-	onBeforeUnmount(() => {
-		document.removeEventListener('mousedown', handleClickOutside, true)
-	})
+function handleAction(action) {
+	emit('action', action)
+	hide()
+}
 
-	defineExpose({
-		show,
-		hide
-	})
+onBeforeUnmount(() => {
+	document.removeEventListener('mousedown', handleClickOutside, true)
+})
+
+defineExpose({
+	show,
+	hide
+})
 </script>

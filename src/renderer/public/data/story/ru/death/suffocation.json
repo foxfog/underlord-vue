@@ -1,7 +1,6 @@
 {
 	"id": "suffocation",
 	"steps": [
-
 		{
 			"type": "notification",
 			"text": "<p>⚠️ Воздух токсичен</p><p>Срочно наденьте маску!</p>",
@@ -15,20 +14,20 @@
 			"action": "hide"
 		},
 
-        { "type": "goto", "target": "macros/cough" },
+		{ "type": "goto", "target": "macros/cough" },
 
 		{
 			"type": "titles",
 			"text": "<span class='t-32 sw-text-blue'>ВЫ ПОГИБЛИ</span>",
 			"duration": 5,
 			"auto-end": true,
-			"effect": {	
+			"effect": {
 				"class": "fade-out",
 				"duration": 2,
 				"delay": 3
 			}
 		},
 
-        { "type": "end" }
-    ]
+		{ "type": "end" }
+	]
 }

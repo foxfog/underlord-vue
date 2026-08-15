@@ -2,7 +2,4 @@
  * Глобальная конфигурация для системы скрытия UI при диалоге
  * Эти элементы будут скрыты при активном диалоге (например, чтобы игрок не менял экипировку или не перемещался по карте)
  */
-export const DIALOGUE_HIDE_UI_CONFIG = [
-	'inventory-button',
-	'map-button'
-]
+export const DIALOGUE_HIDE_UI_CONFIG = ['inventory-button', 'map-button']

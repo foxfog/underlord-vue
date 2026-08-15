@@ -3,15 +3,15 @@
 		"id": "tshirt",
 		"parts": [
 			{
-				"parent" : "body",
+				"parent": "body",
 				"image": "images/sprites/characters/char/body.png"
 			},
 			{
-				"parent" : "arm_left",
+				"parent": "arm_left",
 				"image": "images/sprites/characters/char/arm left.png"
 			},
 			{
-				"parent" : "arm_right",
+				"parent": "arm_right",
 				"image": "images/sprites/characters/char/arm right.png"
 			}
 		]
@@ -20,11 +20,11 @@
 		"id": "tshirt-red",
 		"parts": [
 			{
-				"parent" : "body",
+				"parent": "body",
 				"image": "images/sprites/characters/char/body.png"
 			},
 			{
-				"parent" : "arm_left",
+				"parent": "arm_left",
 				"image": "images/sprites/characters/char/arm left.png"
 			}
 		]
@@ -33,7 +33,7 @@
 		"id": "pendant-zen",
 		"parts": [
 			{
-				"parent" : "body",
+				"parent": "body",
 				"image": "images/sprites/characters/char/body.png"
 			}
 		]
@@ -42,7 +42,7 @@
 		"id": "sword-diamond",
 		"parts": [
 			{
-				"parent" : "arm_right3",
+				"parent": "arm_right3",
 				"image": "images/sprites/characters/char/arm3 right.png"
 			}
 		]
@@ -51,7 +51,7 @@
 		"id": "sword-diamond",
 		"parts": [
 			{
-				"parent" : "arm_left3",
+				"parent": "arm_left3",
 				"image": "images/sprites/characters/char/arm3 left.png"
 			}
 		]

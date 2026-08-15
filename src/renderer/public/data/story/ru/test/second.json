@@ -31,15 +31,15 @@
 			]
 		},
 
-        {
+		{
 			"type": "dialogue",
 			"character": "albedo",
 			"text": "Сейчас открою"
 		},
 
-        { "type": "scene", "id": "mc_apartment_door_open" },
+		{ "type": "scene", "id": "mc_apartment_door_open" },
 
-        {
+		{
 			"type": "dialogue",
 			"character": "albedo",
 			"text": "Открываем дверь"

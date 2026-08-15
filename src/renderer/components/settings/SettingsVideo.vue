@@ -36,55 +36,52 @@
 </template>
 
 <script setup>
-	import { computed } from 'vue'
-	import { useSettingsStore } from '@/stores/settings'
+import { computed } from 'vue'
+import { useSettingsStore } from '@/stores/settings'
 
-	defineOptions({
-		name: 'SettingsVideo'
-	})
+defineOptions({
+	name: 'SettingsVideo'
+})
 
-	const store = useSettingsStore()
-	const availableResolutions = [
-		'800x600',
-		'1280x720',
-		'1920x1080',
-		'2560x1440'
-	]
+const store = useSettingsStore()
+const availableResolutions = ['800x600', '1280x720', '1920x1080', '2560x1440']
 
-	// Screen mode options
-	const screenModeOptions = [
-		{ value: false, label: 'Оконный' },
-		{ value: true, label: 'Полноэкранный' }
-	]
+// Screen mode options
+const screenModeOptions = [
+	{ value: false, label: 'Оконный' },
+	{ value: true, label: 'Полноэкранный' }
+]
 
-	// Resolution options with descriptive labels
-	const resolutionOptions = computed(() => {
-		return availableResolutions.map(res => {
-			const [width, height] = res.split('x')
-			
-			return {
-				value: res,
-				label: `${res}`
-			}
-		})
-	})
+// Resolution options with descriptive labels
+const resolutionOptions = computed(() => {
+	return availableResolutions.map((res) => {
+		const [width, height] = res.split('x')
 
-	const fullscreenMode = computed({
-		get: () => !!store.video.fullscreen,
-		set: v => { store.video.fullscreen = v }
-	})
-
-	function onFullscreenModeChange() {
-		window.electronAPI.setFullscreen(store.video.fullscreen)
-		if (!store.video.fullscreen) {
-			window.electronAPI.setResolution(store.video.resolution)
+		return {
+			value: res,
+			label: `${res}`
 		}
-	}
+	})
+})
 
-	function onResolutionChange() {
-		store.setResolution(store.video.resolution)
-		if (!store.video.fullscreen) {
-			window.electronAPI.setResolution(store.video.resolution)
-		}
+const fullscreenMode = computed({
+	get: () => !!store.video.fullscreen,
+	set: (v) => {
+		store.video.fullscreen = v
 	}
+})
+
+function onFullscreenModeChange() {
+	window.electronAPI.setFullscreen(store.video.fullscreen)
+	if (!store.video.fullscreen) {
+		window.electronAPI.setResolution(store.video.resolution)
+	}
+}
+
+function onResolutionChange() {
+	store.setResolution(store.video.resolution)
+	if (!store.video.fullscreen) {
+		window.electronAPI.setResolution(store.video.resolution)
+	}
+}
 </script>

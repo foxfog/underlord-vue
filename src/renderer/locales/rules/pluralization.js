@@ -1,7 +1,4 @@
-function ruPluralizationRules(
-	choice,
-	choicesLength
-) {
+function ruPluralizationRules(choice, choicesLength) {
 	if (choice === 0) {
 		return 0
 	}
@@ -20,4 +17,4 @@ function ruPluralizationRules(
 
 export default {
 	ru: ruPluralizationRules
-};
+}

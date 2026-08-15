@@ -19,7 +19,6 @@
 	box-sizing: border-box;
 }
 
-
 ::-webkit-scrollbar {
 	width: calc(0.8 * var(--size));
 	height: calc(0.8 * var(--size));
@@ -114,7 +113,6 @@ p {
 		--color-base: var(--color-white);
 		--color-back: var(--color-black);
 	}
-	
 }
 
 .content-area {
@@ -167,7 +165,6 @@ p {
 	}
 }
 
-
 .page-area.__dark ::-webkit-scrollbar-thumb {
 	background: rgba(255, 255, 255, 0.2);
 }
@@ -179,7 +176,6 @@ p {
 .page-area.__dark ::-webkit-scrollbar-thumb:active {
 	background: rgba(255, 255, 255, 0.6);
 }
-
 
 .main-menu-content {
 	display: flex;

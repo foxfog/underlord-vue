@@ -4,8 +4,9 @@
 
 .map-modal {
 	.map-modal__content {
-		width: min(1200px, 94vw);
-		height: min(820px, 88vh);
+		width: min(75em, 94vw);
+		height: min(51.25em, 88vh);
+		max-height: 88vh;
 		display: flex;
 		flex-direction: column;
 		gap: 0;
@@ -99,6 +100,7 @@
 		background: radial-gradient(circle at center, #181822 0%, #0d0d12 100%);
 		position: relative;
 		user-select: none;
+		touch-action: none;
 
 		&._zoomable {
 			cursor: grab;
@@ -115,6 +117,7 @@
 		max-width: 100%;
 		position: absolute;
 		top: 0;
+		bottom: 0;
 		left: 0;
 		right: 0;
 		margin: auto;
@@ -153,13 +156,14 @@
 
 	.map-place {
 		position: absolute;
-		transform: translate(-50%, -50%);
+		transform: translate(-50%, -50%) scale(var(--map-inv-scale, 1));
+		transform-origin: center center;
 		pointer-events: auto;
 		cursor: pointer;
-		transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+		transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1);
 
 		&:hover {
-			transform: translate(-50%, -50%) scale(1.15);
+			transform: translate(-50%, -50%) scale(calc(var(--map-inv-scale, 1) * 1.15));
 
 			.map-place-image {
 				border-color: var(--color-primary-light);

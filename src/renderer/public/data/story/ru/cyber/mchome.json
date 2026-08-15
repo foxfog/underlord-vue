@@ -6,6 +6,9 @@
 			"id": "mc_apartment"
 		},
 		{
+			"variable": "global.toxic_gas = 0"
+		},
+		{
 			"type": "dialogue",
 			"character": "mc",
 			"text": "Наконец дома. Можно снять маску и попробовать отдохнуть."

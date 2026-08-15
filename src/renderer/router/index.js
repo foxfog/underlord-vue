@@ -5,10 +5,10 @@ const router = createRouter({
 	history: createWebHashHistory(),
 	routes: [
 		{
-		id: 0,
-		path: '/',
-		name: 'splash',
-		component: () => import('@/views/SplashScreen.vue')
+			id: 0,
+			path: '/',
+			name: 'splash',
+			component: () => import('@/views/SplashScreen.vue')
 		},
 		{
 			id: 1,
@@ -28,7 +28,7 @@ const router = createRouter({
 			path: '/game/new',
 			component: () => import('@/views/Game.vue'),
 			meta: { newGame: true }
-		},
+		}
 	]
 })
 

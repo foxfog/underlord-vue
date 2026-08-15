@@ -1,18 +1,9 @@
 <template>
 	<!-- Компонентная сцена (если есть компонент для этой сцены) -->
-	<component 
-		v-if="scene && sceneComponent" 
-		:is="sceneComponent" 
-		:scene="scene"
-	/>
-	
+	<component v-if="scene && sceneComponent" :is="sceneComponent" :scene="scene" />
+
 	<!-- Простое фоновое изображение (fallback) -->
-	<img 
-		v-else-if="scene && scene.bg" 
-		:src="bgImagePath" 
-		alt="Background" 
-		class="background-img" 
-	/>
+	<img v-else-if="scene && scene.bg" :src="bgImagePath" alt="Background" class="background-img" />
 </template>
 
 <script setup>
