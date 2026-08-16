@@ -32,6 +32,14 @@
 							@contextmenu.prevent="showEquipmentContextMenu($event, value, slot)"
 						>
 							<div class="inventory-item-content">
+								<div class="item-badges" v-if="!isItemIdDroppable(value) || !isItemIdEquippable(value)">
+									<span v-if="!isItemIdDroppable(value)" class="item-badge _undroppable" title="Нельзя выбросить">
+										🔒
+									</span>
+									<span v-if="!isItemIdEquippable(value)" class="item-badge _unequippable" title="Нельзя снять">
+										🚫
+									</span>
+								</div>
 								<div v-if="getItemSprite(value)" class="item-icon">
 									<img :src="getItemSprite(value)" :alt="getItemName(value)" />
 								</div>
@@ -88,6 +96,25 @@
 								"
 							>
 								<div class="inventory-item-content">
+									<div
+										v-if="!isItemDroppable(item) || !isItemEquippable(item)"
+										class="item-badges"
+									>
+										<span
+											v-if="!isItemDroppable(item)"
+											class="item-badge _undroppable"
+											title="Нельзя выбросить"
+										>
+											🔒
+										</span>
+										<span
+											v-if="!isItemEquippable(item)"
+											class="item-badge _unequippable"
+											title="Нельзя экипировать"
+										>
+											🚫
+										</span>
+									</div>
 									<div v-if="getItemSprite(item.itemId)" class="item-icon">
 										<img
 											:src="getItemSprite(item.itemId)"
@@ -242,6 +269,44 @@ function isItemStackable(id) {
 	return def?.stackable !== false
 }
 
+function isItemDroppable(item) {
+	if (!item) return true
+	const itemDef = props.itemsData[item.itemId]
+	return (
+		item.can_drop !== false &&
+		item.droppable !== false &&
+		itemDef?.can_drop !== false &&
+		itemDef?.droppable !== false
+	)
+}
+
+function isItemIdDroppable(itemId) {
+	if (!itemId) return true
+	const itemDef = props.itemsData[itemId]
+	return itemDef?.can_drop !== false && itemDef?.droppable !== false
+}
+
+function isItemIdEquippable(itemId) {
+	if (!itemId) return true
+	const itemDef = props.itemsData[itemId]
+	return (
+		itemDef?.can_equip !== false &&
+		itemDef?.equippable !== false &&
+		itemDef?.can_unequip !== false
+	)
+}
+
+function isItemEquippable(item) {
+	if (!item) return true
+	const itemDef = props.itemsData[item.itemId]
+	return (
+		item.can_equip !== false &&
+		item.equippable !== false &&
+		itemDef?.can_equip !== false &&
+		itemDef?.equippable !== false
+	)
+}
+
 function getItemTags(id) {
 	const def = props.itemsData[id]
 	if (!def || !def.tags) return []
@@ -316,6 +381,19 @@ function highlightCompatibleSlots(itemId) {
 		clearSlotHighlights()
 		return
 	}
+	const invItem = props.items.find((item) => item && item.itemId === itemId)
+	const itemDef = props.itemsData[itemId]
+	const canEquip =
+		invItem?.can_equip !== false &&
+		invItem?.equippable !== false &&
+		itemDef?.can_equip !== false &&
+		itemDef?.equippable !== false
+
+	if (!canEquip) {
+		clearSlotHighlights()
+		return
+	}
+
 	const compatibleSlots = getItemSlots(itemId)
 	currentCompatibleSlots.value = compatibleSlots
 
@@ -359,10 +437,27 @@ function isDropAllowed(targetSlot, targetPanel) {
 	if (!draggedItemId.value) return false
 
 	if (targetPanel === 'inventory') {
+		if (draggedFromType.value === 'slot') {
+			if (!isItemIdEquippable(draggedItemId.value)) {
+				return false
+			}
+		}
 		return true
 	}
 
 	if (targetPanel === 'equipment') {
+		const invItem = props.items.find(
+			(item) => item && item.itemId === draggedItemId.value
+		)
+		const itemDef = props.itemsData[draggedItemId.value]
+		const canEquip =
+			invItem?.can_equip !== false &&
+			invItem?.equippable !== false &&
+			itemDef?.can_equip !== false &&
+			itemDef?.equippable !== false
+
+		if (!canEquip) return false
+
 		const compatibleSlots = getItemSlots(draggedItemId.value)
 		if (!compatibleSlots.includes(targetSlot)) {
 			return false
@@ -372,8 +467,15 @@ function isDropAllowed(targetSlot, targetPanel) {
 			const fromSlot = draggedFromSlot.value
 			if (fromSlot === targetSlot) return false
 
+			if (!isItemIdEquippable(draggedItemId.value)) {
+				return false
+			}
+
 			const toItemId = allAvailableSlots.value[targetSlot]
 			if (toItemId) {
+				if (!isItemIdEquippable(toItemId)) {
+					return false
+				}
 				const toItemSlots = getItemSlots(toItemId)
 				if (!toItemSlots.includes(fromSlot)) {
 					return false
@@ -385,6 +487,31 @@ function isDropAllowed(targetSlot, targetPanel) {
 	}
 
 	return false
+}
+
+function handleDragOutsideDrop({ itemId, source, slot }) {
+	if (source === 'inventory') {
+		const invIndex = props.items.findIndex((item) => item && item.itemId === itemId)
+		if (invIndex === -1) return
+		const invItem = props.items[invIndex]
+		if (!isItemDroppable(invItem)) return
+
+		contextMenu.value?.initiateDrop({
+			itemId,
+			source: 'inventory',
+			slot: null,
+			inventoryIndex: invIndex
+		})
+	} else if (source === 'equipment') {
+		if (!isItemIdDroppable(itemId)) return
+		if (!isItemIdEquippable(itemId)) return
+
+		contextMenu.value?.initiateDrop({
+			itemId,
+			source: 'equipment',
+			slot
+		})
+	}
 }
 
 function resetItemPosition(element) {
@@ -462,6 +589,29 @@ function setupDragAndDrop() {
 
 					const target = event.target
 					resetItemPosition(target)
+
+					if (!dropWasSuccessful.value && draggedItemId.value) {
+						const clientX =
+							event.clientX ||
+							(event.client && event.client.x) ||
+							(event.page && event.page.x) ||
+							0
+						const clientY =
+							event.clientY ||
+							(event.client && event.client.y) ||
+							(event.page && event.page.y) ||
+							0
+						const dropTarget = document.elementFromPoint(clientX, clientY)
+						const isInsideLayout = dropTarget && dropTarget.closest('.inventory-layout')
+
+						if (!isInsideLayout) {
+							const itemId = draggedItemId.value
+							const source =
+								draggedFromType.value === 'slot' ? 'equipment' : 'inventory'
+							const slot = draggedFromSlot.value
+							handleDragOutsideDrop({ itemId, source, slot })
+						}
+					}
 
 					draggedItemId.value = null
 					draggedFromType.value = null
@@ -550,6 +700,10 @@ function setupDragAndDrop() {
 			drop: (event) => {
 				event.preventDefault()
 				if (draggedFromType.value === 'slot') {
+					if (!isItemIdEquippable(draggedItemId.value)) {
+						if (draggedElement.value) resetItemPosition(draggedElement.value)
+						return
+					}
 					dropWasSuccessful.value = true
 					const itemDef = props.itemsData[draggedItemId.value]
 					const isStackable = itemDef?.stackable !== false

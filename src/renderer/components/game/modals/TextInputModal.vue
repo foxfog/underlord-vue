@@ -1,5 +1,10 @@
 <template>
-	<div v-if="isVisible" class="modal" @click="handleBackdropClick">
+	<div
+		v-if="isVisible"
+		class="modal"
+		@mousedown="handleBackdropMouseDown"
+		@click="handleBackdropClick"
+	>
 		<div class="modal-content" @click.stop>
 			<div class="modal-header" v-if="showCloseButton">
 				<h2 class="modal-title">{{ title }}</h2>
@@ -107,10 +112,17 @@ watch(
 	}
 )
 
-function handleBackdropClick() {
-	if (props.showCancelButton || props.showCloseButton) {
+let isBackdropMouseDown = false
+
+function handleBackdropMouseDown(e) {
+	isBackdropMouseDown = e.target === e.currentTarget
+}
+
+function handleBackdropClick(e) {
+	if (isBackdropMouseDown && e.target === e.currentTarget && (props.showCancelButton || props.showCloseButton)) {
 		closeModal()
 	}
+	isBackdropMouseDown = false
 }
 
 function closeModal() {

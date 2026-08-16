@@ -377,6 +377,88 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					stepIndex.value++
 					processStep()
 					break
+				case 'inventory-item-update':
+				case 'inventory-item-modify':
+				case 'inventory-item-property':
+				case 'item-property':
+				case 'item-modify':
+					// Modify / remove / add properties of item in inventory:
+					// e.g. { character: "mc", itemId: "neuro_helmet", removeProperty: "can_equip" }
+					// e.g. { character: "mc", itemId: "neuro_helmet", property: "can_equip", value: true }
+					if (!isRestoringGameState.value && step.itemId) {
+						const charId = step.character || 'mc'
+						const char = characterData.value[charId]
+						if (char && char.inventory && Array.isArray(char.inventory.items)) {
+							let targetItem = null
+							if (step.index !== undefined && char.inventory.items[step.index]) {
+								targetItem = char.inventory.items[step.index]
+							} else {
+								targetItem = char.inventory.items.find(
+									(item) =>
+										item &&
+										(item.itemId === step.itemId || item.id === step.itemId)
+								)
+							}
+
+							if (targetItem) {
+								// Handle property removal
+								const propsToRemove = []
+								if (step.removeProperty) {
+									if (Array.isArray(step.removeProperty))
+										propsToRemove.push(...step.removeProperty)
+									else propsToRemove.push(step.removeProperty)
+								}
+								if (step.removeProperties && Array.isArray(step.removeProperties)) {
+									propsToRemove.push(...step.removeProperties)
+								}
+								if (step.delete) {
+									if (Array.isArray(step.delete)) propsToRemove.push(...step.delete)
+									else propsToRemove.push(step.delete)
+								}
+								if (step.remove) {
+									if (Array.isArray(step.remove)) propsToRemove.push(...step.remove)
+									else propsToRemove.push(step.remove)
+								}
+								if (step.action === 'remove' && step.property) {
+									propsToRemove.push(step.property)
+								}
+
+								for (const prop of propsToRemove) {
+									delete targetItem[prop]
+									console.log(
+										`📦 Removed property "${prop}" from ${step.itemId} in ${charId}'s inventory`
+									)
+								}
+
+								// Handle setting single property
+								if (step.property && step.action !== 'remove') {
+									targetItem[step.property] =
+										step.value !== undefined ? step.value : true
+									console.log(
+										`📦 Set property "${step.property}" = ${targetItem[step.property]} on ${step.itemId} in ${charId}'s inventory`
+									)
+								}
+
+								// Handle setting multiple properties
+								if (step.properties && typeof step.properties === 'object') {
+									Object.assign(targetItem, step.properties)
+									console.log(
+										`📦 Updated properties on ${step.itemId} in ${charId}'s inventory:`,
+										step.properties
+									)
+								}
+
+								emit && emit('character-loaded', characterData.value)
+							} else {
+								console.warn(
+									`Item ${step.itemId} not found in ${charId}'s inventory`
+								)
+							}
+						}
+					}
+					stepIndex.value++
+					processStep()
+					break
 				case 'goto':
 					if (step.delay) {
 						setTimeout(() => goToLabel(step.target), step.delay * 1000)
@@ -1045,18 +1127,62 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			if (!characterData.value[characterId]) return null
 			let target = characterData.value[characterId]
 			for (let i = 0; i < propertyPath.length - 1; i++) {
-				if (
-					target[propertyPath[i]] === undefined ||
-					typeof target[propertyPath[i]] !== 'object' ||
-					target[propertyPath[i]] === null
-				) {
-					target[propertyPath[i]] = {}
+				const part = propertyPath[i]
+				const arrayMatch = part.match(/^(\w+)\[([^\]]+)\]$/)
+				if (arrayMatch) {
+					const arrayName = arrayMatch[1]
+					const indexExpr = arrayMatch[2]
+					if (target[arrayName] === undefined) {
+						target[arrayName] = []
+					}
+					let index = parseInt(indexExpr)
+					if (isNaN(index)) {
+						const searchValue = indexExpr.replace(/^['"]|['"]$/g, '')
+						if (Array.isArray(target[arrayName])) {
+							index = target[arrayName].findIndex(
+								(item) => item && (item.itemId === searchValue || item.id === searchValue)
+							)
+						}
+					}
+					if (index === -1 || !target[arrayName][index]) {
+						return null
+					}
+					target = target[arrayName][index]
+				} else {
+					if (
+						target[part] === undefined ||
+						typeof target[part] !== 'object' ||
+						target[part] === null
+					) {
+						target[part] = {}
+					}
+					target = target[part]
 				}
-				target = target[propertyPath[i]]
+			}
+			const finalPart = propertyPath[propertyPath.length - 1]
+			const arrayMatch = finalPart.match(/^(\w+)\[([^\]]+)\]$/)
+			if (arrayMatch) {
+				const arrayName = arrayMatch[1]
+				const indexExpr = arrayMatch[2]
+				let index = parseInt(indexExpr)
+				if (isNaN(index)) {
+					const searchValue = indexExpr.replace(/^['"]|['"]$/g, '')
+					if (Array.isArray(target[arrayName])) {
+						index = target[arrayName].findIndex(
+							(item) => item && (item.itemId === searchValue || item.id === searchValue)
+						)
+					}
+				}
+				return {
+					container: target[arrayName],
+					key: index,
+					root: 'character',
+					id: characterId
+				}
 			}
 			return {
 				container: target,
-				key: propertyPath[propertyPath.length - 1],
+				key: finalPart,
 				root: 'character',
 				id: characterId
 			}
@@ -1065,23 +1191,76 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			const propertyPath = parts.slice(1)
 			let target = globalData.value
 			for (let i = 0; i < propertyPath.length - 1; i++) {
-				if (
-					target[propertyPath[i]] === undefined ||
-					typeof target[propertyPath[i]] !== 'object' ||
-					target[propertyPath[i]] === null
-				) {
-					target[propertyPath[i]] = {}
+				const part = propertyPath[i]
+				const arrayMatch = part.match(/^(\w+)\[([^\]]+)\]$/)
+				if (arrayMatch) {
+					const arrayName = arrayMatch[1]
+					const indexExpr = arrayMatch[2]
+					if (target[arrayName] === undefined) target[arrayName] = []
+					let index = parseInt(indexExpr)
+					if (isNaN(index)) {
+						const searchValue = indexExpr.replace(/^['"]|['"]$/g, '')
+						if (Array.isArray(target[arrayName])) {
+							index = target[arrayName].findIndex(
+								(item) => item && (item.id === searchValue || item.itemId === searchValue)
+							)
+						}
+					}
+					if (index === -1 || !target[arrayName][index]) return null
+					target = target[arrayName][index]
+				} else {
+					if (
+						target[part] === undefined ||
+						typeof target[part] !== 'object' ||
+						target[part] === null
+					) {
+						target[part] = {}
+					}
+					target = target[part]
 				}
-				target = target[propertyPath[i]]
 			}
-			return { container: target, key: propertyPath[propertyPath.length - 1], root: 'global' }
+			const finalPart = propertyPath[propertyPath.length - 1]
+			const arrayMatch = finalPart.match(/^(\w+)\[([^\]]+)\]$/)
+			if (arrayMatch) {
+				const arrayName = arrayMatch[1]
+				const indexExpr = arrayMatch[2]
+				let index = parseInt(indexExpr)
+				if (isNaN(index)) {
+					const searchValue = indexExpr.replace(/^['"]|['"]$/g, '')
+					if (Array.isArray(target[arrayName])) {
+						index = target[arrayName].findIndex(
+							(item) => item && (item.id === searchValue || item.itemId === searchValue)
+						)
+					}
+				}
+				return {
+					container: target[arrayName],
+					key: index,
+					root: 'global'
+				}
+			}
+			return { container: target, key: finalPart, root: 'global' }
 		}
 		return null
 	}
 
 	function applyVariable(expr) {
 		if (!expr || typeof expr !== 'string') return
-		const m = expr.match(/^\s*([a-zA-Z0-9_\.]+)\s*(\+=|-=|=|\*=|\/=)\s*(.+)\s*$/)
+		const trimmedExpr = expr.trim()
+		if (trimmedExpr.startsWith('delete ')) {
+			const targetPath = trimmedExpr.substring(7).trim()
+			const resolved = resolvePath(targetPath)
+			if (resolved && resolved.container && resolved.key !== undefined) {
+				delete resolved.container[resolved.key]
+				console.log(`Applied variable (delete): ${targetPath}`)
+				if (resolved.root === 'character') {
+					emit && emit('character-loaded', characterData.value)
+				}
+			}
+			return
+		}
+
+		const m = trimmedExpr.match(/^\s*([a-zA-Z0-9_\.\[\]'"]+)\s*(\+=|-=|=|\*=|\/=)\s*(.+)\s*$/)
 		if (!m) {
 			console.warn('Unsupported variable expression:', expr)
 			return
@@ -1136,13 +1315,8 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		if (resolved.root === 'character') {
 			console.log(`Applied variable: ${expr} -> ${resolved.id}.${key} =`, newValue)
 			updateCharacterData(targetPath, newValue)
-			// Эмитим событие если изменились данные персонажа (особенно equipment_slots)
-			// чтобы синхронизировать с Game.vue
-			if (emit && targetPath.includes('equipment_slots')) {
-				console.log(`📤 Emitting character-loaded after equipment change`, {
-					mask: characterData.value?.mc?.equipment_slots?.mask,
-					allSlots: { ...characterData.value?.mc?.equipment_slots }
-				})
+			// Эмитим событие если изменились данные персонажа (equipment_slots или свойства инвентаря)
+			if (emit) {
 				emit('character-loaded', characterData.value)
 			}
 		} else {

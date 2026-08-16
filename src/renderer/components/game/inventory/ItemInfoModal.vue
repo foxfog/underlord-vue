@@ -1,5 +1,10 @@
 <template>
-	<div v-if="isVisible" class="modal-overlay" @click="handleClose">
+	<div
+		v-if="isVisible"
+		class="modal-overlay"
+		@mousedown="handleBackdropMouseDown"
+		@click="handleBackdropClick"
+	>
 		<div class="modal-item-info" @click.stop>
 			<div class="modal-header">
 				<h4 class="modal-title">
@@ -158,6 +163,19 @@ function mapStatKeyToLabel(key) {
 		default:
 			return key
 	}
+}
+
+let isBackdropMouseDown = false
+
+function handleBackdropMouseDown(e) {
+	isBackdropMouseDown = e.target === e.currentTarget
+}
+
+function handleBackdropClick(e) {
+	if (isBackdropMouseDown && e.target === e.currentTarget) {
+		handleClose()
+	}
+	isBackdropMouseDown = false
 }
 
 function handleClose() {

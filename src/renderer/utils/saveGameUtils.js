@@ -65,10 +65,10 @@ export function extractDelta(
 				JSON.stringify({
 					items: Array.isArray(inventory.items)
 						? inventory.items.map((item) => {
-								const cleanItem = { itemId: item.itemId }
+								const cleanItem = { ...item }
 								// Only include quantity if it's > 1
-								if (item.quantity && item.quantity > 1) {
-									cleanItem.quantity = item.quantity
+								if (cleanItem.quantity === 1) {
+									delete cleanItem.quantity
 								}
 								return cleanItem
 							})
@@ -82,10 +82,9 @@ export function extractDelta(
 			return {
 				items: Array.isArray(inventory.items)
 					? inventory.items.map((item) => {
-							const cleanItem = { itemId: String(item.itemId) }
-							const qty = Number(item.quantity) || 1
-							if (qty > 1) {
-								cleanItem.quantity = qty
+							const cleanItem = { ...item }
+							if (cleanItem.quantity === 1) {
+								delete cleanItem.quantity
 							}
 							return cleanItem
 						})

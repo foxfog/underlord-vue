@@ -20,6 +20,16 @@
 		]
 	},
 	{
+		"id": "neuro_helmet",
+		"zindex": 2,
+		"parts": [
+			{
+				"parent": "head",
+				"image": "images/sprites/characters/mc/equipment/neuro_helmet.png"
+			}
+		]
+	},
+	{
 		"id": "underpants",
 		"zindex": 1,
 		"parts": [

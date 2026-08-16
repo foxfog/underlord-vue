@@ -1,6 +1,11 @@
 <template>
 	<teleport to="body">
-		<div v-if="visible" class="confirm-overlay" @click="$emit('cancel')">
+		<div
+			v-if="visible"
+			class="confirm-overlay"
+			@mousedown="handleBackdropMouseDown"
+			@click="handleBackdropClick"
+		>
 			<div class="confirm-box" @click.stop>
 				<div class="confirm-title" v-if="title">{{ title }}</div>
 				<div class="confirm-message">{{ message }}</div>
@@ -48,5 +53,18 @@ defineProps({
 	}
 })
 
-defineEmits(['yes', 'no', 'cancel'])
+const emit = defineEmits(['yes', 'no', 'cancel'])
+
+let isBackdropMouseDown = false
+
+function handleBackdropMouseDown(e) {
+	isBackdropMouseDown = e.target === e.currentTarget
+}
+
+function handleBackdropClick(e) {
+	if (isBackdropMouseDown && e.target === e.currentTarget) {
+		emit('cancel')
+	}
+	isBackdropMouseDown = false
+}
 </script>

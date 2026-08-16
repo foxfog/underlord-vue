@@ -1,5 +1,10 @@
 <template>
-	<div v-if="isVisible" class="modal _inventory" @click="closeModal">
+	<div
+		v-if="isVisible"
+		class="modal _inventory"
+		@mousedown="handleBackdropMouseDown"
+		@click="handleBackdropClick"
+	>
 		<div class="modal-content" @click.stop>
 			<div class="modal-body">
 				<!-- Tabs Navigation -->
@@ -131,6 +136,19 @@ const mpPercentage = computed(() => {
 	const mpmax = props.character.stats?.mpmax ?? props.character.mpmax ?? 0
 	return mpmax > 0 ? (mp / mpmax) * 100 : 0
 })
+
+let isBackdropMouseDown = false
+
+function handleBackdropMouseDown(e) {
+	isBackdropMouseDown = e.target === e.currentTarget
+}
+
+function handleBackdropClick(e) {
+	if (isBackdropMouseDown && e.target === e.currentTarget) {
+		closeModal()
+	}
+	isBackdropMouseDown = false
+}
 
 function closeModal() {
 	activeTab.value = 'inventory'

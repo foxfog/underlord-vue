@@ -40,6 +40,11 @@
 			},
 			{
 				"itemId": "medicalmask"
+			},
+			{
+				"itemId": "neuro_helmet",
+				"can_drop": false,
+				"can_equip": false
 			}
 		]
 	},

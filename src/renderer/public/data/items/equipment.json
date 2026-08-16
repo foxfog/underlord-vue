@@ -43,6 +43,15 @@
 		}
 	},
 	{
+		"id": "neuro_helmet",
+		"name": "Nervegear 1",
+		"slot": "head",
+		"characters": ["mc"],
+		"stackable": false,
+		"sprite": "images/sprites/items/equipments/neuro_helmet.png",
+		"weight": 1.5
+	},
+	{
 		"id": "medicalmask",
 		"slot": "mask",
 		"name": "медицинская маска",

@@ -5,8 +5,17 @@
 			:is-visible="showDropModal"
 			:item-name="currentItemName"
 			:max-quantity="currentItemQuantity"
-			@confirm="handleDropConfirm"
+			@confirm="handleDropQuantityConfirm"
 			@cancel="handleDropCancel"
+		/>
+		<ConfirmModal
+			:visible="showConfirmModal"
+			:title="confirmTitle"
+			:message="confirmMessage"
+			confirm-text="Выбросить"
+			cancel-text="Отмена"
+			@confirm="handleConfirmDrop"
+			@cancel="handleConfirmCancel"
 		/>
 		<ItemInfoModal
 			:is-visible="showInfoModal"
@@ -24,6 +33,7 @@
 import { ref, computed } from 'vue'
 import { useRegisterModal } from '@/composables/useModalStack'
 import ContextMenu from '../../UI/ContextMenu.vue'
+import ConfirmModal from '@/components/ConfirmModal.vue'
 import DropQuantityModal from './DropQuantityModal.vue'
 import ItemInfoModal from './ItemInfoModal.vue'
 
@@ -40,9 +50,15 @@ const contextMenu = ref(null)
 const showDropModal = ref(false)
 const dropPendingData = ref(null)
 
+const showConfirmModal = ref(false)
+const confirmTitle = ref('Выбросить предмет?')
+const confirmMessage = ref('')
+const dropPendingPayload = ref(null)
+
 const showInfoModal = ref(false)
 
 useRegisterModal('inventory-drop-modal', showDropModal, handleDropCancel)
+useRegisterModal('inventory-drop-confirm-modal', showConfirmModal, handleConfirmCancel)
 useRegisterModal('inventory-info-modal', showInfoModal, handleInfoClose)
 
 const slotNames = {
@@ -91,6 +107,28 @@ const currentActions = computed(() => {
 	if (!currentItem.value) return []
 
 	const itemDef = props.itemsData[currentItem.value]
+	const invItem =
+		currentItemSource.value === 'inventory' && currentInventoryIndex.value !== null
+			? props.inventoryItems[currentInventoryIndex.value]
+			: null
+
+	const canDrop =
+		invItem?.can_drop !== false &&
+		invItem?.droppable !== false &&
+		itemDef?.can_drop !== false &&
+		itemDef?.droppable !== false
+
+	const canEquip =
+		invItem?.can_equip !== false &&
+		invItem?.equippable !== false &&
+		itemDef?.can_equip !== false &&
+		itemDef?.equippable !== false
+
+	const canUnequip =
+		itemDef?.can_equip !== false &&
+		itemDef?.equippable !== false &&
+		itemDef?.can_unequip !== false
+
 	const result = []
 
 	// Опция "Инфо" - для всех предметов
@@ -99,14 +137,16 @@ const currentActions = computed(() => {
 		action: 'info'
 	})
 
-	// Опция "Выбросить" - для всех предметов
-	result.push({
-		label: 'Выбросить',
-		action: 'drop'
-	})
+	// Опция "Выбросить" - только для предметов, которые можно выбрасывать
+	if (canDrop && (currentItemSource.value !== 'equipment' || canUnequip)) {
+		result.push({
+			label: 'Выбросить',
+			action: 'drop'
+		})
+	}
 
-	// Опции одевания - только для предметов в инвентаре
-	if (currentItemSource.value === 'inventory' && itemDef?.slot) {
+	// Опции одевания - только для предметов в инвентаре, которые можно экипировать
+	if (currentItemSource.value === 'inventory' && itemDef?.slot && canEquip) {
 		const slots = Array.isArray(itemDef.slot) ? itemDef.slot : [itemDef.slot]
 
 		for (const slot of slots) {
@@ -119,8 +159,8 @@ const currentActions = computed(() => {
 		}
 	}
 
-	// Опция "Снять" - только для одетых предметов
-	if (currentItemSource.value === 'equipment') {
+	// Опция "Снять" - только для одетых предметов, которые можно снять
+	if (currentItemSource.value === 'equipment' && canUnequip) {
 		result.push({
 			label: 'Снять',
 			action: 'unequip'
@@ -139,6 +179,61 @@ function show(event, itemId, source, slot = null, inventoryIndex = null) {
 	contextMenu.value?.show(event)
 }
 
+function initiateDrop({ itemId, source, slot = null, inventoryIndex = null }) {
+	currentItem.value = itemId
+	currentItemSource.value = source
+	currentSlot.value = slot
+	currentInventoryIndex.value =
+		inventoryIndex !== null && inventoryIndex !== undefined
+			? inventoryIndex
+			: source === 'inventory'
+				? props.inventoryItems.findIndex((i) => i && i.itemId === itemId)
+				: null
+
+	const itemDef = props.itemsData[itemId]
+	const invItem =
+		source === 'inventory' && currentInventoryIndex.value !== null
+			? props.inventoryItems[currentInventoryIndex.value]
+			: null
+
+	const canDrop =
+		invItem?.can_drop !== false &&
+		invItem?.droppable !== false &&
+		itemDef?.can_drop !== false &&
+		itemDef?.droppable !== false
+
+	const canUnequip =
+		itemDef?.can_equip !== false &&
+		itemDef?.equippable !== false &&
+		itemDef?.can_unequip !== false
+
+	if (!canDrop) return
+	if (source === 'equipment' && !canUnequip) return
+
+	const itemName = itemDef?.name || itemDef?.id || itemId || 'предмет'
+	const qty = currentItemQuantity.value
+
+	if (source === 'inventory' && qty > 1) {
+		dropPendingData.value = {
+			itemId,
+			source,
+			slot,
+			itemName
+		}
+		showDropModal.value = true
+	} else {
+		dropPendingPayload.value = {
+			itemId,
+			source,
+			slot,
+			quantity: 1
+		}
+		confirmTitle.value = 'Выбросить предмет?'
+		confirmMessage.value = `Вы действительно хотите выбросить «${itemName}»?`
+		showConfirmModal.value = true
+	}
+}
+
 function handleMenuAction(action) {
 	switch (action.action) {
 		case 'info':
@@ -146,33 +241,12 @@ function handleMenuAction(action) {
 			break
 
 		case 'drop':
-			// Если в инвентаре и больше одного предмета - показываем модалку
-			if (currentItemSource.value === 'inventory' && currentItemQuantity.value > 1) {
-				dropPendingData.value = {
-					itemId: currentItem.value,
-					source: currentItemSource.value,
-					slot: currentSlot.value
-				}
-				showDropModal.value = true
-			} else {
-				// Для предметов из экипировки - сначала разэкипируем
-				if (currentItemSource.value === 'equipment') {
-					const itemDef = props.itemsData[currentItem.value]
-					const isStackable = itemDef?.stackable !== false
-					emit('unequip', {
-						slot: currentSlot.value,
-						itemId: currentItem.value,
-						stackable: isStackable
-					})
-				}
-				// Затем выбрасываем
-				emit('drop', {
-					itemId: currentItem.value,
-					source: currentItemSource.value,
-					slot: currentSlot.value,
-					quantity: 1
-				})
-			}
+			initiateDrop({
+				itemId: currentItem.value,
+				source: currentItemSource.value,
+				slot: currentSlot.value,
+				inventoryIndex: currentInventoryIndex.value
+			})
 			break
 
 		case 'equip':
@@ -195,13 +269,19 @@ function handleMenuAction(action) {
 	}
 }
 
-function handleDropConfirm(quantity) {
+function handleDropQuantityConfirm(quantity) {
 	showDropModal.value = false
 	if (dropPendingData.value) {
-		emit('drop', {
-			...dropPendingData.value,
+		const data = { ...dropPendingData.value }
+		dropPendingPayload.value = {
+			itemId: data.itemId,
+			source: data.source,
+			slot: data.slot,
 			quantity
-		})
+		}
+		confirmTitle.value = 'Выбросить предмет?'
+		confirmMessage.value = `Вы действительно хотите выбросить «${data.itemName}» (${quantity} шт.)?`
+		showConfirmModal.value = true
 		dropPendingData.value = null
 	}
 }
@@ -211,11 +291,35 @@ function handleDropCancel() {
 	dropPendingData.value = null
 }
 
+function handleConfirmDrop() {
+	showConfirmModal.value = false
+	if (dropPendingPayload.value) {
+		const payload = { ...dropPendingPayload.value }
+		if (payload.source === 'equipment') {
+			const itemDef = props.itemsData[payload.itemId]
+			const isStackable = itemDef?.stackable !== false
+			emit('unequip', {
+				slot: payload.slot,
+				itemId: payload.itemId,
+				stackable: isStackable
+			})
+		}
+		emit('drop', payload)
+		dropPendingPayload.value = null
+	}
+}
+
+function handleConfirmCancel() {
+	showConfirmModal.value = false
+	dropPendingPayload.value = null
+}
+
 function handleInfoClose() {
 	showInfoModal.value = false
 }
 
 defineExpose({
-	show
+	show,
+	initiateDrop
 })
 </script>
