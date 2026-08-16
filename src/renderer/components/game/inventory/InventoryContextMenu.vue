@@ -22,6 +22,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useRegisterModal } from '@/composables/useModalStack'
 import ContextMenu from '../../UI/ContextMenu.vue'
 import DropQuantityModal from './DropQuantityModal.vue'
 import ItemInfoModal from './ItemInfoModal.vue'
@@ -40,6 +41,9 @@ const showDropModal = ref(false)
 const dropPendingData = ref(null)
 
 const showInfoModal = ref(false)
+
+useRegisterModal('inventory-drop-modal', showDropModal, handleDropCancel)
+useRegisterModal('inventory-info-modal', showInfoModal, handleInfoClose)
 
 const slotNames = {
 	head: 'голова',

@@ -20,6 +20,7 @@
 
 <script setup>
 import { ref, onBeforeUnmount } from 'vue'
+import { useRegisterModal } from '@/composables/useModalStack'
 
 const props = defineProps({
 	actions: { type: Array, default: () => [] }
@@ -30,6 +31,8 @@ const emit = defineEmits(['action'])
 const isVisible = ref(false)
 const menuRef = ref(null)
 const position = ref({ x: 0, y: 0 })
+
+useRegisterModal('ui-context-menu', isVisible, hide)
 
 function show(event, actions = null) {
 	// Можно передать actions при вызове show или использовать из props

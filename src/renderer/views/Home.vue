@@ -33,11 +33,12 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import MainMenu from '@/components/MainMenu.vue'
 import DynamicContentArea from '@/components/DynamicContentArea.vue'
 import SettingsLeaveConfirmModal from '@/components/SettingsLeaveConfirmModal.vue'
+import { useRegisterModal, handleEscape, clearModalStack } from '@/composables/useModalStack'
 
 const router = useRouter()
 const currentView = ref('main-menu')
@@ -45,6 +46,8 @@ const dynamicContentAreaRef = ref(null)
 const isSettingsDirty = ref(false)
 const showLeaveConfirm = ref(false)
 const pendingView = ref(null)
+
+useRegisterModal('home-settings-leave-confirm', showLeaveConfirm, handleLeaveCancel)
 
 // Navigation handlers for component switching
 const showMainMenu = () => {
@@ -127,4 +130,24 @@ function handleLeaveCancel() {
 	showLeaveConfirm.value = false
 	pendingView.value = null
 }
+
+const onKeyDown = (e) => {
+	if (e.key === 'Escape') {
+		const handled = handleEscape()
+		if (!handled) {
+			if (currentView.value !== 'main-menu') {
+				handleNavigation('main-menu')
+			}
+		}
+	}
+}
+
+onMounted(() => {
+	window.addEventListener('keydown', onKeyDown)
+})
+
+onUnmounted(() => {
+	window.removeEventListener('keydown', onKeyDown)
+	clearModalStack()
+})
 </script>

@@ -139,6 +139,7 @@ import { useScreenshotMode } from '@/composables/useScreenshotMode'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import { useGameOverlay } from '@/composables/useGameOverlay'
 import { useCharacterEquipment } from '@/composables/useCharacterEquipment'
+import { useRegisterModal, handleEscape, clearModalStack } from '@/composables/useModalStack'
 
 const router = useRouter()
 const route = useRoute()
@@ -194,6 +195,36 @@ const {
 } = useSettingsNavigation(navigateImmediate, dynamicContentAreaRef)
 
 const handleNavigation = (view) => handleNavigationInternal(view, currentView.value)
+
+// Register modals in the global LIFO modal stack for Escape key handling
+useRegisterModal('inventory', showInventoryModal, () => {
+	showInventoryModal.value = false
+})
+
+useRegisterModal('map', showMapModal, () => {
+	showMapModal.value = false
+})
+
+useRegisterModal('journal', showJournalModal, () => {
+	showJournalModal.value = false
+})
+
+useRegisterModal('history', showHistoryModal, () => {
+	showHistoryModal.value = false
+})
+
+useRegisterModal('confirm-dialog', confirmVisible, () => {
+	onCancel()
+})
+
+useRegisterModal('settings-leave-confirm', showLeaveConfirm, () => {
+	handleLeaveCancel()
+})
+
+useRegisterModal('game-menu', menuVisible, () => {
+	menuVisible.value = false
+	currentView.value = 'main-menu'
+})
 
 // Game Rules Engine
 const gameState = reactive({
@@ -624,10 +655,13 @@ function openHistory() {
 	showHistoryModal.value = true
 }
 
-// Toggle menu visibility via Escape key
+// Priority Escape handling: close top modal first, or open game menu if no modals are open
 const onKeyDown = (e) => {
 	if (e.key === 'Escape') {
-		menuVisible.value = !menuVisible.value
+		const handled = handleEscape()
+		if (!handled) {
+			openMainMenu()
+		}
 	}
 }
 
@@ -712,6 +746,7 @@ onMounted(() => {
 
 onUnmounted(() => {
 	window.removeEventListener('keydown', onKeyDown)
+	clearModalStack()
 	// Fully destroy the rules engine singleton so the next game session
 	// gets a fresh engine with the correct gameState reference
 	resetEngine()

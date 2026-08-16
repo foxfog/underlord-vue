@@ -295,6 +295,7 @@ function handleKeydown(event) {
 			break
 		case 'Escape':
 			event.preventDefault()
+			event.stopPropagation()
 			closeDropdown()
 			break
 	}

@@ -42,6 +42,7 @@ import DialogueBox from './visual-novel/DialogueBox.vue'
 import Notification from './visual-novel/Notification.vue'
 import { useVisualNovel } from '../../composables/useVisualNovel'
 import { useSavesStore } from '../../stores/saves'
+import { useRegisterModal } from '../../composables/useModalStack'
 
 const props = defineProps({ src: { type: String, required: true } })
 const emit = defineEmits(['end', 'character-loaded', 'global-data-changed'])
@@ -82,6 +83,15 @@ const {
 	showNotification, // ← Добавляем showNotification для Rules Engine
 	setDialogueHideUI // ← Система скрытия UI при диалоге
 } = vn
+
+useRegisterModal('vn-text-input', showTextInputModal, () => {
+	if (
+		currentInputStep.value?.showCancelButton !== false ||
+		currentInputStep.value?.showCloseButton !== false
+	) {
+		showTextInputModal.value = false
+	}
+})
 
 onMounted(async () => {
 	await loadStory()

@@ -2,6 +2,10 @@
 	"id": "cyber/mchome",
 	"steps": [
 		{
+			"type": "stop-stream",
+			"stream": "back"
+		},
+		{
 			"type": "scene",
 			"id": "mc_apartment"
 		},
