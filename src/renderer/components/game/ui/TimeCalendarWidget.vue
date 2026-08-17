@@ -9,7 +9,7 @@
 		>
 			<span class="time-icon">{{ calendarInfo.timePeriodIcon }}</span>
 			<span class="time-label">{{ calendarInfo.timePeriodName }}</span>
-			<span v-if="calendarInfo.hasExactTime" class="time-clock">
+			<span v-if="showExactTime && calendarInfo.hasExactTime" class="time-clock">
 				{{ calendarInfo.timeString }}
 			</span>
 		</div>
@@ -58,6 +58,10 @@ const props = defineProps({
 	showNextTimeButton: {
 		type: Boolean,
 		default: true
+	},
+	showExactTime: {
+		type: Boolean,
+		default: false
 	}
 })
 

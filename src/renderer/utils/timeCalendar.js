@@ -296,7 +296,7 @@ export function getCalendarInfo(globalData = {}) {
 
 		return {
 			calendarType: 'real',
-			calendarName: 'Земля [2138]',
+			calendarName: 'Календарь',
 			dayCount,
 			dayCountText: `День ${dayCount}`,
 			year,

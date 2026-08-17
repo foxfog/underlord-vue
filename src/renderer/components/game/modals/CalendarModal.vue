@@ -6,7 +6,7 @@
 				<div class="calendar-header-title">
 					<span class="calendar-icon">📅</span>
 					<h2 class="modal-title">
-						{{ calendarInfo.calendarType === 'new_world' ? 'Календарь Нового Мира' : 'Календарь Земли' }}
+						{{ calendarInfo.calendarType === 'new_world' ? 'Календарь Нового Мира' : 'Календарь' }}
 					</h2>
 					<span class="world-badge" :class="calendarInfo.calendarType">
 						{{ calendarInfo.yearText }}
@@ -24,13 +24,12 @@
 						</div>
 						<div class="status-day-counter">
 							{{ calendarInfo.dayCountText }}
-							<span class="status-sub">({{ calendarInfo.calendarType === 'new_world' ? 'с момента переноса' : 'от начала отсчета' }})</span>
 						</div>
 					</div>
 					<div class="status-time-pill" :class="'phase-' + calendarInfo.timePeriod">
 						<span class="pill-icon">{{ calendarInfo.timePeriodIcon }}</span>
 						<span class="pill-text">{{ calendarInfo.timePeriodName }}</span>
-						<span v-if="calendarInfo.hasExactTime" class="pill-clock">({{ calendarInfo.timeString }})</span>
+						<span v-if="showExactTime && calendarInfo.hasExactTime" class="pill-clock">({{ calendarInfo.timeString }})</span>
 					</div>
 				</div>
 
@@ -135,7 +134,8 @@ import {
 
 const props = defineProps({
 	isVisible: { type: Boolean, default: false },
-	globalData: { type: Object, default: () => ({}) }
+	globalData: { type: Object, default: () => ({}) },
+	showExactTime: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['close'])
@@ -253,12 +253,6 @@ function closeOnBackground() {
 	font-size: 0.88em;
 	color: var(--color-primary-light, #f3e5ab);
 	margin-top: 0.2em;
-}
-
-.status-sub {
-	color: #888;
-	font-size: 0.85em;
-	margin-left: 0.3em;
 }
 
 .status-time-pill {
