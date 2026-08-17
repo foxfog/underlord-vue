@@ -8,6 +8,7 @@ import {
 	applyVisibleCharacterDisplay
 } from '../utils/saveGameUtils'
 import { evaluateExpression } from '../utils/expressionEvaluator'
+import { getCalendarInfo, advanceTimeOfDay } from '../utils/timeCalendar'
 
 export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	// State
@@ -70,6 +71,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		'inventory-button': false,
 		'map-button': false,
 		'journal-button': false,
+		'next-time-button': false,
 		topbar: false,
 		hotbar: false,
 		dialogue: false,
@@ -113,6 +115,16 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		const journalButton = isTargetHiddenByDialogue('journal-button')
 			? false
 			: !!(base.all || base['journal-button'])
+		const nextTimeButton = isTargetHiddenByDialogue('next-time-button')
+			? false
+			: !!(
+					base.all ||
+					base['next-time-button'] ||
+					base.topbar ||
+					inventoryButton ||
+					mapButton ||
+					journalButton
+				)
 		const hotbar = isTargetHiddenByDialogue('hotbar') ? false : !!(base.all || base.hotbar)
 		const topbar = isTargetHiddenByDialogue('topbar')
 			? false
@@ -125,6 +137,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			'inventory-button': inventoryButton,
 			'map-button': mapButton,
 			'journal-button': journalButton,
+			'next-time-button': nextTimeButton,
 			topbar,
 			hotbar,
 			dialogue,
@@ -776,7 +789,8 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			'stats-button',
 			'inventory-button',
 			'map-button',
-			'journal-button'
+			'journal-button',
+			'next-time-button'
 		]
 
 		function setAllUi(value) {
@@ -815,6 +829,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					baseUiVisibility.value['inventory-button'] = false
 					baseUiVisibility.value['map-button'] = false
 					baseUiVisibility.value['journal-button'] = false
+					baseUiVisibility.value['next-time-button'] = false
 					return
 				}
 				baseUiVisibility.value[target] = show
@@ -2062,6 +2077,29 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		}
 	}
 
+	function advanceTime() {
+		const info = getCalendarInfo(globalData.value)
+		const { nextPeriod, dayIncremented, nextFormatted } = advanceTimeOfDay(info.timePeriod)
+		globalData.value.timeOfDay = nextPeriod
+		globalData.value.time = nextFormatted
+		if (dayIncremented) {
+			const currentDay =
+				typeof globalData.value.day === 'number'
+					? globalData.value.day
+					: typeof globalData.value.dayCount === 'number'
+						? globalData.value.dayCount
+						: 0
+			globalData.value.day = currentDay + 1
+		}
+		console.log(
+			`⏳ advanceTime: new timeOfDay=${nextPeriod}, day=${globalData.value.day}, time=${nextFormatted}`
+		)
+		if (emit) {
+			emit('global-data-changed', globalData.value)
+		}
+		return { nextPeriod, dayIncremented, nextFormatted }
+	}
+
 	return {
 		// state
 		currentScene,
@@ -2098,6 +2136,8 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		onTextInputConfirm,
 		// notification method
 		showNotification,
+		// time advancing method
+		advanceTime,
 		// goto method for Rules Engine
 		goto: goToLabel,
 		// audio methods

@@ -62,6 +62,12 @@ const locationsWithActive = computed(() => {
 })
 
 function getPlaceTarget(place) {
+	// First check if there is a data-driven override for this map and place
+	const overrides = props.globalData?.mapOverrides?.cybercity
+	if (overrides && overrides[place.id]) {
+		return overrides[place.id]
+	}
+
 	if (place.id === 'factory') {
 		return 'cyber/factory/factory_main'
 	}

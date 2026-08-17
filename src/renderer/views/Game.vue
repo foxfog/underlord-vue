@@ -7,9 +7,13 @@
 			:show-inventory-button="showInventoryButton"
 			:show-journal-button="showJournalButton"
 			:show-map-button="showMapButton"
+			:show-next-time-button="showNextTimeButton"
+			:global-data="gameState.global"
 			@open-inventory="toggleInventoryModal"
 			@open-map="toggleMapModal"
 			@open-journal="toggleJournalModal"
+			@open-calendar="toggleCalendarModal"
+			@advance-time="handleAdvanceTime"
 		/>
 
 		<div class="game">
@@ -43,6 +47,12 @@
 		/>
 
 		<JournalModal :isVisible="showJournalModal" @close="showJournalModal = false" />
+
+		<CalendarModal
+			:is-visible="showCalendarModal"
+			:global-data="gameState.global"
+			@close="showCalendarModal = false"
+		/>
 
 		<!-- Menu overlay that can be toggled with Esc -->
 		<div v-show="menuVisible" class="menu-overlay">
@@ -126,6 +136,7 @@ import DynamicContentArea from '@/components/DynamicContentArea.vue'
 import MainMenu from '@/components/MainMenu.vue'
 import HistoryModal from '../components/game/modals/HistoryModal.vue'
 import JournalModal from '../components/game/modals/JournalModal.vue'
+import CalendarModal from '../components/game/modals/CalendarModal.vue'
 import ConfirmModal from '@/components/ConfirmModal.vue'
 import Hotbar from '../components/game/ui/Hotbar.vue'
 import SettingsLeaveConfirmModal from '@/components/SettingsLeaveConfirmModal.vue'
@@ -149,6 +160,7 @@ const visualNovel = ref(null)
 const showMapModal = ref(false)
 const showInventoryModal = ref(false)
 const showJournalModal = ref(false)
+const showCalendarModal = ref(false)
 const mcCharacter = ref(null)
 const itemsData = ref({})
 const dynamicContentAreaRef = ref(null)
@@ -207,6 +219,10 @@ useRegisterModal('map', showMapModal, () => {
 
 useRegisterModal('journal', showJournalModal, () => {
 	showJournalModal.value = false
+})
+
+useRegisterModal('calendar', showCalendarModal, () => {
+	showCalendarModal.value = false
 })
 
 useRegisterModal('history', showHistoryModal, () => {
@@ -288,10 +304,21 @@ const showMapButton = computed(() => {
 	return !!v['map-button']
 })
 
+const showNextTimeButton = computed(() => {
+	const v = currentUiVisibility.value
+	if (v['next-time-button'] !== undefined) return !!v['next-time-button']
+	return !v.hasDialogue
+})
+
 const showTopbar = computed(() => {
 	const v = currentUiVisibility.value
 	if (v.all) return true
-	return showInventoryButton.value || showJournalButton.value || showMapButton.value
+	return !!(
+		v.topbar ||
+		showInventoryButton.value ||
+		showJournalButton.value ||
+		showMapButton.value
+	)
 })
 
 const showHotbar = computed(() => {
@@ -431,6 +458,16 @@ function toggleMapModal() {
 
 function toggleJournalModal() {
 	showJournalModal.value = !showJournalModal.value
+}
+
+function toggleCalendarModal() {
+	showCalendarModal.value = !showCalendarModal.value
+}
+
+function handleAdvanceTime() {
+	if (visualNovel.value?.advanceTime) {
+		visualNovel.value.advanceTime()
+	}
 }
 
 function handleMapGoto(gotoPayload) {

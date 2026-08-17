@@ -1,28 +1,46 @@
 <template>
 	<div class="topbar">
-		<button
-			v-if="showInventoryButton"
-			class="topbar-btn"
-			@click="openInventory"
-			title="Открыть инвентарь"
-		>
-			🎒 Инвентарь
-		</button>
-		<button
-			v-if="showJournalButton"
-			class="topbar-btn"
-			@click="openJournal"
-			title="Открыть журнал"
-		>
-			📔 Журнал
-		</button>
-		<button v-if="showMapButton" class="topbar-btn" @click="openMap" title="Открыть карту мира">
-			🗺 Карта
-		</button>
+		<div class="topbar-left">
+			<button
+				v-if="showInventoryButton"
+				class="topbar-btn"
+				@click="openInventory"
+				title="Открыть инвентарь"
+			>
+				🎒 Инвентарь
+			</button>
+			<button
+				v-if="showJournalButton"
+				class="topbar-btn"
+				@click="openJournal"
+				title="Открыть журнал"
+			>
+				📔 Журнал
+			</button>
+			<button
+				v-if="showMapButton"
+				class="topbar-btn"
+				@click="openMap"
+				title="Открыть карту мира"
+			>
+				🗺 Карта
+			</button>
+		</div>
+
+		<div class="topbar-right">
+			<TimeCalendarWidget
+				:global-data="globalData"
+				:show-next-time-button="showNextTimeButton"
+				@open-calendar="openCalendar"
+				@advance-time="advanceTime"
+			/>
+		</div>
 	</div>
 </template>
 
 <script setup>
+import TimeCalendarWidget from './TimeCalendarWidget.vue'
+
 const props = defineProps({
 	character: {
 		type: Object,
@@ -39,10 +57,24 @@ const props = defineProps({
 	showMapButton: {
 		type: Boolean,
 		default: false
+	},
+	showNextTimeButton: {
+		type: Boolean,
+		default: true
+	},
+	globalData: {
+		type: Object,
+		default: () => ({})
 	}
 })
 
-const emit = defineEmits(['open-inventory', 'open-map', 'open-journal'])
+const emit = defineEmits([
+	'open-inventory',
+	'open-map',
+	'open-journal',
+	'open-calendar',
+	'advance-time'
+])
 
 function openInventory() {
 	emit('open-inventory')
@@ -54,5 +86,13 @@ function openMap() {
 
 function openJournal() {
 	emit('open-journal')
+}
+
+function openCalendar() {
+	emit('open-calendar')
+}
+
+function advanceTime() {
+	emit('advance-time')
 }
 </script>

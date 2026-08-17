@@ -13,22 +13,6 @@
 			"variable": "global.toxic_gas = 0"
 		},
 		{
-			"type": "dialogue",
-			"character": "mc",
-			"text": "Наконец дома. Можно снять маску и попробовать отдохнуть."
-		},
-		{
-			"type": "dialogue",
-			"character": "mc",
-			"text": "Завтра снова на завод. А пока..."
-		},
-		{
-			"type": "inventory-item-update",
-			"character": "mc",
-			"itemId": "neuro_helmet",
-			"removeProperty": "can_equip"
-		},
-		{
 			"type": "hold"
 		}
 	]

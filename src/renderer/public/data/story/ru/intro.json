@@ -1,6 +1,8 @@
 {
 	"id": "intro",
 	"steps": [
+		{ "variable": "global.mapOverrides.cybercity.home = 'intro_mchome'" },
+		
 		{ "type": "goto", "target": "nameinput" },
 
 		{
@@ -62,7 +64,19 @@
 
 		{ "variable": "global.currentLocation = 'factory'" },
 
-		{ "variable": "global.nowevent = 'mcoutfactory'" },
+		{ "variable": "global.calendarType = 'real'" },
+
+		{ "variable": "global.year = 2138" },
+
+		{ "variable": "global.month = 12" },
+
+		{ "variable": "global.dayOfMonth = 18" },
+
+		{ "variable": "global.day = 0" },
+
+		{ "variable": "global.time = '20:52'" },
+
+		{ "variable": "global.timeOfDay = 'evening'" },
 
 		{
 			"type": "ui",
@@ -186,6 +200,40 @@
 			"type": "ui",
 			"target": ["map-button"],
 			"action": "show"
+		},
+		{
+			"type": "hold"
+		},
+		{
+			"id": "intro_mchome",
+			"type": "stop-stream",
+			"stream": "back"
+		},
+		{
+			"type": "scene",
+			"id": "mc_apartment"
+		},
+		{
+			"variable": "global.toxic_gas = 0"
+		},
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "Наконец дома. Можно снять маску и попробовать отдохнуть."
+		},
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "Завтра снова на завод. А пока..."
+		},
+		{
+			"type": "inventory-item-update",
+			"character": "mc",
+			"itemId": "neuro_helmet",
+			"removeProperty": "can_equip"
+		},
+		{
+			"variable": "delete global.mapOverrides.cybercity.home"
 		},
 		{
 			"type": "hold"

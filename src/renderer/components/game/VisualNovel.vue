@@ -81,7 +81,9 @@ const {
 	onStreamEnded,
 	goto, // ← Добавляем goto method для Rules Engine
 	showNotification, // ← Добавляем showNotification для Rules Engine
-	setDialogueHideUI // ← Система скрытия UI при диалоге
+	setDialogueHideUI, // ← Система скрытия UI при диалоге
+	globalData,
+	advanceTime
 } = vn
 
 useRegisterModal('vn-text-input', showTextInputModal, () => {
@@ -111,8 +113,11 @@ defineExpose({
 	pauseAllStreams,
 	resumeAllStreams,
 	uiVisibility,
+	globalData,
+	advanceTime,
 	goto,
 	showNotification,
 	setDialogueHideUI
 })
 </script>
+
