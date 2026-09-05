@@ -19,6 +19,14 @@
 	box-sizing: border-box;
 }
 
+/* Отключение CSS-транзишенов при изменении размера окна или смене разрешения */
+html.is-resizing,
+html.is-resizing *,
+html.is-resizing *::before,
+html.is-resizing *::after {
+	transition: none !important;
+}
+
 ::-webkit-scrollbar {
 	width: calc(0.8 * var(--size));
 	height: calc(0.8 * var(--size));

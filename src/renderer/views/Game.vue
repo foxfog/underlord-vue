@@ -16,6 +16,18 @@
 			@advance-time="handleAdvanceTime"
 		/>
 
+		<!-- Sidebars -->
+		<SidebarLeft
+			v-if="!showVrLauncher && !showYggAuth && !showCharCreate && !showShutdownSequence"
+			:has-dialogue="hasDialogue"
+		/>
+		<SidebarRight
+			v-if="!showVrLauncher && !showYggAuth && !showCharCreate && !showShutdownSequence"
+			:is-helmet-equipped="isHelmetEquipped"
+			:has-dialogue="hasDialogue"
+			@open-vr="openVrFromSidebar"
+		/>
+
 		<div class="game">
 			<VisualNovel
 				ref="visualNovel"
@@ -23,6 +35,7 @@
 				@end="onEnd"
 				@character-loaded="onCharacterLoaded"
 				@global-data-changed="onGlobalDataChanged"
+				@ui-visibility-changed="onUiVisibilityChanged"
 			/>
 		</div>
 
@@ -32,7 +45,7 @@
 			:character="mcCharacter"
 			:items-data="itemsData"
 			@close="toggleInventoryModal"
-			@equip="handleEquip"
+			@equip="onEquipItem"
 			@unequip="handleUnequip"
 			@swap="handleSwap"
 			@drop="handleDrop"
@@ -52,6 +65,41 @@
 			:is-visible="showCalendarModal"
 			:global-data="gameState.global"
 			@close="showCalendarModal = false"
+		/>
+
+		<!-- VR Helmet Launcher & Dashboard -->
+		<VrHelmetLauncher
+			v-if="showVrLauncher"
+			ref="vrLauncherRef"
+			:initial-phase="vrLauncherPhase"
+			:global-data="gameState.global"
+			@exit-vr="onVrExit"
+			@launch-yggdrasil="onLaunchYggdrasil"
+		/>
+
+		<!-- YGGDRASIL Game Intro Video -->
+		<YggdrasilIntroVideo
+			v-if="showYggIntro"
+			@intro-complete="onYggIntroComplete"
+		/>
+
+		<!-- YGGDRASIL MMO Auth Modal -->
+		<YggdrasilAuthModal
+			v-if="showYggAuth"
+			@back-to-launcher="onYggBackToLauncher"
+			@auth-success="onYggAuthSuccess"
+		/>
+
+		<!-- YGGDRASIL Character Creation -->
+		<YggdrasilCharacterCreation
+			v-if="showCharCreate"
+			@character-confirmed="onCharCreationConfirmed"
+		/>
+
+		<!-- Server Shutdown Glitch & Transfer -->
+		<ServerShutdownSequence
+			v-if="showShutdownSequence"
+			@sequence-complete="onShutdownSequenceComplete"
 		/>
 
 		<!-- Menu overlay that can be toggled with Esc -->
@@ -126,11 +174,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick, watch, computed, reactive } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, watch, computed, reactive, markRaw } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import VisualNovel from '../components/game/VisualNovel.vue'
 import InventoryModal from '../components/game/inventory/InventoryModal.vue'
 import Topbar from '../components/game/ui/Topbar.vue'
+import SidebarLeft from '../components/game/ui/SidebarLeft.vue'
+import SidebarRight from '../components/game/ui/SidebarRight.vue'
 import MapModal from '../components/game/maps/MapModal.vue'
 import DynamicContentArea from '@/components/DynamicContentArea.vue'
 import MainMenu from '@/components/MainMenu.vue'
@@ -140,6 +190,12 @@ import CalendarModal from '../components/game/modals/CalendarModal.vue'
 import ConfirmModal from '@/components/ConfirmModal.vue'
 import Hotbar from '../components/game/ui/Hotbar.vue'
 import SettingsLeaveConfirmModal from '@/components/SettingsLeaveConfirmModal.vue'
+import VrHelmetLauncher from '../components/game/vr/VrHelmetLauncher.vue'
+import YggdrasilIntroVideo from '../components/game/vr/YggdrasilIntroVideo.vue'
+import YggdrasilAuthModal from '../components/game/vr/YggdrasilAuthModal.vue'
+import YggdrasilCharacterCreation from '../components/game/vr/YggdrasilCharacterCreation.vue'
+import ServerShutdownSequence from '../components/game/vr/ServerShutdownSequence.vue'
+import { useQuests } from '@/composables/useQuests'
 import { useSavesStore } from '@/stores/saves'
 import { useSettingsStore } from '@/stores/settings'
 import { SOUND_CLOTH } from '../constants/sounds'
@@ -166,6 +222,16 @@ const itemsData = ref({})
 const dynamicContentAreaRef = ref(null)
 const showHistoryModal = ref(false)
 const historyList = ref([])
+
+// VR & YGGDRASIL flow state
+const showVrLauncher = ref(false)
+const vrLauncherRef = ref(null)
+const vrLauncherPhase = ref('connecting')
+const showYggIntro = ref(false)
+const showYggAuth = ref(false)
+const showCharCreate = ref(false)
+const showShutdownSequence = ref(false)
+const lastWorldScene = ref('mc_apartment')
 
 const {
 	menuVisible,
@@ -229,6 +295,18 @@ useRegisterModal('history', showHistoryModal, () => {
 	showHistoryModal.value = false
 })
 
+useRegisterModal('vr-launcher', showVrLauncher, () => {
+	if (vrLauncherRef.value?.startExitVr) {
+		vrLauncherRef.value.startExitVr()
+	} else {
+		onVrExit()
+	}
+})
+
+useRegisterModal('ygg-auth', showYggAuth, () => {
+	onYggBackToLauncher()
+})
+
 useRegisterModal('confirm-dialog', confirmVisible, () => {
 	onCancel()
 })
@@ -280,7 +358,18 @@ const novelsrc = computed(() => {
 })
 
 // UI visibility states from VisualNovel
+const vnUiVisibility = ref({})
+
+function onUiVisibilityChanged(newVisibility) {
+	if (newVisibility) {
+		vnUiVisibility.value = { ...newVisibility }
+	}
+}
+
 const currentUiVisibility = computed(() => {
+	if (vnUiVisibility.value && Object.keys(vnUiVisibility.value).length > 0) {
+		return vnUiVisibility.value
+	}
 	const vn = visualNovel.value
 	if (!vn || !vn.uiVisibility) return {}
 	return vn.uiVisibility.value || vn.uiVisibility || {}
@@ -326,6 +415,14 @@ const showHotbar = computed(() => {
 	return !!(v.all || v.hotbar)
 })
 
+const hasDialogue = computed(() => {
+	return !!currentUiVisibility.value?.hasDialogue
+})
+
+const isHelmetEquipped = computed(() => {
+	return mcCharacter.value?.equipment_slots?.head === 'neuro_helmet'
+})
+
 function getGameAreaClipRect() {
 	const gameArea = document.querySelector('.game')
 	if (!gameArea) return null
@@ -367,77 +464,98 @@ watch(
 watch(
 	() => mcCharacter.value,
 	(newChar) => {
-		if (newChar) {
+		if (newChar && gameState.character.mc !== newChar) {
 			// Убедимся, что gameState указывает на реальный объект персонажа, а не копию
 			gameState.character.mc = newChar
-			gameState.storyEngine = visualNovel.value
-
-			// Синхронизируем и с characterData из visualNovel
-			if (visualNovel.value?.characterData?.mc) {
-				gameState.character.mc = visualNovel.value.characterData.mc
-			}
 		}
-	},
-	{ deep: true }
+		if (visualNovel.value && gameState.storyEngine !== visualNovel.value) {
+			gameState.storyEngine = markRaw(visualNovel.value)
+		}
+	}
 )
 
-// Watch for character data changes in visualNovel to stay in sync
-watch(
-	() => visualNovel.value?.characterData?.mc,
-	(charData) => {
-		if (charData) {
-			console.log('✏️ characterData changed in visualNovel, syncing...')
-			gameState.character.mc = charData
-			mcCharacter.value = charData
+// Handler for global-data-changed event from VisualNovel
+function onGlobalDataChanged(newGlobalData) {
+	if (newGlobalData) {
+		const raw = newGlobalData?.value ? newGlobalData.value : newGlobalData
+		Object.assign(gameState.global, raw)
+		console.log('✅ onGlobalDataChanged: synced to gameState.global:', gameState.global)
+		if (raw.currentMap && settingsStore.currentMap !== raw.currentMap) {
+			console.log('🔁 Syncing currentMap from story to Pinia:', raw.currentMap)
+			settingsStore.setCurrentMap(raw.currentMap)
 		}
-	},
-	{ deep: true }
-)
+	}
+}
 
 // Watch for global data changes from VisualNovel and sync to gameState
 watch(
-	() => visualNovel.value?.globalData,
+	() => {
+		const vn = visualNovel.value
+		if (!vn) return null
+		return vn.globalData?.value || vn.globalData
+	},
 	(newGlobalData) => {
 		if (newGlobalData) {
-			console.log('🌍 globalData changed in visualNovel:', newGlobalData)
-			Object.assign(gameState.global, newGlobalData)
+			const raw = newGlobalData?.value ? newGlobalData.value : newGlobalData
+			console.log('🌍 globalData changed in visualNovel:', raw)
+			Object.assign(gameState.global, raw)
 			console.log('✅ Updated gameState.global:', gameState.global)
-			if (newGlobalData.currentMap && settingsStore.currentMap !== newGlobalData.currentMap) {
-				console.log('🔁 Syncing currentMap from story to Pinia:', newGlobalData.currentMap)
-				settingsStore.setCurrentMap(newGlobalData.currentMap)
+			if (raw.currentMap && settingsStore.currentMap !== raw.currentMap) {
+				console.log('🔁 Syncing currentMap from story to Pinia:', raw.currentMap)
+				settingsStore.setCurrentMap(raw.currentMap)
 			}
 		}
 	},
-	{ deep: true }
+	{ deep: true, immediate: true }
 )
 
 watch(
 	() => settingsStore.currentMap,
 	(newMap) => {
-		if (!visualNovel.value?.globalData) return
-		if (newMap && visualNovel.value.globalData.currentMap !== newMap) {
+		const vnGlobal = visualNovel.value?.globalData?.value || visualNovel.value?.globalData
+		if (!vnGlobal) return
+		if (newMap && vnGlobal.currentMap !== newMap) {
 			console.log('🔁 Syncing currentMap from Pinia to story globalData:', newMap)
-			visualNovel.value.globalData.currentMap = newMap
+			vnGlobal.currentMap = newMap
 		}
 	}
 )
 
-// Watch for equipment changes to debug sync issues
-watch(
-	() => mcCharacter.value?.equipment_slots?.mask,
-	(newMask, oldMask) => {
-		if (newMask !== oldMask) {
-			console.log('👕 Mask status:', {
-				oldMask,
-				newMask,
-				gameStateMask: gameState.character.mc?.equipment_slots?.mask
-			})
+let isSyncingEquipment = false
+function syncEquipmentToScene(characterId = 'mc') {
+	if (isSyncingEquipment) return
+	isSyncingEquipment = true
+	try {
+		if (visualNovel.value?.syncCharacterEquipment) {
+			visualNovel.value.syncCharacterEquipment(characterId, mcCharacter.value)
+		} else if (visualNovel.value?.rebuildEquipmentBySlot) {
+			visualNovel.value.rebuildEquipmentBySlot(characterId, mcCharacter.value?.equipment_slots)
 		}
-		// Убедимся что gameState синхронизирован
-		if (mcCharacter.value) {
-			gameState.character.mc = mcCharacter.value
-		}
+	} finally {
+		isSyncingEquipment = false
 	}
+}
+
+let lastEquipmentSlotsStr = ''
+// Watch for equipment changes to stay in sync with sprites and rules engine
+watch(
+	() => mcCharacter.value?.equipment_slots,
+	(newSlots) => {
+		if (!newSlots) return
+		const str = JSON.stringify(newSlots)
+		if (str === lastEquipmentSlotsStr) return
+		lastEquipmentSlotsStr = str
+
+		if (isSyncingEquipment) return
+		isSyncingEquipment = true
+		try {
+			rebuildEquipmentBySlot()
+			syncEquipmentToScene('mc')
+		} finally {
+			isSyncingEquipment = false
+		}
+	},
+	{ deep: true }
 )
 
 function onEnd() {
@@ -467,6 +585,10 @@ function toggleCalendarModal() {
 function handleAdvanceTime() {
 	if (visualNovel.value?.advanceTime) {
 		visualNovel.value.advanceTime()
+		const vnGlobal = visualNovel.value?.globalData?.value || visualNovel.value?.globalData
+		if (vnGlobal) {
+			Object.assign(gameState.global, vnGlobal)
+		}
 	}
 }
 
@@ -475,8 +597,9 @@ function handleMapGoto(gotoPayload) {
 	const locationId = typeof gotoPayload === 'object' ? gotoPayload?.locationId : null
 
 	if (locationId) {
-		if (visualNovel.value?.globalData) {
-			visualNovel.value.globalData.currentLocation = locationId
+		const vnGlobal = visualNovel.value?.globalData?.value || visualNovel.value?.globalData
+		if (vnGlobal) {
+			vnGlobal.currentLocation = locationId
 		}
 		gameState.global.currentLocation = locationId
 	}
@@ -501,10 +624,193 @@ function playClothSound() {
 }
 
 const { handleEquip, handleUnequip, handleSwap, handleDrop, rebuildEquipmentBySlot } =
-	useCharacterEquipment(mcCharacter, itemsData, gameState, playClothSound)
+	useCharacterEquipment(
+		mcCharacter,
+		itemsData,
+		gameState,
+		playClothSound,
+		() => syncEquipmentToScene('mc')
+	)
+
+const questsManager = useQuests(gameState)
+
+function onEquipItem(payload) {
+	handleEquip(payload)
+	if (payload?.itemId === 'neuro_helmet' && payload?.slot === 'head') {
+		handleNeuroHelmetEquipped()
+	}
+}
+
+function handleNeuroHelmetEquipped() {
+	console.log('🥽 [VR Flow] Neuro helmet equipped! Starting VR launcher sequence...')
+	if (questsManager.isQuestActive('try_neuro_helmet')) {
+		questsManager.completeTask('try_neuro_helmet', 'equip_helmet_step')
+		questsManager.completeQuest('try_neuro_helmet')
+	}
+	showInventoryModal.value = false
+	lastWorldScene.value = visualNovel.value?.getGameState()?.currentScene || 'mc_apartment'
+	vrLauncherPhase.value = 'connecting'
+	showVrLauncher.value = true
+}
+
+let yggBgmAudio = null
+
+function playYggBgm() {
+	stopYggBgm()
+	try {
+		const common = (settingsStore.audio?.commonVolume ?? 100) / 100
+		const music = (settingsStore.audio?.musicVolume ?? 100) / 100
+		const volume = Math.max(0, Math.min(1, common * music))
+		yggBgmAudio = new Audio('audio/music/pw-ost.mp3')
+		yggBgmAudio.loop = true
+		yggBgmAudio.volume = volume
+		yggBgmAudio.play().catch((e) => console.warn('Failed to play ygg bgm:', e))
+	} catch (err) {
+		console.warn('Error creating ygg bgm audio:', err)
+	}
+}
+
+function stopYggBgm() {
+	if (yggBgmAudio) {
+		try {
+			yggBgmAudio.pause()
+			yggBgmAudio.currentTime = 0
+		} catch (e) {}
+		yggBgmAudio = null
+	}
+}
+
+function onVrExit() {
+	stopYggBgm()
+	showVrLauncher.value = false
+	console.log('🚪 [VR Flow] Exited VR, returned to:', lastWorldScene.value)
+}
+
+function openVrFromSidebar() {
+	if (hasDialogue.value) return
+	lastWorldScene.value = visualNovel.value?.getGameState()?.currentScene || 'mc_apartment'
+	vrLauncherPhase.value = 'connecting'
+	showVrLauncher.value = true
+}
+
+function onLaunchYggdrasil() {
+	showVrLauncher.value = false
+	showYggIntro.value = true
+}
+
+function onYggIntroComplete() {
+	showYggIntro.value = false
+	showYggAuth.value = true
+	playYggBgm()
+}
+
+function onYggBackToLauncher() {
+	stopYggBgm()
+	showYggAuth.value = false
+	vrLauncherPhase.value = 'dashboard'
+	showVrLauncher.value = true
+}
+
+function onYggAuthSuccess(payload) {
+	console.log('🔑 [YGG Auth Success]:', payload)
+	showYggAuth.value = false
+	showCharCreate.value = true
+}
+
+function onCharCreationConfirmed({ nickname }) {
+	console.log('👤 [Char Created] Nickname:', nickname)
+	stopYggBgm()
+	if (mcCharacter.value) {
+		mcCharacter.value.name = nickname
+	}
+	if (gameState.character?.mc) {
+		gameState.character.mc.name = nickname
+	}
+	showCharCreate.value = false
+	showShutdownSequence.value = true
+}
+
+async function onShutdownSequenceComplete() {
+	console.log('⚡ [Shutdown Complete] Moving to Carne Village!')
+
+	// Сброс старого реального инвентаря на стартовый набор MMO YGGDRASIL
+	const starterEquipment = {
+		head: null,
+		mask: null,
+		neck_1: null,
+		'torso-1': 'tshirt',
+		'torso-2': null,
+		'torso-3': null,
+		'legs-2': 'jeans',
+		feet: null,
+		'weapon-hand-1': 'sword-diamond',
+		'weapon-hand-2': null,
+		hands: null,
+		weapon_off: null,
+		underpants: 'underpants'
+	}
+	const starterItems = [
+		{ itemId: 'ygdrasil-coin-new', quantity: 150 },
+		{ itemId: 'potion-health-small', quantity: 3 },
+		{ itemId: 'bread', quantity: 3 }
+	]
+
+	if (mcCharacter.value) {
+		mcCharacter.value.equipment_slots = { ...starterEquipment }
+		mcCharacter.value.inventory = { items: [...starterItems] }
+	}
+	if (gameState.character?.mc) {
+		gameState.character.mc.equipment_slots = { ...starterEquipment }
+		gameState.character.mc.inventory = { items: [...starterItems] }
+	}
+
+	rebuildEquipmentBySlot()
+	syncEquipmentToScene('mc')
+
+	// Переключение на календарь и время Нового Мира (день, Месяц глубоких снегов, 0 г.)
+	const newWorldCalendar = {
+		calendarType: 'new_world',
+		year: 0,
+		month: 1,
+		dayOfMonth: 1,
+		day: 0,
+		dayCount: 0,
+		timeOfDay: 'day',
+		worldMap: 'newworld',
+		localMap: 'carne',
+		currentMap: 'carne',
+		currentLocation: 'carne_village_entrance'
+	}
+	settingsStore.setCurrentMap('carne')
+	if (gameState.global) {
+		Object.assign(gameState.global, newWorldCalendar)
+		delete gameState.global.time
+	}
+	if (visualNovel.value?.globalData) {
+		Object.assign(visualNovel.value.globalData, newWorldCalendar)
+		delete visualNovel.value.globalData.time
+	}
+
+	try {
+		if (visualNovel.value?.goto) {
+			await visualNovel.value.goto('new_world_carne')
+		}
+	} catch (err) {
+		console.error('Error transitioning to new_world_carne:', err)
+	} finally {
+		showShutdownSequence.value = false
+	}
+}
+
+function handleItemEquippedEvent(e) {
+	if (e.detail?.itemId === 'neuro_helmet' && e.detail?.slot === 'head') {
+		handleNeuroHelmetEquipped()
+	}
+}
 
 function onCharacterLoaded(characterData) {
 	if (characterData?.mc) {
+		lastEquipmentSlotsStr = JSON.stringify(characterData.mc.equipment_slots || {})
 		const oldMask = mcCharacter.value?.equipment_slots?.mask
 		const newMask = characterData.mc?.equipment_slots?.mask
 		console.log('🔄 onCharacterLoaded - updating mcCharacter', {
@@ -513,25 +819,14 @@ function onCharacterLoaded(characterData) {
 			stack: new Error().stack.split('\n').slice(1, 3).join(' | ')
 		})
 		mcCharacter.value = characterData.mc
-		// Также пересинхронизируем gameState чтобы Rules Engine видел актуальные данные
-		gameState.character.mc = characterData.mc
+		if (gameState.character.mc !== characterData.mc) {
+			gameState.character.mc = characterData.mc
+		}
+		rebuildEquipmentBySlot()
 	}
 }
 
-function onGlobalDataChanged(globalData) {
-	if (globalData) {
-		console.log('🌍 onGlobalDataChanged - updating gameState.global', globalData)
-		Object.assign(gameState.global, globalData)
-		console.log('✅ gameState.global updated:', gameState.global)
-		if (globalData.currentMap && settingsStore.currentMap !== globalData.currentMap) {
-			console.log(
-				'🔁 Syncing currentMap from global-data-changed to Pinia:',
-				globalData.currentMap
-			)
-			settingsStore.setCurrentMap(globalData.currentMap)
-		}
-	}
-}
+
 
 // Handler for MainMenu "Continue"
 function onContinue() {
@@ -707,9 +1002,12 @@ onMounted(() => {
 	settingsStore.isMusicPlaying = false
 
 	window.addEventListener('keydown', onKeyDown)
+	window.addEventListener('item-equipped', handleItemEquippedEvent)
 
 	// ВАЖНО: Инициализируем gameState.storyEngine ДО запуска Rules Engine
-	gameState.storyEngine = visualNovel.value
+	if (visualNovel.value) {
+		gameState.storyEngine = markRaw(visualNovel.value)
+	}
 
 	// Initialize Game Rules Engine
 	registerRules(allStoryRules)
@@ -782,7 +1080,9 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+	stopYggBgm()
 	window.removeEventListener('keydown', onKeyDown)
+	window.removeEventListener('item-equipped', handleItemEquippedEvent)
 	clearModalStack()
 	// Fully destroy the rules engine singleton so the next game session
 	// gets a fresh engine with the correct gameState reference

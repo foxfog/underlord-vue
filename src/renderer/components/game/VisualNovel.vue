@@ -29,6 +29,17 @@
 		@close="showTextInputModal = false"
 		@confirm="onTextInputConfirm"
 	/>
+
+	<!-- Fade Overlay for cinematic transitions -->
+	<div
+		v-if="fadeOverlay.visible"
+		class="vn-fade-overlay"
+		:style="{
+			backgroundColor: fadeOverlay.color,
+			opacity: fadeOverlay.opacity,
+			transition: fadeOverlay.duration > 0 ? `opacity ${fadeOverlay.duration}s ease-in-out` : 'none'
+		}"
+	/>
 </template>
 
 <script setup>
@@ -45,7 +56,12 @@ import { useSavesStore } from '../../stores/saves'
 import { useRegisterModal } from '../../composables/useModalStack'
 
 const props = defineProps({ src: { type: String, required: true } })
-const emit = defineEmits(['end', 'character-loaded', 'global-data-changed'])
+const emit = defineEmits([
+	'end',
+	'character-loaded',
+	'global-data-changed',
+	'ui-visibility-changed'
+])
 
 const notificationComponent = ref(null)
 
@@ -83,7 +99,10 @@ const {
 	showNotification, // ← Добавляем showNotification для Rules Engine
 	setDialogueHideUI, // ← Система скрытия UI при диалоге
 	globalData,
-	advanceTime
+	advanceTime,
+	rebuildEquipmentBySlot,
+	syncCharacterEquipment,
+	fadeOverlay
 } = vn
 
 useRegisterModal('vn-text-input', showTextInputModal, () => {
@@ -114,10 +133,23 @@ defineExpose({
 	resumeAllStreams,
 	uiVisibility,
 	globalData,
+	visibleCharacters,
+	rebuildEquipmentBySlot,
+	syncCharacterEquipment,
 	advanceTime,
 	goto,
 	showNotification,
-	setDialogueHideUI
+	setDialogueHideUI,
+	fadeOverlay
 })
 </script>
+
+<style scoped>
+.vn-fade-overlay {
+	position: absolute;
+	inset: 0;
+	z-index: 500;
+	pointer-events: none;
+}
+</style>
 

@@ -71,16 +71,16 @@ export const DAYS_OF_WEEK = [
  */
 export const NEW_WORLD_MONTHS = [
 	{ id: 1, nameRu: 'Месяц глубоких снегов', nameEn: 'Month of Deep Snows', days: 30, seasonRu: 'Зима' },
-	{ id: 2, nameRu: 'Месяц уходящих снегов', nameEn: 'Month of Departing Snows', days: 30, seasonRu: 'Весна' },
+	{ id: 2, nameRu: 'Месяц уходящих снегов', nameEn: 'Month of Departing Snows', days: 30, seasonRu: 'Зима' },
 	{ id: 3, nameRu: 'Месяц теплого ветра', nameEn: 'Month of Warm Wind', days: 30, seasonRu: 'Весна' },
 	{ id: 4, nameRu: 'Месяц цветущих ветров', nameEn: 'Month of Blooming Winds', days: 30, seasonRu: 'Весна' },
-	{ id: 5, nameRu: 'Месяц грозового ветра', nameEn: 'Month of Thunder Wind', days: 30, seasonRu: 'Лето' },
+	{ id: 5, nameRu: 'Месяц грозового ветра', nameEn: 'Month of Thunder Wind', days: 30, seasonRu: 'Весна' },
 	{ id: 6, nameRu: 'Месяц первой искры', nameEn: 'Month of First Spark', days: 30, seasonRu: 'Лето' },
 	{ id: 7, nameRu: 'Месяц яростного пламени', nameEn: 'Month of Fierce Flame', days: 30, seasonRu: 'Лето' },
-	{ id: 8, nameRu: 'Месяц последнего очага', nameEn: 'Month of Last Hearth', days: 30, seasonRu: 'Осень' },
+	{ id: 8, nameRu: 'Месяц последнего очага', nameEn: 'Month of Last Hearth', days: 30, seasonRu: 'Лето' },
 	{ id: 9, nameRu: 'Месяц щедрой земли', nameEn: 'Month of Bountiful Earth', days: 30, seasonRu: 'Осень' },
 	{ id: 10, nameRu: 'Месяц засыпающей земли', nameEn: 'Month of Sleeping Earth', days: 30, seasonRu: 'Осень' },
-	{ id: 11, nameRu: 'Месяц скованной земли', nameEn: 'Month of Shackled Earth', days: 30, seasonRu: 'Зима' },
+	{ id: 11, nameRu: 'Месяц скованной земли', nameEn: 'Month of Shackled Earth', days: 30, seasonRu: 'Осень' },
 	{ id: 12, nameRu: 'Месяц льда', nameEn: 'Month of Ice', days: 30, seasonRu: 'Зима' }
 ]
 

@@ -221,33 +221,35 @@ export function getCalendarInfo(globalData = {}) {
 
 	if (calendarType === 'new_world') {
 		const baseYear = typeof globalData.year === 'number' ? globalData.year : 0
+		const baseMonth =
+			typeof globalData.month === 'number'
+				? globalData.month
+				: typeof globalData.nwMonth === 'number'
+					? globalData.nwMonth
+					: 3
+		const baseDayOfMonth =
+			typeof globalData.dayOfMonth === 'number'
+				? globalData.dayOfMonth
+				: typeof globalData.nwDayOfMonth === 'number'
+					? globalData.nwDayOfMonth
+					: 1
 
-		let year = baseYear
-		let month = 1
-		let dayOfMonth = 1
-		let dayOfWeek = 1
+		const startMonth = Math.min(12, Math.max(1, Math.floor(baseMonth)))
+		const startDay = Math.min(
+			NEW_WORLD_DAYS_PER_MONTH,
+			Math.max(1, Math.floor(baseDayOfMonth))
+		)
+		const startDayInYear = (startMonth - 1) * NEW_WORLD_DAYS_PER_MONTH + (startDay - 1)
 
-		if (
-			typeof globalData.nwMonth === 'number' &&
-			typeof globalData.nwDayOfMonth === 'number'
-		) {
-			month = Math.min(12, Math.max(1, Math.floor(globalData.nwMonth)))
-			dayOfMonth = Math.min(
-				NEW_WORLD_DAYS_PER_MONTH,
-				Math.max(1, Math.floor(globalData.nwDayOfMonth))
-			)
-			dayOfWeek = ((dayCount % 7) + 7) % 7 + 1
-		} else {
-			// Calculate from dayCount (0 = Day 1 of Month 1, Year 0)
-			const totalDays = dayCount
-			year = baseYear + Math.floor(totalDays / NEW_WORLD_DAYS_PER_YEAR)
-			const dayInYear =
-				((totalDays % NEW_WORLD_DAYS_PER_YEAR) + NEW_WORLD_DAYS_PER_YEAR) %
-				NEW_WORLD_DAYS_PER_YEAR
-			month = Math.floor(dayInYear / NEW_WORLD_DAYS_PER_MONTH) + 1
-			dayOfMonth = (dayInYear % NEW_WORLD_DAYS_PER_MONTH) + 1
-			dayOfWeek = ((totalDays % 7) + 7) % 7 + 1
-		}
+		// Calculate total days including base month/day and elapsed dayCount
+		const totalDays = startDayInYear + dayCount
+		const year = baseYear + Math.floor(totalDays / NEW_WORLD_DAYS_PER_YEAR)
+		const dayInYear =
+			((totalDays % NEW_WORLD_DAYS_PER_YEAR) + NEW_WORLD_DAYS_PER_YEAR) %
+			NEW_WORLD_DAYS_PER_YEAR
+		const month = Math.floor(dayInYear / NEW_WORLD_DAYS_PER_MONTH) + 1
+		const dayOfMonth = (dayInYear % NEW_WORLD_DAYS_PER_MONTH) + 1
+		const dayOfWeek = ((totalDays % 7) + 7) % 7 + 1
 
 		const monthData = NEW_WORLD_MONTHS[month - 1] || NEW_WORLD_MONTHS[0]
 		const weekdayData = DAYS_OF_WEEK[dayOfWeek - 1] || DAYS_OF_WEEK[0]
@@ -262,6 +264,7 @@ export function getCalendarInfo(globalData = {}) {
 			month,
 			monthName: monthData.nameRu,
 			monthData,
+			seasonRu: monthData.seasonRu,
 			dayOfMonth,
 			dayOfWeek,
 			weekdayName: weekdayData.nameRu,
@@ -341,8 +344,7 @@ export function getMonthGrid(calendarType, year, month, currentDay, dayCount = 0
 	// Determine starting weekday of the month
 	let firstDayOfWeek = 1
 	if (calendarType === 'new_world') {
-		// In New World, dayOfWeek of day 1 of month
-		const totalDaysToMonthStart = dayCount - (currentDay - 1)
+		const totalDaysToMonthStart = year * NEW_WORLD_DAYS_PER_YEAR + (month - 1) * NEW_WORLD_DAYS_PER_MONTH
 		firstDayOfWeek = ((totalDaysToMonthStart % 7) + 7) % 7 + 1
 	} else {
 		firstDayOfWeek = getRealDayOfWeek(year, month, 1)

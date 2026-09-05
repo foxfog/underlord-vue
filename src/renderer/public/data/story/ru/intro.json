@@ -1,7 +1,17 @@
 {
 	"id": "intro",
 	"steps": [
+		{ "variable": "global.calendarType = 'real'" },
+		{ "variable": "global.year = 2138" },
+		{ "variable": "global.month = 12" },
+		{ "variable": "global.dayOfMonth = 18" },
+		{ "variable": "global.day = 0" },
+		{ "variable": "global.time = '20:52'" },
+		{ "variable": "global.timeOfDay = 'evening'" },
+		{ "variable": "global.currentMap = 'cybercity'" },
+		{ "variable": "global.currentLocation = 'factory'" },
 		{ "variable": "global.mapOverrides.cybercity.home = 'intro_mchome'" },
+		{ "type": "discover-location", "map": "cybercity", "locations": ["factory", "home"] },
 		
 		{ "type": "goto", "target": "nameinput" },
 
@@ -58,6 +68,18 @@
 			}
 		},
 
+		{
+			"type": "quest",
+			"action": "start",
+			"id": "end_and_beginning",
+			"title": "Конец и начало",
+			"description": "Переживите тяжелый день в мегаполисе 2138 года и вернитесь домой до закрытия серверов YGGDRASIL.",
+			"storyEntries": [
+				"2138 год. Экологическая катастрофа, мегакорпорации и бесконечные смены на заводе.",
+				"Коллега со второй смены отдал свой старый нейрошлем, так как игра закрывается сегодня в полночь."
+			]
+		},
+
 		{ "type": "scene", "id": "city_street", "mods": ["fog"] },
 
 		{ "variable": "global.currentMap = 'cybercity'" },
@@ -80,7 +102,7 @@
 
 		{
 			"type": "ui",
-			"target": ["hotbar", "inventory-button"],
+			"target": ["topbar", "hotbar", "inventory-button", "journal-button"],
 			"action": "show"
 		},
 
@@ -109,7 +131,6 @@
 			"character": "mc",
 			"orientation": "left",
 			"position": { "l": 20, "r": "auto" },
-			"scale": 1.3,
 			"from": { "l": -25, "r": "auto" },
 			"duration": 0.8
 		},
@@ -217,14 +238,38 @@
 			"variable": "global.toxic_gas = 0"
 		},
 		{
-			"type": "dialogue",
-			"character": "mc",
-			"text": "Наконец дома. Можно снять маску и попробовать отдохнуть."
+			"variable": "global.time = '21:14'"
+		},
+		{
+			"variable": "global.timeOfDay = 'evening'"
 		},
 		{
 			"type": "dialogue",
 			"character": "mc",
-			"text": "Завтра снова на завод. А пока..."
+			"text": "Наконец-то дома... Можно снять защитную маску и попытаться перевести дух."
+		},
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"steps": [
+				{
+					"text": "<p>Кстати... Сегодня коллега со второй смены отдал мне свой старый нейрошлем.</p>"
+				},
+				{
+					"text": "<p>Сказал, что игра, в которую он залипал годами — кажется, «Иггдрасиль» — сегодня в полночь закрывается навсегда, а сам шлем устарел и ему больше не нужен.</p>"
+				},
+				{
+					"text": "<p>Сам я про эту игру только из новостей в массмедиа и слышал. А нейрошлемами пользовался лишь пару раз в уличных игровых автоматах на жетонах — нормальный Full-Dive рабочий человек себе позволить не может.</p>"
+				},
+				{
+					"text": "<p>Надо бы надеть эту бандуру и проверить, работает ли она вообще, или мне просто спихнули бесполезный хлам...</p>"
+				}
+			]
+		},
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "Завтра снова на завод. А пока... можно попробовать запустить его."
 		},
 		{
 			"type": "inventory-item-update",
@@ -234,6 +279,26 @@
 		},
 		{
 			"variable": "delete global.mapOverrides.cybercity.home"
+		},
+		{
+			"type": "quest",
+			"action": "start",
+			"id": "try_neuro_helmet",
+			"parentId": "end_and_beginning",
+			"title": "Опробовать нейрошлем",
+			"description": "Коллега с завода отдал свой старый нейрошлем перед закрытием игры. Нужно экипировать его в инвентаре и проверить работоспособность.",
+			"tasks": [
+				{ "id": "equip_helmet_step", "text": "Экипировать нейрошлем через инвентарь", "required": true, "completed": false },
+				{ "id": "inspect_wires", "text": "Проверить контакты и состояние разъемов", "required": false, "completed": true }
+			],
+			"storyEntries": [
+				"Коллега отдал старый шлем: игра «Иггдрасиль» закрывается сегодня в полночь. Раньше я пробовал VR только в уличных игровых автоматах."
+			]
+		},
+		{
+			"type": "ui",
+			"target": ["inventory-button", "journal-button"],
+			"action": "show"
 		},
 		{
 			"type": "hold"

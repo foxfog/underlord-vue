@@ -10,7 +10,7 @@
 		</div>
 
 		<!-- Оборудование для этого спрайта -->
-		<template v-for="(equip, slotName) in equipmentBySlot" :key="`equip-${slotName}`">
+		<template v-for="(equip, slotName) in equipmentBySlot" :key="`equip-${slotName}-${equip?.id || 'none'}`">
 			<template v-for="(part, partIndex) in equip.parts" :key="`equip-part-${partIndex}`">
 				<EquipPart
 					v-if="part.parent === spriteName"

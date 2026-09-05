@@ -4,7 +4,8 @@ export function useCharacterEquipment(
 	mcCharacter,
 	itemsData,
 	gameState,
-	playClothSound = () => {}
+	playClothSound = () => {},
+	onEquipmentChanged = () => {}
 ) {
 	function rebuildEquipmentBySlot() {
 		if (!mcCharacter.value) return
@@ -101,6 +102,12 @@ export function useCharacterEquipment(
 		if (mcCharacter.value) {
 			gameState.character.mc = mcCharacter.value
 		}
+		if (typeof window !== 'undefined') {
+			window.dispatchEvent(
+				new CustomEvent('item-equipped', { detail: { slot, itemId } })
+			)
+		}
+		onEquipmentChanged({ action: 'equip', slot, itemId })
 	}
 
 	function handleUnequip({ slot, itemId }) {
@@ -141,6 +148,7 @@ export function useCharacterEquipment(
 		if (mcCharacter.value) {
 			gameState.character.mc = mcCharacter.value
 		}
+		onEquipmentChanged({ action: 'unequip', slot, itemId: itemToUnequip })
 	}
 
 	function handleSwap({ from, to }) {
@@ -169,6 +177,7 @@ export function useCharacterEquipment(
 		if (mcCharacter.value) {
 			gameState.character.mc = mcCharacter.value
 		}
+		onEquipmentChanged({ action: 'swap', from, to, fromItemId, toItemId })
 	}
 
 	function handleDrop({ itemId, source, slot, quantity = 1 }) {
@@ -190,6 +199,7 @@ export function useCharacterEquipment(
 			if (mcCharacter.value) {
 				gameState.character.mc = mcCharacter.value
 			}
+			onEquipmentChanged({ action: 'drop', source: 'equipment', slot, itemId })
 			return
 		}
 

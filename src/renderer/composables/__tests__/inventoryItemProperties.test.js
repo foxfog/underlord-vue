@@ -1,6 +1,9 @@
 import { describe, it, expect, vi } from 'vitest'
 import { ref } from 'vue'
+import { createPinia, setActivePinia } from 'pinia'
+import { initSettingsStore } from '../../stores/settings'
 import { useCharacterEquipment } from '../useCharacterEquipment'
+import { useVisualNovel } from '../useVisualNovel'
 import { extractDelta } from '../../utils/saveGameUtils'
 
 describe('Inventory Item Properties (can_drop, can_equip)', () => {
@@ -234,3 +237,158 @@ describe('Save utilities with item properties', () => {
 		})
 	})
 })
+
+describe('Character equipmentBySlot synchronization', () => {
+	it('removes helmet from equipmentBySlot when equipment_slots.head is reset to null', () => {
+		const mcCharacter = ref({
+			equipment_slots: {
+				head: 'neuro_helmet',
+				'torso-1': 'tshirt',
+				'legs-2': 'jeans',
+				underpants: 'underpants'
+			},
+			equipment: [
+				{
+					id: 'neuro_helmet',
+					zindex: 2,
+					parts: [{ parent: 'head', image: 'neuro_helmet.png' }]
+				},
+				{
+					id: 'tshirt',
+					zindex: 3,
+					parts: [{ parent: 'body', image: 'tshirt_body.png' }]
+				},
+				{
+					id: 'jeans',
+					zindex: 2,
+					parts: [{ parent: 'body', image: 'jeans.png' }]
+				},
+				{
+					id: 'underpants',
+					zindex: 1,
+					parts: [{ parent: 'body', image: 'underpants.png' }]
+				}
+			],
+			inventory: { items: [] }
+		})
+		const itemsData = ref({})
+		const gameState = { character: {} }
+
+		const { rebuildEquipmentBySlot } = useCharacterEquipment(mcCharacter, itemsData, gameState)
+
+		// Initially rebuild with helmet
+		rebuildEquipmentBySlot()
+		expect(mcCharacter.value.equipmentBySlot.head).toBeDefined()
+		expect(mcCharacter.value.equipmentBySlot.head.id).toBe('neuro_helmet')
+
+		// New world transfer / inventory reset: head becomes null
+		mcCharacter.value.equipment_slots.head = null
+		rebuildEquipmentBySlot()
+
+		// Helmet should be completely absent from equipmentBySlot
+		expect(mcCharacter.value.equipmentBySlot.head).toBeUndefined()
+		expect(mcCharacter.value.equipmentBySlot['torso-1'].id).toBe('tshirt')
+		expect(mcCharacter.value.equipmentBySlot['legs-2'].id).toBe('jeans')
+		expect(mcCharacter.value.equipmentBySlot.underpants.id).toBe('underpants')
+	})
+
+	it('should trigger onEquipmentChanged callback on unequip, equip, swap, and drop', () => {
+		const mcCharacter = ref({
+			equipment_slots: { head: 'hat_1', 'torso-1': 'shirt_1', 'torso-2': 'vest_1' },
+			equipment: [
+				{ id: 'hat_1', parts: [] },
+				{ id: 'hat_2', parts: [] },
+				{ id: 'shirt_1', parts: [] },
+				{ id: 'vest_1', parts: [] }
+			],
+			inventory: { items: [{ itemId: 'hat_2', quantity: 1 }] }
+		})
+		const itemsData = ref({
+			hat_1: { id: 'hat_1', slot: 'head' },
+			hat_2: { id: 'hat_2', slot: 'head' },
+			shirt_1: { id: 'shirt_1', slot: ['torso-1', 'torso-2'] },
+			vest_1: { id: 'vest_1', slot: ['torso-1', 'torso-2'] }
+		})
+		const gameState = { character: {} }
+		const playSound = vi.fn()
+		const onEquipmentChanged = vi.fn()
+
+		const { handleEquip, handleUnequip, handleSwap, handleDrop } = useCharacterEquipment(
+			mcCharacter,
+			itemsData,
+			gameState,
+			playSound,
+			onEquipmentChanged
+		)
+
+		// Unequip
+		handleUnequip({ slot: 'head', itemId: 'hat_1' })
+		expect(onEquipmentChanged).toHaveBeenCalledWith(
+			expect.objectContaining({ action: 'unequip', slot: 'head', itemId: 'hat_1' })
+		)
+
+		// Equip
+		handleEquip({ slot: 'head', itemId: 'hat_2', inventoryIndex: 0 })
+		expect(onEquipmentChanged).toHaveBeenCalledWith(
+			expect.objectContaining({ action: 'equip', slot: 'head', itemId: 'hat_2' })
+		)
+
+		// Swap
+		handleSwap({ from: 'torso-1', to: 'torso-2' })
+		expect(onEquipmentChanged).toHaveBeenCalledWith(
+			expect.objectContaining({ action: 'swap', from: 'torso-1', to: 'torso-2' })
+		)
+
+		// Drop from equipment
+		handleDrop({ itemId: 'hat_2', source: 'equipment', slot: 'head' })
+		expect(onEquipmentChanged).toHaveBeenCalledWith(
+			expect.objectContaining({ action: 'drop', source: 'equipment', slot: 'head' })
+		)
+	})
+
+	it('should synchronize scene visibleCharacters equipment when syncCharacterEquipment or rebuildEquipmentBySlot is called', () => {
+		setActivePinia(createPinia())
+		initSettingsStore({})
+		const vn = useVisualNovel()
+		const { characterData, visibleCharacters, rebuildEquipmentBySlot, syncCharacterEquipment } = vn
+
+		// Setup character data
+		characterData.value.mc = {
+			id: 'mc',
+			equipment: [
+				{ id: 'tshirt_blue', parts: [{ parent: 'torso' }] },
+				{ id: 'pants_jeans', parts: [{ parent: 'legs' }] }
+			],
+			equipment_slots: {
+				'torso-1': 'tshirt_blue',
+				'legs-2': 'pants_jeans'
+			},
+			equipmentBySlot: {}
+		}
+
+		// Character is visible on scene
+		visibleCharacters.value = [{ ...characterData.value.mc }]
+
+		// Initially rebuild
+		rebuildEquipmentBySlot('mc')
+		expect(visibleCharacters.value[0].equipmentBySlot['torso-1']).toBeDefined()
+		expect(visibleCharacters.value[0].equipmentBySlot['torso-1'].id).toBe('tshirt_blue')
+
+		// Unequip torso-1 via external character update (e.g. from InventoryModal)
+		const updatedMc = {
+			...characterData.value.mc,
+			equipment_slots: {
+				'torso-1': null,
+				'legs-2': 'pants_jeans'
+			}
+		}
+
+		syncCharacterEquipment('mc', updatedMc)
+
+		// Visible character on scene MUST have torso-1 removed immediately!
+		expect(visibleCharacters.value[0].equipmentBySlot['torso-1']).toBeUndefined()
+		expect(visibleCharacters.value[0].equipmentBySlot['legs-2']).toBeDefined()
+		expect(visibleCharacters.value[0].equipmentBySlot['legs-2'].id).toBe('pants_jeans')
+	})
+})
+

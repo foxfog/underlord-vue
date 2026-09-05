@@ -33,6 +33,45 @@
 		flex: 1;
 	}
 
+	.map-modal__level-toggle {
+		display: flex;
+		align-items: center;
+		background: rgba(0, 0, 0, 0.45);
+		border-radius: 0.4em;
+		padding: 0.2em;
+		border: 1px solid var(--color-border-alpha);
+		gap: 0.25em;
+
+		.map-modal__level-btn {
+			background: transparent;
+			border: 1px solid transparent;
+			color: #aaa;
+			font-family: Kurale, sans-serif;
+			font-size: 0.9em;
+			padding: 0.3em 0.8em;
+			border-radius: 0.3em;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			gap: 0.4em;
+			transition: all 0.2s ease;
+			white-space: nowrap;
+
+			&:hover:not(._active) {
+				color: #fff;
+				background: rgba(255, 255, 255, 0.08);
+			}
+
+			&._active {
+				background: rgba(212, 175, 55, 0.2);
+				border-color: var(--color-primary);
+				color: var(--color-primary-light);
+				font-weight: 600;
+				box-shadow: 0 0 0.5em var(--color-primary-alpha);
+			}
+		}
+	}
+
 	.map-modal__controls {
 		display: flex;
 		align-items: center;
@@ -121,7 +160,7 @@
 		left: 0;
 		right: 0;
 		margin: auto;
-		aspect-ratio: 4/3;
+		aspect-ratio: var(--map-aspect-ratio, 4/3);
 		user-select: none;
 	}
 
@@ -135,7 +174,7 @@
 		.map-bg-image {
 			width: 100%;
 			height: 100%;
-			aspect-ratio: 4/3;
+			aspect-ratio: var(--map-aspect-ratio, 4/3);
 			object-fit: cover;
 			display: block;
 			user-select: none;
@@ -189,7 +228,7 @@
 			border-radius: 50%;
 			border: 2px solid rgba(212, 175, 55, 0.5);
 			box-shadow: 0 0.2em 0.6em rgba(0, 0, 0, 0.6);
-			backdrop-filter: blur(4px);
+			backdrop-filter: blur(0.25em);
 			transition: all 0.2s ease;
 		}
 
@@ -209,12 +248,12 @@
 			pointer-events: none;
 
 			.map-marker__icon {
-				width: 6px;
-				height: 6px;
+				width: 0.45em;
+				height: 0.45em;
 				background: var(--color-primary-light);
 				border-radius: 50%;
-				margin: 0 auto 3px;
-				box-shadow: 0 0 4px var(--color-primary);
+				margin: 0 auto 0.2em;
+				box-shadow: 0 0 0.25em var(--color-primary);
 			}
 
 			.map-marker__label {
@@ -225,15 +264,20 @@
 				background: rgba(0, 0, 0, 0.75);
 				border: 1px solid var(--color-border-alpha);
 				border-radius: 0.3em;
-				backdrop-filter: blur(4px);
+				backdrop-filter: blur(0.25em);
 				transition: all 0.2s ease;
+			}
+
+			.map-marker__sublabel {
+				font-size: 0.85em;
+				margin-left: 0.25em;
 			}
 		}
 
 		&._active .map-marker {
 			.map-marker__icon {
 				background: var(--color-primary);
-				box-shadow: 0 0 8px var(--color-primary);
+				box-shadow: 0 0 0.5em var(--color-primary);
 			}
 
 			.map-marker__label {

@@ -137,7 +137,7 @@ describe('Time and Calendar Utils', () => {
 	})
 
 	describe('getCalendarInfo - New World (Overlord)', () => {
-		it('computes 0-indexed day count starting at Day 1, Month 1 (Месяц глубоких снегов), Year 0', () => {
+		it('computes 0-indexed day count starting at Day 1, Month 3 (Месяц теплого ветра, Весна) by default', () => {
 			const info = getCalendarInfo({
 				calendarType: 'new_world',
 				day: 0
@@ -145,26 +145,69 @@ describe('Time and Calendar Utils', () => {
 
 			expect(info.calendarType).toBe('new_world')
 			expect(info.year).toBe(0)
-			expect(info.month).toBe(1)
-			expect(info.monthName).toBe('Месяц глубоких снегов')
+			expect(info.month).toBe(3)
+			expect(info.monthName).toBe('Месяц теплого ветра')
+			expect(info.seasonRu).toBe('Весна')
 			expect(info.dayOfMonth).toBe(1)
 			expect(info.daysInMonth).toBe(30)
-			expect(info.formattedShort).toContain('Месяц глубоких снегов')
+			expect(info.formattedShort).toContain('Месяц теплого ветра')
+		})
+
+		it('supports explicit start month and day in New World', () => {
+			const info = getCalendarInfo({
+				calendarType: 'new_world',
+				month: 1,
+				dayOfMonth: 1,
+				day: 0
+			})
+
+			expect(info.month).toBe(1)
+			expect(info.monthName).toBe('Месяц глубоких снегов')
+			expect(info.seasonRu).toBe('Зима')
+			expect(info.dayOfMonth).toBe(1)
+		})
+
+		it('has correct season triads according to elemental seasons', () => {
+			// Зима: 12, 1, 2
+			expect(getCalendarInfo({ calendarType: 'new_world', month: 12, dayOfMonth: 1, day: 0 }).seasonRu).toBe('Зима')
+			expect(getCalendarInfo({ calendarType: 'new_world', month: 1, dayOfMonth: 1, day: 0 }).seasonRu).toBe('Зима')
+			expect(getCalendarInfo({ calendarType: 'new_world', month: 2, dayOfMonth: 1, day: 0 }).seasonRu).toBe('Зима')
+
+			// Весна: 3, 4, 5
+			expect(getCalendarInfo({ calendarType: 'new_world', month: 3, dayOfMonth: 1, day: 0 }).seasonRu).toBe('Весна')
+			expect(getCalendarInfo({ calendarType: 'new_world', month: 4, dayOfMonth: 1, day: 0 }).seasonRu).toBe('Весна')
+			expect(getCalendarInfo({ calendarType: 'new_world', month: 5, dayOfMonth: 1, day: 0 }).seasonRu).toBe('Весна')
+
+			// Лето: 6, 7, 8 (Month 8 - Месяц последнего очага is summer)
+			expect(getCalendarInfo({ calendarType: 'new_world', month: 6, dayOfMonth: 1, day: 0 }).seasonRu).toBe('Лето')
+			expect(getCalendarInfo({ calendarType: 'new_world', month: 7, dayOfMonth: 1, day: 0 }).seasonRu).toBe('Лето')
+			const month8 = getCalendarInfo({ calendarType: 'new_world', month: 8, dayOfMonth: 1, day: 0 })
+			expect(month8.monthName).toBe('Месяц последнего очага')
+			expect(month8.seasonRu).toBe('Лето')
+
+			// Осень: 9, 10, 11
+			expect(getCalendarInfo({ calendarType: 'new_world', month: 9, dayOfMonth: 1, day: 0 }).seasonRu).toBe('Осень')
+			expect(getCalendarInfo({ calendarType: 'new_world', month: 10, dayOfMonth: 1, day: 0 }).seasonRu).toBe('Осень')
+			expect(getCalendarInfo({ calendarType: 'new_world', month: 11, dayOfMonth: 1, day: 0 }).seasonRu).toBe('Осень')
 		})
 
 		it('advances months every 30 days in New World', () => {
-			// Day 30 is month 2 day 1
-			const infoMonth2 = getCalendarInfo({
+			// Month 3 day 1 + 30 days = Month 4 day 1
+			const infoMonth4 = getCalendarInfo({
 				calendarType: 'new_world',
+				month: 3,
+				dayOfMonth: 1,
 				day: 30
 			})
-			expect(infoMonth2.month).toBe(2)
-			expect(infoMonth2.monthName).toBe('Месяц уходящих снегов')
-			expect(infoMonth2.dayOfMonth).toBe(1)
+			expect(infoMonth4.month).toBe(4)
+			expect(infoMonth4.monthName).toBe('Месяц цветущих ветров')
+			expect(infoMonth4.dayOfMonth).toBe(1)
 
-			// Day 359 is month 12 day 30 (last day of year 0)
+			// Month 1 day 1 + 359 days = Month 12 day 30 (last day of year 0)
 			const infoEndOfYear0 = getCalendarInfo({
 				calendarType: 'new_world',
+				month: 1,
+				dayOfMonth: 1,
 				day: 359
 			})
 			expect(infoEndOfYear0.year).toBe(0)
@@ -172,9 +215,11 @@ describe('Time and Calendar Utils', () => {
 			expect(infoEndOfYear0.monthName).toBe('Месяц льда')
 			expect(infoEndOfYear0.dayOfMonth).toBe(30)
 
-			// Day 360 is year 1, month 1, day 1
+			// Month 1 day 1 + 360 days = year 1, month 1, day 1
 			const infoYear1 = getCalendarInfo({
 				calendarType: 'new_world',
+				month: 1,
+				dayOfMonth: 1,
 				day: 360
 			})
 			expect(infoYear1.year).toBe(1)

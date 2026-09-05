@@ -40,11 +40,17 @@ src/renderer/public/styles/
 }
 ```
 
-## CSS Переменные
+## CSS Переменные и Адаптивность (--size)
 
-Все основные переменные хранятся в `src/renderer/public/styles/UI/_root.css`:
+Все основные переменные хранятся в `src/renderer/public/styles/UI/_root.css` и `src/renderer/public/styles/base.css`:
 - `--color-primary`, `--color-secondary`, `--color-black`, `--color-white`, `--color-shadow` и т.д.
 - Размеры спрайтов и персонажей: `--char-height`, `--charspriteH`, `--charbodyspriteH`.
+- **`--size`** (в `base.css`): глобальная переменная масштабирования холста 1920×1080.
+  - **Запрещено использовать `px` и `rem`** для размеров, отступов, радиусов, теней и шрифтов.
+  - **Используйте ТОЛЬКО `em`**, `calc(N * var(--size))` или `%`. Единицы `rem` не масштабируются динамически!
+  - **Полноэкранные игровые оверлеи**: используйте `position: absolute; inset: 0;` (не `fixed`), чтобы соблюдать пропорции `#app` (1920×1080).
+  - Единственное исключение: тонкие рамки `1px solid` / `2px solid`.
+  - Подробные правила описаны в [AGENTS.md](../../AGENTS.md).
 
 ## Как добавить стили для нового компонента
 

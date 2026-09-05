@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useSavesStore } from '../stores/saves'
 import { useSettingsStore } from '../stores/settings'
 import { SOUND_ALIASES } from '../constants/sounds'
@@ -9,6 +9,7 @@ import {
 } from '../utils/saveGameUtils'
 import { evaluateExpression } from '../utils/expressionEvaluator'
 import { getCalendarInfo, advanceTimeOfDay } from '../utils/timeCalendar'
+import { useQuests } from './useQuests'
 
 export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	// State
@@ -22,6 +23,15 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	const currentChoices = ref([])
 	const multiStepDialogueBuffer = ref('') // Buffer for accumulating multi-step dialogue text
 	const multiStepPrintedLength = ref(0) // Track how many characters have been printed via typewriter
+
+	// Fade transition overlay state
+	const fadeOverlay = ref({
+		visible: false,
+		opacity: 0,
+		duration: 1.5,
+		color: '#000000'
+	})
+	let fadeTimeout = null
 
 	// Audio state - indexed by stream ID
 	const audioStreams = ref({}) // { streamId: { type, file, loop, stream } }
@@ -117,18 +127,11 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			: !!(base.all || base['journal-button'])
 		const nextTimeButton = isTargetHiddenByDialogue('next-time-button')
 			? false
-			: !!(
-					base.all ||
-					base['next-time-button'] ||
-					base.topbar ||
-					inventoryButton ||
-					mapButton ||
-					journalButton
-				)
+			: !!(base.all || base['next-time-button'])
 		const hotbar = isTargetHiddenByDialogue('hotbar') ? false : !!(base.all || base.hotbar)
 		const topbar = isTargetHiddenByDialogue('topbar')
 			? false
-			: inventoryButton || mapButton || journalButton || !!base.topbar
+			: inventoryButton || mapButton || journalButton || nextTimeButton || !!base.topbar
 		const dialogue = isTargetHiddenByDialogue('dialogue') ? false : base.dialogue !== false
 
 		return {
@@ -146,12 +149,23 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		}
 	})
 
+	watch(
+		uiVisibility,
+		(newVal) => {
+			if (newVal && emit) {
+				emit('ui-visibility-changed', { ...newVal })
+			}
+		},
+		{ immediate: true, deep: true }
+	)
+
 	const isRestoringGameState = ref(false)
 	let loadingPromise = null
 	const isLoaded = ref(false)
 
 	// Helpers
 	async function loadDataFromPublic(path) {
+		if (!path || typeof path !== 'string') return {}
 		// Convert .js to .json path
 		const jsonPath = path.replace(/\.js$/, '.json')
 		try {
@@ -322,6 +336,14 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					break
 				case 'hide':
 					if (!isRestoringGameState.value) hideCharacter(step)
+					stepIndex.value++
+					processStep()
+					break
+				case 'hide-all':
+				case 'clear-characters':
+					if (!isRestoringGameState.value) {
+						visibleCharacters.value = []
+					}
 					stepIndex.value++
 					processStep()
 					break
@@ -538,6 +560,100 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					stepIndex.value++
 					processStep()
 					break
+				case 'inventory-reset':
+				case 'character-reset-inventory':
+					if (!isRestoringGameState.value) {
+						const charId = step.character || 'mc'
+						const char = characterData.value[charId]
+						if (char) {
+							if (step.equipment_slots) {
+								char.equipment_slots = { ...char.equipment_slots, ...step.equipment_slots }
+							}
+							if (step.inventory && Array.isArray(step.inventory)) {
+								char.inventory = { items: [...step.inventory] }
+							} else if (step.items && Array.isArray(step.items)) {
+								char.inventory = { items: [...step.items] }
+							}
+							rebuildEquipmentBySlot(charId)
+							const visIndex = visibleCharacters.value.findIndex((c) => c.id === charId)
+							if (visIndex !== -1) {
+								visibleCharacters.value[visIndex] = { ...char }
+							}
+							emit && emit('character-loaded', characterData.value)
+							console.log(`📦 [Inventory Reset] Successfully reset inventory & equipment for ${charId}`)
+						}
+					}
+					stepIndex.value++
+					processStep()
+					break
+				case 'quest':
+					if (!isRestoringGameState.value && step.id) {
+						const questsManager = useQuests()
+						if (step.action === 'complete') {
+							questsManager.completeQuest(step.id)
+							if (notificationComponent.value) {
+								const q = questsManager.getQuest(step.id)
+								const title = q?.title || step.title || step.id
+								notificationComponent.value.showNotification(
+									`<p><b>🏆 Задание выполнено</b></p><p>${title}</p>`,
+									'success',
+									3500
+								)
+							}
+						} else if (step.action === 'fail') {
+							questsManager.failQuest(step.id)
+							if (notificationComponent.value) {
+								const q = questsManager.getQuest(step.id)
+								const title = q?.title || step.title || step.id
+								notificationComponent.value.showNotification(
+									`<p><b>❌ Задание провалено</b></p><p>${title}</p>`,
+									'warning',
+									3500
+								)
+							}
+						} else if (step.action === 'task-complete' || step.action === 'complete-task') {
+							const task = questsManager.completeTask(step.id, step.taskId)
+							if (notificationComponent.value && task) {
+								notificationComponent.value.showNotification(
+									`<p><b>🎯 Задача выполнена</b></p><p>${task.text}</p>`,
+									'info',
+									3000
+								)
+							}
+						} else if (step.action === 'add-story-entry' || step.action === 'story-entry') {
+							const entry = step.text || step.entry
+							questsManager.addQuestStoryEntry(step.id, entry)
+							if (notificationComponent.value && entry) {
+								notificationComponent.value.showNotification(
+									`<p><b>📖 Журнал обновлен</b></p><p>${entry}</p>`,
+									'info',
+									3000
+								)
+							}
+						} else {
+							// Default is 'start'
+							const newQ = questsManager.startQuest({
+								id: step.id,
+								parentId: step.parentId,
+								title: step.title,
+								description: step.description,
+								category: step.category,
+								target: step.target,
+								tasks: step.tasks || [],
+								storyEntries: step.storyEntries || []
+							})
+							if (notificationComponent.value && newQ) {
+								notificationComponent.value.showNotification(
+									`<p><b>📜 Новое задание</b></p><p>${newQ.title}</p>`,
+									'info',
+									3500
+								)
+							}
+						}
+					}
+					stepIndex.value++
+					processStep()
+					break
 				case 'dialogue':
 					if (step.variable) applyVariable(step.variable)
 					// Check if dialogue has steps
@@ -570,6 +686,67 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					break
 				case 'ui':
 					handleUIStep(step)
+					stepIndex.value++
+					processStep()
+					break
+				case 'fade':
+				case 'fade-in':
+				case 'fade-out':
+					handleFadeStep(step)
+					break
+				case 'discover-location':
+				case 'discover-marker':
+				case 'map-marker':
+					if (!isRestoringGameState.value) {
+						const isDiscoverAction =
+							!step.action || step.action === 'discover' || step.action === 'add'
+						if (isDiscoverAction) {
+							const targetMap =
+								step.map ||
+								step.localMap ||
+								globalData.value.localMap ||
+								globalData.value.currentMap ||
+								'current'
+							const locs = step.location || step.locations || step.locationId
+							discoverLocation(targetMap, locs, {
+								title: step.title,
+								notification: step.notification || step.text,
+								notify: step.notify,
+								duration: step.duration
+							})
+						}
+					}
+					stepIndex.value++
+					processStep()
+					break
+				case 'map':
+					if (!isRestoringGameState.value) {
+						if (step.worldMap || step.globalMap) {
+							globalData.value.worldMap = step.worldMap || step.globalMap
+						}
+						if (step.localMap || step.map || step.currentMap) {
+							const lMap = step.localMap || step.map || step.currentMap
+							globalData.value.localMap = lMap
+							globalData.value.currentMap = lMap
+							settingsStore.setCurrentMap(lMap)
+						}
+						if (step.locationId || step.location) {
+							globalData.value.currentLocation = step.locationId || step.location
+						}
+						if (step.discover || step.discoverLocation) {
+							const targetMap =
+								step.localMap ||
+								step.map ||
+								step.currentMap ||
+								globalData.value.localMap ||
+								globalData.value.currentMap
+							discoverLocation(targetMap, step.discover || step.discoverLocation, {
+								title: step.discoverTitle || step.title,
+								notification: step.discoverNotification || step.notification,
+								notify: step.notify
+							})
+						}
+					}
 					stepIndex.value++
 					processStep()
 					break
@@ -624,6 +801,30 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		const mods = typeof sceneIdOrStep === 'object' ? sceneIdOrStep.mods || [] : scene.mods || []
 		currentScene.value = { ...scene, mods }
 
+		// Очистка персонажей со сцены при смене локации (если указано в шаге или в описании сцены)
+		const clearParam =
+			typeof sceneIdOrStep === 'object' &&
+			(sceneIdOrStep.clearCharacters !== undefined ||
+				sceneIdOrStep.clear !== undefined ||
+				sceneIdOrStep.hideCharacters !== undefined)
+				? (sceneIdOrStep.clearCharacters ?? sceneIdOrStep.clear ?? sceneIdOrStep.hideCharacters)
+				: (scene.clearCharacters ?? scene.clear ?? scene.hideCharacters)
+
+		if (clearParam === true || clearParam === 'all') {
+			visibleCharacters.value = []
+			console.log('🧹 [changeScene] Cleared all visible characters from screen')
+		} else if (Array.isArray(clearParam)) {
+			visibleCharacters.value = visibleCharacters.value.filter(
+				(c) => !clearParam.includes(c.id)
+			)
+			console.log(`🧹 [changeScene] Cleared characters [${clearParam.join(', ')}] from screen`)
+		} else if (typeof clearParam === 'string') {
+			visibleCharacters.value = visibleCharacters.value.filter(
+				(c) => c.id !== clearParam
+			)
+			console.log(`🧹 [changeScene] Cleared character "${clearParam}" from screen`)
+		}
+
 		// Apply scene-level variables if specified in scene definition or step
 		const sceneVars =
 			scene.variables ||
@@ -642,6 +843,46 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					applyVariable(`${key} = ${formattedVal}`)
 				}
 			}
+		}
+
+		// Автоматическое определение карт и локации (Skyrim-style: World Map & Local Map)
+		const stepObj = typeof sceneIdOrStep === 'object' ? sceneIdOrStep : {}
+		const isNewWorld =
+			globalData.value.calendarType === 'new_world' || globalData.value.year === 0
+		const targetWorldMap =
+			stepObj.worldMap ||
+			scene.worldMap ||
+			stepObj.globalMap ||
+			scene.globalMap ||
+			(isNewWorld ? 'newworld' : 'cybercity')
+
+		const targetLocalMap =
+			stepObj.localMap ||
+			scene.localMap ||
+			stepObj.map ||
+			scene.map ||
+			(targetWorldMap === 'newworld' &&
+			((scene.id && scene.id.startsWith('carne')) || (stepObj.id && stepObj.id.startsWith('carne')))
+				? 'carne'
+				: targetWorldMap)
+
+		const targetLocationId =
+			stepObj.locationId ||
+			scene.locationId ||
+			stepObj.location ||
+			scene.location ||
+			null
+
+		if (targetWorldMap) {
+			globalData.value.worldMap = targetWorldMap
+		}
+		if (targetLocalMap) {
+			globalData.value.localMap = targetLocalMap
+			globalData.value.currentMap = targetLocalMap
+			settingsStore.setCurrentMap(targetLocalMap)
+		}
+		if (targetLocationId) {
+			globalData.value.currentLocation = targetLocationId
 		}
 	}
 	function showCharacter(step) {
@@ -687,18 +928,34 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			// Set back flag (default false if not specified)
 			character.back = step.back ?? false
 
+			// Apply scale if provided, or reset to default size
+			if (typeof step === 'object' && step.scale !== undefined) {
+				character.scale = step.scale
+			} else {
+				character.scale = character.size || 1
+			}
+
 			// Apply class if provided
 			if (step.class && typeof step === 'object') {
 				character.customClass = step.class
 			}
 
-			if (!visibleCharacters.value.some((c) => c.id === characterId)) {
+			rebuildEquipmentBySlot(characterId)
+
+			const existingIndex = visibleCharacters.value.findIndex((c) => c.id === characterId)
+			if (existingIndex !== -1) {
+				visibleCharacters.value[existingIndex] = { ...character }
+			} else {
 				visibleCharacters.value.push(character)
 			}
 		}
 	}
 	function hideCharacter(stepOrId) {
-		const characterId = typeof stepOrId === 'string' ? stepOrId : stepOrId.character
+		const characterId = typeof stepOrId === 'string' ? stepOrId : stepOrId?.character
+		if (!characterId || characterId === 'all') {
+			visibleCharacters.value = []
+			return
+		}
 		const character = characterData.value[characterId]
 		if (!character) {
 			visibleCharacters.value = visibleCharacters.value.filter((c) => c.id !== characterId)
@@ -852,6 +1109,110 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	function setDialogueHideUI(targets) {
 		baseUiVisibility.value.dialogueHideUI = Array.isArray(targets) ? targets : []
 		console.log(`📌 Dialogue hide UI configured:`, baseUiVisibility.value.dialogueHideUI)
+	}
+
+	function handleFadeStep(step) {
+		if (isRestoringGameState.value) {
+			fadeOverlay.value.visible = false
+			fadeOverlay.value.opacity = 0
+			stepIndex.value++
+			processStep()
+			return
+		}
+
+		if (fadeTimeout) {
+			clearTimeout(fadeTimeout)
+			fadeTimeout = null
+		}
+
+		const action = step.action || (step.type === 'fade-out' ? 'out' : 'in')
+		const duration = typeof step.duration === 'number' ? step.duration : 1.5
+		const color = step.color || '#000000'
+		const wait = step.wait !== false
+
+		if (action === 'in') {
+			// Fade in: start solid, then animate to 0
+			fadeOverlay.value = {
+				visible: true,
+				opacity: 1,
+				duration: 0,
+				color
+			}
+
+			setTimeout(() => {
+				fadeOverlay.value = {
+					visible: true,
+					opacity: 0,
+					duration,
+					color
+				}
+			}, 30)
+
+			if (wait) {
+				fadeTimeout = setTimeout(() => {
+					fadeOverlay.value.visible = false
+					fadeTimeout = null
+					advanceStoryOverride = null
+					stepIndex.value++
+					processStep()
+				}, duration * 1000 + 40)
+
+				advanceStoryOverride = function () {
+					if (fadeTimeout) clearTimeout(fadeTimeout)
+					fadeTimeout = null
+					fadeOverlay.value.visible = false
+					fadeOverlay.value.opacity = 0
+					advanceStoryOverride = null
+					stepIndex.value++
+					processStep()
+				}
+			} else {
+				fadeTimeout = setTimeout(() => {
+					fadeOverlay.value.visible = false
+					fadeTimeout = null
+				}, duration * 1000 + 40)
+				stepIndex.value++
+				processStep()
+			}
+		} else {
+			// Fade out: start transparent, then animate to 1
+			fadeOverlay.value = {
+				visible: true,
+				opacity: 0,
+				duration: 0,
+				color
+			}
+
+			setTimeout(() => {
+				fadeOverlay.value = {
+					visible: true,
+					opacity: 1,
+					duration,
+					color
+				}
+			}, 30)
+
+			if (wait) {
+				fadeTimeout = setTimeout(() => {
+					fadeTimeout = null
+					advanceStoryOverride = null
+					stepIndex.value++
+					processStep()
+				}, duration * 1000 + 40)
+
+				advanceStoryOverride = function () {
+					if (fadeTimeout) clearTimeout(fadeTimeout)
+					fadeTimeout = null
+					fadeOverlay.value.opacity = 1
+					advanceStoryOverride = null
+					stepIndex.value++
+					processStep()
+				}
+			} else {
+				stepIndex.value++
+				processStep()
+			}
+		}
 	}
 
 	function applyDialogueHiding() {
@@ -1079,15 +1440,20 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		showTextInputModal.value = true
 	}
 
-	function rebuildEquipmentBySlot(characterId) {
+	function rebuildEquipmentBySlot(characterId, newSlots = null) {
 		const char = characterData.value[characterId]
 		if (!char) return
 
+		if (newSlots) {
+			char.equipment_slots = { ...newSlots }
+		}
+
 		const equipmentMap = {}
-		if (Array.isArray(char.equipment))
+		if (Array.isArray(char.equipment)) {
 			char.equipment.forEach((item) => {
 				if (item && item.id) equipmentMap[item.id] = item
 			})
+		}
 
 		const equipmentBySlot = {}
 		const slots = char.equipment_slots || {}
@@ -1108,6 +1474,57 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		}
 
 		char.equipmentBySlot = equipmentBySlot
+
+		const visIndex = visibleCharacters.value.findIndex((c) => c.id === characterId)
+		if (visIndex !== -1) {
+			visibleCharacters.value[visIndex] = {
+				...visibleCharacters.value[visIndex],
+				...char,
+				equipment_slots: { ...(char.equipment_slots || {}) },
+				equipmentBySlot: { ...equipmentBySlot }
+			}
+		}
+	}
+
+	function syncCharacterEquipment(characterId, characterObj = null) {
+		let char = characterData.value[characterId]
+		if (!char && characterObj) {
+			characterData.value[characterId] = { ...characterObj }
+			char = characterData.value[characterId]
+		}
+		if (!char) return
+
+		if (characterObj && char !== characterObj) {
+			if (characterObj.equipment_slots) {
+				char.equipment_slots = { ...characterObj.equipment_slots }
+			}
+			if (characterObj.equipment && (!char.equipment || !char.equipment.length)) {
+				char.equipment = characterObj.equipment
+			}
+			if (characterObj.inventory) {
+				char.inventory = characterObj.inventory
+			}
+		}
+
+		rebuildEquipmentBySlot(characterId)
+
+		if (
+			(!char.equipmentBySlot || Object.keys(char.equipmentBySlot).length === 0) &&
+			characterObj?.equipmentBySlot &&
+			Object.keys(characterObj.equipmentBySlot).length > 0
+		) {
+			char.equipmentBySlot = { ...characterObj.equipmentBySlot }
+		}
+
+		const visIndex = visibleCharacters.value.findIndex((c) => c.id === characterId)
+		if (visIndex !== -1) {
+			visibleCharacters.value[visIndex] = {
+				...visibleCharacters.value[visIndex],
+				...char,
+				equipment_slots: { ...(char.equipment_slots || {}) },
+				equipmentBySlot: { ...(char.equipmentBySlot || {}) }
+			}
+		}
 	}
 
 	function updateCharacterData(variablePath, value) {
@@ -1579,7 +1996,9 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	}
 
 	function goToLabel(targetLabel) {
-		const targetStepIndex = storyData.value.steps.findIndex((step) => step.id === targetLabel)
+		const targetStepIndex = storyData.value?.steps
+			? storyData.value.steps.findIndex((step) => step.id === targetLabel)
+			: -1
 		if (targetStepIndex !== -1) {
 			// Goto внутри текущей истории - очищаем диалоги
 			currentDialogue.value = ''
@@ -1588,13 +2007,13 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			currentChoices.value = []
 			stepIndex.value = targetStepIndex
 			processStep()
-			return
+			return Promise.resolve()
 		}
 		// Goto на другую историю - сохраняем позицию для return и загружаем новую историю
 		// Save the FULL PATH used to load the current story (not the JSON id field)
 		callStack.value.push({ storyId: currentStoryPath, stepIndex: stepIndex.value + 1 })
 		// НЕ очищаем диалоги при переходе на другую историю, чтобы избежать мерцания
-		loadTargetStory(targetLabel)
+		return loadTargetStory(targetLabel)
 	}
 
 	function handleContinue() {
@@ -1659,6 +2078,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			// Восстанавливаем состояние персонажа и глобальные данные
 			if (savedCharacterState && characterData.value?.mc) {
 				characterData.value.mc.equipment_slots = savedCharacterState.equipment_slots
+				rebuildEquipmentBySlot('mc')
 			}
 			// Восстанавливаем глобальные переменные
 			Object.assign(globalData.value, savedGlobalData)
@@ -1672,6 +2092,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			if (emit) {
 				console.log('📤 Emitting character-loaded after story transition')
 				emit('character-loaded', characterData.value)
+				emit('global-data-changed', globalData.value)
 			}
 
 			// Small delay to ensure smooth transition without dialog flicker
@@ -1735,6 +2156,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			// Восстанавливаем состояние персонажа и глобальные данные
 			if (savedCharacterState && characterData.value?.mc) {
 				characterData.value.mc.equipment_slots = savedCharacterState.equipment_slots
+				rebuildEquipmentBySlot('mc')
 			}
 			// Восстанавливаем глобальные переменные
 			Object.assign(globalData.value, savedGlobalData)
@@ -1748,6 +2170,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			if (emit) {
 				console.log('📤 Emitting character-loaded after story transition')
 				emit('character-loaded', characterData.value)
+				emit('global-data-changed', globalData.value)
 			}
 
 			// Small delay to ensure smooth transition without dialog flicker
@@ -1809,6 +2232,10 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			Object.keys(activeLoopingStreams)
 		)
 
+		if (globalData.value) {
+			globalData.value.quests = useQuests().getQuestsState()
+		}
+
 		return {
 			storyData: storyData.value,
 			storyPath: currentStoryPath,
@@ -1829,7 +2256,15 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		try {
 			if (!isLoaded.value) {
 				if (loadingPromise) await loadingPromise
-				else await loadStory()
+				else if (src) {
+					try {
+						await loadStory()
+					} catch (e) {
+						console.warn('loadStory warning during restoreGameState:', e)
+					}
+				} else {
+					isLoaded.value = true
+				}
 			}
 			const restoreSession = ++restoreSessionId
 			// Clear any active UI state from the previous story run before restoring
@@ -1845,7 +2280,17 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			currentChoices.value = []
 			advanceStoryOverride = null
 			isRestoringGameState.value = true
-			globalData.value = saveData.globalData
+			globalData.value = saveData.globalData || {}
+			if (!globalData.value.discoveredLocations) {
+				globalData.value.discoveredLocations = {
+					cybercity: ['factory', 'home'],
+					newworld: ['carne_village'],
+					carne: ['carne_village_entrance']
+				}
+			}
+			if (saveData.globalData?.quests) {
+				useQuests().loadQuestsState(saveData.globalData.quests)
+			}
 			// Notify outside listeners (Game.vue) about restored global data
 			if (emit) {
 				console.log(
@@ -1958,9 +2403,13 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 				}
 			}
 			if (!loadedStory) {
-				throw (
-					loadError || new Error(`Unable to load story from save: ${requestedStoryPath}`)
-				)
+				if (saveData.storyData) {
+					loadedStory = saveData.storyData
+				} else if (storyData.value) {
+					loadedStory = storyData.value
+				} else {
+					loadedStory = { id: requestedStoryPath, steps: [] }
+				}
 			}
 			storyData.value = loadedStory
 			stepIndex.value = saveData.stepIndex || 0
@@ -2042,7 +2491,17 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 				})
 			}
 
-			isRestoringGameState.value = false
+			if (fadeTimeout) {
+				clearTimeout(fadeTimeout)
+				fadeTimeout = null
+			}
+			fadeOverlay.value = {
+				visible: false,
+				opacity: 0,
+				duration: 0,
+				color: '#000000'
+			}
+
 			isRestoringGameState.value = false
 			processStep()
 		} catch (error) {
@@ -2064,10 +2523,40 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		currentChoices.value = []
 		visibleCharacters.value = []
 		currentScene.value = null
-		globalData.value = {}
+		globalData.value = {
+			discoveredLocations: {
+				cybercity: ['factory', 'home'],
+				newworld: ['carne_village'],
+				carne: ['carne_village_entrance']
+			}
+		}
 		historyEntries.value = []
 		audioStreams.value = {}
 		pausedStreams.value = {}
+		if (fadeTimeout) {
+			clearTimeout(fadeTimeout)
+			fadeTimeout = null
+		}
+		fadeOverlay.value = {
+			visible: false,
+			opacity: 0,
+			duration: 0,
+			color: '#000000'
+		}
+		baseUiVisibility.value = {
+			all: false,
+			'stats-button': false,
+			'inventory-button': false,
+			'map-button': false,
+			'journal-button': false,
+			'next-time-button': false,
+			topbar: false,
+			hotbar: false,
+			dialogue: false,
+			dialogueHideUI: DIALOGUE_HIDE_UI_CONFIG
+		}
+		const questsManager = useQuests()
+		questsManager.resetQuests()
 	}
 
 	function showNotification(text, type = 'info', duration = 3000) {
@@ -2100,6 +2589,62 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		return { nextPeriod, dayIncremented, nextFormatted }
 	}
 
+	function discoverLocation(mapId, locationInput, options = {}) {
+		if (!mapId || !locationInput) return false
+
+		if (!globalData.value) {
+			globalData.value = {}
+		}
+		if (!globalData.value.discoveredLocations) {
+			globalData.value.discoveredLocations = {}
+		}
+		if (!Array.isArray(globalData.value.discoveredLocations[mapId])) {
+			globalData.value.discoveredLocations[mapId] = []
+		}
+
+		const list = globalData.value.discoveredLocations[mapId]
+		const locationsToAdd = Array.isArray(locationInput) ? locationInput : [locationInput]
+		const newlyDiscovered = []
+
+		locationsToAdd.forEach((locId) => {
+			if (locId && typeof locId === 'string' && !list.includes(locId)) {
+				list.push(locId)
+				newlyDiscovered.push(locId)
+			}
+		})
+
+		if (newlyDiscovered.length > 0) {
+			console.log(`🗺 [Location Discovered] map="${mapId}":`, newlyDiscovered)
+
+			if (options.notification || options.title || options.notify) {
+				const label =
+					options.title ||
+					(typeof options.notification === 'string'
+						? options.notification
+						: null)
+				if (label || options.notification) {
+					const notifText =
+						typeof options.notification === 'string'
+							? options.notification
+							: `<p><b>📍 Открыта новая локация</b></p><p>${label}</p>`
+					showNotification(notifText, 'info', options.duration || 3500)
+				}
+			}
+
+			if (emit) {
+				emit('global-data-changed', globalData.value)
+			}
+			return true
+		}
+		return false
+	}
+
+	function isLocationDiscovered(mapId, locationId) {
+		if (!globalData.value?.discoveredLocations) return false
+		const list = globalData.value.discoveredLocations[mapId]
+		return Array.isArray(list) && list.includes(locationId)
+	}
+
 	return {
 		// state
 		currentScene,
@@ -2115,6 +2660,8 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		showTextInputModal,
 		currentInputStep,
 		uiVisibility,
+		baseUiVisibility,
+		fadeOverlay,
 		// audio state
 		currentSound,
 		currentVoice,
@@ -2124,6 +2671,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		characterData,
 		globalData,
 		sceneData,
+		storyData,
 		// methods
 		loadStory,
 		processStep,
@@ -2136,8 +2684,13 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		onTextInputConfirm,
 		// notification method
 		showNotification,
+		rebuildEquipmentBySlot,
+		syncCharacterEquipment,
 		// time advancing method
 		advanceTime,
+		// location discovery methods
+		discoverLocation,
+		isLocationDiscovered,
 		// goto method for Rules Engine
 		goto: goToLabel,
 		// audio methods

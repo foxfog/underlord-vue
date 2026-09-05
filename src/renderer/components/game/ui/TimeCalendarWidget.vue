@@ -97,7 +97,7 @@ const calendarInfo = computed(() => {
 	font-weight: 500;
 	transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 	white-space: nowrap;
-	backdrop-filter: blur(4px);
+	backdrop-filter: blur(0.3em);
 }
 
 .time-badge:hover,
@@ -107,7 +107,7 @@ const calendarInfo = computed(() => {
 	border-color: var(--color-primary, #d4af37);
 	color: var(--color-primary-light, #f3e5ab);
 	box-shadow: 0 0 0.6em var(--color-primary-alpha, rgba(212, 175, 55, 0.25));
-	transform: translateY(-1px);
+	transform: translateY(-0.08em);
 }
 
 .time-badge:active,
@@ -169,7 +169,7 @@ const calendarInfo = computed(() => {
 	border-color: var(--color-primary, #d4af37);
 	color: var(--color-primary-light, #f3e5ab);
 	box-shadow: 0 0 0.6em var(--color-primary-alpha, rgba(212, 175, 55, 0.25));
-	transform: translateY(-1px);
+	transform: translateY(-0.08em);
 }
 
 .next-time-btn:active {

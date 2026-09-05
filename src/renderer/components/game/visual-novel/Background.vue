@@ -11,6 +11,7 @@ import { computed } from 'vue'
 import CityStreet from '../scenes/CityStreet.vue'
 import McApartment from '../scenes/cyber/McApartment.vue'
 import McFactory from '../scenes/cyber/McFactory.vue'
+import CarneVillageEntrance from '../scenes/carne/CarneVillageEntrance.vue'
 
 const props = defineProps({ scene: { type: Object, default: null } })
 
@@ -18,7 +19,8 @@ const props = defineProps({ scene: { type: Object, default: null } })
 const sceneComponents = {
 	city_street: CityStreet,
 	mc_apartment: McApartment,
-	mc_factory: McFactory
+	mc_factory: McFactory,
+	carne_village_entrance: CarneVillageEntrance
 	// Здесь можно добавить другие компонентные сцены
 	// и т.д.
 }

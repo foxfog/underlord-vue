@@ -2,21 +2,42 @@
 	"scenes": [
 		{
 			"id": "city_street",
-			"bg": "images/sprites/backgrounds/2138/street.jpg"
+			"bg": "images/sprites/backgrounds/2138/street.jpg",
+			"worldMap": "cybercity",
+			"localMap": "cybercity",
+			"locationId": "factory"
 		},
 		{
 			"id": "mc_apartment",
 			"bg": "images/sprites/backgrounds/mc-apartment/default.jpg",
+			"worldMap": "cybercity",
+			"localMap": "cybercity",
+			"locationId": "home",
 			"variables": ["global.toxic_gas = 0"]
 		},
 		{
 			"id": "mc_apartment_door",
 			"bg": "images/sprites/backgrounds/mc-apartment/door.png",
+			"worldMap": "cybercity",
+			"localMap": "cybercity",
+			"locationId": "home",
 			"variables": ["global.toxic_gas = 0"]
 		},
 		{
 			"id": "mc_apartment_door_open",
 			"bg": "images/sprites/backgrounds/mc-apartment/door-open.png",
+			"worldMap": "cybercity",
+			"localMap": "cybercity",
+			"locationId": "home",
+			"variables": ["global.toxic_gas = 0"]
+		},
+		{
+			"id": "carne_village_entrance",
+			"bg": "images/sprites/backgrounds/grass.webp",
+			"clearCharacters": true,
+			"worldMap": "newworld",
+			"localMap": "carne",
+			"locationId": "carne_village_entrance",
 			"variables": ["global.toxic_gas = 0"]
 		}
 	]

@@ -44,7 +44,7 @@ let animationTimeout = null
 // Compute positioning style from character.position object
 const characterStyle = computed(() => {
 	const style = {
-		scale: props.character.scale || props.character.size || 1.3
+		scale: props.character.scale ?? props.character.size ?? 1
 	}
 
 	// Determine which position to use

@@ -1,6 +1,6 @@
 // src/main/index.js
 
-import { app, shell, BrowserWindow, ipcMain, protocol } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, protocol, session } from 'electron'
 import { join } from 'path'
 import fs from 'fs/promises'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
@@ -289,6 +289,14 @@ async function getInitialSettings() {
 async function installDevTools() {
 	if (is.dev) {
 		try {
+			if (session.defaultSession.extensions) {
+				session.defaultSession.getAllExtensions = () =>
+					session.defaultSession.extensions.getAllExtensions()
+				session.defaultSession.loadExtension = (path, opts) =>
+					session.defaultSession.extensions.loadExtension(path, opts)
+				session.defaultSession.removeExtension = (id) =>
+					session.defaultSession.extensions.removeExtension(id)
+			}
 			await installExtension(VUEJS_DEVTOOLS)
 			console.log('✔ Vue DevTools успешно установлены')
 		} catch (err) {
@@ -324,12 +332,17 @@ async function createWindow() {
 		}
 	})
 
-	mainWindow.on('ready-to-show', () => {
+	mainWindow.once('ready-to-show', () => {
+		console.log('🚀 Окно игры готово и отображено!')
 		mainWindow.show()
 		// Открывать DevTools только в dev-режиме
 		if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
 			mainWindow.webContents.openDevTools({ mode: 'detach' })
 		}
+	})
+
+	mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
+		console.error(`⛔ Ошибка загрузки URL: ${validatedURL} (${errorCode}: ${errorDescription})`)
 	})
 
 	mainWindow.webContents.setWindowOpenHandler((details) => {

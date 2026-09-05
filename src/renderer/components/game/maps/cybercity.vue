@@ -53,9 +53,21 @@ const locations = ref([
 	}
 ])
 
+function isLocationDiscovered(location) {
+	const list = props.globalData?.discoveredLocations?.cybercity
+	if (Array.isArray(list)) {
+		return list.includes(location.id)
+	}
+	return true
+}
+
+const discoveredLocations = computed(() => {
+	return locations.value.filter(isLocationDiscovered)
+})
+
 // Вычисляем активную точку на основе переменной
 const locationsWithActive = computed(() => {
-	return locations.value.map((location) => ({
+	return discoveredLocations.value.map((location) => ({
 		...location,
 		active: location.id === props.currentLocation
 	}))
@@ -71,7 +83,7 @@ function getPlaceTarget(place) {
 	if (place.id === 'factory') {
 		return 'cyber/factory/factory_main'
 	}
-	if (place.id === 'home' && props.globalData?.nowevent === 'mcoutfactory') {
+	if (place.id === 'home') {
 		return 'cyber/mchome'
 	}
 	return null
