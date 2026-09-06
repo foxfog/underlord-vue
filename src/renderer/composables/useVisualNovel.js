@@ -10,6 +10,7 @@ import {
 import { evaluateExpression } from '../utils/expressionEvaluator'
 import { getCalendarInfo, advanceTimeOfDay } from '../utils/timeCalendar'
 import { useQuests } from './useQuests'
+import { useEncyclopedia } from './useEncyclopedia'
 
 export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	// State
@@ -21,6 +22,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	const currentTitleEffects = ref(null) // { effectStart, effect, effectEnd }
 	const currentSpeaker = ref('')
 	const currentChoices = ref([])
+	const currentChoicesLayout = ref('center') // 'center' (default) | 'dialogue'
 	const multiStepDialogueBuffer = ref('') // Buffer for accumulating multi-step dialogue text
 	const multiStepPrintedLength = ref(0) // Track how many characters have been printed via typewriter
 
@@ -60,7 +62,9 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	const stepIndex = ref(0)
 	const characterData = ref({})
 	const sceneData = ref({})
-	const globalData = ref({})
+	const globalData = ref({
+		sceneHotspots: {}
+	})
 	let advanceStoryOverride = null
 	const callStack = ref([])
 	let currentStoryPath = 'start' // tracks the file path used to load the current story
@@ -82,6 +86,8 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		'map-button': false,
 		'journal-button': false,
 		'next-time-button': false,
+		'date-badge': true,
+		'calendar-button': true,
 		topbar: false,
 		hotbar: false,
 		dialogue: false,
@@ -128,6 +134,14 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		const nextTimeButton = isTargetHiddenByDialogue('next-time-button')
 			? false
 			: !!(base.all || base['next-time-button'])
+		const dateBadge =
+			isTargetHiddenByDialogue('date-badge') || isTargetHiddenByDialogue('calendar-button')
+				? false
+				: base['date-badge'] !== undefined
+					? !!base['date-badge']
+					: base['calendar-button'] !== undefined
+						? !!base['calendar-button']
+						: true
 		const hotbar = isTargetHiddenByDialogue('hotbar') ? false : !!(base.all || base.hotbar)
 		const topbar = isTargetHiddenByDialogue('topbar')
 			? false
@@ -141,6 +155,8 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			'map-button': mapButton,
 			'journal-button': journalButton,
 			'next-time-button': nextTimeButton,
+			'date-badge': dateBadge,
+			'calendar-button': dateBadge,
 			topbar,
 			hotbar,
 			dialogue,
@@ -219,7 +235,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 				if (srcMatch) currentStoryPath = srcMatch[1]
 
 				// Load characters (try split format, fallback to legacy file)
-				const characterIds = ['mc', 'albedo', 'momonga']
+				const characterIds = ['mc', 'albedo', 'momonga', 'enri']
 				for (const charId of characterIds) {
 					try {
 						const valuesData = await loadDataFromPublic(
@@ -310,6 +326,18 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		}
 
 		const step = storyData.value.steps[stepIndex.value]
+
+		// Conditional step execution
+		if (step.if !== undefined && !evaluateCondition(step.if)) {
+			stepIndex.value++
+			processStep()
+			return
+		}
+		if (step.condition !== undefined && !evaluateCondition(step.condition)) {
+			stepIndex.value++
+			processStep()
+			return
+		}
 
 		if (!step.type && step.variable) {
 			applyVariable(step.variable)
@@ -494,13 +522,15 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					stepIndex.value++
 					processStep()
 					break
-				case 'goto':
+				case 'goto': {
+					const target = step.target || step.id || step.label || step.step
 					if (step.delay) {
-						setTimeout(() => goToLabel(step.target), step.delay * 1000)
+						setTimeout(() => goToLabel(target), step.delay * 1000)
 					} else {
-						goToLabel(step.target)
+						goToLabel(target)
 					}
 					break
+				}
 				case 'end':
 					// 'end' always terminates the game regardless of call stack.
 					// Use 'continue' to return from a macro/sub-story to the caller.
@@ -586,14 +616,15 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					stepIndex.value++
 					processStep()
 					break
-				case 'quest':
-					if (!isRestoringGameState.value && step.id) {
+				case 'quest': {
+					const questId = step.questId || step.id
+					if (!isRestoringGameState.value && questId) {
 						const questsManager = useQuests()
 						if (step.action === 'complete') {
-							questsManager.completeQuest(step.id)
+							questsManager.completeQuest(questId)
 							if (notificationComponent.value) {
-								const q = questsManager.getQuest(step.id)
-								const title = q?.title || step.title || step.id
+								const q = questsManager.getQuest(questId)
+								const title = q?.title || step.title || questId
 								notificationComponent.value.showNotification(
 									`<p><b>🏆 Задание выполнено</b></p><p>${title}</p>`,
 									'success',
@@ -601,10 +632,10 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 								)
 							}
 						} else if (step.action === 'fail') {
-							questsManager.failQuest(step.id)
+							questsManager.failQuest(questId)
 							if (notificationComponent.value) {
-								const q = questsManager.getQuest(step.id)
-								const title = q?.title || step.title || step.id
+								const q = questsManager.getQuest(questId)
+								const title = q?.title || step.title || questId
 								notificationComponent.value.showNotification(
 									`<p><b>❌ Задание провалено</b></p><p>${title}</p>`,
 									'warning',
@@ -612,7 +643,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 								)
 							}
 						} else if (step.action === 'task-complete' || step.action === 'complete-task') {
-							const task = questsManager.completeTask(step.id, step.taskId)
+							const task = questsManager.completeTask(questId, step.taskId)
 							if (notificationComponent.value && task) {
 								notificationComponent.value.showNotification(
 									`<p><b>🎯 Задача выполнена</b></p><p>${task.text}</p>`,
@@ -622,7 +653,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 							}
 						} else if (step.action === 'add-story-entry' || step.action === 'story-entry') {
 							const entry = step.text || step.entry
-							questsManager.addQuestStoryEntry(step.id, entry)
+							questsManager.addQuestStoryEntry(questId, entry)
 							if (notificationComponent.value && entry) {
 								notificationComponent.value.showNotification(
 									`<p><b>📖 Журнал обновлен</b></p><p>${entry}</p>`,
@@ -633,7 +664,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 						} else {
 							// Default is 'start'
 							const newQ = questsManager.startQuest({
-								id: step.id,
+								id: questId,
 								parentId: step.parentId,
 								title: step.title,
 								description: step.description,
@@ -651,6 +682,13 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 							}
 						}
 					}
+					stepIndex.value++
+					processStep()
+					break
+				}
+				case 'journal':
+				case 'encyclopedia':
+					handleJournalStep(step)
 					stepIndex.value++
 					processStep()
 					break
@@ -756,18 +794,23 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					stepIndex.value++
 					processStep()
 					break
+				case 'hotspot':
+				case 'scene-hotspot':
+				case 'unlock-hotspot':
+				case 'lock-hotspot':
+				case 'hide-hotspot':
+				case 'show-hotspot':
+					if (!isRestoringGameState.value) {
+						handleHotspotStep(step)
+					}
+					stepIndex.value++
+					processStep()
+					break
 				case 'hold':
 					// Keep the current scene/dialogue visible and do not advance further.
 					// Use this at the end of a story to prevent the engine from emitting `end`.
 					isInDialogueMode.value = false
 					return
-				case 'goto':
-					if (step.delay) {
-						setTimeout(() => goToLabel(step.target), step.delay * 1000)
-					} else {
-						goToLabel(step.target)
-					}
-					break
 				case 'continue':
 					handleContinue()
 					break
@@ -795,11 +838,79 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		}
 	}
 
+	function handleJournalStep(step) {
+		if (!step || typeof step !== 'object') return
+		const enc = useEncyclopedia()
+		const target = step.target || (step.category ? 'encyclopedia' : 'character')
+		const action =
+			step.action || (target === 'character' ? 'add-character' : 'add-entry')
+
+		if (action === 'add-character' || action === 'character') {
+			const char = enc.addCharacter({
+				id: step.id || step.character,
+				name: step.name,
+				surname: step.surname,
+				title: step.title,
+				avatar: step.avatar,
+				sympVariable: step.sympVariable,
+				titleVariable: step.titleVariable,
+				defaultTitle: step.defaultTitle,
+				blocks: step.blocks || []
+			})
+			if (!step.silent && notificationComponent?.value && char && !isRestoringGameState.value) {
+				notificationComponent.value.showNotification(
+					`<p><b>👤 Новый персонаж в журнале</b></p><p>${char.title || char.name}</p>`,
+					'info',
+					3000
+				)
+			}
+		} else if (action === 'add-entry' || action === 'entry' || action === 'add-encyclopedia') {
+			const entry = enc.addEncyclopediaEntry({
+				id: step.id || step.entryId,
+				category: step.category,
+				subCategory: step.subCategory,
+				title: step.title,
+				icon: step.icon,
+				image: step.image,
+				blocks: step.blocks || []
+			})
+			if (!step.silent && notificationComponent?.value && entry && !isRestoringGameState.value) {
+				notificationComponent.value.showNotification(
+					`<p><b>📖 Новая статья энциклопедии</b></p><p>${entry.title}</p>`,
+					'info',
+					3000
+				)
+			}
+		} else if (action === 'set-block' || action === 'update-block' || action === 'add-block') {
+			enc.setBlock({
+				target: step.target,
+				id: step.id || step.entryId || step.character,
+				blockId: step.blockId,
+				title: step.blockTitle || step.title,
+				text: step.text
+			})
+			if (!step.silent && notificationComponent?.value && !isRestoringGameState.value) {
+				notificationComponent.value.showNotification(
+					`<p><b>📖 Журнал обновлён</b></p><p>${step.blockTitle || step.title || step.id}</p>`,
+					'info',
+					2500
+				)
+			}
+		} else if (action === 'remove-block') {
+			enc.removeBlock({
+				target: step.target,
+				id: step.id || step.entryId || step.character,
+				blockId: step.blockId
+			})
+		}
+	}
+
 	function changeScene(sceneIdOrStep) {
-		const scene =
+		const sceneKey =
 			typeof sceneIdOrStep === 'object'
-				? sceneData.value[sceneIdOrStep.id]
-				: sceneData.value[sceneIdOrStep]
+				? sceneIdOrStep.scene || sceneIdOrStep.sceneId || sceneIdOrStep.id
+				: sceneIdOrStep
+		const scene = sceneData.value[sceneKey]
 		if (!scene) {
 			console.warn('Scene not found:', sceneIdOrStep)
 			return
@@ -868,7 +979,9 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			stepObj.map ||
 			scene.map ||
 			(targetWorldMap === 'newworld' &&
-			((scene.id && scene.id.startsWith('carne')) || (stepObj.id && stepObj.id.startsWith('carne')))
+			((scene.id && scene.id.startsWith('carne')) ||
+				(stepObj.id && stepObj.id.startsWith('carne')) ||
+				(stepObj.scene && stepObj.scene.startsWith('carne')))
 				? 'carne'
 				: targetWorldMap)
 
@@ -1053,7 +1166,9 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			'inventory-button',
 			'map-button',
 			'journal-button',
-			'next-time-button'
+			'next-time-button',
+			'date-badge',
+			'calendar-button'
 		]
 
 		function setAllUi(value) {
@@ -1086,6 +1201,11 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 						baseUiVisibility.value[k] = true
 					})
 				}
+				if (target === 'calendar-button' || target === 'date-badge') {
+					baseUiVisibility.value['date-badge'] = show
+					baseUiVisibility.value['calendar-button'] = show
+					return
+				}
 				if (target === 'topbar' && !show) {
 					baseUiVisibility.value.topbar = false
 					baseUiVisibility.value['stats-button'] = false
@@ -1093,12 +1213,20 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					baseUiVisibility.value['map-button'] = false
 					baseUiVisibility.value['journal-button'] = false
 					baseUiVisibility.value['next-time-button'] = false
+					baseUiVisibility.value['date-badge'] = false
+					baseUiVisibility.value['calendar-button'] = false
+					return
+				}
+				if (target === 'topbar' && show) {
+					baseUiVisibility.value.topbar = true
+					baseUiVisibility.value['date-badge'] = true
+					baseUiVisibility.value['calendar-button'] = true
 					return
 				}
 				baseUiVisibility.value[target] = show
 				if (
 					show &&
-					['stats-button', 'inventory-button', 'map-button', 'journal-button'].includes(
+					['stats-button', 'inventory-button', 'map-button', 'journal-button', 'date-badge', 'calendar-button'].includes(
 						target
 					)
 				) {
@@ -1778,6 +1906,53 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		}
 
 		container[key] = newValue
+
+		// Check sympathy notification
+		if (
+			!isRestoringGameState.value &&
+			(key.includes('symp') || targetPath.includes('symp'))
+		) {
+			const prevNum = typeof current === 'number' ? current : Number(current) || 0
+			const newNum = typeof newValue === 'number' ? newValue : Number(newValue) || 0
+			const diff = newNum - prevNum
+			if (diff !== 0 && notificationComponent?.value) {
+				let charId = null
+				if (key.endsWith('_mc_symp')) {
+					charId = key.replace(/_mc_symp$/, '')
+				} else if (key.endsWith('_symp')) {
+					charId = key.replace(/_symp$/, '')
+				} else if (resolved.root === 'character') {
+					charId = resolved.id
+				}
+
+				let charName = 'Персонаж'
+				if (charId) {
+					const resolvedTitle = resolveSpeakerTitle(charId)
+					if (resolvedTitle && resolvedTitle !== charId) {
+						charName = resolvedTitle
+					} else {
+						const encChar = useEncyclopedia().getCharacter(charId)
+						if (encChar?.name) {
+							charName = encChar.name
+						} else {
+							charName = charId.charAt(0).toUpperCase() + charId.slice(1)
+						}
+					}
+				}
+
+				const isPositive = diff > 0
+				const sign = isPositive ? `+${diff}` : `${diff}`
+				const icon = isPositive ? '❤️' : '💔'
+				const titleText = isPositive ? 'Отношение улучшилось' : 'Отношение ухудшилось'
+				const notifType = isPositive ? 'success' : 'warning'
+
+				notificationComponent.value.showNotification(
+					`<p><b>${icon} ${titleText}: ${charName}</b></p><p>${sign} (Симпатия: ${newNum})</p>`,
+					notifType,
+					3000
+				)
+			}
+		}
 		if (resolved.root === 'character') {
 			console.log(`Applied variable: ${expr} -> ${resolved.id}.${key} =`, newValue)
 			updateCharacterData(targetPath, newValue)
@@ -1896,7 +2071,13 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 
 	function showChoices(choiceStep) {
 		isInDialogueMode.value = true
-		currentChoices.value = choiceStep.options.map((option) => ({
+		advanceStoryOverride = null
+		const filteredOptions = (choiceStep.options || []).filter((option) => {
+			if (option.if !== undefined) return evaluateCondition(option.if)
+			if (option.condition !== undefined) return evaluateCondition(option.condition)
+			return true
+		})
+		currentChoices.value = filteredOptions.map((option) => ({
 			...option,
 			text: substituteVariables(option.text),
 			disabled: option.disabled ? evaluateCondition(option.disabled) : false
@@ -1905,6 +2086,9 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			choiceStep.speaker || choiceStep.character,
 			choiceStep.title
 		)
+		const layout = choiceStep.layout || choiceStep.position || 'center'
+		currentChoicesLayout.value =
+			layout === 'dialogue' || layout === 'bottom' ? 'dialogue' : 'center'
 		if (choiceStep.text) currentDialogue.value = substituteVariables(choiceStep.text)
 		applyDialogueHiding()
 	}
@@ -1949,7 +2133,6 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 						currentDialogue.value = ''
 						currentNarration.value = ''
 						processDialogueAction()
-						advanceStoryOverride = null
 					}
 					break
 				case 'action':
@@ -1970,10 +2153,15 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 
 	function selectChoice(index) {
 		const choice = currentChoices.value[index]
-		if (choice.disabled) return // Prevent selecting disabled choices
-		if (choice.actions) processChoiceActions(choice.actions)
-		else {
-			currentChoices.value = []
+		if (!choice || choice.disabled) return // Prevent selecting disabled choices
+		currentChoices.value = []
+		currentChoicesLayout.value = 'center'
+		if (choice.variable) {
+			applyVariable(choice.variable)
+		}
+		if (choice.actions && choice.actions.length > 0) {
+			processChoiceActions(choice.actions)
+		} else {
 			currentDialogue.value = ''
 			currentNarration.value = ''
 			stepIndex.value++
@@ -1982,61 +2170,125 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	}
 
 	function processChoiceActions(actions) {
-		let tempIndex = 0
-		function processAction() {
-			if (tempIndex >= actions.length) {
+		let actionIndex = 0
+
+		function runNextAction() {
+			if (actionIndex >= actions.length) {
+				advanceStoryOverride = null
 				stepIndex.value++
 				processStep()
 				return
 			}
-			const action = actions[tempIndex]
-			tempIndex++
+
+			const action = actions[actionIndex++]
+
 			switch (action.type) {
 				case 'dialogue':
-					const remaining = actions.slice(tempIndex)
 					currentChoices.value = []
-					if (action.character) showDialogue(action.character, action.text)
-					else showNarration(action.text)
+					if (action.character) {
+						showDialogue(action.character, action.text, action.title || action.speaker)
+					} else if (action.title || action.speaker) {
+						showDialogue(null, action.text, action.title || action.speaker)
+					} else {
+						showNarration(action.text)
+					}
 					advanceStoryOverride = function () {
 						currentDialogue.value = ''
 						currentNarration.value = ''
-						if (remaining.length > 0) processChoiceActions(remaining)
-						else {
-							stepIndex.value++
-							processStep()
-						}
-						advanceStoryOverride = null
+						runNextAction()
 					}
 					break
-				case 'goto':
+
+				case 'goto': {
+					advanceStoryOverride = null
 					currentDialogue.value = ''
 					currentNarration.value = ''
 					currentSpeaker.value = ''
 					currentChoices.value = []
-					goToLabel(action.target)
+					const targetLabel = action.target || action.id || action.label || action.step
+					goToLabel(targetLabel)
 					break
+				}
+
 				case 'show':
 					showCharacter(action)
-					processAction()
+					runNextAction()
 					break
+
 				case 'hide':
 					hideCharacter(action.character)
-					processAction()
+					runNextAction()
 					break
+
+				case 'variable':
+					if (action.variable) applyVariable(action.variable)
+					runNextAction()
+					break
+
+				case 'journal':
+				case 'encyclopedia':
+					handleJournalStep(action)
+					runNextAction()
+					break
+
+				case 'hotspot':
+				case 'scene-hotspot':
+				case 'unlock-hotspot':
+				case 'lock-hotspot':
+				case 'hide-hotspot':
+				case 'show-hotspot':
+					handleHotspotStep(action)
+					runNextAction()
+					break
+
 				default:
-					processAction()
+					if (action.text) {
+						currentChoices.value = []
+						if (action.character) {
+							showDialogue(action.character, action.text, action.title || action.speaker)
+						} else if (action.title || action.speaker) {
+							showDialogue(null, action.text, action.title || action.speaker)
+						} else {
+							showNarration(action.text)
+						}
+						advanceStoryOverride = function () {
+							currentDialogue.value = ''
+							currentNarration.value = ''
+							runNextAction()
+						}
+					} else {
+						if (action.variable) applyVariable(action.variable)
+						runNextAction()
+					}
 					break
 			}
 		}
-		processAction()
+
+		runNextAction()
 	}
 
-	function goToLabel(targetLabel) {
+	function goToLabel(targetLabel, targetStepId = null) {
+		let storyTarget = targetLabel
+		let stepTarget = targetStepId
+
+		if (typeof targetLabel === 'string' && targetLabel.includes('#')) {
+			const [storyPart, stepPart] = targetLabel.split('#')
+			storyTarget = storyPart
+			stepTarget = stepPart
+		}
+
+		const checkTarget = stepTarget || storyTarget
 		const targetStepIndex = storyData.value?.steps
-			? storyData.value.steps.findIndex((step) => step.id === targetLabel)
+			? storyData.value.steps.findIndex(
+					(step) =>
+						step.id === checkTarget ||
+						step.label === checkTarget ||
+						step.name === checkTarget
+			  )
 			: -1
-		if (targetStepIndex !== -1) {
-			// Goto внутри текущей истории - очищаем диалоги
+		if (targetStepIndex !== -1 && (!stepTarget || currentStoryPath === storyTarget)) {
+			// Goto внутри текущей истории - очищаем диалоги и сбрасываем override
+			advanceStoryOverride = null
 			currentDialogue.value = ''
 			currentNarration.value = ''
 			currentSpeaker.value = ''
@@ -2045,11 +2297,47 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			processStep()
 			return Promise.resolve()
 		}
+
+		// Direct scene navigation: if target is a registered scene in sceneData (scenes.json)
+		if (!stepTarget && sceneData.value && sceneData.value[checkTarget]) {
+			advanceStoryOverride = null
+			currentDialogue.value = ''
+			currentNarration.value = ''
+			currentSpeaker.value = ''
+			currentChoices.value = []
+			changeScene(checkTarget)
+			return Promise.resolve()
+		}
+
+		// Handle legacy new_world_carne alias directly
+		if (storyTarget === 'new_world_carne') {
+			storyTarget = 'intro'
+			stepTarget = stepTarget || 'intro_carne_arrival'
+		}
+
 		// Goto на другую историю - сохраняем позицию для return и загружаем новую историю
 		// Save the FULL PATH used to load the current story (not the JSON id field)
 		callStack.value.push({ storyId: currentStoryPath, stepIndex: stepIndex.value + 1 })
 		// НЕ очищаем диалоги при переходе на другую историю, чтобы избежать мерцания
-		return loadTargetStory(targetLabel)
+		return loadTargetStory(storyTarget).then(() => {
+			if (stepTarget && storyData.value?.steps) {
+				const loadedStepIndex = storyData.value.steps.findIndex(
+					(step) =>
+						step.id === stepTarget ||
+						step.label === stepTarget ||
+						step.name === stepTarget
+				)
+				if (loadedStepIndex !== -1) {
+					advanceStoryOverride = null
+					currentDialogue.value = ''
+					currentNarration.value = ''
+					currentSpeaker.value = ''
+					currentChoices.value = []
+					stepIndex.value = loadedStepIndex
+					processStep()
+				}
+			}
+		})
 	}
 
 	function handleContinue() {
@@ -2224,6 +2512,9 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	}
 
 	function advanceStory() {
+		if (currentChoices.value && currentChoices.value.length > 0) {
+			return
+		}
 		if (advanceStoryOverride) {
 			const f = advanceStoryOverride
 			advanceStoryOverride = null
@@ -2270,6 +2561,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 
 		if (globalData.value) {
 			globalData.value.quests = useQuests().getQuestsState()
+			globalData.value.encyclopedia = useEncyclopedia().getState()
 		}
 
 		return {
@@ -2324,8 +2616,14 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					carne: ['carne_village_entrance']
 				}
 			}
+			if (!globalData.value.sceneHotspots) {
+				globalData.value.sceneHotspots = {}
+			}
 			if (saveData.globalData?.quests) {
 				useQuests().loadQuestsState(saveData.globalData.quests)
+			}
+			if (saveData.globalData?.encyclopedia) {
+				useEncyclopedia().loadState(saveData.globalData.encyclopedia)
 			}
 			// Notify outside listeners (Game.vue) about restored global data
 			if (emit) {
@@ -2563,7 +2861,8 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 				cybercity: ['factory', 'home'],
 				newworld: ['carne_village'],
 				carne: ['carne_village_entrance']
-			}
+			},
+			sceneHotspots: {}
 		}
 		historyEntries.value = []
 		audioStreams.value = {}
@@ -2585,6 +2884,8 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			'map-button': false,
 			'journal-button': false,
 			'next-time-button': false,
+			'date-badge': true,
+			'calendar-button': true,
 			topbar: false,
 			hotbar: false,
 			dialogue: false,
@@ -2592,6 +2893,8 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		}
 		const questsManager = useQuests()
 		questsManager.resetQuests()
+		const encyclopediaManager = useEncyclopedia()
+		encyclopediaManager.resetEncyclopedia()
 	}
 
 	function showNotification(text, type = 'info', duration = 3000) {
@@ -2680,6 +2983,134 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		return Array.isArray(list) && list.includes(locationId)
 	}
 
+	function setHotspotStatus(sceneId, hotspotId, status = 'active', lockedAction = null) {
+		if (!sceneId || !hotspotId) return
+
+		if (!globalData.value) {
+			globalData.value = {}
+		}
+		if (!globalData.value.sceneHotspots) {
+			globalData.value.sceneHotspots = {}
+		}
+		if (!globalData.value.sceneHotspots[sceneId]) {
+			globalData.value.sceneHotspots[sceneId] = {}
+		}
+
+		if (lockedAction) {
+			globalData.value.sceneHotspots[sceneId][hotspotId] = {
+				status,
+				lockedAction
+			}
+		} else {
+			globalData.value.sceneHotspots[sceneId][hotspotId] = status
+		}
+
+		console.log(
+			`🚪 [Hotspot Updated] scene="${sceneId}" id="${hotspotId}" status="${status}"`
+		)
+
+		if (emit) {
+			emit('global-data-changed', globalData.value)
+		}
+	}
+
+	function getHotspotStatus(sceneId, hotspot) {
+		if (!sceneId || !hotspot) return 'active'
+		const hotspotId = typeof hotspot === 'string' ? hotspot : hotspot.id
+		if (!hotspotId) return 'active'
+
+		// 1. Saved delta override in globalData.sceneHotspots
+		const delta = globalData.value?.sceneHotspots?.[sceneId]?.[hotspotId]
+		if (delta !== undefined && delta !== null) {
+			if (typeof delta === 'string') return delta
+			if (typeof delta === 'object' && delta.status) return delta.status
+		}
+
+		if (typeof hotspot === 'string') return 'active'
+
+		// 2. Dynamic condition
+		if (hotspot.condition) {
+			const isPassed = evaluateCondition(hotspot.condition)
+			return isPassed ? 'active' : hotspot.fallbackStatus || 'locked'
+		}
+
+		// 3. Static status
+		return hotspot.status || 'active'
+	}
+
+	function handleHotspotStep(step) {
+		if (!step || typeof step !== 'object') return
+		const sceneId =
+			step.scene ||
+			step.sceneId ||
+			(currentScene.value ? currentScene.value.id : null)
+		const hotspotId = step.id || step.hotspot || step.hotspotId
+		if (!sceneId || !hotspotId) {
+			console.warn('⚠️ [Hotspot Step] Missing scene or hotspot id:', step)
+			return
+		}
+
+		let status = step.status
+		if (step.type === 'unlock-hotspot' || step.type === 'show-hotspot') {
+			status = 'active'
+		} else if (step.type === 'lock-hotspot') {
+			status = 'locked'
+		} else if (step.type === 'hide-hotspot') {
+			status = 'hidden'
+		} else if (!status) {
+			status = 'active'
+		}
+
+		let lockedAction = step.lockedAction || null
+		if (!lockedAction && (step.text || step.sound || step.notification || step.goto)) {
+			lockedAction = {
+				text: step.text,
+				sound: step.sound,
+				notification: step.notification,
+				notificationType: step.notificationType || 'warning',
+				duration: step.duration,
+				goto: step.goto
+			}
+		}
+
+		setHotspotStatus(sceneId, hotspotId, status, lockedAction)
+	}
+
+	function handleHotspotClick(sceneId, hotspot) {
+		if (!hotspot) return
+		const resolvedSceneId = sceneId || currentScene.value?.id
+		const status = getHotspotStatus(resolvedSceneId, hotspot)
+
+		if (status === 'active') {
+			if (hotspot.target) {
+				goToLabel(hotspot.target)
+			}
+		} else if (status === 'locked') {
+			const delta = globalData.value?.sceneHotspots?.[resolvedSceneId]?.[hotspot.id]
+			const lockedAction =
+				typeof delta === 'object' && delta?.lockedAction
+					? delta.lockedAction
+					: hotspot.lockedAction || {}
+
+			if (lockedAction.sound) {
+				playSound({ file: lockedAction.sound, loop: false })
+			}
+			if (lockedAction.notification) {
+				showNotification(
+					lockedAction.notification,
+					lockedAction.notificationType || 'warning',
+					lockedAction.duration || 3000
+				)
+			}
+			if (lockedAction.text) {
+				showNarration(lockedAction.text)
+			}
+			if (lockedAction.goto) {
+				goToLabel(lockedAction.goto)
+			}
+		}
+	}
+
 	return {
 		// state
 		stepIndex,
@@ -2691,6 +3122,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		currentTitleEffects,
 		currentSpeaker,
 		currentChoices,
+		currentChoicesLayout,
 		multiStepDialogueBuffer,
 		multiStepPrintedLength,
 		showTextInputModal,
@@ -2698,6 +3130,8 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		uiVisibility,
 		baseUiVisibility,
 		fadeOverlay,
+		isDialogueActive,
+		isInDialogueMode,
 		// audio state
 		currentSound,
 		currentVoice,
@@ -2713,6 +3147,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		processStep,
 		advanceStory,
 		selectChoice,
+		showChoices,
 		getGameState,
 		restoreGameState,
 		resetGameState,
@@ -2720,6 +3155,8 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		onTextInputConfirm,
 		// notification method
 		showNotification,
+		applyVariable,
+		handleJournalStep,
 		rebuildEquipmentBySlot,
 		syncCharacterEquipment,
 		// time advancing method
@@ -2727,6 +3164,11 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		// location discovery methods
 		discoverLocation,
 		isLocationDiscovered,
+		// scene hotspot methods
+		setHotspotStatus,
+		getHotspotStatus,
+		handleHotspotStep,
+		handleHotspotClick,
 		// goto method for Rules Engine
 		goto: goToLabel,
 		// audio methods

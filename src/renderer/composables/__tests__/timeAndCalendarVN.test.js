@@ -587,4 +587,172 @@ describe('Map Marker Discovery and Persistence', () => {
 	})
 })
 
+describe('UI Visibility for date-badge and next-time-button', () => {
+	beforeEach(() => {
+		setActivePinia(createPinia())
+		initSettingsStore({})
+	})
+
+	it('hides next-time-button and date-badge via ui action step', () => {
+		const vn = useVisualNovel({})
+		expect(vn.uiVisibility.value['date-badge']).toBe(true)
+
+		vn.storyData.value = {
+			steps: [
+				{
+					type: 'ui',
+					action: 'show',
+					target: ['inventory-button', 'journal-button', 'map-button']
+				},
+				{
+					type: 'ui',
+					action: 'hide',
+					target: ['next-time-button', 'date-badge']
+				}
+			]
+		}
+
+		vn.processStep()
+
+		expect(vn.uiVisibility.value['inventory-button']).toBe(true)
+		expect(vn.uiVisibility.value['journal-button']).toBe(true)
+		expect(vn.uiVisibility.value['map-button']).toBe(true)
+		expect(vn.uiVisibility.value['next-time-button']).toBe(false)
+		expect(vn.uiVisibility.value['date-badge']).toBe(false)
+	})
+
+	it('restores date-badge on resetStory / resetGameState', () => {
+		const vn = useVisualNovel({})
+		vn.storyData.value = {
+			steps: [
+				{
+					type: 'ui',
+					action: 'hide',
+					target: ['date-badge']
+				}
+			]
+		}
+		vn.processStep()
+		expect(vn.uiVisibility.value['date-badge']).toBe(false)
+
+		vn.resetGameState()
+		expect(vn.uiVisibility.value['date-badge']).toBe(true)
+		expect(vn.uiVisibility.value['calendar-button']).toBe(true)
+	})
+
+	it('shows calendar-button and date-badge when topbar is shown or explicitly shown', () => {
+		const vn = useVisualNovel({})
+		// Step 0: hide all, then hold
+		vn.storyData.value = {
+			steps: [
+				{
+					type: 'ui',
+					action: 'hide',
+					target: ['all']
+				},
+				{
+					type: 'hold'
+				},
+				{
+					type: 'ui',
+					action: 'show',
+					target: ['topbar', 'hotbar', 'inventory-button', 'journal-button', 'date-badge']
+				}
+			]
+		}
+		vn.processStep() // hides all and pauses at hold
+		expect(vn.uiVisibility.value['date-badge']).toBe(false)
+		expect(vn.uiVisibility.value['calendar-button']).toBe(false)
+
+		vn.stepIndex.value = 2
+		vn.processStep() // executes show step
+		expect(vn.uiVisibility.value['date-badge']).toBe(true)
+		expect(vn.uiVisibility.value['calendar-button']).toBe(true)
+		expect(vn.uiVisibility.value['inventory-button']).toBe(true)
+	})
+
+	it('supports calendar-button as an alias for date-badge in hide action', () => {
+		const vn = useVisualNovel({})
+		vn.storyData.value = {
+			steps: [
+				{
+					type: 'ui',
+					action: 'hide',
+					target: ['calendar-button']
+				}
+			]
+		}
+		vn.processStep()
+		expect(vn.uiVisibility.value['date-badge']).toBe(false)
+		expect(vn.uiVisibility.value['calendar-button']).toBe(false)
+	})
+})
+
+describe('Intro New World Arrival Transition and Label Seeking', () => {
+	beforeEach(() => {
+		setActivePinia(createPinia())
+		initSettingsStore({})
+	})
+
+	it('jumps directly to intro_carne_arrival step when already in intro story', async () => {
+		const vn = useVisualNovel({})
+		vn.sceneData.value = {
+			carne_village_entrance: {
+				id: 'carne_village_entrance',
+				bg: 'grass.webp'
+			}
+		}
+		vn.storyData.value = {
+			id: 'intro',
+			steps: [
+				{ id: 'start_step', type: 'dialogue', text: 'City step' },
+				{ id: 'apartment_hold', type: 'hold' },
+				{
+					id: 'intro_carne_arrival',
+					label: 'new_world_carne',
+					type: 'scene',
+					scene: 'carne_village_entrance'
+				},
+				{ type: 'dialogue', character: 'mc', text: 'Where am I?' }
+			]
+		}
+		vn.stepIndex.value = 1 // at apartment hold
+
+		await vn.goto('intro_carne_arrival')
+
+		expect(vn.currentScene.value?.id).toBe('carne_village_entrance')
+		expect(vn.currentDialogue.value).toBe('Where am I?')
+	})
+
+	it('supports legacy new_world_carne alias to jump to intro_carne_arrival', async () => {
+		const vn = useVisualNovel({})
+		vn.sceneData.value = {
+			carne_village_entrance: {
+				id: 'carne_village_entrance',
+				bg: 'grass.webp'
+			}
+		}
+		vn.storyData.value = {
+			id: 'intro',
+			steps: [
+				{ id: 'start_step', type: 'dialogue', text: 'City step' },
+				{
+					id: 'intro_carne_arrival',
+					label: 'new_world_carne',
+					type: 'scene',
+					scene: 'carne_village_entrance'
+				},
+				{ type: 'dialogue', character: 'mc', text: 'Where am I?' }
+			]
+		}
+		vn.stepIndex.value = 0
+
+		await vn.goto('new_world_carne')
+
+		expect(vn.currentScene.value?.id).toBe('carne_village_entrance')
+		expect(vn.currentDialogue.value).toBe('Where am I?')
+	})
+})
+
+
 

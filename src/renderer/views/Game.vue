@@ -8,6 +8,7 @@
 			:show-journal-button="showJournalButton"
 			:show-map-button="showMapButton"
 			:show-next-time-button="showNextTimeButton"
+			:show-date-badge="showDateBadge"
 			:global-data="gameState.global"
 			@open-inventory="toggleInventoryModal"
 			@open-map="toggleMapModal"
@@ -59,7 +60,11 @@
 			@goto="handleMapGoto"
 		/>
 
-		<JournalModal :isVisible="showJournalModal" @close="showJournalModal = false" />
+		<JournalModal
+			:isVisible="showJournalModal"
+			:gameState="gameState"
+			@close="showJournalModal = false"
+		/>
 
 		<CalendarModal
 			:is-visible="showCalendarModal"
@@ -197,6 +202,7 @@ import YggdrasilAuthModal from '../components/game/vr/YggdrasilAuthModal.vue'
 import YggdrasilCharacterCreation from '../components/game/vr/YggdrasilCharacterCreation.vue'
 import ServerShutdownSequence from '../components/game/vr/ServerShutdownSequence.vue'
 import { useQuests } from '@/composables/useQuests'
+import { useEncyclopedia } from '@/composables/useEncyclopedia'
 import { useSavesStore } from '@/stores/saves'
 import { useSettingsStore } from '@/stores/settings'
 import { SOUND_CLOTH } from '../constants/sounds'
@@ -398,6 +404,13 @@ const showNextTimeButton = computed(() => {
 	const v = currentUiVisibility.value
 	if (v['next-time-button'] !== undefined) return !!v['next-time-button']
 	return !v.hasDialogue
+})
+
+const showDateBadge = computed(() => {
+	const v = currentUiVisibility.value
+	if (v['date-badge'] !== undefined) return !!v['date-badge']
+	if (v['calendar-button'] !== undefined) return !!v['calendar-button']
+	return true
 })
 
 const showTopbar = computed(() => {
@@ -634,6 +647,7 @@ const { handleEquip, handleUnequip, handleSwap, handleDrop, rebuildEquipmentBySl
 	)
 
 const questsManager = useQuests(gameState)
+const encyclopediaManager = useEncyclopedia(gameState)
 
 function onEquipItem(payload) {
 	handleEquip(payload)
@@ -800,10 +814,10 @@ async function onShutdownSequenceComplete() {
 
 	try {
 		if (visualNovel.value?.goto) {
-			await visualNovel.value.goto('new_world_carne')
+			await visualNovel.value.goto('intro_carne_arrival')
 		}
 	} catch (err) {
-		console.error('Error transitioning to new_world_carne:', err)
+		console.error('Error transitioning to intro_carne_arrival:', err)
 	} finally {
 		showShutdownSequence.value = false
 	}

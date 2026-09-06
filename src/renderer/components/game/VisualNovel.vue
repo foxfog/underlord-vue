@@ -1,7 +1,13 @@
 <template>
 	<StoryAudio :audio-streams="audioStreams" @stream-ended="onStreamEnded" />
 
-	<Background :scene="currentScene" />
+	<Background
+		:scene="currentScene"
+		:global-data="globalData"
+		:is-in-dialogue-mode="isDialogueActive"
+		@goto="goto"
+		@hotspot-click="onHotspotClick"
+	/>
 	<CharacterList :characters="visibleCharacters" />
 
 	<TitleBlock :title="currentTitle" :effects="currentTitleEffects" @advance="advanceStory" />
@@ -11,6 +17,7 @@
 		:narration="currentNarration"
 		:speaker="currentSpeaker"
 		:choices="currentChoices"
+		:choices-layout="currentChoicesLayout"
 		:multi-step-printed-length="multiStepPrintedLength"
 		@advance="advanceStory"
 		@selectChoice="selectChoice"
@@ -76,6 +83,7 @@ const {
 	currentTitleEffects,
 	currentSpeaker,
 	currentChoices,
+	currentChoicesLayout,
 	multiStepPrintedLength,
 	showTextInputModal,
 	currentInputStep,
@@ -102,8 +110,16 @@ const {
 	advanceTime,
 	rebuildEquipmentBySlot,
 	syncCharacterEquipment,
-	fadeOverlay
+	fadeOverlay,
+	isDialogueActive,
+	handleHotspotClick
 } = vn
+
+function onHotspotClick(payload) {
+	if (!payload) return
+	const sceneId = payload.sceneId || currentScene.value?.id
+	handleHotspotClick(sceneId, payload.hotspot)
+}
 
 useRegisterModal('vn-text-input', showTextInputModal, () => {
 	if (

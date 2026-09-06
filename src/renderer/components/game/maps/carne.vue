@@ -34,7 +34,7 @@ const props = defineProps({
 	}
 })
 
-const emit = defineEmits(['goto', 'switch-level'])
+const emit = defineEmits(['goto', 'switch-level', 'view-local'])
 
 const locations = ref([
 	{
@@ -43,21 +43,15 @@ const locations = ref([
 		x: 50,
 		y: 86,
 		class: 'map-place-entrance',
-		target: 'new_world_carne'
+		target: 'carne_village_entrance'
 	},
 	{
 		id: 'carne_square',
 		name: 'Центральная площадь',
 		x: 50,
 		y: 55,
-		class: 'map-place-square'
-	},
-	{
-		id: 'carne_chief_house',
-		name: 'Дом старосты',
-		x: 36,
-		y: 40,
-		class: 'map-place-chief'
+		class: 'map-place-square',
+		target: 'carne_village_square'
 	},
 	{
 		id: 'carne_fields',

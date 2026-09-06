@@ -12,4 +12,6 @@
 	</div>
 </template>
 
-<script setup></script>
+<script setup>
+defineEmits(['goto', 'switch-level', 'view-local'])
+</script>

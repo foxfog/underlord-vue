@@ -1,21 +1,30 @@
 <template>
-	<div :class="[dialogueBoxClasses, { invisible: !dialogue && !narration && !choices.length }]">
+	<div :class="[dialogueBoxClasses, { invisible: isDialogueBoxInvisible }]">
 		<div class="dialogue-in">
 			<div class="speaker" v-if="speaker">{{ speaker }}</div>
-			<div
-				v-if="dialogue"
-				class="dialogue-text"
-				ref="dialogueTextRef"
-				@click="skipTypewriter"
-			></div>
-			<div
-				v-if="narration"
-				class="dialogue-text _narration"
-				ref="narrationTextRef"
-				@click="skipTypewriter"
-			></div>
+			<div class="dialogue-text-container" v-if="dialogue || narration">
+				<div
+					class="dialogue-text-ghost"
+					aria-hidden="true"
+					v-html="dialogue || narration"
+					:class="{ _narration: !!narration }"
+				></div>
+				<div
+					v-if="dialogue"
+					class="dialogue-text"
+					ref="dialogueTextRef"
+					@click="skipTypewriter"
+				></div>
+				<div
+					v-if="narration"
+					class="dialogue-text _narration"
+					ref="narrationTextRef"
+					@click="skipTypewriter"
+				></div>
+			</div>
 
-			<div class="choices" v-if="choices.length > 0">
+			<!-- Опциональное отображение вариантов прямо внутри окна диалога -->
+			<div class="choices _dialogue" v-if="choices.length > 0 && choicesLayout === 'dialogue'">
 				<button
 					v-for="(choice, index) in choices"
 					:key="index"
@@ -23,9 +32,8 @@
 					class="choice-btn"
 					:class="{ _disabled: choice.disabled }"
 					:disabled="choice.disabled"
-				>
-					{{ choice.text }}
-				</button>
+					v-html="choice.text"
+				/>
 			</div>
 		</div>
 		<button
@@ -41,6 +49,24 @@
 			<i class="icon-arrow-right"></i>
 		</button>
 	</div>
+
+	<!-- Отображение вариантов по центру экрана по умолчанию -->
+	<div
+		v-if="choices.length > 0 && choicesLayout !== 'dialogue'"
+		class="choices-overlay"
+	>
+		<div class="choices _center">
+			<button
+				v-for="(choice, index) in choices"
+				:key="index"
+				@click="$emit('selectChoice', index)"
+				class="choice-btn"
+				:class="{ _disabled: choice.disabled }"
+				:disabled="choice.disabled"
+				v-html="choice.text"
+			/>
+		</div>
+	</div>
 </template>
 
 <script setup>
@@ -52,6 +78,7 @@ const props = defineProps({
 	narration: { type: String, default: '' },
 	speaker: { type: String, default: '' },
 	choices: { type: Array, default: () => [] },
+	choicesLayout: { type: String, default: 'center' },
 	multiStepPrintedLength: { type: Number, default: 0 }
 })
 
@@ -75,10 +102,17 @@ const charDuration = computed(() => {
 	return Math.round((101 - speed) * 1.6 + 20)
 })
 
+const isDialogueBoxInvisible = computed(() => {
+	if (props.choices.length > 0 && props.choicesLayout === 'dialogue') {
+		return false
+	}
+	return !props.dialogue && !props.narration
+})
+
 // Compute dialogue box classes
 const dialogueBoxClasses = computed(() => ({
 	'dialogue-box': true,
-	'_choice-box': props.choices.length > 0
+	'_choice-box': props.choices.length > 0 && props.choicesLayout === 'dialogue'
 }))
 
 function skipTypewriter() {

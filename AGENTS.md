@@ -94,6 +94,9 @@ body {
 * **Карты и открытие локаций (Map & Marker Discovery)**:
   Двухуровневая система (`worldMap` / `localMap`), переключение по `L`, автопривязка сцен в `scenes.json`, открытие точек (`discoveredLocations`, экшен `discover-location`).
   📖 Документация: [`docs/systems/MapSystem.md`](docs/systems/MapSystem.md)
+* **Интерактивные маркеры сцен (Scene Hotspots)**:
+  Интерьерные переходы между комнатами без карты, статусы `active`/`locked`/`hidden`, реакция `lockedAction` (звук, текст, уведомление), дельта-сохранения в `globalData.sceneHotspots`.
+  📖 Документация: [`docs/systems/SceneHotspots.md`](docs/systems/SceneHotspots.md)
 * **Время и календарь (Time & Calendar)**:
   Два мира (Земля 2138 с 24ч часами vs Новый Мир с 360-дневным календарем), 4 фазы суток, перемотка `advanceTime()`.
   📖 Документация: [`docs/systems/TimeCalendar.md`](docs/systems/TimeCalendar.md)
@@ -103,11 +106,17 @@ body {
 * **Диалоговая система (Dialogue System)**:
   Многошаговые диалоги, эффект пишущей машинки, автоскрытие UI при репликах (`DIALOGUE_HIDE_UI_CONFIG`).
   📖 Документация: [`docs/ui/DialogueSystem.md`](docs/ui/DialogueSystem.md)
+* **Персонажи и спрайты (Characters & Sprites)**:
+  Структура `body.json`, характеристики `values.json`, слоты экипировки `equipment.json`.
+  📖 Документация: [`docs/characters/BodyStructure.md`](docs/characters/BodyStructure.md), [`docs/characters/Animation.md`](docs/characters/Animation.md)
 * **Квесты и журнал (Quests System)**:
   Древовидная иерархия (`parentId`), задачи (`tasks`), сюжетные заметки (`storyEntries`). Композабл `useQuests.js`.
 * **Инвентарь и экипировка (Inventory & Equipment)**:
   Слоты снаряжения, части спрайтов тела, контекстное меню предметов.
   📖 Документация: [`docs/systems/Inventory.md`](docs/systems/Inventory.md), [`docs/systems/EquipmentSystem.md`](docs/systems/EquipmentSystem.md)
+* **Энциклопедия и журнал персонажей (Encyclopedia & Characters)**:
+  Карточки персонажей, модульные блочные заметки (`{ id, title, text }`), дерево категорий и подкатегорий, динамические уведомления об изменении отношений (`*_symp`). Композабл `useEncyclopedia.js`.
+  📖 Документация: [`docs/systems/EncyclopediaSystem.md`](docs/systems/EncyclopediaSystem.md)
 * **Система сохранений (Save & Load)**:
   Сериализация `gameState` (`globalData`, `characterData`, `discoveredLocations`), IPC с Main процессом.
   📖 Документация: [`docs/systems/SaveSystem.md`](docs/systems/SaveSystem.md)

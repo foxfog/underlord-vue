@@ -1,11 +1,10 @@
 <template>
 	<div class="time-calendar-widget">
-		<!-- Time of day & Clock badge -->
+		<!-- Time of day & Clock badge (informational only) -->
 		<div
 			class="time-badge"
 			:class="'phase-' + calendarInfo.timePeriod"
-			@click="$emit('open-calendar')"
-			title="Открыть календарь и время суток"
+			title="Время суток"
 		>
 			<span class="time-icon">{{ calendarInfo.timePeriodIcon }}</span>
 			<span class="time-label">{{ calendarInfo.timePeriodName }}</span>
@@ -24,17 +23,17 @@
 			<span class="next-time-icon">⏭</span>
 		</button>
 
-		<!-- Day counter badge -->
+		<!-- Day counter badge (display only, non-clickable) -->
 		<div
 			class="day-badge"
-			@click="$emit('open-calendar')"
-			title="Счетчик дней (нажмите для подробностей)"
+			title="Количество дней"
 		>
 			<span class="day-text">{{ calendarInfo.dayCountText }}</span>
 		</div>
 
 		<!-- Date & Calendar badge -->
 		<div
+			v-if="showDateBadge"
 			class="date-badge"
 			:class="calendarInfo.calendarType"
 			@click="$emit('open-calendar')"
@@ -56,6 +55,10 @@ const props = defineProps({
 		default: () => ({})
 	},
 	showNextTimeButton: {
+		type: Boolean,
+		default: true
+	},
+	showDateBadge: {
 		type: Boolean,
 		default: true
 	},
@@ -91,7 +94,6 @@ const calendarInfo = computed(() => {
 	border: 1px solid var(--color-border-alpha, rgba(255, 255, 255, 0.12));
 	color: #e0e0e0;
 	border-radius: 0.35em;
-	cursor: pointer;
 	font-family: Kurale, sans-serif;
 	font-size: 0.92em;
 	font-weight: 500;
@@ -100,8 +102,14 @@ const calendarInfo = computed(() => {
 	backdrop-filter: blur(0.3em);
 }
 
-.time-badge:hover,
-.day-badge:hover,
+.time-badge {
+	cursor: default;
+}
+
+.date-badge {
+	cursor: pointer;
+}
+
 .date-badge:hover {
 	background-color: rgba(212, 175, 55, 0.15);
 	border-color: var(--color-primary, #d4af37);
@@ -110,8 +118,6 @@ const calendarInfo = computed(() => {
 	transform: translateY(-0.08em);
 }
 
-.time-badge:active,
-.day-badge:active,
 .date-badge:active {
 	transform: translateY(0) scale(0.97);
 }
@@ -145,6 +151,7 @@ const calendarInfo = computed(() => {
 }
 
 .day-badge {
+	cursor: default;
 	color: var(--color-primary-light, #f3e5ab);
 	font-weight: 600;
 }

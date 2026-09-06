@@ -13,12 +13,13 @@
 		<!-- Деревья и лес вокруг деревни -->
 		<div class="forest-layer"></div>
 
-		<!-- Частокол и ворота деревни Карн -->
-		<div class="palisade-layer">
-			<div class="village-gate">
-				<div class="gate-arch"></div>
-				<div class="gate-sign">ДЕРЕВНЯ КАРН</div>
-			</div>
+		<!-- Частокол деревни Карн -->
+		<div class="palisade-layer"></div>
+
+		<!-- Ворота деревни Карн -->
+		<div class="village-gate">
+			<div class="gate-arch"></div>
+			<div class="gate-sign">ДЕРЕВНЯ КАРН</div>
 		</div>
 
 		<!-- Передний план: дорога и трава -->
@@ -39,8 +40,18 @@ defineProps({
 	scene: {
 		type: Object,
 		required: true
+	},
+	globalData: {
+		type: Object,
+		default: () => ({})
+	},
+	isInDialogueMode: {
+		type: Boolean,
+		default: false
 	}
 })
+
+defineEmits(['goto'])
 </script>
 
 <style scoped>
@@ -155,14 +166,16 @@ defineProps({
 .village-gate {
 	position: absolute;
 	left: 50%;
-	bottom: 0;
+	top: 55%;
+	height: 25%;
 	transform: translateX(-50%);
 	width: 14em;
-	height: 7.5em;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	justify-content: flex-start;
+	justify-content: flex-end;
+	z-index: 4;
+	pointer-events: none;
 }
 
 .gate-arch {

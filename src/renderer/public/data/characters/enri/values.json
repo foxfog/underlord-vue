@@ -1,0 +1,39 @@
+{
+	"id": "enri",
+	"name": "Энри",
+	"surname": "Эммот",
+	"nickname": "",
+	"title": "Энри Эммот",
+	"size": 1,
+	"race": "human",
+	"gender": "female",
+	"hpmax": 15,
+	"mpmax": 0,
+	"attack": 1,
+	"defense": 1,
+	"weight": 52,
+	"hp": 15,
+	"mp": 0,
+	"lvl": 1,
+	"exp": 0,
+	"skill_points": 0,
+	"stat_points": 0,
+	"fractions": ["carne-village"],
+	"tags": ["villager", "carne"],
+	"equipment_slots": {
+		"head": null,
+		"neck_1": null,
+		"torso-1": null,
+		"torso-2": null,
+		"torso-3": null,
+		"legs": null,
+		"feet": null,
+		"weapon-hand-1": null,
+		"weapon-hand-2": null,
+		"hands": null,
+		"weapon_off": null
+	},
+	"inventory": {
+		"items": []
+	}
+}

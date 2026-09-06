@@ -31,6 +31,7 @@
 			<TimeCalendarWidget
 				:global-data="globalData"
 				:show-next-time-button="showNextTimeButton"
+				:show-date-badge="showDateBadge"
 				:show-exact-time="showExactTime"
 				@open-calendar="openCalendar"
 				@advance-time="advanceTime"
@@ -60,6 +61,10 @@ const props = defineProps({
 		default: false
 	},
 	showNextTimeButton: {
+		type: Boolean,
+		default: true
+	},
+	showDateBadge: {
 		type: Boolean,
 		default: true
 	},

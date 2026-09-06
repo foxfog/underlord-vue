@@ -48,8 +48,7 @@ const locations = ref([
 		y: 48,
 		class: 'map-place-carne',
 		hasLocalMap: true,
-		localMapId: 'carne',
-		target: 'new_world_carne'
+		localMapId: 'carne'
 	},
 	{
 		id: 'great_tomb_nazarick',

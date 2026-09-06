@@ -13,7 +13,7 @@
 		{ "variable": "global.mapOverrides.cybercity.home = 'intro_mchome'" },
 		{ "type": "discover-location", "map": "cybercity", "locations": ["factory", "home"] },
 		{ "variable": "character.mc.title = character.mc.name" },
-		
+
 		{ "type": "goto", "target": "nameinput" },
 
 		{
@@ -103,7 +103,7 @@
 
 		{
 			"type": "ui",
-			"target": ["topbar", "hotbar", "inventory-button", "journal-button"],
+			"target": ["topbar", "hotbar", "inventory-button", "journal-button", "date-badge"],
 			"action": "show"
 		},
 
@@ -289,8 +289,18 @@
 			"title": "Опробовать нейрошлем",
 			"description": "Коллега с завода отдал свой старый нейрошлем перед закрытием игры. Нужно экипировать его в инвентаре и проверить работоспособность.",
 			"tasks": [
-				{ "id": "equip_helmet_step", "text": "Экипировать нейрошлем через инвентарь", "required": true, "completed": false },
-				{ "id": "inspect_wires", "text": "Проверить контакты и состояние разъемов", "required": false, "completed": true }
+				{
+					"id": "equip_helmet_step",
+					"text": "Экипировать нейрошлем через инвентарь",
+					"required": true,
+					"completed": false
+				},
+				{
+					"id": "inspect_wires",
+					"text": "Проверить контакты и состояние разъемов",
+					"required": false,
+					"completed": true
+				}
 			],
 			"storyEntries": [
 				"Коллега отдал старый шлем: игра «Иггдрасиль» закрывается сегодня в полночь. Раньше я пробовал VR только в уличных игровых автоматах."
@@ -300,6 +310,638 @@
 			"type": "ui",
 			"target": ["inventory-button", "journal-button"],
 			"action": "show"
+		},
+		{
+			"type": "hold"
+		},
+		{
+			"id": "intro_carne_arrival",
+			"label": "new_world_carne",
+			"type": "scene",
+			"scene": "carne_village_entrance",
+			"clearCharacters": true
+		},
+		{
+			"type": "sound",
+			"file": "audio/background/village-1.m4a",
+			"loop": true,
+			"stream": "back"
+		},
+		{ "variable": "global.calendarType = 'new_world'" },
+		{ "variable": "global.year = 0" },
+		{ "variable": "global.month = 3" },
+		{ "variable": "global.dayOfMonth = 1" },
+		{ "variable": "global.day = 0" },
+		{ "variable": "global.dayCount = 0" },
+		{ "variable": "delete global.time" },
+		{ "variable": "global.timeOfDay = 'day'" },
+		{ "variable": "character.mc.title = character.mc.nickname || character.mc.name" },
+		{ "variable": "global.enri_mc_symp = 0" },
+		{ "variable": "global.enri_mc_title = ''" },
+		{ "type": "discover-location", "map": "newworld", "location": "carne_village" },
+		{ "type": "discover-location", "map": "carne", "location": "carne_village_entrance" },
+		{
+			"type": "inventory-reset",
+			"character": "mc",
+			"equipment_slots": {
+				"head": null,
+				"mask": null,
+				"neck_1": null,
+				"torso-1": "tshirt",
+				"torso-2": null,
+				"torso-3": null,
+				"legs-2": "jeans",
+				"feet": null,
+				"weapon-hand-1": "sword-diamond",
+				"weapon-hand-2": null,
+				"hands": null,
+				"weapon_off": null,
+				"underpants": "underpants"
+			},
+			"inventory": [
+				{ "itemId": "ygdrasil-coin-new", "quantity": 150 },
+				{ "itemId": "potion-health-small", "quantity": 3 },
+				{ "itemId": "bread", "quantity": 3 }
+			]
+		},
+		{
+			"type": "quest",
+			"action": "complete",
+			"id": "end_and_beginning"
+		},
+		{
+			"type": "quest",
+			"action": "start",
+			"id": "beginning_in_new_world",
+			"title": "Начало в новом мире",
+			"description": "Вы очнулись посреди леса перед деревянным частоколом деревни Карн. Выясните, что происходит и куда делся интерфейс выхода.",
+			"tasks": [
+				{
+					"id": "check_surroundings",
+					"text": "Осмотреться и исследовать окрестности деревни Карн",
+					"required": true,
+					"completed": false
+				},
+				{
+					"id": "try_logout",
+					"text": "Попытаться найти кнопку выхода или снять шлем",
+					"required": true,
+					"completed": true
+				},
+				{
+					"id": "talk_villagers",
+					"text": "Попробовать заговорить с местными жителями",
+					"required": false,
+					"completed": false
+				}
+			],
+			"storyEntries": [
+				"Невероятный реализм: настоящий запах влажной травы и земли. Меню выхода из шлема полностью отсутствует."
+			]
+		},
+		{
+			"type": "fade",
+			"action": "in",
+			"duration": 2
+		},
+		{
+			"type": "ui",
+			"target": ["inventory-button", "journal-button", "map-button"],
+			"action": "show"
+		},
+		{
+			"type": "ui",
+			"target": ["next-time-button", "date-badge"],
+			"action": "hide"
+		},
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "..."
+		},
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "Где... я? Что произошло? Серверы Иггдрасиля должны были отключиться ровно в полночь..."
+		},
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "Но почему меня не выкинуло обратно в комнату? Неужели я все еще в игре?!"
+		},
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "<i>Глубокий вдох...</i>"
+		},
+		{
+			"type": "notification",
+			"text": "<p><b>Чистый воздух</b></p><p>Уровень токсинов: 0.00%</p>",
+			"notificationType": "success",
+			"duration": 3500
+		},
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "Воздух... Он пахнет сосновой хвоей, влажной землей и свежей травой! Я ни разу в жизни не вдыхал такой воздух без фильтра..."
+		},
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"steps": [
+				{
+					"text": "<p>Впереди какой-то частокол... Деревянная табличка: <b>«Деревня Карн»</b>.</p>"
+				},
+				{
+					"text": "<p>Это что, стартовая обучающая локация «Иггдрасиля»? Я ведь про эту игру только из рекламы и новостей слышал...</p>"
+				},
+				{
+					"text": "<p>Но черт возьми, какой здесь дикий реализм?! Ветер дует в лицо, шелестит листва под ногами, запахи... В уличных аркадных автоматах с монетами, где я бывал, графика была просто детским мультиком по сравнению с этим!</p>"
+				},
+				{
+					"text": "<p>Офигеть... И почему разработчики закрыли настолько потрясающую игру?! Неужели она настолько устарела, что коллега с завода просто задаром сплавил мне этот шлем?!</p>"
+				}
+			]
+		},
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "Ладно, надо глянуть системное меню... Пора снимать шлем и ложиться спать, завтра ведь на смену..."
+		},
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "Постойте... Где меню? Где кнопка выхода из системы?! Панель шлема вообще не откликается... шлема на голове будто нет?!"
+		},
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "Так... Надо взять себя в руки. Может, кнопка выхода или меню доступны только в безопасной зоне поселения? Вон как раз деревянные ворота деревни..."
+		},
+		{
+			"type": "narration",
+			"text": "Вы подходите ближе к частоколу. Из-за деревянной створки ворот раздается легкий шорох шагов, и на дорогу выходит деревенская девушка с корзиной в руках."
+		},
+		{
+			"type": "show",
+			"character": "enri",
+			"orientation": "left",
+			"position": { "r": 20, "l": "auto" },
+			"from": { "r": -30, "l": "auto" },
+			"duration": 0.8
+		},
+		{
+			"type": "journal",
+			"target": "encyclopedia",
+			"id": "human",
+			"category": "races",
+			"title": "Люди",
+			"icon": "👤",
+			"blocks": [
+				{
+					"id": "overview",
+					"title": "Общие сведения",
+					"text": "Наиболее многочисленная и привычная гуманоидная раса. Не обладают природной бронёй, ночным зрением или врождённой магической устойчивостью, полагаясь на обучение, инструменты и организацию."
+				}
+			]
+		},
+		{
+			"type": "dialogue",
+			"character": "enri",
+			"title": "Девушка у ворот",
+			"text": "Эм... Здравствуйте? Вы... путник? Я вас раньше никогда в наших краях не видела..."
+		},
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "<i>(Ого... Это местный NPC? Невероятно! Плавная мимика, живой блеск в глазах, вздрагивание плеч... Неужели в «Иггдрасиле» действительно настолько продвинутый нейросетевой ИИ? Графика абсолютно неотличима от реальности!)</i>"
+		},
+		{
+			"id": "enri_gate_choice",
+			"type": "choice",
+			"speaker": "mc",
+			"text": "Как ответить девушке у ворот?",
+			"options": [
+				{
+					"text": "<i>(Порассуждать: обдумать ситуацию и статус собеседницы)</i>",
+					"condition": "!global.enri_thought_done",
+					"actions": [
+						{ "variable": "global.enri_thought_done = true" },
+						{
+							"type": "dialogue",
+							"character": "mc",
+							"text": "<i>(Так, спокойно. Если интерфейс шлема недоступен, а передо мной стоит деревенская жительница... Для меня она похожа на NPC с заскриптованным поведением.)</i>"
+						},
+						{
+							"type": "dialogue",
+							"character": "mc",
+							"text": "<i>(В классических ролевых играх первое впечатление решает всё: вежливость наверняка повысит репутацию, грубость — настроит против меня, а нейтральный тон позволит без риска разузнать обстановку. Пожалуй, пора сделать выбор.)</i>"
+						},
+						{
+							"type": "goto",
+							"target": "enri_gate_choice"
+						}
+					]
+				},
+				{
+					"text": "Здравствуйте! Простите, если напугал. Я путешественник и немного сбился с пути. Это деревня Карн?",
+					"actions": [
+						{ "variable": "global.enri_mc_symp += 1" },
+						{
+							"type": "dialogue",
+							"character": "mc",
+							"text": "Здравствуйте! Простите за беспокойство, я вовсе не хотел вас напугать. Я путник и, кажется, немного сбился с дороги... Это ведь деревня Карн?"
+						},
+						{
+							"type": "dialogue",
+							"character": "enri",
+							"text": "Ой, здравствуйте! Д-да, всё верно, это деревня Карн... Не переживайте, вы ничуть меня не напугали! Редко в нашу глушь забредают путешественники... Вы, должно быть, очень устали после долгого пути?"
+						},
+						{
+							"type": "goto",
+							"target": "enri_gate_after_choice"
+						}
+					]
+				},
+				{
+					"text": "Приветствую. Подскажи, это деревня Карн? Мне нужно понять, где я нахожусь.",
+					"actions": [
+						{
+							"type": "dialogue",
+							"character": "mc",
+							"text": "Приветствую. Подскажи, это деревня Карн? Мне нужно сориентироваться на местности."
+						},
+						{
+							"type": "dialogue",
+							"character": "enri",
+							"text": "Здравствуйте. Да, это деревня Карн. Мы находимся прямо возле границы... Вы выглядите немного растерянным, путник. Чем я могу вам помочь?"
+						},
+						{
+							"type": "goto",
+							"target": "enri_gate_after_choice"
+						}
+					]
+				},
+				{
+					"text": "Эй, девка! Чего уставилась? Это деревня или что? Где тут выход или местный торговец?",
+					"actions": [
+						{ "variable": "global.enri_mc_symp -= 1" },
+						{
+							"type": "dialogue",
+							"character": "mc",
+							"text": "Эй, девка! Чего уставилась? Это деревня или что? Где тут выход из локации или хотя бы местный торговец?"
+						},
+						{
+							"type": "dialogue",
+							"character": "enri",
+							"text": "А-ай!.. П-простите!.. Д-да, это деревня Карн... Я... я не хотела вас рассердить, господин! Торговцев у нас почти нет, только староста..."
+						},
+						{
+							"type": "goto",
+							"target": "enri_gate_after_choice"
+						}
+					]
+				}
+			]
+		},
+		{
+			"id": "enri_gate_after_choice",
+			"type": "dialogue",
+			"character": "mc",
+			"text": "<i>(Поразительно... Её эмоции, голос, даже испуг или легкая улыбка — всё работает как у настоящего живого человека. Неужели в игре действительно настолько революционные поведенческие скрипты NPC?)</i>"
+		},
+		{
+			"type": "journal",
+			"target": "encyclopedia",
+			"id": "carne_village",
+			"category": "geography",
+			"subCategory": "settlements",
+			"title": "Деревня Карн",
+			"icon": "🏡",
+			"blocks": [
+				{
+					"id": "location",
+					"title": "Расположение",
+					"text": "Небольшая отдалённая деревня, огороженная деревянным частоколом для защиты от диких зверей. Находится в лесистой холмистой местности."
+				},
+				{
+					"id": "general",
+					"title": "Общие сведения",
+					"text": "Жители занимаются земледелием и сельским трудом. Точная государственная принадлежность поселения пока остаётся неизвестной."
+				}
+			]
+		},
+		{
+			"type": "dialogue",
+			"character": "enri",
+			"text": "Вы выглядите очень необычно... Ваша странная одежда, этот сверкающий меч на поясе... Вы странствующий воин из далеких земель?"
+		},
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "<i>(Странствующий воин? Похоже, игра сгенерировала стандартную сюжетную завязку под мой внешний вид. Надо подыграть.)</i>"
+		},
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "Да... можно сказать и так. Я долго странствовал и оказался здесь совершенно неожиданно для себя."
+		},
+		{
+			"type": "dialogue",
+			"character": "enri",
+			"text": "Меня зовут Энри. Энри Эммот. Мы с родителями и младшей сестренкой Нему живем здесь, в Карне... А как ваше имя, господин путник?"
+		},
+		{
+			"type": "journal",
+			"target": "character",
+			"id": "enri",
+			"name": "Энри",
+			"surname": "Эммот",
+			"title": "Энри Эммот",
+			"avatar": "images/sprites/characters/enri/default.png",
+			"sympVariable": "enri_mc_symp",
+			"titleVariable": "enri_mc_title",
+			"defaultTitle": "Путник",
+			"blocks": [
+				{
+					"id": "meeting",
+					"title": "Знакомство",
+					"text": "Сельская девушка, встретившая нас у входа в деревню. Поначалу насторожилась из-за странной одежды и меча, но проявила гостеприимство."
+				},
+				{
+					"id": "family",
+					"title": "Семья",
+					"text": "Живёт в деревне Карн вместе с родителями и младшей сестрой Нему."
+				}
+			]
+		},
+		{
+			"id": "enri_name_choice",
+			"type": "choice",
+			"speaker": "mc",
+			"text": "Как представиться Энри?",
+			"options": [
+				{
+					"text": "{character.mc.name}",
+					"actions": [
+						{ "variable": "global.enri_mc_title = character.mc.name" },
+						{
+							"type": "dialogue",
+							"character": "mc",
+							"text": "Моё имя — {character.mc.name}. Приятно познакомиться, Энри."
+						},
+						{
+							"type": "dialogue",
+							"character": "enri",
+							"text": "Очень приятно познакомиться, господин {global.enri_mc_title}! Если вам нужно передохнуть или набрать чистой воды у колодца — проходите в деревню."
+						},
+						{
+							"type": "goto",
+							"target": "enri_meeting_end"
+						}
+					]
+				},
+				{
+					"text": "{character.mc.nickname}",
+					"condition": "character.mc.nickname && character.mc.nickname !== character.mc.name",
+					"actions": [
+						{ "variable": "global.enri_mc_title = character.mc.nickname" },
+						{
+							"type": "dialogue",
+							"character": "mc",
+							"text": "Зови меня {character.mc.nickname}."
+						},
+						{
+							"type": "dialogue",
+							"character": "enri",
+							"text": "Какое необычное имя... Очень приятно познакомиться, господин {global.enri_mc_title}! Если вам нужно передохнуть или набрать чистой воды у колодца — проходите в деревню."
+						},
+						{
+							"type": "goto",
+							"target": "enri_meeting_end"
+						}
+					]
+				},
+				{
+					"text": "Не твоё дело",
+					"actions": [
+						{ "variable": "global.enri_mc_symp -= 1" },
+						{ "variable": "global.enri_mc_title = 'грубиян'" },
+						{
+							"type": "dialogue",
+							"character": "mc",
+							"text": "Не твоё дело. Меньше знаешь — крепче спишь."
+						},
+						{
+							"type": "dialogue",
+							"character": "enri",
+							"text": "Ой... П-простите, я не хотела лезть не в своё дело... <i>(Она испуганно потупилась, тихо шепча про себя: «Вот ведь грубиян...»)</i> Но если вам нужно передохнуть, колодец на деревенской площади..."
+						},
+						{
+							"type": "goto",
+							"target": "enri_meeting_end"
+						}
+					]
+				}
+			]
+		},
+		{
+			"id": "enri_meeting_end",
+			"type": "quest",
+			"action": "complete-task",
+			"questId": "beginning_in_new_world",
+			"taskId": "talk_villagers"
+		},
+		{
+			"type": "quest",
+			"action": "add-story-entry",
+			"id": "beginning_in_new_world",
+			"entry": "У частокола деревни Карн вас встретила местная жительница Энри Эммот. Она приняла вас за странствующего путешественника."
+		},
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "<i>(Раз это стартовая деревня в игре, у первого встречного NPC обязательно должно быть начальное сюжетное задание. Надо разузнать, с чего начать прохождение.)</i>"
+		},
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "Скажи, Энри... А какой здесь первый квест? Ну, стартовое обучающее задание для новичка? Где тут берут первые поручения?"
+		},
+		{
+			"type": "dialogue",
+			"character": "enri",
+			"text": "Кв... квест?.. Квест?.. Простите, господин {global.enri_mc_title}... Я никогда раньше не слышала такого слова... Это какое-то заклинание из высшей магии?"
+		},
+		{
+			"type": "narration",
+			"text": "Девушка смущенно заморгала, прижав плетеную корзинку к груди. На её лице отразилась забавная смесь растерянности и глубокой задумчивости."
+		},
+		{
+			"type": "dialogue",
+			"character": "enri",
+			"text": "А-а! Вы... вы имеете в виду поручение? Заказ на работу?"
+		},
+		{
+			"type": "dialogue",
+			"character": "enri",
+			"text": "Так вы... вы авантюрист?! Прибыли к нам из Гильдии авантюристов, да?!"
+		},
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "<i>(Авантюрист? Похоже, так игра классифицирует игроков, ищущих задания. Отлично, подыграем.)</i>"
+		},
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "Да, можно сказать и так. Какие задания или работа есть в вашей деревне?"
+		},
+		{
+			"type": "dialogue",
+			"character": "enri",
+			"text": "Ой, тогда вам непременно нужно пойти к нашему деревенскому старосте! Всеми важными делами и поручениями в Карне ведает именно он."
+		},
+		{
+			"type": "dialogue",
+			"character": "enri",
+			"text": "Его дом находится прямо в центре, на главной площади деревни — вы точно не пройдете мимо, это самое большое бревенчатое здание с резным крыльцом. Проходите через ворота и идите прямо по дороге к площади!"
+		},
+		{
+			"type": "discover-location",
+			"map": "carne",
+			"location": "carne_square",
+			"title": "Центральная площадь"
+		},
+		{
+			"variable": "global.mapOverrides.carne.carne_square = 'carne_square_arrival'"
+		},
+		{
+			"type": "quest",
+			"action": "start",
+			"id": "village_elder_advice",
+			"parentId": "beginning_in_new_world",
+			"title": "Дом деревенского старосты",
+			"description": "Энри приняла вас за авантюриста и посоветовала обратиться к старосте деревни на главной площади, чтобы узнать о первых поручениях и работе.",
+			"tasks": [
+				{ "id": "reach_square", "text": "Пройти на центральную площадь деревни Карн", "required": true, "completed": false },
+				{ "id": "meet_chief", "text": "Найти дом старосты и поговорить с ним", "required": true, "completed": false }
+			],
+			"storyEntries": [
+				"Энри подсказала, что староста деревни живет в самом большом доме в центре деревни на площади."
+			]
+		},
+		{
+			"type": "dialogue",
+			"character": "enri",
+			"text": "А мне пора бежать, нужно отнести собранные травы матушке. До встречи в деревне, господин {global.enri_mc_title}!"
+		},
+		{
+			"type": "hide",
+			"character": "enri",
+			"to": { "r": -30, "l": "auto" },
+			"duration": 0.8
+		},
+		{
+			"type": "hold"
+		},
+		{
+			"id": "carne_square_arrival",
+			"type": "fade",
+			"action": "out",
+			"duration": 0.6
+		},
+		{
+			"type": "scene",
+			"scene": "carne_village_square",
+			"clearCharacters": true
+		},
+		{
+			"type": "fade",
+			"action": "in",
+			"duration": 0.6
+		},
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "<i>(Ого... А здесь довольно уютно и красиво.)</i>"
+		},
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"steps": [
+				{
+					"text": "<p>Крепкие бревенчатые избы с соломенными крышами, аккуратные плетни, на которых сохнут глиняные кувшины... В центре площади стоит глубокий каменный колодец с деревянным воротом.</p>"
+				},
+				{
+					"text": "<p>Пахнет сухим сеном, дымком из печных труб и парным молоком. Настоящая средневековая пастораль!</p>"
+				},
+				{
+					"text": "<p>В моем душном, затянутом токсичным смогом мегаполисе 2138 года чистый воздух и настоящие деревянные дома можно было увидеть разве что в исторических VR-архивах... А разработчики «Иггдрасиля» воссоздали этот мир с поразительной любовью к деталям.</p>"
+				}
+			]
+		},
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "Так... А вот и дом старосты. Энри не обманула — добротное двухэтажное бревенчатое строение с резными ставнями и широким крыльцом сразу выделяется среди остальных изб."
+		},
+		{
+			"type": "quest",
+			"action": "complete-task",
+			"questId": "village_elder_advice",
+			"taskId": "reach_square"
+		},
+		{
+			"type": "quest",
+			"action": "add-story-entry",
+			"questId": "village_elder_advice",
+			"entry": "Вы вышли на центральную площадь деревни Карн. Впереди возвышается дом деревенского старосты."
+		},
+		{
+			"variable": "delete global.mapOverrides.carne.carne_square"
+		},
+		{
+			"variable": "global.mapOverrides.carne.carne_chief_house = 'carne_chief_house_arrival'"
+		},
+		{
+			"type": "hold"
+		},
+		{
+			"id": "carne_chief_house_arrival",
+			"type": "fade",
+			"action": "out",
+			"duration": 0.5
+		},
+		{
+			"type": "scene",
+			"scene": "carne_chief_house",
+			"clearCharacters": true
+		},
+		{
+			"type": "fade",
+			"action": "in",
+			"duration": 0.5
+		},
+		{
+			"type": "quest",
+			"action": "complete-task",
+			"questId": "village_elder_advice",
+			"taskId": "meet_chief"
+		},
+		{
+			"type": "quest",
+			"action": "add-story-entry",
+			"questId": "village_elder_advice",
+			"entry": "Вы вошли в дом деревенского старосты."
+		},
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "Вы переступаете порог просторного бревенчатого дома старосты. Пахнет сушеными травами, свежим хлебом и старым деревом."
+		},
+		{
+			"variable": "delete global.mapOverrides.carne.carne_chief_house"
 		},
 		{
 			"type": "hold"

@@ -54,7 +54,7 @@
 				ref="containerRef"
 				class="map-modal__body"
 				@pointerdown="startDrag"
-				@wheel.prevent="onWheel"
+				@wheel.passive="onWheel"
 				@dragstart.prevent
 				@selectstart.prevent
 				:class="{ _dragging: isDragging, _zoomable: isZoomed }"

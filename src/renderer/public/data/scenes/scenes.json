@@ -38,7 +38,69 @@
 			"worldMap": "newworld",
 			"localMap": "carne",
 			"locationId": "carne_village_entrance",
-			"variables": ["global.toxic_gas = 0"]
+			"variables": ["global.toxic_gas = 0"],
+			"hotspots": [
+				{
+					"id": "to_square",
+					"locationId": "carne_square",
+					"label": "Центральная площадь",
+					"icon": "gate",
+					"target": "carne_village_square",
+					"position": { "left": "50%", "bottom": "22%", "transform": "translateX(-50%)" },
+					"condition": "global.discoveredLocations?.carne?.includes('carne_square')",
+					"fallbackStatus": "hidden"
+				}
+			]
+		},
+		{
+			"id": "carne_village_square",
+			"bg": "images/sprites/backgrounds/grass.webp",
+			"clearCharacters": true,
+			"worldMap": "newworld",
+			"localMap": "carne",
+			"locationId": "carne_square",
+			"variables": ["global.toxic_gas = 0"],
+			"hotspots": [
+				{
+					"id": "to_chief_house",
+					"locationId": "carne_chief_house",
+					"label": "Дом старосты",
+					"icon": "door",
+					"target": "carne_chief_house",
+					"position": { "right": "22%", "bottom": "24%" },
+					"status": "active"
+				},
+				{
+					"id": "to_entrance",
+					"locationId": "carne_village_entrance",
+					"label": "К воротам деревни",
+					"icon": "gate",
+					"target": "carne_village_entrance",
+					"position": { "left": "8em", "bottom": "3.5em" },
+					"status": "active"
+				}
+			]
+		},
+		{
+			"id": "carne_chief_house",
+			"name": "Дом старосты",
+			"bg": "images/sprites/backgrounds/grass.webp",
+			"clearCharacters": true,
+			"worldMap": "newworld",
+			"localMap": "carne",
+			"locationId": "carne_square",
+			"variables": ["global.toxic_gas = 0"],
+			"hotspots": [
+				{
+					"id": "to_square",
+					"locationId": "carne_square",
+					"label": "Выход на площадь",
+					"icon": "exit",
+					"target": "carne_village_square",
+					"position": { "left": "8em", "bottom": "3em" },
+					"status": "active"
+				}
+			]
 		}
 	]
 }

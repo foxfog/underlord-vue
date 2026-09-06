@@ -34,7 +34,7 @@ const props = defineProps({
 	}
 })
 
-const emit = defineEmits(['goto'])
+const emit = defineEmits(['goto', 'switch-level', 'view-local'])
 
 const locations = ref([
 	{

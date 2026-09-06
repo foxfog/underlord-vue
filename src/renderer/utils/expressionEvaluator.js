@@ -13,17 +13,25 @@ export function resolveVariablePath(path, context = {}) {
 
 	let root
 	let rest
-	if (normalized.startsWith('global.') || normalized.startsWith('global?.')) {
+	if (
+		normalized.startsWith('global.') ||
+		normalized.startsWith('global?.') ||
+		normalized.startsWith('global.?')
+	) {
 		root = global
-		rest = normalized.replace(/^global(?:\.\?|\.)/, '')
-	} else if (normalized.startsWith('character.') || normalized.startsWith('character?.')) {
+		rest = normalized.replace(/^global(?:\?\.|(?:\.\?)|\.)/, '')
+	} else if (
+		normalized.startsWith('character.') ||
+		normalized.startsWith('character?.') ||
+		normalized.startsWith('character.?')
+	) {
 		root = character
-		rest = normalized.replace(/^character(?:\.\?|\.)/, '')
+		rest = normalized.replace(/^character(?:\?\.|(?:\.\?)|\.)/, '')
 	} else {
 		return undefined
 	}
 
-	const segments = rest.split(/(?:\.\?|\.)/)
+	const segments = rest.split(/(?:\?\.|(?:\.\?)|\.)/)
 	let current = root
 
 	for (const segment of segments) {
@@ -121,7 +129,16 @@ export function evaluateExpression(expr, context = {}) {
 
 		// Path reference (global.xxx, character.xxx)
 		if (token.startsWith('global') || token.startsWith('character')) {
-			return resolveVariablePath(token, context)
+			const val = resolveVariablePath(token, context)
+			if (typeof val === 'function' && peek() === '(') {
+				consume('(')
+				const arg = peek() !== ')' ? parseLogicalOr() : undefined
+				if (peek() === ')') consume(')')
+				const cleanedToken = token.replace(/(?:\?\.|(?:\.\?)|\.)[a-zA-Z0-9_]+$/, '')
+				const parentObj = cleanedToken ? resolveVariablePath(cleanedToken, context) : null
+				return parentObj ? val.call(parentObj, arg) : false
+			}
+			return val
 		}
 
 		return token
