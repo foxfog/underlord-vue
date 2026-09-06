@@ -1,6 +1,8 @@
 {
 	"id": "albedo",
 	"name": "Альбедо",
+	"nickname": "",
+	"title": "",
 	"size": 1,
 	"race": "succubus",
 	"gender": "female",

@@ -20,6 +20,7 @@
 		{ "variable": "global.dayCount = 0" },
 		{ "variable": "delete global.time" },
 		{ "variable": "global.timeOfDay = 'day'" },
+		{ "variable": "character.mc.title = character.mc.nickname || character.mc.name" },
 		{ "type": "discover-location", "map": "newworld", "location": "carne_village" },
 		{ "type": "discover-location", "map": "carne", "location": "carne_village_entrance" },
 		{

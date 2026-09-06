@@ -12,6 +12,7 @@
 		{ "variable": "global.currentLocation = 'factory'" },
 		{ "variable": "global.mapOverrides.cybercity.home = 'intro_mchome'" },
 		{ "type": "discover-location", "map": "cybercity", "locations": ["factory", "home"] },
+		{ "variable": "character.mc.title = character.mc.name" },
 		
 		{ "type": "goto", "target": "nameinput" },
 

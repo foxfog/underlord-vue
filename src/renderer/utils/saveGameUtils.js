@@ -122,6 +122,14 @@ export function extractDelta(
 		}
 	}
 
+	// Также проверяем свойства, которые могли быть добавлены динамически в current, но отсутствуют в defaults
+	for (const key in current) {
+		if (excludeKeys.includes(key) || key in defaults || key in delta) {
+			continue
+		}
+		delta[key] = sanitizeForSave(current[key])
+	}
+
 	return delta
 }
 

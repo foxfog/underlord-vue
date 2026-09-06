@@ -1,6 +1,9 @@
 {
 	"id": "mc",
 	"name": "Анон",
+	"surname": "Фокс",
+	"nickname": "",
+	"title": "",
 	"size": 1,
 	"race": "human",
 	"gender": "male",

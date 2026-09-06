@@ -93,6 +93,7 @@
 		<!-- YGGDRASIL Character Creation -->
 		<YggdrasilCharacterCreation
 			v-if="showCharCreate"
+			:initial-nickname="mcCharacter?.nickname || mcCharacter?.name || ''"
 			@character-confirmed="onCharCreationConfirmed"
 		/>
 
@@ -721,10 +722,16 @@ function onCharCreationConfirmed({ nickname }) {
 	console.log('👤 [Char Created] Nickname:', nickname)
 	stopYggBgm()
 	if (mcCharacter.value) {
-		mcCharacter.value.name = nickname
+		mcCharacter.value.nickname = nickname
+		mcCharacter.value.title = nickname
 	}
 	if (gameState.character?.mc) {
-		gameState.character.mc.name = nickname
+		gameState.character.mc.nickname = nickname
+		gameState.character.mc.title = nickname
+	}
+	if (visualNovel.value?.characterData?.mc) {
+		visualNovel.value.characterData.mc.nickname = nickname
+		visualNovel.value.characterData.mc.title = nickname
 	}
 	showCharCreate.value = false
 	showShutdownSequence.value = true
@@ -767,11 +774,11 @@ async function onShutdownSequenceComplete() {
 	rebuildEquipmentBySlot()
 	syncEquipmentToScene('mc')
 
-	// Переключение на календарь и время Нового Мира (день, Месяц глубоких снегов, 0 г.)
+	// Переключение на календарь и время Нового Мира (день, Месяц теплого ветра, 0 г.)
 	const newWorldCalendar = {
 		calendarType: 'new_world',
 		year: 0,
-		month: 1,
+		month: 3,
 		dayOfMonth: 1,
 		day: 0,
 		dayCount: 0,
@@ -868,7 +875,11 @@ async function onSaveRequest(saveData) {
 		}
 
 		const gameState = visualNovel.value.getGameState()
-		const mcName = gameState.characterData?.mc?.name || 'Unknown'
+		const mcName =
+			gameState.characterData?.mc?.title ||
+			gameState.characterData?.mc?.nickname ||
+			gameState.characterData?.mc?.name ||
+			'Unknown'
 
 		// If target slot already has a save, confirm overwrite
 		if (savesStore.hasSave(saveData.slot)) {
@@ -922,7 +933,11 @@ async function quickSave() {
 		}
 
 		const gameState = visualNovel.value.getGameState()
-		const mcName = gameState.characterData?.mc?.name || 'Unknown'
+		const mcName =
+			gameState.characterData?.mc?.title ||
+			gameState.characterData?.mc?.nickname ||
+			gameState.characterData?.mc?.name ||
+			'Unknown'
 
 		const result = await saveWithHiddenOverlays(async () => {
 			const clipRect = getGameAreaClipRect()

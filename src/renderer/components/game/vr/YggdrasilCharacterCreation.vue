@@ -96,9 +96,16 @@
 import { ref, computed, onMounted } from 'vue'
 import { isNicknameReserved } from '../../../constants/yggdrasilConfig'
 
+const props = defineProps({
+	initialNickname: {
+		type: String,
+		default: ''
+	}
+})
+
 const emit = defineEmits(['character-confirmed'])
 
-const nicknameInput = ref('')
+const nicknameInput = ref(props.initialNickname || '')
 const validationMessage = ref('')
 const validationStatus = ref('')
 const inputFieldRef = ref(null)
@@ -109,6 +116,9 @@ const isValid = computed(() => {
 })
 
 onMounted(() => {
+	if (nicknameInput.value) {
+		checkAvailability()
+	}
 	if (inputFieldRef.value) {
 		inputFieldRef.value.focus()
 	}

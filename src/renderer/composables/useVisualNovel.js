@@ -658,9 +658,15 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					if (step.variable) applyVariable(step.variable)
 					// Check if dialogue has steps
 					if (step.steps && Array.isArray(step.steps)) {
-						processDialogueSteps(step.steps, step.character)
+						processDialogueSteps(
+							step.steps,
+							step.character,
+							step.title || step.speaker
+						)
 					} else if (step.character) {
-						showDialogue(step.character, step.text)
+						showDialogue(step.character, step.text, step.title || step.speaker)
+					} else if (step.title || step.speaker) {
+						showDialogue(null, step.text, step.title || step.speaker)
 					} else {
 						showNarration(step.text)
 					}
@@ -1354,10 +1360,38 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		pausedStreams.value = {}
 	}
 
-	function showDialogue(characterId, text) {
-		isInDialogueMode.value = true
+	function resolveSpeakerTitle(characterId, explicitTitle = null) {
+		if (
+			explicitTitle !== null &&
+			explicitTitle !== undefined &&
+			String(explicitTitle).trim() !== ''
+		) {
+			return substituteVariables(String(explicitTitle))
+		}
+		if (!characterId) return ''
 		const character = characterData.value[characterId]
-		currentSpeaker.value = character ? character.name : ''
+		if (character) {
+			if (
+				character.title !== null &&
+				character.title !== undefined &&
+				String(character.title).trim() !== ''
+			) {
+				return substituteVariables(String(character.title))
+			}
+			if (
+				character.name !== null &&
+				character.name !== undefined &&
+				String(character.name).trim() !== ''
+			) {
+				return substituteVariables(String(character.name))
+			}
+		}
+		return characterId
+	}
+
+	function showDialogue(characterId, text, explicitTitle = null) {
+		isInDialogueMode.value = true
+		currentSpeaker.value = resolveSpeakerTitle(characterId, explicitTitle)
 		currentNarration.value = ''
 		currentDialogue.value = substituteVariables(text)
 		addToHistory({
@@ -1867,14 +1901,15 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			text: substituteVariables(option.text),
 			disabled: option.disabled ? evaluateCondition(option.disabled) : false
 		}))
-		currentSpeaker.value = choiceStep.speaker
-			? characterData.value[choiceStep.speaker]?.name
-			: ''
+		currentSpeaker.value = resolveSpeakerTitle(
+			choiceStep.speaker || choiceStep.character,
+			choiceStep.title
+		)
 		if (choiceStep.text) currentDialogue.value = substituteVariables(choiceStep.text)
 		applyDialogueHiding()
 	}
 
-	function processDialogueSteps(steps, parentCharacter = null) {
+	function processDialogueSteps(steps, parentCharacter = null, parentTitle = null) {
 		let tempIndex = 0
 		function processDialogueAction() {
 			if (tempIndex >= steps.length) {
@@ -1896,10 +1931,11 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 						multiStepDialogueBuffer.value += ''
 					}
 					multiStepDialogueBuffer.value += action.text
-					// Use character from action, or fallback to parentCharacter
+					// Use character and title from action, or fallback to parent
 					const characterForStep = action.character || parentCharacter
-					if (characterForStep)
-						showDialogue(characterForStep, multiStepDialogueBuffer.value)
+					const titleForStep = action.title || action.speaker || parentTitle
+					if (characterForStep || titleForStep)
+						showDialogue(characterForStep, multiStepDialogueBuffer.value, titleForStep)
 					else showNarration(multiStepDialogueBuffer.value)
 					advanceStoryOverride = function () {
 						// When advancing, calculate how many plain text chars have been printed
@@ -2431,10 +2467,10 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 							if (s.steps && Array.isArray(s.steps)) {
 								s.steps.forEach((step, stepIdx) => {
 									if (step.text) {
-										const speaker = step.character
-											? characterData.value[step.character]?.name ||
-												step.character
-											: ''
+										const speaker = resolveSpeakerTitle(
+											step.character || s.character,
+											step.title || step.speaker || s.title || s.speaker
+										)
 										const text = substituteVariables(step.text)
 										historyEntries.value.push({
 											type: 'dialogue',
@@ -2444,9 +2480,8 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 										})
 									}
 								})
-							} else if (s.character) {
-								const speaker =
-									characterData.value[s.character]?.name || s.character
+							} else if (s.character || s.title || s.speaker) {
+								const speaker = resolveSpeakerTitle(s.character, s.title || s.speaker)
 								const text = substituteVariables(s.text || '')
 								historyEntries.value.push({
 									type: 'dialogue',
@@ -2647,6 +2682,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 
 	return {
 		// state
+		stepIndex,
 		currentScene,
 		visibleCharacters,
 		currentDialogue,
@@ -2708,6 +2744,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		onStreamEnded,
 		// UI methods for dialogue hiding
 		setDialogueHideUI,
+		resolveSpeakerTitle,
 		// history helpers
 		getHistory: () => historyEntries.value.slice(),
 		clearHistory: () => {

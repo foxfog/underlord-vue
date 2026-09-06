@@ -1,6 +1,8 @@
 {
 	"id": "momonga",
 	"name": "Момонга",
+	"nickname": "",
+	"title": "",
 	"size": 1,
 	"race": "overlord",
 	"gender": "male",

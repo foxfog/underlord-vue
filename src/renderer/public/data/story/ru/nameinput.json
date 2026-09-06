@@ -14,7 +14,10 @@
 			"text": "Ваше имя {character.mc.name}?",
 			"options": [
 				{
-					"text": "Да"
+					"text": "Да",
+					"actions": [
+						{ "variable": "character.mc.title = character.mc.name" }
+					]
 				},
 				{
 					"text": "Нет",
@@ -22,6 +25,7 @@
 				}
 			]
 		},
+		{ "variable": "character.mc.title = character.mc.name" },
 		{ "type": "continue" }
 	]
 }
