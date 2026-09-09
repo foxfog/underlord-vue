@@ -60,6 +60,7 @@
 	opacity: 1;
 	transition: opacity 0.3s ease-in-out;
 	pointer-events: auto;
+	cursor: pointer;
 
 	&.invisible {
 		opacity: 0;
@@ -159,6 +160,8 @@
 	}
 
 	&._choice-box {
+		cursor: default;
+
 		.choices._dialogue {
 			margin-top: 1em;
 			pointer-events: all;

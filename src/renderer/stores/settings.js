@@ -30,7 +30,8 @@ export function initSettingsStore(settings) {
 				...(settings?.general ?? {}),
 				language: settings?.general?.language ?? 'ru',
 				textSpeed: settings?.general?.textSpeed ?? 100,
-				skipSplash: settings?.general?.skipSplash ?? false
+				skipSplash: settings?.general?.skipSplash ?? false,
+				sceneTransitions: settings?.general?.sceneTransitions ?? true
 			},
 
 			video: {
@@ -79,6 +80,10 @@ export function initSettingsStore(settings) {
 
 			setSkipSplash(value) {
 				this.general.skipSplash = value
+			},
+
+			setSceneTransitions(value) {
+				this.general.sceneTransitions = Boolean(value)
 			},
 
 			setKeyboardLayout(layout) {

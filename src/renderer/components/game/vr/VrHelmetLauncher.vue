@@ -2,48 +2,52 @@
 	<div class="vr-launcher-overlay">
 		<!-- ЭКРАН 1: ПОДКЛЮЧЕНИЕ К НЕЙРОСЕТИ -->
 		<div v-if="phase === 'connecting'" class="vr-connecting-screen">
-			<div class="neural-circle-container">
-				<div class="neural-circle-outer"></div>
-				<div class="neural-circle-middle"></div>
-				<div class="neural-circle-core">
-					<span class="neural-pct">{{ connectProgress }}%</span>
+			<div class="vr-connecting-content">
+				<div class="neural-circle-container">
+					<div class="neural-circle-outer"></div>
+					<div class="neural-circle-middle"></div>
+					<div class="neural-circle-core">
+						<span class="neural-pct">{{ connectProgress }}%</span>
+					</div>
 				</div>
-			</div>
 
-			<h2 class="connecting-title">ПОДКЛЮЧЕНИЕ К НЕЙРОИНТЕРФЕЙСУ</h2>
-			<div class="connecting-sub">{{ currentStatusText }}</div>
+				<h2 class="connecting-title">ПОДКЛЮЧЕНИЕ К НЕЙРОИНТЕРФЕЙСУ</h2>
+				<div class="connecting-sub">{{ currentStatusText }}</div>
 
-			<div class="neural-progress-track">
-				<div class="neural-progress-fill" :style="{ width: `${connectProgress}%` }"></div>
-			</div>
+				<div class="neural-progress-track">
+					<div class="neural-progress-fill" :style="{ width: `${connectProgress}%` }"></div>
+				</div>
 
-			<div class="neural-log-box">
-				<div v-for="(log, idx) in logEntries" :key="idx" class="neural-log-line">
-					<span class="log-arrow">&gt;</span> {{ log }}
+				<div class="neural-log-box">
+					<div v-for="(log, idx) in logEntries" :key="idx" class="neural-log-line">
+						<span class="log-arrow">&gt;</span> {{ log }}
+					</div>
 				</div>
 			</div>
 		</div>
 
 		<!-- ЭКРАН ОТКЛЮЧЕНИЯ (ВЫХОД В РЕАЛЬНОСТЬ) -->
 		<div v-else-if="phase === 'disconnecting'" class="vr-connecting-screen disconnecting-theme">
-			<div class="neural-circle-container">
-				<div class="neural-circle-outer disc-outer"></div>
-				<div class="neural-circle-middle disc-middle"></div>
-				<div class="neural-circle-core disc-core">
-					<span class="neural-pct disc-pct">{{ connectProgress }}%</span>
+			<div class="vr-connecting-content">
+				<div class="neural-circle-container">
+					<div class="neural-circle-outer disc-outer"></div>
+					<div class="neural-circle-middle disc-middle"></div>
+					<div class="neural-circle-core disc-core">
+						<span class="neural-pct disc-pct">{{ connectProgress }}%</span>
+					</div>
 				</div>
-			</div>
 
-			<h2 class="connecting-title disc-title">ОТКЛЮЧЕНИЕ НЕЙРОИНТЕРФЕЙСА</h2>
-			<div class="connecting-sub disc-sub">{{ currentStatusText }}</div>
+				<h2 class="connecting-title disc-title">ОТКЛЮЧЕНИЕ НЕЙРОИНТЕРФЕЙСА</h2>
+				<div class="connecting-sub disc-sub">{{ currentStatusText }}</div>
 
-			<div class="neural-progress-track">
-				<div class="neural-progress-fill disc-fill" :style="{ width: `${connectProgress}%` }"></div>
-			</div>
+				<div class="neural-progress-track">
+					<div class="neural-progress-fill disc-fill" :style="{ width: `${connectProgress}%` }"></div>
+				</div>
 
-			<div class="neural-log-box disc-log">
-				<div v-for="(log, idx) in logEntries" :key="idx" class="neural-log-line">
-					<span class="log-arrow disc-arrow">&gt;</span> {{ log }}
+				<div class="neural-log-box disc-log">
+					<div v-for="(log, idx) in logEntries" :key="idx" class="neural-log-line">
+						<span class="log-arrow disc-arrow">&gt;</span> {{ log }}
+					</div>
 				</div>
 			</div>
 		</div>
@@ -260,12 +264,21 @@ defineExpose({
 /* ЭКРАН ПОДКЛЮЧЕНИЯ */
 .vr-connecting-screen {
 	display: flex;
-	flex-direction: column;
 	align-items: center;
 	justify-content: center;
 	height: 100%;
 	padding: 2em;
 	text-align: center;
+	overflow: hidden;
+}
+
+.vr-connecting-content {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	width: min(28em, 85%);
+	margin-top: -3.5em;
 }
 
 .neural-circle-container {
@@ -323,6 +336,7 @@ defineExpose({
 	font-size: 1em;
 	color: #7dd3fc;
 	margin-bottom: 1.5em;
+	min-height: 1.4em;
 }
 
 .neural-progress-track {
@@ -343,16 +357,20 @@ defineExpose({
 }
 
 .neural-log-box {
+	position: absolute;
+	top: 100%;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 100%;
 	background: rgba(0, 0, 0, 0.4);
 	border: 1px solid rgba(0, 229, 255, 0.2);
 	border-radius: 0.4em;
 	padding: 0.8em 1.2em;
-	width: min(28em, 85%);
 	text-align: left;
 	font-family: monospace;
 	font-size: 0.85em;
 	color: #38bdf8;
-	min-height: 5em;
+	box-sizing: border-box;
 }
 
 .neural-log-line {

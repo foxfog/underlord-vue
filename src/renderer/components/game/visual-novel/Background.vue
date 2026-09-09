@@ -38,6 +38,7 @@ import McApartment from '../scenes/cyber/McApartment.vue'
 import McFactory from '../scenes/cyber/McFactory.vue'
 import CarneVillageEntrance from '../scenes/carne/CarneVillageEntrance.vue'
 import CarneVillageSquare from '../scenes/carne/CarneVillageSquare.vue'
+import CarneChiefHouse from '../scenes/carne/CarneChiefHouse.vue'
 import SceneHotspots from '../scenes/SceneHotspots.vue'
 
 const props = defineProps({
@@ -54,7 +55,8 @@ const sceneComponents = {
 	mc_apartment: McApartment,
 	mc_factory: McFactory,
 	carne_village_entrance: CarneVillageEntrance,
-	carne_village_square: CarneVillageSquare
+	carne_village_square: CarneVillageSquare,
+	carne_chief_house: CarneChiefHouse
 	// Здесь можно добавить другие компонентные сцены
 	// и т.д.
 }

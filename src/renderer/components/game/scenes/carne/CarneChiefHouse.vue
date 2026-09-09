@@ -1,6 +1,6 @@
 <template>
-	<div class="scene-carne-square">
-		<img v-if="bgImage" :src="bgImage" alt="Центральная площадь деревни Карн" class="scene-bg" />
+	<div class="scene-carne-chief-house">
+		<img v-if="bgImage" :src="bgImage" alt="Дом старосты деревни Карн" class="scene-bg" />
 	</div>
 </template>
 
@@ -31,12 +31,12 @@ const basePath = computed(() => {
 const bgImage = computed(() => {
 	return props.scene?.bg
 		? `${basePath.value}${props.scene.bg}`
-		: `${basePath.value}images/sprites/backgrounds/carne/carne-square.jpg`
+		: `${basePath.value}images/sprites/backgrounds/carne/elder_home_int.webp`
 })
 </script>
 
 <style scoped>
-.scene-carne-square {
+.scene-carne-chief-house {
 	position: absolute;
 	inset: 0;
 	overflow: hidden;

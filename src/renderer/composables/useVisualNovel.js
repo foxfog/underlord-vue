@@ -353,7 +353,46 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		try {
 			switch (step.type) {
 				case 'scene':
-					if (!isRestoringGameState.value) changeScene(step)
+					if (!isRestoringGameState.value) {
+						const nextSceneKey =
+							typeof step === 'object'
+								? step.scene || step.sceneId || step.id
+								: step
+						const hasExplicitFade =
+							step.fade === false ||
+							fadeOverlay.value.visible ||
+							(storyData.value?.steps &&
+								((stepIndex.value > 0 &&
+									['fade', 'fade-out'].includes(
+										storyData.value.steps[stepIndex.value - 1]?.type
+									)) ||
+									(stepIndex.value < storyData.value.steps.length - 1 &&
+										['fade', 'fade-in'].includes(
+											storyData.value.steps[stepIndex.value + 1]?.type
+										))))
+
+						const transitionDuration =
+							typeof step.fade === 'number' && step.fade > 0 ? step.fade : 0.35
+
+						if (
+							isSceneTransitionsEnabled() &&
+							currentScene.value &&
+							currentScene.value.id !== nextSceneKey &&
+							!hasExplicitFade
+						) {
+							performSceneTransition(
+								() => changeScene(step),
+								() => {
+									stepIndex.value++
+									processStep()
+								},
+								transitionDuration
+							)
+							break
+						}
+
+						changeScene(step)
+					}
 					stepIndex.value++
 					processStep()
 					break
@@ -1260,7 +1299,8 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		}
 
 		const action = step.action || (step.type === 'fade-out' ? 'out' : 'in')
-		const duration = typeof step.duration === 'number' ? step.duration : 1.5
+		const parsedDuration = typeof step.duration === 'number' ? step.duration : parseFloat(step.duration)
+		const duration = !isNaN(parsedDuration) && parsedDuration >= 0 ? parsedDuration : 1.5
 		const color = step.color || '#000000'
 		const wait = step.wait !== false
 
@@ -1347,6 +1387,97 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 				processStep()
 			}
 		}
+	}
+
+	function isSceneTransitionsEnabled() {
+		try {
+			return settingsStore?.general?.sceneTransitions !== false
+		} catch (_) {
+			return true
+		}
+	}
+
+	function performSceneTransition(
+		onSceneChange,
+		onComplete = null,
+		duration = 0.35,
+		color = '#000000'
+	) {
+		if (fadeTimeout) {
+			clearTimeout(fadeTimeout)
+			fadeTimeout = null
+		}
+
+		return new Promise((resolve) => {
+			let isFinished = false
+
+			const finish = () => {
+				if (isFinished) return
+				isFinished = true
+				if (fadeTimeout) {
+					clearTimeout(fadeTimeout)
+					fadeTimeout = null
+				}
+				advanceStoryOverride = null
+				fadeOverlay.value.visible = false
+				fadeOverlay.value.opacity = 0
+				if (onComplete) onComplete()
+				resolve()
+			}
+
+			// 1. Fade Out: animate to solid color
+			fadeOverlay.value = {
+				visible: true,
+				opacity: 0,
+				duration: 0,
+				color
+			}
+
+			setTimeout(() => {
+				if (isFinished) return
+				fadeOverlay.value = {
+					visible: true,
+					opacity: 1,
+					duration,
+					color
+				}
+			}, 20)
+
+			advanceStoryOverride = finish
+
+			fadeTimeout = setTimeout(() => {
+				if (isFinished) return
+
+				// 2. Change scene while screen is fully covered
+				try {
+					if (onSceneChange) onSceneChange()
+				} catch (err) {
+					console.error('Error during scene transition callback:', err)
+				}
+
+				// 3. Fade In: start solid, animate to transparent
+				fadeOverlay.value = {
+					visible: true,
+					opacity: 1,
+					duration: 0,
+					color
+				}
+
+				setTimeout(() => {
+					if (isFinished) return
+					fadeOverlay.value = {
+						visible: true,
+						opacity: 0,
+						duration,
+						color
+					}
+				}, 20)
+
+				fadeTimeout = setTimeout(() => {
+					finish()
+				}, duration * 1000 + 40)
+			}, duration * 1000 + 30)
+		})
 	}
 
 	function applyDialogueHiding() {
@@ -2305,6 +2436,17 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			currentNarration.value = ''
 			currentSpeaker.value = ''
 			currentChoices.value = []
+			if (
+				isSceneTransitionsEnabled() &&
+				currentScene.value &&
+				currentScene.value.id !== checkTarget &&
+				!isRestoringGameState.value &&
+				!fadeOverlay.value.visible
+			) {
+				return performSceneTransition(() => {
+					changeScene(checkTarget)
+				})
+			}
 			changeScene(checkTarget)
 			return Promise.resolve()
 		}
@@ -3082,8 +3224,18 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		const status = getHotspotStatus(resolvedSceneId, hotspot)
 
 		if (status === 'active') {
-			if (hotspot.target) {
-				goToLabel(hotspot.target)
+			let target = hotspot.target
+			const scene = sceneData.value?.[resolvedSceneId] || currentScene.value
+			const localMap = scene?.localMap || globalData.value?.localMap
+			if (localMap && globalData.value?.mapOverrides?.[localMap]) {
+				const overrides = globalData.value.mapOverrides[localMap]
+				const overrideKey = hotspot.locationId || hotspot.target || hotspot.id
+				if (overrides[overrideKey]) {
+					target = overrides[overrideKey]
+				}
+			}
+			if (target) {
+				goToLabel(target)
 			}
 		} else if (status === 'locked') {
 			const delta = globalData.value?.sceneHotspots?.[resolvedSceneId]?.[hotspot.id]

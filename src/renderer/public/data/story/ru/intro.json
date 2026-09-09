@@ -319,7 +319,8 @@
 			"label": "new_world_carne",
 			"type": "scene",
 			"scene": "carne_village_entrance",
-			"clearCharacters": true
+			"clearCharacters": true,
+			"fade": false
 		},
 		{
 			"type": "sound",
@@ -402,7 +403,8 @@
 		{
 			"type": "fade",
 			"action": "in",
-			"duration": 2
+			"duration": 8,
+			"color": "#ffffff"
 		},
 		{
 			"type": "ui",
@@ -450,7 +452,7 @@
 			"character": "mc",
 			"steps": [
 				{
-					"text": "<p>Впереди какой-то частокол... Деревянная табличка: <b>«Деревня Карн»</b>.</p>"
+					"text": "<p>Впереди какое то поселение... Деревянная табличка: <b>«Деревня Карн»</b>.</p>"
 				},
 				{
 					"text": "<p>Это что, стартовая обучающая локация «Иггдрасиля»? Я ведь про эту игру только из рекламы и новостей слышал...</p>"
@@ -824,8 +826,18 @@
 			"title": "Дом деревенского старосты",
 			"description": "Энри приняла вас за авантюриста и посоветовала обратиться к старосте деревни на главной площади, чтобы узнать о первых поручениях и работе.",
 			"tasks": [
-				{ "id": "reach_square", "text": "Пройти на центральную площадь деревни Карн", "required": true, "completed": false },
-				{ "id": "meet_chief", "text": "Найти дом старосты и поговорить с ним", "required": true, "completed": false }
+				{
+					"id": "reach_square",
+					"text": "Пройти на центральную площадь деревни Карн",
+					"required": true,
+					"completed": false
+				},
+				{
+					"id": "meet_chief",
+					"text": "Найти дом старосты и поговорить с ним",
+					"required": true,
+					"completed": false
+				}
 			],
 			"storyEntries": [
 				"Энри подсказала, что староста деревни живет в самом большом доме в центре деревни на площади."

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { initSettingsStore } from '../../stores/settings'
+import { initSettingsStore, useSettingsStore } from '../../stores/settings'
 import { useVisualNovel } from '../useVisualNovel'
 
 describe('Scene Hotspots System', () => {
@@ -200,6 +200,35 @@ describe('Scene Hotspots System', () => {
 		expect(vn.currentNarration.value).toBe('Люк наглухо заперт.')
 	})
 
+	it('handleHotspotClick respects mapOverrides and navigates to story cutscene target', () => {
+		const vn = useVisualNovel({})
+		vn.storyData.value = {
+			steps: [
+				{ id: 'carne_square_arrival', type: 'fade', action: 'out' },
+				{ id: 'room_arrival', type: 'dialogue', text: 'Entered room' }
+			]
+		}
+		vn.currentScene.value = { id: 'carne_village_entrance', localMap: 'carne' }
+		vn.globalData.value = {
+			localMap: 'carne',
+			mapOverrides: {
+				carne: {
+					carne_square: 'carne_square_arrival'
+				}
+			}
+		}
+
+		vn.handleHotspotClick('carne_village_entrance', {
+			id: 'to_square',
+			locationId: 'carne_square',
+			status: 'active',
+			target: 'carne_village_square'
+		})
+
+		// Must navigate to 'carne_square_arrival' instead of raw 'carne_village_square'
+		expect(vn.stepIndex.value).toBe(0)
+	})
+
 	it('preserves delta-save architecture: only modified hotspots are stored and restored', async () => {
 		const vn = useVisualNovel({})
 		vn.resetGameState()
@@ -224,5 +253,114 @@ describe('Scene Hotspots System', () => {
 		// Restore game
 		await vn.restoreGameState(saved)
 		expect(vn.globalData.value.sceneHotspots.carne_chief_house_hall.to_cellar).toBe('active')
+	})
+
+	it('performs default fade transition when navigating directly to a scene with sceneTransitions enabled', () => {
+		vi.useFakeTimers()
+		const settingsStore = useSettingsStore()
+		settingsStore.general.sceneTransitions = true
+		const vn = useVisualNovel({})
+		vn.sceneData.value = {
+			carne_village_entrance: { id: 'carne_village_entrance' },
+			carne_village_square: { id: 'carne_village_square' }
+		}
+		vn.currentScene.value = { id: 'carne_village_entrance' }
+
+		vn.goto('carne_village_square')
+
+		// Fade out starts
+		expect(vn.fadeOverlay.value.visible).toBe(true)
+		expect(vn.fadeOverlay.value.opacity).toBe(0)
+
+		vi.advanceTimersByTime(25)
+		expect(vn.fadeOverlay.value.opacity).toBe(1)
+		expect(vn.currentScene.value.id).toBe('carne_village_entrance') // Scene has not changed yet while fading out
+
+		// Midway through transition (fade-out completes, scene swaps, fade-in starts)
+		vi.advanceTimersByTime(370)
+		expect(vn.currentScene.value.id).toBe('carne_village_square')
+		expect(vn.fadeOverlay.value.visible).toBe(true)
+
+		// Finish fade in
+		vi.advanceTimersByTime(400)
+		expect(vn.fadeOverlay.value.visible).toBe(false)
+
+		vi.useRealTimers()
+	})
+
+	it('changes scene immediately without fade when sceneTransitions is disabled', () => {
+		const settingsStore = useSettingsStore()
+		settingsStore.general.sceneTransitions = false
+		const vn = useVisualNovel({})
+		vn.sceneData.value = {
+			carne_village_entrance: { id: 'carne_village_entrance' },
+			carne_village_square: { id: 'carne_village_square' }
+		}
+		vn.currentScene.value = { id: 'carne_village_entrance' }
+
+		vn.goto('carne_village_square')
+
+		expect(vn.currentScene.value.id).toBe('carne_village_square')
+		expect(vn.fadeOverlay.value.visible).toBe(false)
+	})
+
+	it('performs auto-fade on step.type === scene when scene changes and no explicit fade exists', () => {
+		vi.useFakeTimers()
+		const settingsStore = useSettingsStore()
+		settingsStore.general.sceneTransitions = true
+		const vn = useVisualNovel({})
+		vn.sceneData.value = {
+			room_a: { id: 'room_a' },
+			room_b: { id: 'room_b' }
+		}
+		vn.currentScene.value = { id: 'room_a' }
+
+		vn.storyData.value = {
+			steps: [
+				{ type: 'scene', scene: 'room_b' },
+				{ type: 'dialogue', character: 'mc', text: 'Arrived in room B' }
+			]
+		}
+
+		vn.processStep()
+
+		// Fade out initiated
+		expect(vn.fadeOverlay.value.visible).toBe(true)
+		expect(vn.currentDialogue.value).toBe('')
+
+		// Complete fade out and swap
+		vi.advanceTimersByTime(390)
+		expect(vn.currentScene.value.id).toBe('room_b')
+
+		// Complete fade in and advance to dialogue
+		vi.advanceTimersByTime(400)
+		expect(vn.fadeOverlay.value.visible).toBe(false)
+		expect(vn.currentDialogue.value).toBe('Arrived in room B')
+
+		vi.useRealTimers()
+	})
+
+	it('respects fade: false on step.type === scene to skip transition', () => {
+		const settingsStore = useSettingsStore()
+		settingsStore.general.sceneTransitions = true
+		const vn = useVisualNovel({})
+		vn.sceneData.value = {
+			room_a: { id: 'room_a' },
+			room_b: { id: 'room_b' }
+		}
+		vn.currentScene.value = { id: 'room_a' }
+
+		vn.storyData.value = {
+			steps: [
+				{ type: 'scene', scene: 'room_b', fade: false },
+				{ type: 'dialogue', character: 'mc', text: 'Arrived instantly' }
+			]
+		}
+
+		vn.processStep()
+
+		expect(vn.currentScene.value.id).toBe('room_b')
+		expect(vn.fadeOverlay.value.visible).toBe(false)
+		expect(vn.currentDialogue.value).toBe('Arrived instantly')
 	})
 })

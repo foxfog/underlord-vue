@@ -9,7 +9,8 @@
 		"keyboardLayout": "qwerty"
 	},
 	"general": {
-		"language": "ru"
+		"language": "ru",
+		"sceneTransitions": true
 	},
 	"video": {
 		"fullscreen": true,

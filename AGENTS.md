@@ -101,7 +101,7 @@ body {
   Два мира (Земля 2138 с 24ч часами vs Новый Мир с 360-дневным календарем), 4 фазы суток, перемотка `advanceTime()`.
   📖 Документация: [`docs/systems/TimeCalendar.md`](docs/systems/TimeCalendar.md)
 * **Сценарные действия и управление UI (UI & Scene Actions)**:
-  Плавные затемнения (`fade`), очистка персонажей со сцены (`clearCharacters`), контроль кнопок (`type: "ui"`), синхронизация экипировки персонажа со сценой (`syncCharacterEquipment`).
+  Плавные затемнения (`fade`, дефолтные переходы между сценами `sceneTransitions`), очистка персонажей со сцены (`clearCharacters`), контроль кнопок (`type: "ui"`), синхронизация экипировки персонажа со сценой (`syncCharacterEquipment`).
   📖 Документация: [`docs/ui/UIControl.md`](docs/ui/UIControl.md)
 * **Диалоговая система (Dialogue System)**:
   Многошаговые диалоги, эффект пишущей машинки, автоскрытие UI при репликах (`DIALOGUE_HIDE_UI_CONFIG`).

@@ -179,12 +179,9 @@ function onHotspotClick(hotspot) {
 			}
 		}
 
-		if (target) {
-			emit('goto', target)
-		}
 		emit('hotspot-click', {
 			sceneId,
-			hotspot,
+			hotspot: { ...hotspot, target },
 			status: 'active'
 		})
 	} else if (status === 'locked') {

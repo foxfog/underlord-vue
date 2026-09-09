@@ -1,5 +1,8 @@
 <template>
-	<div :class="[dialogueBoxClasses, { invisible: isDialogueBoxInvisible }]">
+	<div
+		:class="[dialogueBoxClasses, { invisible: isDialogueBoxInvisible }]"
+		@click="onDialogueClick"
+	>
 		<div class="dialogue-in">
 			<div class="speaker" v-if="speaker">{{ speaker }}</div>
 			<div class="dialogue-text-container" v-if="dialogue || narration">
@@ -13,13 +16,11 @@
 					v-if="dialogue"
 					class="dialogue-text"
 					ref="dialogueTextRef"
-					@click="skipTypewriter"
 				></div>
 				<div
 					v-if="narration"
 					class="dialogue-text _narration"
 					ref="narrationTextRef"
-					@click="skipTypewriter"
 				></div>
 			</div>
 
@@ -28,7 +29,7 @@
 				<button
 					v-for="(choice, index) in choices"
 					:key="index"
-					@click="$emit('selectChoice', index)"
+					@click.stop="$emit('selectChoice', index)"
 					class="choice-btn"
 					:class="{ _disabled: choice.disabled }"
 					:disabled="choice.disabled"
@@ -38,12 +39,12 @@
 		</div>
 		<button
 			v-if="!choices.length && (dialogue || narration)"
-			@click="$emit('advance')"
+			@click.stop="onDialogueClick"
 			class="hidden-continue"
 		></button>
 		<button
 			v-if="!choices.length && (dialogue || narration)"
-			@click="$emit('advance')"
+			@click.stop="onDialogueClick"
 			class="continue-btn btn btn-primary"
 		>
 			<i class="icon-arrow-right"></i>
@@ -114,6 +115,18 @@ const dialogueBoxClasses = computed(() => ({
 	'dialogue-box': true,
 	'_choice-box': props.choices.length > 0 && props.choicesLayout === 'dialogue'
 }))
+
+function onDialogueClick() {
+	// If choices are present, clicking the dialogue box should not advance
+	if (props.choices.length > 0) return
+	if (!props.dialogue && !props.narration) return
+
+	if (isTypewriting) {
+		skipTypewriter()
+	} else {
+		emit('advance')
+	}
+}
 
 function skipTypewriter() {
 	if (isTypewriting) {

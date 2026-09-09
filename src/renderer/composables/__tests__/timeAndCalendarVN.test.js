@@ -268,6 +268,34 @@ describe('Story Engine Fade Transitions', () => {
 		vi.useRealTimers()
 	})
 
+	it('supports custom duration and white color for dramatic new world fade in', () => {
+		vi.useFakeTimers()
+		const vn = useVisualNovel({})
+
+		vn.storyData.value = {
+			steps: [
+				{ type: 'fade', action: 'in', duration: 3.5, color: '#ffffff' },
+				{ type: 'dialogue', character: 'mc', text: 'Awakened!' }
+			]
+		}
+
+		vn.processStep()
+
+		expect(vn.fadeOverlay.value.visible).toBe(true)
+		expect(vn.fadeOverlay.value.opacity).toBe(1)
+		expect(vn.fadeOverlay.value.color).toBe('#ffffff')
+
+		vi.advanceTimersByTime(35)
+		expect(vn.fadeOverlay.value.opacity).toBe(0)
+		expect(vn.fadeOverlay.value.duration).toBe(3.5)
+
+		vi.advanceTimersByTime(3550)
+		expect(vn.fadeOverlay.value.visible).toBe(false)
+		expect(vn.currentDialogue.value).toBe('Awakened!')
+
+		vi.useRealTimers()
+	})
+
 	it('resets fadeOverlay state on resetGameState', () => {
 		const vn = useVisualNovel({})
 

@@ -33,7 +33,7 @@
 		},
 		{
 			"id": "carne_village_entrance",
-			"bg": "images/sprites/backgrounds/grass.webp",
+			"bg": "images/sprites/backgrounds/carne/carne-entrance.jpg",
 			"clearCharacters": true,
 			"worldMap": "newworld",
 			"localMap": "carne",
@@ -54,7 +54,7 @@
 		},
 		{
 			"id": "carne_village_square",
-			"bg": "images/sprites/backgrounds/grass.webp",
+			"bg": "images/sprites/backgrounds/carne/carne-square.jpg",
 			"clearCharacters": true,
 			"worldMap": "newworld",
 			"localMap": "carne",
@@ -84,7 +84,7 @@
 		{
 			"id": "carne_chief_house",
 			"name": "Дом старосты",
-			"bg": "images/sprites/backgrounds/grass.webp",
+			"bg": "images/sprites/backgrounds/carne/elder_home_int.webp",
 			"clearCharacters": true,
 			"worldMap": "newworld",
 			"localMap": "carne",

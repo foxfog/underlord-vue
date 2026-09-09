@@ -67,7 +67,8 @@ const emit = defineEmits([
 	'end',
 	'character-loaded',
 	'global-data-changed',
-	'ui-visibility-changed'
+	'ui-visibility-changed',
+	'ready'
 ])
 
 const notificationComponent = ref(null)
@@ -136,6 +137,7 @@ onMounted(async () => {
 	if (!savesStore.getPendingLoad()) {
 		processStep()
 	}
+	emit('ready')
 })
 
 defineExpose({

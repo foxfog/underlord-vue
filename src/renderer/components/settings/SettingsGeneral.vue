@@ -49,6 +49,21 @@
 				</UiCheckbox>
 			</div>
 		</div>
+
+		<div class="settings-item">
+			<div class="left">
+				<div class="settings-item-label">Затемнение между сценами:</div>
+				<div class="settings-item-description">плавный переход при смене локаций</div>
+			</div>
+			<div class="right">
+				<UiCheckbox
+					v-model="store.general.sceneTransitions"
+					mode="switch"
+					@change="onSceneTransitionsChange"
+				>
+				</UiCheckbox>
+			</div>
+		</div>
 	</div>
 </template>
 
@@ -95,6 +110,12 @@ function onSkipSplashChange() {
 	store.setSkipSplash(store.general.skipSplash)
 	console.log('Skip splash changed to:', store.general.skipSplash)
 	autoSaveSkipSplashSetting()
+}
+
+function onSceneTransitionsChange() {
+	store.setSceneTransitions(store.general.sceneTransitions)
+	console.log('Scene transitions changed to:', store.general.sceneTransitions)
+	autoSaveSceneTransitionsSetting()
 }
 
 async function autoSaveLanguageSetting() {
@@ -145,6 +166,23 @@ async function autoSaveSkipSplashSetting() {
 		console.log('Skip splash setting auto-saved')
 	} catch (error) {
 		console.error('Failed to auto-save skip splash setting:', error)
+	}
+}
+
+async function autoSaveSceneTransitionsSetting() {
+	try {
+		const current = await window.electronAPI.getSettings()
+		const updated = {
+			...current,
+			general: {
+				...current.general,
+				sceneTransitions: store.general.sceneTransitions
+			}
+		}
+		window.electronAPI.saveSettings(JSON.parse(JSON.stringify(updated)))
+		console.log('Scene transitions setting auto-saved')
+	} catch (error) {
+		console.error('Failed to auto-save scene transitions setting:', error)
 	}
 }
 </script>

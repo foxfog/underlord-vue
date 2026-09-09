@@ -37,6 +37,7 @@
 				@character-loaded="onCharacterLoaded"
 				@global-data-changed="onGlobalDataChanged"
 				@ui-visibility-changed="onUiVisibilityChanged"
+				@ready="onVisualNovelReady"
 			/>
 		</div>
 
@@ -177,6 +178,13 @@
 		@no="handleLeaveNo"
 		@cancel="handleLeaveCancel"
 	/>
+
+	<!-- Экран загрузки с руническим индикатором в нижнем правом углу -->
+	<GameLoadingScreen
+		:active="isGameLoading"
+		:title-text="loadingTitleText"
+		:status-text="loadingStatusText"
+	/>
 </template>
 
 <script setup>
@@ -201,6 +209,7 @@ import YggdrasilIntroVideo from '../components/game/vr/YggdrasilIntroVideo.vue'
 import YggdrasilAuthModal from '../components/game/vr/YggdrasilAuthModal.vue'
 import YggdrasilCharacterCreation from '../components/game/vr/YggdrasilCharacterCreation.vue'
 import ServerShutdownSequence from '../components/game/vr/ServerShutdownSequence.vue'
+import GameLoadingScreen from '../components/game/GameLoadingScreen.vue'
 import { useQuests } from '@/composables/useQuests'
 import { useEncyclopedia } from '@/composables/useEncyclopedia'
 import { useSavesStore } from '@/stores/saves'
@@ -229,6 +238,19 @@ const itemsData = ref({})
 const dynamicContentAreaRef = ref(null)
 const showHistoryModal = ref(false)
 const historyList = ref([])
+
+// Loading screen state
+const isGameLoading = ref(true)
+const loadingTitleText = ref('ЗАГРУЗКА')
+const loadingStatusText = ref(route.meta?.newGame ? 'Инициализация Нового Мира...' : 'Синхронизация данных...')
+
+function onVisualNovelReady() {
+	if (!savesStore.getPendingLoad()) {
+		setTimeout(() => {
+			isGameLoading.value = false
+		}, 400)
+	}
+}
 
 // VR & YGGDRASIL flow state
 const showVrLauncher = ref(false)
@@ -869,10 +891,24 @@ async function onLoadRequest(saveData) {
 			`Загрузка слота ${saveData.slot + 1} приведёт к потере текущего прогресса. Продолжить?`,
 			async () => {
 				console.log('Restoring game from save request', saveData)
-				await visualNovel.value.restoreGameState(saveData.gameState)
+				isGameLoading.value = true
+				loadingTitleText.value = 'ЗАГРУЗКА'
+				loadingStatusText.value = `Загрузка слота ${saveData.slot + 1}...`
 				menuVisible.value = false
 				currentView.value = 'main-menu'
 				settingsStore.isMusicPlaying = false
+				await new Promise((r) => setTimeout(r, 60))
+				try {
+					await visualNovel.value.restoreGameState(saveData.gameState)
+					await nextTick()
+					setTimeout(() => {
+						isGameLoading.value = false
+					}, 450)
+				} catch (err) {
+					console.error('Failed to restore save:', err)
+					alert(`Failed to restore save: ${err.message}`)
+					isGameLoading.value = false
+				}
 			}
 		)
 	} catch (err) {
@@ -994,13 +1030,22 @@ async function quickLoad() {
 			'Загрузка приведёт к потере текущего прогресса. Продолжить?',
 			async () => {
 				try {
-					await visualNovel.value.restoreGameState(saveFile.gameState)
+					isGameLoading.value = true
+					loadingTitleText.value = 'ЗАГРУЗКА'
+					loadingStatusText.value = 'Загрузка быстрого сохранения...'
 					menuVisible.value = false
 					currentView.value = 'main-menu'
 					settingsStore.isMusicPlaying = false
+					await new Promise((r) => setTimeout(r, 60))
+					await visualNovel.value.restoreGameState(saveFile.gameState)
+					await nextTick()
+					setTimeout(() => {
+						isGameLoading.value = false
+					}, 450)
 				} catch (err) {
 					console.error('Failed to restore quick save:', err)
 					alert(`Не удалось восстановить быстрое сохранение: ${err.message}`)
+					isGameLoading.value = false
 				}
 			}
 		)
@@ -1070,6 +1115,13 @@ onMounted(() => {
 			console.error('Failed to load items data:', err)
 		})
 
+	// Safety timeout: ensure loading screen hides after 3s even if something hangs
+	setTimeout(() => {
+		if (isGameLoading.value && !savesStore.getPendingLoad()) {
+			isGameLoading.value = false
+		}
+	}, 3000)
+
 	// If this is a new game, reset the VisualNovel state
 	if (route.meta.newGame && visualNovel.value) {
 		console.log('Starting new game - resetting state')
@@ -1079,6 +1131,9 @@ onMounted(() => {
 	// If we have a pending load (navigated from main menu), wait for VisualNovel to be ready and restore
 	const savesStore = useSavesStore()
 	if (savesStore.getPendingLoad()) {
+		isGameLoading.value = true
+		loadingTitleText.value = 'ЗАГРУЗКА'
+		loadingStatusText.value = 'Восстановление сохранения...'
 		nextTick(async () => {
 			try {
 				// wait up to 5s for VisualNovel ref to mount
@@ -1090,19 +1145,28 @@ onMounted(() => {
 					waited += interval
 				}
 				const pending = savesStore.getPendingLoad()
-				if (!pending) return
+				if (!pending) {
+					isGameLoading.value = false
+					return
+				}
 				if (!visualNovel.value) {
 					console.warn('VisualNovel not ready to restore save after waiting')
+					isGameLoading.value = false
 					return
 				}
 				await visualNovel.value.restoreGameState(pending.gameState)
 				savesStore.takePendingLoad()
 				menuVisible.value = false
 				currentView.value = 'main-menu'
+				await nextTick()
+				setTimeout(() => {
+					isGameLoading.value = false
+				}, 500)
 			} catch (err) {
 				console.error('Failed to restore pending save:', err)
 				alert(`Failed to restore save: ${err.message}`)
 				savesStore.takePendingLoad()
+				isGameLoading.value = false
 			}
 		})
 	}
