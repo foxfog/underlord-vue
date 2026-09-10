@@ -296,6 +296,100 @@ describe('Story Engine Fade Transitions', () => {
 		vi.useRealTimers()
 	})
 
+	it('supports hold parameter to keep screen solid before starting fade-in (e.g. tinnitus white screen hold)', () => {
+		vi.useFakeTimers()
+		const vn = useVisualNovel({})
+
+		vn.storyData.value = {
+			steps: [
+				{
+					type: 'fade',
+					action: 'in',
+					hold: 3.6,
+					duration: 4.5,
+					color: '#ffffff'
+				},
+				{ type: 'dialogue', character: 'mc', text: 'Vision restored!' }
+			]
+		}
+
+		vn.processStep()
+
+		// Immediately at t = 0: solid white overlay
+		expect(vn.fadeOverlay.value.visible).toBe(true)
+		expect(vn.fadeOverlay.value.opacity).toBe(1)
+		expect(vn.fadeOverlay.value.color).toBe('#ffffff')
+
+		// At t = 2.0s (during hold): still solid white, transition has not started
+		vi.advanceTimersByTime(2000)
+		expect(vn.fadeOverlay.value.visible).toBe(true)
+		expect(vn.fadeOverlay.value.opacity).toBe(1)
+		expect(vn.currentDialogue.value).toBe('')
+
+		// At t = 3.61s (hold complete): fade animation to opacity 0 has started
+		vi.advanceTimersByTime(1610)
+		expect(vn.fadeOverlay.value.visible).toBe(true)
+		expect(vn.fadeOverlay.value.opacity).toBe(0)
+		expect(vn.fadeOverlay.value.duration).toBe(4.5)
+
+		// At t = 3.6s + 4.5s + 50ms: fade complete, next step executed
+		vi.advanceTimersByTime(4550)
+		expect(vn.fadeOverlay.value.visible).toBe(false)
+		expect(vn.currentDialogue.value).toBe('Vision restored!')
+
+		vi.useRealTimers()
+	})
+
+	it('supports sound step with delay and flushes audio if fade is skipped early', () => {
+		vi.useFakeTimers()
+		const vn = useVisualNovel({})
+
+		vn.storyData.value = {
+			steps: [
+				{
+					type: 'sound',
+					file: 'audio/sound/tinnitus.mp3',
+					stream: 'tinnitus'
+				},
+				{
+					type: 'sound',
+					file: 'audio/background/village-1.m4a',
+					stream: 'back',
+					delay: 3.6
+				},
+				{
+					type: 'fade',
+					action: 'in',
+					hold: 3.6,
+					duration: 5,
+					color: '#ffffff'
+				},
+				{ type: 'dialogue', character: 'mc', text: 'Arrived!' }
+			]
+		}
+
+		vn.processStep()
+
+		// Tinnitus sound playing immediately
+		expect(vn.audioStreams.value.tinnitus).toBeDefined()
+		expect(vn.audioStreams.value.tinnitus.file).toBe('audio/sound/tinnitus.mp3')
+		// Village sound not playing yet because of delay
+		expect(vn.audioStreams.value.back).toBeUndefined()
+
+		// Skip fade early (user clicks to skip)
+		vn.advanceStory()
+
+		// Overlay immediately hidden
+		expect(vn.fadeOverlay.value.visible).toBe(false)
+		// Delayed village sound was flushed and is now playing
+		expect(vn.audioStreams.value.back).toBeDefined()
+		expect(vn.audioStreams.value.back.file).toBe('audio/background/village-1.m4a')
+		// Dialogue advanced
+		expect(vn.currentDialogue.value).toBe('Arrived!')
+
+		vi.useRealTimers()
+	})
+
 	it('resets fadeOverlay state on resetGameState', () => {
 		const vn = useVisualNovel({})
 

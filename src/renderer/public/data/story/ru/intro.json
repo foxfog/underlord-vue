@@ -324,9 +324,16 @@
 		},
 		{
 			"type": "sound",
+			"file": "audio/sound/tinnitus.mp3",
+			"loop": false,
+			"stream": "tinnitus"
+		},
+		{
+			"type": "sound",
 			"file": "audio/background/village-1.m4a",
 			"loop": true,
-			"stream": "back"
+			"stream": "back",
+			"delay": 3.589
 		},
 		{ "variable": "global.calendarType = 'new_world'" },
 		{ "variable": "global.year = 0" },
@@ -366,6 +373,13 @@
 			]
 		},
 		{
+			"type": "fade",
+			"action": "in",
+			"hold": 3.589,
+			"duration": 5,
+			"color": "#ffffff"
+		},
+		{
 			"type": "quest",
 			"action": "complete",
 			"id": "end_and_beginning"
@@ -399,12 +413,6 @@
 			"storyEntries": [
 				"Невероятный реализм: настоящий запах влажной травы и земли. Меню выхода из шлема полностью отсутствует."
 			]
-		},
-		{
-			"type": "fade",
-			"action": "in",
-			"duration": 8,
-			"color": "#ffffff"
 		},
 		{
 			"type": "ui",

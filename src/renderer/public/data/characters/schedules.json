@@ -1,0 +1,36 @@
+{
+	"characters": {
+		"carne-chief": {
+			"defaultLocation": "carne_chief_house",
+			"locationKnown": true,
+			"schedules": [
+				{
+					"id": "chief_in_house",
+					"targetScene": "carne_chief_house",
+					"position": { "r": 15, "l": "auto", "b": 0 },
+					"orientation": "left",
+					"scale": 1,
+					"conditions": {
+						"timePhase": ["morning", "day", "evening", "night"]
+					}
+				}
+			]
+		},
+		"enri": {
+			"defaultLocation": "carne_emmot_house",
+			"locationKnown": false,
+			"schedules": [
+				{
+					"id": "enri_in_house",
+					"targetScene": "carne_emmot_house",
+					"position": { "l": 30, "r": "auto", "b": 0 },
+					"orientation": "right",
+					"scale": 1,
+					"conditions": {
+						"timePhase": ["morning", "evening", "night"]
+					}
+				}
+			]
+		}
+	}
+}

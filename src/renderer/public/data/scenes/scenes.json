@@ -71,6 +71,16 @@
 					"status": "active"
 				},
 				{
+					"id": "to_emmot_house",
+					"locationId": "carne_emmot_house",
+					"label": "Дом Эммот",
+					"icon": "door",
+					"target": "carne_emmot_house",
+					"position": { "left": "30%", "bottom": "24%" },
+					"condition": "global.discoveredLocations?.carne?.includes('carne_emmot_house')",
+					"fallbackStatus": "hidden"
+				},
+				{
 					"id": "to_entrance",
 					"locationId": "carne_village_entrance",
 					"label": "К воротам деревни",
@@ -84,11 +94,32 @@
 		{
 			"id": "carne_chief_house",
 			"name": "Дом старосты",
-			"bg": "images/sprites/backgrounds/carne/elder_home_int.webp",
+			"bg": "images/sprites/backgrounds/carne/chief-house/default.webp",
 			"clearCharacters": true,
 			"worldMap": "newworld",
 			"localMap": "carne",
-			"locationId": "carne_square",
+			"locationId": "carne_chief_house",
+			"variables": ["global.toxic_gas = 0"],
+			"hotspots": [
+				{
+					"id": "to_square",
+					"locationId": "carne_square",
+					"label": "Выход на площадь",
+					"icon": "exit",
+					"target": "carne_village_square",
+					"position": { "left": "8em", "bottom": "3em" },
+					"status": "active"
+				}
+			]
+		},
+		{
+			"id": "carne_emmot_house",
+			"name": "Дом семьи Эммот",
+			"bg": "images/sprites/backgrounds/carne/emmot-house/default.jpg",
+			"clearCharacters": true,
+			"worldMap": "newworld",
+			"localMap": "carne",
+			"locationId": "carne_emmot_house",
 			"variables": ["global.toxic_gas = 0"],
 			"hotspots": [
 				{

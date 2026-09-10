@@ -54,6 +54,22 @@ const locations = ref([
 		target: 'carne_village_square'
 	},
 	{
+		id: 'carne_chief_house',
+		name: 'Дом старосты',
+		x: 62,
+		y: 50,
+		class: 'map-place-house',
+		target: 'carne_chief_house'
+	},
+	{
+		id: 'carne_emmot_house',
+		name: 'Дом семьи Эммот',
+		x: 40,
+		y: 50,
+		class: 'map-place-house',
+		target: 'carne_emmot_house'
+	},
+	{
 		id: 'carne_fields',
 		name: 'Северные поля',
 		x: 28,

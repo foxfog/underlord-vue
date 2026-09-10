@@ -11,6 +11,7 @@ import { evaluateExpression } from '../utils/expressionEvaluator'
 import { getCalendarInfo, advanceTimeOfDay } from '../utils/timeCalendar'
 import { useQuests } from './useQuests'
 import { useEncyclopedia } from './useEncyclopedia'
+import { useNpcSchedule } from './useNpcSchedule'
 
 export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	// State
@@ -34,6 +35,55 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		color: '#000000'
 	})
 	let fadeTimeout = null
+	let fadeAnimationTimeout = null
+	let pendingAudioTimeouts = []
+
+	function clearFadeTimeouts() {
+		if (fadeTimeout) {
+			clearTimeout(fadeTimeout)
+			fadeTimeout = null
+		}
+		if (fadeAnimationTimeout) {
+			clearTimeout(fadeAnimationTimeout)
+			fadeAnimationTimeout = null
+		}
+	}
+
+	function scheduleAudio(callback, delaySeconds) {
+		if (!delaySeconds || delaySeconds <= 0) {
+			callback()
+			return
+		}
+		const item = {
+			callback,
+			timer: null
+		}
+		item.timer = setTimeout(() => {
+			callback()
+			const idx = pendingAudioTimeouts.indexOf(item)
+			if (idx !== -1) pendingAudioTimeouts.splice(idx, 1)
+		}, delaySeconds * 1000)
+		pendingAudioTimeouts.push(item)
+	}
+
+	function flushPendingAudio() {
+		while (pendingAudioTimeouts.length > 0) {
+			const item = pendingAudioTimeouts.shift()
+			if (item.timer) clearTimeout(item.timer)
+			try {
+				item.callback()
+			} catch (e) {
+				console.warn('Error flushing pending audio:', e)
+			}
+		}
+	}
+
+	function clearPendingAudio() {
+		pendingAudioTimeouts.forEach((item) => {
+			if (item.timer) clearTimeout(item.timer)
+		})
+		pendingAudioTimeouts = []
+	}
 
 	// Audio state - indexed by stream ID
 	const audioStreams = ref({}) // { streamId: { type, file, loop, stream } }
@@ -235,7 +285,16 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 				if (srcMatch) currentStoryPath = srcMatch[1]
 
 				// Load characters (try split format, fallback to legacy file)
-				const characterIds = ['mc', 'albedo', 'momonga', 'enri']
+				let characterIds = ['mc', 'albedo', 'momonga', 'enri', 'carne-chief']
+				try {
+					const charRegistry = await loadDataFromPublic('/data/characters/characters.json')
+					if (charRegistry && Array.isArray(charRegistry.characters)) {
+						characterIds = Array.from(new Set([...characterIds, ...charRegistry.characters]))
+					}
+				} catch (registryErr) {
+					// fallback to default list
+				}
+
 				for (const charId of characterIds) {
 					try {
 						const valuesData = await loadDataFromPublic(
@@ -299,10 +358,45 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 				const savesStore = useSavesStore()
 				savesStore.setCharacterDefaults(characterData.value)
 
+				// Load NPC schedules
+				try {
+					const schedulesModule = await loadDataFromPublic('/data/characters/schedules.json')
+					useNpcSchedule().loadSchedules(schedulesModule)
+				} catch (schedulesErr) {
+					console.warn('Could not load schedules.json:', schedulesErr)
+				}
+
+				// Register default encyclopedia entry for carne-chief if not registered
+				try {
+					const enc = useEncyclopedia()
+					if (enc && !enc.allCharacters.value.some((c) => c.id === 'carne-chief')) {
+						enc.addCharacter({
+							id: 'carne-chief',
+							name: 'Староста',
+							surname: '',
+							title: 'Староста деревни Карн',
+							avatar: 'images/sprites/characters/carne-chief/default.webp',
+							sympVariable: 'chief_mc_symp',
+							titleVariable: 'chief_mc_title',
+							defaultTitle: 'Путник',
+							blocks: [
+								{
+									id: 'general',
+									title: 'Староста деревни',
+									text: 'Пожилой мудрый староста деревни Карн. Заботится о жителях и благополучии поселения.'
+								}
+							]
+						})
+					}
+				} catch (encErr) {
+					console.warn('Could not initialize carne-chief in encyclopedia:', encErr)
+				}
+
 				const scenesModule = await loadDataFromPublic('/data/scenes/scenes.json')
 				scenesModule.scenes.forEach((scene) => {
 					sceneData.value[scene.id] = scene
 				})
+				useNpcSchedule().loadScenes(scenesModule.scenes)
 
 				isLoaded.value = true
 				console.log('✔ All story data loaded, ready to start')
@@ -420,17 +514,35 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					processStep()
 					break
 				case 'sound':
-					if (!isRestoringGameState.value) playSound(step)
+					if (!isRestoringGameState.value) {
+						if (step.delay && step.delay > 0) {
+							scheduleAudio(() => playSound(step), step.delay)
+						} else {
+							playSound(step)
+						}
+					}
 					stepIndex.value++
 					processStep()
 					break
 				case 'voice':
-					if (!isRestoringGameState.value) playVoice(step)
+					if (!isRestoringGameState.value) {
+						if (step.delay && step.delay > 0) {
+							scheduleAudio(() => playVoice(step), step.delay)
+						} else {
+							playVoice(step)
+						}
+					}
 					stepIndex.value++
 					processStep()
 					break
 				case 'music':
-					if (!isRestoringGameState.value) playMusic(step)
+					if (!isRestoringGameState.value) {
+						if (step.delay && step.delay > 0) {
+							scheduleAudio(() => playMusic(step), step.delay)
+						} else {
+							playMusic(step)
+						}
+					}
 					stepIndex.value++
 					processStep()
 					break
@@ -845,6 +957,50 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					stepIndex.value++
 					processStep()
 					break
+				case 'npc':
+				case 'npc-state':
+				case 'npc-schedule': {
+					if (!isRestoringGameState.value) {
+						const npcSchedule = useNpcSchedule()
+						const charId = step.character || step.characterId || step.id
+						const action = step.action || 'set-state'
+						if (action === 'set-state' || step.state !== undefined) {
+							npcSchedule.setNpcState(charId, step.state)
+						} else if (
+							action === 'override' ||
+							action === 'override-location' ||
+							action === 'set-location'
+						) {
+							npcSchedule.overrideNpcLocation(charId, {
+								scene: step.scene || step.targetScene || step.target,
+								position: step.position,
+								orientation: step.orientation,
+								scale: step.scale,
+								customClass: step.class || step.customClass
+							})
+						} else if (action === 'clear-override' || action === 'reset-location') {
+							npcSchedule.clearNpcOverride(charId)
+						} else if (action === 'set-known' || action === 'discover-location') {
+							npcSchedule.setNpcLocationKnown(charId, step.known !== false)
+						}
+						// If on current scene, refresh visible characters
+						if (currentScene.value?.id) {
+							npcSchedule.refreshSceneNpcs(
+								currentScene.value.id,
+								{
+									globalData: globalData.value,
+									characterData: characterData.value,
+									questsManager: useQuests()
+								},
+								visibleCharacters,
+								characterData
+							)
+						}
+					}
+					stepIndex.value++
+					processStep()
+					break
+				}
 				case 'hold':
 					// Keep the current scene/dialogue visible and do not advance further.
 					// Use this at the end of a story to prevent the engine from emitting `end`.
@@ -979,6 +1135,23 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 				(c) => c.id !== clearParam
 			)
 			console.log(`🧹 [changeScene] Cleared character "${clearParam}" from screen`)
+		}
+
+		// Автоматическое наполнение сцены персонажами по расписанию (NPC Schedule)
+		const suppressSchedule =
+			typeof sceneIdOrStep === 'object' &&
+			(sceneIdOrStep.populateNpcs === false || sceneIdOrStep.autoPopulate === false)
+		if (!suppressSchedule && !isRestoringGameState.value) {
+			useNpcSchedule().populateSceneCharacters(
+				sceneKey,
+				{
+					globalData: globalData.value,
+					characterData: characterData.value,
+					questsManager: useQuests()
+				},
+				visibleCharacters,
+				characterData
+			)
 		}
 
 		// Apply scene-level variables if specified in scene definition or step
@@ -1286,6 +1459,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 
 	function handleFadeStep(step) {
 		if (isRestoringGameState.value) {
+			clearFadeTimeouts()
 			fadeOverlay.value.visible = false
 			fadeOverlay.value.opacity = 0
 			stepIndex.value++
@@ -1293,19 +1467,23 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			return
 		}
 
-		if (fadeTimeout) {
-			clearTimeout(fadeTimeout)
-			fadeTimeout = null
-		}
+		clearFadeTimeouts()
 
 		const action = step.action || (step.type === 'fade-out' ? 'out' : 'in')
 		const parsedDuration = typeof step.duration === 'number' ? step.duration : parseFloat(step.duration)
 		const duration = !isNaN(parsedDuration) && parsedDuration >= 0 ? parsedDuration : 1.5
 		const color = step.color || '#000000'
 		const wait = step.wait !== false
+		const parsedHold = typeof step.hold === 'number' ? step.hold : parseFloat(step.hold || step.delay)
+		const hold = !isNaN(parsedHold) && parsedHold > 0 ? parsedHold : 0
+
+		// Optional sound trigger on fade start
+		if (step.sound && !isRestoringGameState.value) {
+			playSound(typeof step.sound === 'string' ? { file: step.sound, loop: false } : step.sound)
+		}
 
 		if (action === 'in') {
-			// Fade in: start solid, then animate to 0
+			// Fade in: start solid, hold if specified, then animate to 0
 			fadeOverlay.value = {
 				visible: true,
 				opacity: 1,
@@ -1313,27 +1491,43 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 				color
 			}
 
-			setTimeout(() => {
+			const startFadeAnimation = () => {
 				fadeOverlay.value = {
 					visible: true,
 					opacity: 0,
 					duration,
 					color
 				}
-			}, 30)
+				if (step.fadeSound && !isRestoringGameState.value) {
+					playSound(
+						typeof step.fadeSound === 'string'
+							? { file: step.fadeSound, loop: false }
+							: step.fadeSound
+					)
+				}
+			}
+
+			if (hold > 0) {
+				fadeAnimationTimeout = setTimeout(startFadeAnimation, hold * 1000)
+			} else {
+				fadeAnimationTimeout = setTimeout(startFadeAnimation, 30)
+			}
+
+			const totalTime = (hold + duration) * 1000 + 40
 
 			if (wait) {
 				fadeTimeout = setTimeout(() => {
 					fadeOverlay.value.visible = false
 					fadeTimeout = null
+					fadeAnimationTimeout = null
 					advanceStoryOverride = null
 					stepIndex.value++
 					processStep()
-				}, duration * 1000 + 40)
+				}, totalTime)
 
 				advanceStoryOverride = function () {
-					if (fadeTimeout) clearTimeout(fadeTimeout)
-					fadeTimeout = null
+					clearFadeTimeouts()
+					flushPendingAudio()
 					fadeOverlay.value.visible = false
 					fadeOverlay.value.opacity = 0
 					advanceStoryOverride = null
@@ -1344,12 +1538,13 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 				fadeTimeout = setTimeout(() => {
 					fadeOverlay.value.visible = false
 					fadeTimeout = null
-				}, duration * 1000 + 40)
+					fadeAnimationTimeout = null
+				}, totalTime)
 				stepIndex.value++
 				processStep()
 			}
 		} else {
-			// Fade out: start transparent, then animate to 1
+			// Fade out: start transparent, animate to solid, then hold if specified
 			fadeOverlay.value = {
 				visible: true,
 				opacity: 0,
@@ -1357,7 +1552,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 				color
 			}
 
-			setTimeout(() => {
+			fadeAnimationTimeout = setTimeout(() => {
 				fadeOverlay.value = {
 					visible: true,
 					opacity: 1,
@@ -1366,17 +1561,20 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 				}
 			}, 30)
 
+			const totalTime = (duration + hold) * 1000 + 40
+
 			if (wait) {
 				fadeTimeout = setTimeout(() => {
 					fadeTimeout = null
+					fadeAnimationTimeout = null
 					advanceStoryOverride = null
 					stepIndex.value++
 					processStep()
-				}, duration * 1000 + 40)
+				}, totalTime)
 
 				advanceStoryOverride = function () {
-					if (fadeTimeout) clearTimeout(fadeTimeout)
-					fadeTimeout = null
+					clearFadeTimeouts()
+					flushPendingAudio()
 					fadeOverlay.value.opacity = 1
 					advanceStoryOverride = null
 					stepIndex.value++
@@ -1403,10 +1601,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		duration = 0.35,
 		color = '#000000'
 	) {
-		if (fadeTimeout) {
-			clearTimeout(fadeTimeout)
-			fadeTimeout = null
-		}
+		clearFadeTimeouts()
 
 		return new Promise((resolve) => {
 			let isFinished = false
@@ -1414,10 +1609,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			const finish = () => {
 				if (isFinished) return
 				isFinished = true
-				if (fadeTimeout) {
-					clearTimeout(fadeTimeout)
-					fadeTimeout = null
-				}
+				clearFadeTimeouts()
 				advanceStoryOverride = null
 				fadeOverlay.value.visible = false
 				fadeOverlay.value.opacity = 0
@@ -1569,6 +1761,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 
 	function stopAllStreams() {
 		console.log('🛑 Stopping all streams')
+		clearPendingAudio()
 		audioStreams.value = {}
 		pausedStreams.value = {}
 		stopSound()
@@ -2704,6 +2897,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		if (globalData.value) {
 			globalData.value.quests = useQuests().getQuestsState()
 			globalData.value.encyclopedia = useEncyclopedia().getState()
+			globalData.value.npcStates = useNpcSchedule().getState()
 		}
 
 		return {
@@ -2766,6 +2960,9 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			}
 			if (saveData.globalData?.encyclopedia) {
 				useEncyclopedia().loadState(saveData.globalData.encyclopedia)
+			}
+			if (saveData.globalData?.npcStates) {
+				useNpcSchedule().loadState(saveData.globalData.npcStates)
 			}
 			// Notify outside listeners (Game.vue) about restored global data
 			if (emit) {
@@ -2966,10 +3163,8 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 				})
 			}
 
-			if (fadeTimeout) {
-				clearTimeout(fadeTimeout)
-				fadeTimeout = null
-			}
+			clearFadeTimeouts()
+			clearPendingAudio()
 			fadeOverlay.value = {
 				visible: false,
 				opacity: 0,
@@ -3009,10 +3204,8 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		historyEntries.value = []
 		audioStreams.value = {}
 		pausedStreams.value = {}
-		if (fadeTimeout) {
-			clearTimeout(fadeTimeout)
-			fadeTimeout = null
-		}
+		clearFadeTimeouts()
+		clearPendingAudio()
 		fadeOverlay.value = {
 			visible: false,
 			opacity: 0,
@@ -3037,6 +3230,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		questsManager.resetQuests()
 		const encyclopediaManager = useEncyclopedia()
 		encyclopediaManager.resetEncyclopedia()
+		useNpcSchedule().resetState()
 	}
 
 	function showNotification(text, type = 'info', duration = 3000) {
@@ -3063,6 +3257,20 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		console.log(
 			`⏳ advanceTime: new timeOfDay=${nextPeriod}, day=${globalData.value.day}, time=${nextFormatted}`
 		)
+
+		if (currentScene.value?.id) {
+			useNpcSchedule().refreshSceneNpcs(
+				currentScene.value.id,
+				{
+					globalData: globalData.value,
+					characterData: characterData.value,
+					questsManager: useQuests()
+				},
+				visibleCharacters,
+				characterData
+			)
+		}
+
 		if (emit) {
 			emit('global-data-changed', globalData.value)
 		}
@@ -3321,6 +3529,9 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		getHotspotStatus,
 		handleHotspotStep,
 		handleHotspotClick,
+		// NPC schedule and routines
+		npcSchedule: useNpcSchedule(),
+		changeScene,
 		// goto method for Rules Engine
 		goto: goToLabel,
 		// audio methods

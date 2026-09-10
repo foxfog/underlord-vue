@@ -5,9 +5,11 @@
 		:class="[
 			`char-${character.id}`,
 			`orientation-${character.orientation || 'right'}`,
-			{ 'char-back': character.back }
+			{ 'char-back': character.back, 'is-interactive': Boolean(character.interaction) },
+			character.customClass
 		]"
 		:style="characterStyle"
+		@click="onCharacterClick"
 	>
 		<div class="char-body" ref="charBodyRef">
 			<!-- Base body sprites -->
@@ -36,6 +38,14 @@ const props = defineProps({
 		required: true
 	}
 })
+
+const emit = defineEmits(['character-click'])
+
+function onCharacterClick(event) {
+	if (props.character.interaction) {
+		emit('character-click', { character: props.character, interaction: props.character.interaction, event })
+	}
+}
 
 const charBodyRef = ref(null)
 const isAnimating = ref(false)
@@ -68,9 +78,13 @@ const characterStyle = computed(() => {
 	if (positionToUse) {
 		const posMap = {
 			l: 'left',
+			left: 'left',
 			r: 'right',
+			right: 'right',
 			t: 'top',
-			b: 'bottom'
+			top: 'top',
+			b: 'bottom',
+			bottom: 'bottom'
 		}
 
 		for (const [alias, cssProp] of Object.entries(posMap)) {
@@ -79,6 +93,15 @@ const characterStyle = computed(() => {
 				// Add % if value is a number
 				style[cssProp] = typeof value === 'number' ? `${value}%` : value
 			}
+		}
+
+		// Ensure right-anchored elements override default CSS left: 0%
+		if (style.right !== undefined && style.left === undefined) {
+			style.left = 'auto'
+		}
+		// Ensure left-anchored elements override default CSS right: 0%
+		if (style.left !== undefined && style.right === undefined) {
+			style.right = 'auto'
 		}
 	}
 

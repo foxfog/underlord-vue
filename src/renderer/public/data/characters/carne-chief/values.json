@@ -1,0 +1,39 @@
+{
+	"id": "carne-chief",
+	"name": "Староста",
+	"surname": "",
+	"nickname": "",
+	"title": "Староста деревни Карн",
+	"size": 1,
+	"race": "human",
+	"gender": "male",
+	"hpmax": 20,
+	"mpmax": 0,
+	"attack": 1,
+	"defense": 1,
+	"weight": 72,
+	"hp": 20,
+	"mp": 0,
+	"lvl": 2,
+	"exp": 0,
+	"skill_points": 0,
+	"stat_points": 0,
+	"fractions": ["carne-village"],
+	"tags": ["villager", "carne", "chief"],
+	"equipment_slots": {
+		"head": null,
+		"neck_1": null,
+		"torso-1": null,
+		"torso-2": null,
+		"torso-3": null,
+		"legs": null,
+		"feet": null,
+		"weapon-hand-1": null,
+		"weapon-hand-2": null,
+		"hands": null,
+		"weapon_off": null
+	},
+	"inventory": {
+		"items": []
+	}
+}

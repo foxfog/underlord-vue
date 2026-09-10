@@ -11,6 +11,9 @@
 	&.orientation-left {
 		transform: scaleX(-1);
 	}
+	&.is-interactive {
+		cursor: pointer;
+	}
 	.char-body {
 		position: relative;
 		height: 100%;

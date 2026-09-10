@@ -215,6 +215,13 @@
 											«{{ getCharacterTitleToMc(selectedCharacter) }}»
 										</span>
 									</div>
+
+									<div class="char-meta-row">
+										<span class="meta-label">Местонахождение:</span>
+										<span class="meta-value location-value">
+											📍 {{ getCharacterLocation(selectedCharacter) }}
+										</span>
+									</div>
 								</div>
 							</div>
 
@@ -344,6 +351,7 @@
 import { ref, computed } from 'vue'
 import { useQuests } from '../../../composables/useQuests'
 import { useEncyclopedia, getAttitudeInfo } from '../../../composables/useEncyclopedia'
+import { useNpcSchedule } from '../../../composables/useNpcSchedule'
 import QuestTreeItem from './QuestTreeItem.vue'
 
 const props = defineProps({
@@ -409,6 +417,17 @@ function getCharacterTitleToMc(char) {
 	const val = props.gameState?.global?.[varName]
 	if (val && String(val).trim() !== '') return String(val)
 	return char.defaultTitle || 'Путник'
+}
+
+function getCharacterLocation(char) {
+	if (!char) return 'Неизвестно'
+	const { getNpcLocationDisplay } = useNpcSchedule()
+	const context = {
+		globalData: props.gameState?.global || {},
+		characterData: props.gameState?.character || {}
+	}
+	const sceneData = props.gameState?.sceneData || {}
+	return getNpcLocationDisplay(char.id, context, sceneData)
 }
 
 // Encyclopedia logic
@@ -882,6 +901,11 @@ function closeOnBackground() {
 .title-value {
 	color: #38bdf8;
 	font-style: italic;
+}
+
+.location-value {
+	color: #cbd5e1;
+	font-weight: 500;
 }
 
 .attitude-pill {

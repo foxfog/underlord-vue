@@ -117,6 +117,9 @@ body {
 * **Энциклопедия и журнал персонажей (Encyclopedia & Characters)**:
   Карточки персонажей, модульные блочные заметки (`{ id, title, text }`), дерево категорий и подкатегорий, динамические уведомления об изменении отношений (`*_symp`). Композабл `useEncyclopedia.js`.
   📖 Документация: [`docs/systems/EncyclopediaSystem.md`](docs/systems/EncyclopediaSystem.md)
+* **Распорядок дня и присутствие NPC (NPC Schedule & Presence)**:
+  Многоуровневая система размещения NPC (Skyrim-style), распорядки дня по времени суток и сезону, приоритет сюжетных экшенов (`override`), дельта-сохранения в `globalData.npcStates`, отображение местоположения в карточках Журнала. Композабл `useNpcSchedule.js`.
+  📖 Документация: [`docs/systems/NPCScheduleSystem.md`](docs/systems/NPCScheduleSystem.md)
 * **Система сохранений (Save & Load)**:
   Сериализация `gameState` (`globalData`, `characterData`, `discoveredLocations`), IPC с Main процессом.
   📖 Документация: [`docs/systems/SaveSystem.md`](docs/systems/SaveSystem.md)

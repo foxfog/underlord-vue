@@ -21,6 +21,7 @@
 * [Инвентарь и Контекстное меню](./systems/Inventory.md)
 * [Система Экипировки (Equipment System)](./systems/EquipmentSystem.md)
 * [Энциклопедия и Журнал персонажей (Encyclopedia & Characters)](./systems/EncyclopediaSystem.md)
+* [Система распорядка дня и присутствия NPC (NPC Schedule & Presence)](./systems/NPCScheduleSystem.md)
 
 ## 🤖 Разработка и Агенты
 * [Руководство для ИИ-агентов и правила адаптивной верстки (AGENTS.md)](../AGENTS.md)
