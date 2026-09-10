@@ -95,6 +95,15 @@ body.screenshot-mode .modal {
 	display: none !important;
 }
 
+/* Полноэкранный прозрачный оверлей для возврата интерфейса кликом (Ren'Py style) */
+.ui-hidden-overlay {
+	position: absolute;
+	inset: 0;
+	z-index: 8000;
+	cursor: pointer;
+	background: transparent;
+}
+
 .overlay-content {
 	display: flex;
 	width: 100%;
@@ -171,4 +180,93 @@ body.screenshot-mode .modal {
 		}
 	}
 }
+
+/* Индикатор быстрой перемотки в стиле Ren'Py (Ctrl Fast-Forward) */
+.vn-skip-indicator {
+	position: absolute;
+	top: 1.25em;
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 450;
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+	padding: 0.35em 0.85em;
+	background: rgba(12, 16, 28, 0.88);
+	border: 1px solid rgba(255, 215, 0, 0.55);
+	border-radius: 0.35em;
+	box-shadow: 0 0.25em 0.75em rgba(0, 0, 0, 0.6), 0 0 0.6em rgba(255, 215, 0, 0.2);
+	backdrop-filter: blur(0.25em);
+	color: #ffd700;
+	font-family: Kurale, var(--font-primary, sans-serif);
+	font-size: 0.9em;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	pointer-events: none;
+	user-select: none;
+	animation: vnSkipGlow 1s ease-in-out infinite alternate;
+}
+
+.vn-skip-indicator-icon {
+	font-size: 1.1em;
+	display: inline-block;
+	animation: vnSkipBounce 0.6s ease-in-out infinite alternate;
+}
+
+.vn-skip-indicator-text {
+	text-shadow: 0 0 0.5em rgba(255, 215, 0, 0.5);
+}
+
+.vn-skip-indicator-dots {
+	display: inline-flex;
+	letter-spacing: 0.05em;
+}
+
+.vn-skip-indicator-dots span {
+	animation: vnSkipBlink 1.2s infinite;
+	opacity: 0.2;
+}
+
+.vn-skip-indicator-dots span:nth-child(1) {
+	animation-delay: 0s;
+}
+
+.vn-skip-indicator-dots span:nth-child(2) {
+	animation-delay: 0.2s;
+}
+
+.vn-skip-indicator-dots span:nth-child(3) {
+	animation-delay: 0.4s;
+}
+
+@keyframes vnSkipGlow {
+	from {
+		border-color: rgba(255, 215, 0, 0.4);
+		box-shadow: 0 0.25em 0.75em rgba(0, 0, 0, 0.6), 0 0 0.4em rgba(255, 215, 0, 0.15);
+	}
+	to {
+		border-color: rgba(255, 215, 0, 0.85);
+		box-shadow: 0 0.25em 0.75em rgba(0, 0, 0, 0.7), 0 0 0.85em rgba(255, 215, 0, 0.4);
+	}
+}
+
+@keyframes vnSkipBounce {
+	from {
+		transform: translateX(-0.08em);
+	}
+	to {
+		transform: translateX(0.08em);
+	}
+}
+
+@keyframes vnSkipBlink {
+	0%, 100% {
+		opacity: 0.2;
+	}
+	50% {
+		opacity: 1;
+	}
+}
+
 

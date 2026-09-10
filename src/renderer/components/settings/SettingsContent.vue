@@ -23,6 +23,13 @@
 				>
 					{{ $t('settings.video') }}
 				</button>
+				<button
+					class="ui-tabs-label"
+					:class="{ __active: activeSection === 'controls' }"
+					@click="activeSection = 'controls'"
+				>
+					{{ $t('settings.controls') }}
+				</button>
 			</div>
 			<div class="ui-tabs-content">
 				<div class="ui-tab" :class="{ __active: activeSection === 'audio' }">
@@ -33,6 +40,9 @@
 				</div>
 				<div class="ui-tab" :class="{ __active: activeSection === 'video' }">
 					<SettingsVideo />
+				</div>
+				<div class="ui-tab" :class="{ __active: activeSection === 'controls' }">
+					<SettingsControls />
 				</div>
 			</div>
 		</div>
@@ -52,6 +62,7 @@ import { ref, computed, watch, onMounted, onBeforeUnmount, onUnmounted } from 'v
 import SettingsAudio from './SettingsAudio.vue'
 import SettingsGeneral from './SettingsGeneral.vue'
 import SettingsVideo from './SettingsVideo.vue'
+import SettingsControls from './SettingsControls.vue'
 import { useSettingsStore } from '@/stores/settings'
 
 const store = useSettingsStore()

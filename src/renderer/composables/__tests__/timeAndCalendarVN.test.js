@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { nextTick } from 'vue'
 import { createPinia, setActivePinia } from 'pinia'
 import { initSettingsStore } from '../../stores/settings'
@@ -175,6 +175,73 @@ describe('UI Visibility Reactivity and Event Emission', () => {
 		// UI visibility should be reset
 		expect(vn.uiVisibility.value['map-button']).toBe(false)
 		expect(vn.uiVisibility.value.topbar).toBe(false)
+	})
+
+	it('toggles isUiHidden and hides all interface elements in uiVisibility (Ren\'Py H-key style)', async () => {
+		const emit = vi.fn()
+		const vn = useVisualNovel({ emit })
+
+		vn.baseUiVisibility.value['inventory-button'] = true
+		vn.baseUiVisibility.value['map-button'] = true
+		vn.baseUiVisibility.value.topbar = true
+		await nextTick()
+
+		expect(vn.uiVisibility.value.topbar).toBe(true)
+		expect(vn.uiVisibility.value['inventory-button']).toBe(true)
+		expect(vn.isUiHidden.value).toBe(false)
+
+		// Hide UI via toggleHideUi (equivalent to pressing H)
+		vn.toggleHideUi()
+		await nextTick()
+
+		expect(vn.isUiHidden.value).toBe(true)
+		expect(vn.uiVisibility.value.isUiHidden).toBe(true)
+		expect(vn.uiVisibility.value.topbar).toBe(false)
+		expect(vn.uiVisibility.value['inventory-button']).toBe(false)
+		expect(vn.uiVisibility.value['map-button']).toBe(false)
+		expect(vn.uiVisibility.value.dialogue).toBe(false)
+
+		// Unhide UI via toggleHideUi again or unhideUi
+		vn.unhideUi()
+		await nextTick()
+
+		expect(vn.isUiHidden.value).toBe(false)
+		expect(vn.uiVisibility.value.isUiHidden).toBe(false)
+		expect(vn.uiVisibility.value.topbar).toBe(true)
+		expect(vn.uiVisibility.value['inventory-button']).toBe(true)
+		expect(vn.uiVisibility.value['map-button']).toBe(true)
+	})
+
+	it('resets isUiHidden to false on resetGameState', async () => {
+		const vn = useVisualNovel({})
+		vn.hideUi()
+		expect(vn.isUiHidden.value).toBe(true)
+
+		vn.resetGameState()
+		expect(vn.isUiHidden.value).toBe(false)
+		expect(vn.uiVisibility.value.isUiHidden).toBe(false)
+	})
+
+	it('validates active input element check logic to prevent UI toggle during typing', () => {
+		const isInputElementActive = (activeEl) => {
+			if (!activeEl) return false
+			const tag = activeEl.tagName ? activeEl.tagName.toLowerCase() : ''
+			if (tag === 'input' || tag === 'textarea' || tag === 'select') {
+				return true
+			}
+			if (activeEl.isContentEditable) {
+				return true
+			}
+			return false
+		}
+
+		expect(isInputElementActive({ tagName: 'INPUT' })).toBe(true)
+		expect(isInputElementActive({ tagName: 'TEXTAREA' })).toBe(true)
+		expect(isInputElementActive({ tagName: 'SELECT' })).toBe(true)
+		expect(isInputElementActive({ tagName: 'DIV', isContentEditable: true })).toBe(true)
+		expect(isInputElementActive({ tagName: 'BUTTON' })).toBe(false)
+		expect(isInputElementActive({ tagName: 'DIV' })).toBe(false)
+		expect(isInputElementActive(null)).toBe(false)
 	})
 })
 
@@ -808,6 +875,63 @@ describe('UI Visibility for date-badge and next-time-button', () => {
 		expect(vn.uiVisibility.value['date-badge']).toBe(false)
 		expect(vn.uiVisibility.value['calendar-button']).toBe(false)
 	})
+
+	it('automatically hides calendar-button and date-badge when switching calendarType to new_world', () => {
+		const vn = useVisualNovel({})
+		expect(vn.uiVisibility.value['date-badge']).toBe(true)
+		expect(vn.uiVisibility.value['calendar-button']).toBe(true)
+
+		vn.storyData.value = {
+			steps: [
+				{
+					variable: "global.calendarType = 'new_world'"
+				}
+			]
+		}
+		vn.processStep()
+		expect(vn.globalData.value.calendarType).toBe('new_world')
+		expect(vn.uiVisibility.value['date-badge']).toBe(false)
+		expect(vn.uiVisibility.value['calendar-button']).toBe(false)
+	})
+
+	it('does not re-enable calendar-button on topbar show when in the new world', () => {
+		const vn = useVisualNovel({})
+		vn.globalData.value.calendarType = 'new_world'
+		vn.baseUiVisibility.value['date-badge'] = false
+		vn.baseUiVisibility.value['calendar-button'] = false
+
+		vn.storyData.value = {
+			steps: [
+				{
+					type: 'ui',
+					action: 'show',
+					target: ['topbar']
+				}
+			]
+		}
+		vn.processStep()
+		expect(vn.uiVisibility.value.topbar).toBe(true)
+		expect(vn.uiVisibility.value['date-badge']).toBe(false)
+		expect(vn.uiVisibility.value['calendar-button']).toBe(false)
+	})
+
+	it('restores calendar-button as false for legacy New World saves in restoreGameState', async () => {
+		const vn = useVisualNovel({})
+		const legacySave = {
+			global: {
+				calendarType: 'new_world',
+				year: 0,
+				month: 3,
+				dayOfMonth: 1
+			},
+			character: { mc: { name: 'Player' } },
+			currentStory: 'intro',
+			stepIndex: 10
+		}
+		await vn.restoreGameState(legacySave)
+		expect(vn.uiVisibility.value['date-badge']).toBe(false)
+		expect(vn.uiVisibility.value['calendar-button']).toBe(false)
+	})
 })
 
 describe('Intro New World Arrival Transition and Label Seeking', () => {
@@ -875,6 +999,142 @@ describe('Intro New World Arrival Transition and Label Seeking', () => {
 		expect(vn.currentDialogue.value).toBe('Where am I?')
 	})
 })
+
+describe('Ctrl Fast-Forward / Skip Mode (Ren\'Py Style)', () => {
+	beforeEach(() => {
+		vi.useFakeTimers()
+		setActivePinia(createPinia())
+		initSettingsStore({})
+	})
+
+	afterEach(() => {
+		vi.useRealTimers()
+	})
+
+	it('activates isSkipping and rapidly advances dialogues with fast-forward ticks', () => {
+		const vn = useVisualNovel({})
+		vn.storyData.value = {
+			id: 'test_skip',
+			steps: [
+				{ type: 'dialogue', character: 'mc', text: 'Line 1' },
+				{ type: 'dialogue', character: 'mc', text: 'Line 2' },
+				{ type: 'dialogue', character: 'mc', text: 'Line 3' }
+			]
+		}
+		vn.processStep()
+		expect(vn.currentDialogue.value).toBe('Line 1')
+		expect(vn.isSkipping.value).toBe(false)
+
+		// Start fast-forward (holding Ctrl)
+		vn.startFastForward()
+		expect(vn.isSkipping.value).toBe(true)
+		// Immediately advances first step on start
+		expect(vn.currentDialogue.value).toBe('Line 2')
+
+		// Next interval tick (60ms)
+		vi.advanceTimersByTime(60)
+		expect(vn.currentDialogue.value).toBe('Line 3')
+		expect(vn.isSkipping.value).toBe(true)
+
+		// Stop fast-forward (releasing Ctrl)
+		vn.stopFastForward()
+		expect(vn.isSkipping.value).toBe(false)
+
+		// Further time should not advance
+		vi.advanceTimersByTime(120)
+		expect(vn.currentDialogue.value).toBe('Line 3')
+	})
+
+	it('automatically stops fast-forward and retains choices when reaching choice step', () => {
+		const vn = useVisualNovel({})
+		vn.storyData.value = {
+			id: 'test_skip_choices',
+			steps: [
+				{ type: 'dialogue', character: 'mc', text: 'Choose your path' },
+				{
+					type: 'choice',
+					options: [
+						{ text: 'Option A' },
+						{ text: 'Option B' }
+					]
+				},
+				{ type: 'dialogue', character: 'mc', text: 'After choice' }
+			]
+		}
+		vn.processStep()
+		expect(vn.currentDialogue.value).toBe('Choose your path')
+
+		vn.startFastForward()
+		// Start advances from dialogue to choice step
+		expect(vn.currentChoices.value.length).toBe(2)
+		expect(vn.currentChoices.value[0].text).toBe('Option A')
+		// Fast-forward MUST stop immediately at choices!
+		expect(vn.isSkipping.value).toBe(false)
+
+		// Even if more ticks pass, choices are never auto-skipped
+		vi.advanceTimersByTime(300)
+		expect(vn.currentChoices.value.length).toBe(2)
+		expect(vn.stepIndex.value).toBe(1)
+	})
+
+	it('automatically stops fast-forward when reaching text input modal', () => {
+		const vn = useVisualNovel({})
+		vn.storyData.value = {
+			id: 'test_skip_input',
+			steps: [
+				{ type: 'dialogue', character: 'mc', text: 'Please enter name:' },
+				{
+					type: 'inputtext',
+					variable: 'mc.name',
+					text: 'Character Name'
+				},
+				{ type: 'dialogue', character: 'mc', text: 'Done' }
+			]
+		}
+		vn.processStep()
+		expect(vn.currentDialogue.value).toBe('Please enter name:')
+
+		vn.startFastForward()
+		// Reaches input modal
+		expect(vn.showTextInputModal.value).toBe(true)
+		expect(vn.isSkipping.value).toBe(false)
+
+		// Ticks do not skip input modal
+		vi.advanceTimersByTime(300)
+		expect(vn.showTextInputModal.value).toBe(true)
+		expect(vn.stepIndex.value).toBe(1)
+	})
+
+	it('automatically stops fast-forward when reaching end of story', () => {
+		const vn = useVisualNovel({})
+		vn.storyData.value = {
+			id: 'test_skip_end',
+			steps: [
+				{ type: 'dialogue', character: 'mc', text: 'Final line' }
+			]
+		}
+		vn.processStep()
+		expect(vn.currentDialogue.value).toBe('Final line')
+
+		vn.startFastForward()
+		// Reaches end of steps
+		expect(vn.stepIndex.value).toBe(1)
+		expect(vn.isSkipping.value).toBe(false)
+	})
+
+	it('does not engage fast-forward when in free-roam with no active dialogue', () => {
+		const vn = useVisualNovel({})
+		vn.storyData.value = {
+			id: 'free_roam',
+			steps: []
+		}
+		expect(vn.isDialogueActive.value).toBe(false)
+
+		vn.startFastForward()
+		expect(vn.isSkipping.value).toBe(false)
+	})
+})
+
 
 
 

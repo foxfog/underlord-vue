@@ -323,6 +323,11 @@
 			"fade": false
 		},
 		{
+			"type": "ui",
+			"target": ["calendar-button", "date-badge"],
+			"action": "hide"
+		},
+		{
 			"type": "sound",
 			"file": "audio/sound/tinnitus.mp3",
 			"loop": false,
@@ -421,7 +426,7 @@
 		},
 		{
 			"type": "ui",
-			"target": ["next-time-button", "date-badge"],
+			"target": ["next-time-button", "date-badge", "calendar-button"],
 			"action": "hide"
 		},
 		{

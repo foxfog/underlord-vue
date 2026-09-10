@@ -53,7 +53,7 @@
 
 	<!-- Отображение вариантов по центру экрана по умолчанию -->
 	<div
-		v-if="choices.length > 0 && choicesLayout !== 'dialogue'"
+		v-if="choices.length > 0 && choicesLayout !== 'dialogue' && !isUiHidden"
 		class="choices-overlay"
 	>
 		<div class="choices _center">
@@ -80,7 +80,9 @@ const props = defineProps({
 	speaker: { type: String, default: '' },
 	choices: { type: Array, default: () => [] },
 	choicesLayout: { type: String, default: 'center' },
-	multiStepPrintedLength: { type: Number, default: 0 }
+	multiStepPrintedLength: { type: Number, default: 0 },
+	isUiHidden: { type: Boolean, default: false },
+	isSkipping: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['advance', 'selectChoice'])
@@ -104,6 +106,9 @@ const charDuration = computed(() => {
 })
 
 const isDialogueBoxInvisible = computed(() => {
+	if (props.isUiHidden) {
+		return true
+	}
 	if (props.choices.length > 0 && props.choicesLayout === 'dialogue') {
 		return false
 	}
@@ -117,6 +122,7 @@ const dialogueBoxClasses = computed(() => ({
 }))
 
 function onDialogueClick() {
+	if (props.isUiHidden) return
 	// If choices are present, clicking the dialogue box should not advance
 	if (props.choices.length > 0) return
 	if (!props.dialogue && !props.narration) return
@@ -149,8 +155,8 @@ function startTypewriter(element, htmlText) {
 	isTypewriting = true
 	clearTimeout(typewriterTimeout)
 
-	// If speed is 100, show all text immediately
-	if (store.general.textSpeed === 100) {
+	// If speed is 100 or fast-forward skipping is active, show all text immediately
+	if (store.general.textSpeed === 100 || props.isSkipping) {
 		element.innerHTML = htmlText
 		isTypewriting = false
 		lastPrintedLength = htmlText.length
@@ -333,5 +339,15 @@ watch(
 		}
 	},
 	{ immediate: true }
+)
+
+// If skipping starts while typewriter is actively running, finish current text immediately
+watch(
+	() => props.isSkipping,
+	(isSkipping) => {
+		if (isSkipping && isTypewriting) {
+			skipTypewriter()
+		}
+	}
 )
 </script>

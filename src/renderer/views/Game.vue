@@ -2,7 +2,7 @@
 	<div class="game-area">
 		<!-- Top Toolbar -->
 		<Topbar
-			v-if="showTopbar"
+			v-if="showTopbar && !isUiHidden"
 			:character="mcCharacter"
 			:show-inventory-button="showInventoryButton"
 			:show-journal-button="showJournalButton"
@@ -19,11 +19,11 @@
 
 		<!-- Sidebars -->
 		<SidebarLeft
-			v-if="!showVrLauncher && !showYggAuth && !showCharCreate && !showShutdownSequence"
+			v-if="!showVrLauncher && !showYggAuth && !showCharCreate && !showShutdownSequence && !isUiHidden"
 			:has-dialogue="hasDialogue"
 		/>
 		<SidebarRight
-			v-if="!showVrLauncher && !showYggAuth && !showCharCreate && !showShutdownSequence"
+			v-if="!showVrLauncher && !showYggAuth && !showCharCreate && !showShutdownSequence && !isUiHidden"
 			:is-helmet-equipped="isHelmetEquipped"
 			:has-dialogue="hasDialogue"
 			@open-vr="openVrFromSidebar"
@@ -40,6 +40,28 @@
 				@ready="onVisualNovelReady"
 			/>
 		</div>
+
+		<!-- Fast-forward / Skip indicator (Ren'Py Ctrl skip style) -->
+		<div
+			v-if="isFastForwarding && !isUiHidden"
+			class="vn-skip-indicator"
+			aria-label="Режим быстрой перемотки"
+		>
+			<span class="vn-skip-indicator-icon">⏩</span>
+			<span class="vn-skip-indicator-text">Перемотка</span>
+			<span class="vn-skip-indicator-dots">
+				<span>.</span><span>.</span><span>.</span>
+			</span>
+		</div>
+
+		<!-- Full-screen click-to-unhide overlay when UI is hidden (Ren'Py style) -->
+		<div
+			v-if="isUiHidden"
+			class="ui-hidden-overlay"
+			title="Нажмите в любое место или нажмите H / Esc, чтобы вернуть интерфейс"
+			@click.stop.prevent="unhideUi"
+			@contextmenu.stop.prevent="unhideUi"
+		/>
 
 		<!-- Inventory Modal -->
 		<InventoryModal
@@ -222,7 +244,7 @@ import { useScreenshotMode } from '@/composables/useScreenshotMode'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import { useGameOverlay } from '@/composables/useGameOverlay'
 import { useCharacterEquipment } from '@/composables/useCharacterEquipment'
-import { useRegisterModal, handleEscape, clearModalStack } from '@/composables/useModalStack'
+import { useRegisterModal, handleEscape, clearModalStack, hasModals } from '@/composables/useModalStack'
 
 const router = useRouter()
 const route = useRoute()
@@ -404,6 +426,46 @@ const currentUiVisibility = computed(() => {
 	return vn.uiVisibility.value || vn.uiVisibility || {}
 })
 
+const isUiHidden = computed(() => {
+	if (visualNovel.value?.isUiHidden !== undefined) {
+		const val = visualNovel.value.isUiHidden
+		return typeof val === 'object' && val !== null && 'value' in val ? !!val.value : !!val
+	}
+	return !!currentUiVisibility.value?.isUiHidden
+})
+
+function toggleHideUi() {
+	if (visualNovel.value?.toggleHideUi) {
+		visualNovel.value.toggleHideUi()
+	}
+}
+
+function unhideUi() {
+	if (visualNovel.value?.unhideUi) {
+		visualNovel.value.unhideUi()
+	}
+}
+
+const isFastForwarding = computed(() => {
+	if (visualNovel.value?.isSkipping !== undefined) {
+		const val = visualNovel.value.isSkipping
+		return typeof val === 'object' && val !== null && 'value' in val ? !!val.value : !!val
+	}
+	return false
+})
+
+function startFastForward() {
+	if (visualNovel.value?.startFastForward) {
+		visualNovel.value.startFastForward()
+	}
+}
+
+function stopFastForward() {
+	if (visualNovel.value?.stopFastForward) {
+		visualNovel.value.stopFastForward()
+	}
+}
+
 const showInventoryButton = computed(() => {
 	const v = currentUiVisibility.value
 	if (v.all) return true
@@ -430,12 +492,19 @@ const showNextTimeButton = computed(() => {
 
 const showDateBadge = computed(() => {
 	const v = currentUiVisibility.value
+	const isNewWorld =
+		gameState.global?.calendarType === 'new_world' || gameState.global?.year === 0
+	if (isNewWorld) {
+		// В Новом Мире кнопка календаря скрыта (видна только в старом мире)
+		return v['date-badge'] === true && v['calendar-button'] === true
+	}
 	if (v['date-badge'] !== undefined) return !!v['date-badge']
 	if (v['calendar-button'] !== undefined) return !!v['calendar-button']
 	return true
 })
 
 const showTopbar = computed(() => {
+	if (isUiHidden.value) return false
 	const v = currentUiVisibility.value
 	if (v.all) return true
 	return !!(
@@ -833,6 +902,10 @@ async function onShutdownSequenceComplete() {
 		Object.assign(visualNovel.value.globalData, newWorldCalendar)
 		delete visualNovel.value.globalData.time
 	}
+	if (visualNovel.value?.baseUiVisibility?.value) {
+		visualNovel.value.baseUiVisibility.value['date-badge'] = false
+		visualNovel.value.baseUiVisibility.value['calendar-button'] = false
+	}
 
 	try {
 		if (visualNovel.value?.goto) {
@@ -1061,14 +1134,113 @@ function openHistory() {
 	showHistoryModal.value = true
 }
 
-// Priority Escape handling: close top modal first, or open game menu if no modals are open
+function isInputElementActive() {
+	const el = document.activeElement
+	if (!el) return false
+	const tag = el.tagName ? el.tagName.toLowerCase() : ''
+	if (tag === 'input' || tag === 'textarea' || tag === 'select') {
+		return true
+	}
+	if (el.isContentEditable || el.getAttribute?.('contenteditable') === 'true') {
+		return true
+	}
+	return false
+}
+
+// Priority keydown handling: Ren'Py-style 'H' to hide UI, Escape for modals / menu
 const onKeyDown = (e) => {
+	// If an input field or contenteditable element is focused, let user type normally
+	if (isInputElementActive()) {
+		return
+	}
+
+	// If UI is currently hidden (Ren'Py style)
+	if (isUiHidden.value) {
+		// 'H', 'Escape', ' ', 'Enter' or click will unhide the UI
+		if (
+			e.code === 'KeyH' ||
+			e.key?.toLowerCase() === 'h' ||
+			e.key?.toLowerCase() === 'р' ||
+			e.key === 'Escape' ||
+			e.key === ' ' ||
+			e.key === 'Enter'
+		) {
+			e.preventDefault()
+			e.stopPropagation()
+			unhideUi()
+			return
+		}
+	}
+
 	if (e.key === 'Escape') {
+		stopFastForward()
 		const handled = handleEscape()
 		if (!handled) {
 			openMainMenu()
 		}
+		return
 	}
+
+	// Ren'Py-style Fast-Forward / Skip mode with Ctrl
+	if (
+		e.key === 'Control' ||
+		e.code === 'ControlLeft' ||
+		e.code === 'ControlRight'
+	) {
+		// Only allow fast-forward if not in menus/modals/intros/loading
+		if (
+			!hasModals() &&
+			!menuVisible.value &&
+			!showVrLauncher.value &&
+			!showYggIntro.value &&
+			!showYggAuth.value &&
+			!showCharCreate.value &&
+			!showShutdownSequence.value &&
+			!isGameLoading.value
+		) {
+			if (isUiHidden.value) {
+				unhideUi()
+			}
+			startFastForward()
+		}
+		return
+	}
+
+	// Toggle UI hide with 'H' / 'KeyH' (Ren'Py style)
+	if (
+		e.code === 'KeyH' ||
+		e.key?.toLowerCase() === 'h' ||
+		e.key?.toLowerCase() === 'р'
+	) {
+		// Only allow hiding if in normal gameplay:
+		// no modals open, no Esc menu open, no VR/intro overlays
+		if (
+			!hasModals() &&
+			!menuVisible.value &&
+			!showVrLauncher.value &&
+			!showYggIntro.value &&
+			!showYggAuth.value &&
+			!showCharCreate.value &&
+			!showShutdownSequence.value
+		) {
+			e.preventDefault()
+			toggleHideUi()
+		}
+	}
+}
+
+const onKeyUp = (e) => {
+	if (
+		e.key === 'Control' ||
+		e.code === 'ControlLeft' ||
+		e.code === 'ControlRight'
+	) {
+		stopFastForward()
+	}
+}
+
+const onWindowBlur = () => {
+	stopFastForward()
 }
 
 onMounted(() => {
@@ -1076,6 +1248,8 @@ onMounted(() => {
 	settingsStore.isMusicPlaying = false
 
 	window.addEventListener('keydown', onKeyDown)
+	window.addEventListener('keyup', onKeyUp)
+	window.addEventListener('blur', onWindowBlur)
 	window.addEventListener('item-equipped', handleItemEquippedEvent)
 
 	// ВАЖНО: Инициализируем gameState.storyEngine ДО запуска Rules Engine
@@ -1173,8 +1347,11 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+	stopFastForward()
 	stopYggBgm()
 	window.removeEventListener('keydown', onKeyDown)
+	window.removeEventListener('keyup', onKeyUp)
+	window.removeEventListener('blur', onWindowBlur)
 	window.removeEventListener('item-equipped', handleItemEquippedEvent)
 	clearModalStack()
 	// Fully destroy the rules engine singleton so the next game session

@@ -4,13 +4,19 @@
 	<Background
 		:scene="currentScene"
 		:global-data="globalData"
-		:is-in-dialogue-mode="isDialogueActive"
+		:is-in-dialogue-mode="isDialogueActive || isUiHidden"
 		@goto="goto"
 		@hotspot-click="onHotspotClick"
 	/>
 	<CharacterList :characters="visibleCharacters" />
 
-	<TitleBlock :title="currentTitle" :effects="currentTitleEffects" @advance="advanceStory" />
+	<TitleBlock
+		v-if="!isUiHidden"
+		:title="currentTitle"
+		:effects="currentTitleEffects"
+		:is-skipping="isSkipping"
+		@advance="advanceStory"
+	/>
 
 	<DialogueBox
 		:dialogue="currentDialogue"
@@ -19,11 +25,13 @@
 		:choices="currentChoices"
 		:choices-layout="currentChoicesLayout"
 		:multi-step-printed-length="multiStepPrintedLength"
+		:is-ui-hidden="isUiHidden"
+		:is-skipping="isSkipping"
 		@advance="advanceStory"
 		@selectChoice="selectChoice"
 	/>
 
-	<Notification ref="notificationComponent" />
+	<Notification v-show="!isUiHidden" ref="notificationComponent" />
 
 	<TextInputModal
 		:is-visible="showTextInputModal"
@@ -50,7 +58,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import TextInputModal from './modals/TextInputModal.vue'
 import StoryAudio from './StoryAudio.vue'
 import Background from './visual-novel/Background.vue'
@@ -113,7 +121,14 @@ const {
 	syncCharacterEquipment,
 	fadeOverlay,
 	isDialogueActive,
-	handleHotspotClick
+	handleHotspotClick,
+	isUiHidden,
+	toggleHideUi,
+	hideUi,
+	unhideUi,
+	isSkipping,
+	startFastForward,
+	stopFastForward
 } = vn
 
 function onHotspotClick(payload) {
@@ -140,6 +155,10 @@ onMounted(async () => {
 	emit('ready')
 })
 
+onUnmounted(() => {
+	stopFastForward()
+})
+
 defineExpose({
 	getGameState,
 	restoreGameState,
@@ -158,7 +177,14 @@ defineExpose({
 	goto,
 	showNotification,
 	setDialogueHideUI,
-	fadeOverlay
+	fadeOverlay,
+	isUiHidden,
+	toggleHideUi,
+	hideUi,
+	unhideUi,
+	isSkipping,
+	startFastForward,
+	stopFastForward
 })
 </script>
 

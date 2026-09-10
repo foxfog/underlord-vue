@@ -122,6 +122,75 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	const showTextInputModal = ref(false)
 	const currentInputStep = ref(null)
 
+	// Fast-forward / skip mode state (Ren'Py style Ctrl skip)
+	const isSkipping = ref(false)
+	let fastForwardInterval = null
+	const FAST_FORWARD_INTERVAL_MS = 60
+
+	function stopFastForward() {
+		if (fastForwardInterval) {
+			clearInterval(fastForwardInterval)
+			fastForwardInterval = null
+		}
+		isSkipping.value = false
+	}
+
+	function advanceFastForwardStep() {
+		if (!isSkipping.value) return
+
+		// Stop conditions:
+		// 1. Story is not loaded or has reached the end
+		// 2. Choices are active (wait for player decision)
+		// 3. Text input modal is open
+		// 4. Nothing is active to advance (not in dialogue mode and no override)
+		if (
+			!storyData.value ||
+			stepIndex.value >= storyData.value.steps.length ||
+			(currentChoices.value && currentChoices.value.length > 0) ||
+			showTextInputModal.value ||
+			(!isDialogueActive.value && !advanceStoryOverride)
+		) {
+			stopFastForward()
+			return
+		}
+
+		advanceStory()
+
+		// Immediate check after advancing to halt before next tick if choices/input/end appeared
+		if (
+			!storyData.value ||
+			stepIndex.value >= storyData.value.steps.length ||
+			(currentChoices.value && currentChoices.value.length > 0) ||
+			showTextInputModal.value ||
+			(!isDialogueActive.value && !advanceStoryOverride)
+		) {
+			stopFastForward()
+		}
+	}
+
+	function startFastForward() {
+		if (isSkipping.value) return
+		if (!storyData.value || stepIndex.value >= storyData.value.steps.length) return
+		if (currentChoices.value && currentChoices.value.length > 0) return
+		if (showTextInputModal.value) return
+		if (!isDialogueActive.value && !advanceStoryOverride) return
+
+		isSkipping.value = true
+
+		// Advance immediately on first trigger
+		advanceFastForwardStep()
+
+		// If advancing immediately triggered choices/end/modal, advanceFastForwardStep already called stopFastForward
+		if (!isSkipping.value) return
+
+		if (fastForwardInterval) {
+			clearInterval(fastForwardInterval)
+		}
+		fastForwardInterval = setInterval(() => {
+			advanceFastForwardStep()
+		}, FAST_FORWARD_INTERVAL_MS)
+	}
+
 	const settingsStore = useSettingsStore()
 
 	function buildStoryFilePath(candidate) {
@@ -145,6 +214,30 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	})
 
 	const isInDialogueMode = ref(false)
+	const isUiHidden = ref(false)
+
+	function toggleHideUi() {
+		isUiHidden.value = !isUiHidden.value
+		console.log(`👁️ [UI Toggle] isUiHidden: ${isUiHidden.value}`)
+		emit && emit('ui-visibility-changed', uiVisibility.value)
+		return isUiHidden.value
+	}
+
+	function hideUi() {
+		if (!isUiHidden.value) {
+			isUiHidden.value = true
+			console.log(`👁️ [UI Toggle] UI hidden`)
+			emit && emit('ui-visibility-changed', uiVisibility.value)
+		}
+	}
+
+	function unhideUi() {
+		if (isUiHidden.value) {
+			isUiHidden.value = false
+			console.log(`👁️ [UI Toggle] UI unhidden`)
+			emit && emit('ui-visibility-changed', uiVisibility.value)
+		}
+	}
 
 	const isDialogueActive = computed(() => {
 		return (
@@ -163,6 +256,25 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		const base = baseUiVisibility.value
 		const hideList = base.dialogueHideUI || DIALOGUE_HIDE_UI_CONFIG || []
 		const inDialogue = isDialogueActive.value
+
+		if (isUiHidden.value) {
+			return {
+				all: false,
+				'stats-button': false,
+				'inventory-button': false,
+				'map-button': false,
+				'journal-button': false,
+				'next-time-button': false,
+				'date-badge': false,
+				'calendar-button': false,
+				topbar: false,
+				hotbar: false,
+				dialogue: false,
+				dialogueHideUI: hideList,
+				hasDialogue: inDialogue,
+				isUiHidden: true
+			}
+		}
 
 		function isTargetHiddenByDialogue(target) {
 			if (!inDialogue) return false
@@ -211,7 +323,8 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			hotbar,
 			dialogue,
 			dialogueHideUI: hideList,
-			hasDialogue: inDialogue
+			hasDialogue: inDialogue,
+			isUiHidden: false
 		}
 	})
 
@@ -1431,8 +1544,10 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 				}
 				if (target === 'topbar' && show) {
 					baseUiVisibility.value.topbar = true
-					baseUiVisibility.value['date-badge'] = true
-					baseUiVisibility.value['calendar-button'] = true
+					if (globalData.value?.calendarType !== 'new_world') {
+						baseUiVisibility.value['date-badge'] = true
+						baseUiVisibility.value['calendar-button'] = true
+					}
 					return
 				}
 				baseUiVisibility.value[target] = show
@@ -2231,6 +2346,12 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 
 		container[key] = newValue
 
+		// Скрытие кнопки календаря при переключении на Новый Мир
+		if (container === globalData.value && key === 'calendarType' && newValue === 'new_world') {
+			baseUiVisibility.value['date-badge'] = false
+			baseUiVisibility.value['calendar-button'] = false
+		}
+
 		// Check sympathy notification
 		if (
 			!isRestoringGameState.value &&
@@ -2931,6 +3052,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 				}
 			}
 			const restoreSession = ++restoreSessionId
+			stopFastForward()
 			// Clear any active UI state from the previous story run before restoring
 			if (titleTimeout) {
 				clearTimeout(titleTimeout)
@@ -2944,7 +3066,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			currentChoices.value = []
 			advanceStoryOverride = null
 			isRestoringGameState.value = true
-			globalData.value = saveData.globalData || {}
+			globalData.value = saveData.globalData || saveData.global || {}
 			if (!globalData.value.discoveredLocations) {
 				globalData.value.discoveredLocations = {
 					cybercity: ['factory', 'home'],
@@ -3040,8 +3162,12 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			if (saveData.uiVisibility && typeof saveData.uiVisibility === 'object') {
 				baseUiVisibility.value = { ...baseUiVisibility.value, ...saveData.uiVisibility }
 			} else {
+				const isNewWorld =
+					globalData.value?.calendarType === 'new_world' || globalData.value?.year === 0
 				baseUiVisibility.value = {
 					...baseUiVisibility.value,
+					'date-badge': !isNewWorld,
+					'calendar-button': !isNewWorld,
 					topbar: true,
 					hotbar: true,
 					dialogue: true
@@ -3165,6 +3291,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 
 			clearFadeTimeouts()
 			clearPendingAudio()
+			isUiHidden.value = false
 			fadeOverlay.value = {
 				visible: false,
 				opacity: 0,
@@ -3182,6 +3309,8 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	}
 
 	function resetGameState() {
+		stopFastForward()
+		isUiHidden.value = false
 		isInDialogueMode.value = false
 		stepIndex.value = 0
 		callStack.value = []
@@ -3489,6 +3618,10 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		currentInputStep,
 		uiVisibility,
 		baseUiVisibility,
+		isUiHidden,
+		toggleHideUi,
+		hideUi,
+		unhideUi,
 		fadeOverlay,
 		isDialogueActive,
 		isInDialogueMode,
@@ -3547,6 +3680,10 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		pauseAllStreams,
 		resumeAllStreams,
 		onStreamEnded,
+		// fast-forward / skip mode (Ren'Py style Ctrl skip)
+		isSkipping,
+		startFastForward,
+		stopFastForward,
 		// UI methods for dialogue hiding
 		setDialogueHideUI,
 		resolveSpeakerTitle,

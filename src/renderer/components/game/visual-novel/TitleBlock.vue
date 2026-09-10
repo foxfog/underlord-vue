@@ -17,7 +17,8 @@ import { useSettingsStore } from '@/stores/settings'
 
 const props = defineProps({
 	title: { type: String, default: '' },
-	effects: { type: Object, default: null }
+	effects: { type: Object, default: null },
+	isSkipping: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['advance'])
@@ -104,8 +105,8 @@ function startTypewriter(element, htmlText) {
 	isTypewriting = true
 	clearTimeout(typewriterTimeout)
 
-	// If speed is 100, show all text immediately
-	if (store.general.textSpeed === 100) {
+	// If speed is 100 or skipping is active, show all text immediately
+	if (store.general.textSpeed === 100 || props.isSkipping) {
 		element.innerHTML = htmlText
 		isTypewriting = false
 		return
@@ -201,6 +202,20 @@ watch(
 		}
 	},
 	{ deep: true }
+)
+
+// If skipping starts while typewriter is running, finish current text immediately
+watch(
+	() => props.isSkipping,
+	(isSkipping) => {
+		if (isSkipping && isTypewriting) {
+			clearTimeout(typewriterTimeout)
+			isTypewriting = false
+			if (titleContentRef.value && props.title) {
+				titleContentRef.value.innerHTML = props.title
+			}
+		}
+	}
 )
 
 function playEffectEnd() {
