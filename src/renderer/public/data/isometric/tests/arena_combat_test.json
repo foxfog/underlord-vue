@@ -1,0 +1,93 @@
+{
+	"id": "arena_combat_test",
+	"name": "Тактическая арена (Укрытия и бочки)",
+	"description": "Полигон для отработки боевых ситуаций: укрытия, взрывные бочки, узкие проходы и возвышенности.",
+	"tileWidth": 64,
+	"tileHeight": 32,
+	"heightStep": 16,
+	"gridWidth": 11,
+	"gridHeight": 11,
+	"bounds": { "minX": -5, "maxX": 5, "minY": -5, "maxY": 5 },
+	"defaultSpawn": { "x": 0, "y": 4, "z": 0, "facing": "NW" },
+	"tiles": [
+		{ "x": -5, "y": -5, "z": 1, "type": "stone_terrace" }, { "x": -4, "y": -5, "z": 1, "type": "stone_terrace" }, { "x": -3, "y": -5, "z": 1, "type": "stone_terrace" }, { "x": -2, "y": -5, "z": 1, "type": "stone_terrace" }, { "x": -1, "y": -5, "z": 1, "type": "stone_terrace" }, { "x": 0, "y": -5, "z": 1, "type": "stone_terrace" }, { "x": 1, "y": -5, "z": 1, "type": "stone_terrace" }, { "x": 2, "y": -5, "z": 1, "type": "stone_terrace" }, { "x": 3, "y": -5, "z": 1, "type": "stone_terrace" }, { "x": 4, "y": -5, "z": 1, "type": "stone_terrace" }, { "x": 5, "y": -5, "z": 1, "type": "stone_terrace" },
+
+		{ "x": -5, "y": -4, "z": 1, "type": "stone_terrace" }, { "x": -4, "y": -4, "z": 1, "type": "stone_terrace" }, { "x": -3, "y": -4, "z": 1, "type": "stone_terrace" }, { "x": -2, "y": -4, "z": 1, "type": "stairs" }, { "x": -1, "y": -4, "z": 1, "type": "stone_terrace" }, { "x": 0, "y": -4, "z": 1, "type": "stone_terrace" }, { "x": 1, "y": -4, "z": 1, "type": "stone_terrace" }, { "x": 2, "y": -4, "z": 1, "type": "stairs" }, { "x": 3, "y": -4, "z": 1, "type": "stone_terrace" }, { "x": 4, "y": -4, "z": 1, "type": "stone_terrace" }, { "x": 5, "y": -4, "z": 1, "type": "stone_terrace" },
+
+		{ "x": -5, "y": -3, "z": 0, "type": "stone_terrace" }, { "x": -4, "y": -3, "z": 0, "type": "stone_terrace" }, { "x": -3, "y": -3, "z": 0, "type": "stone_terrace" }, { "x": -2, "y": -3, "z": 0, "type": "stairs" }, { "x": -1, "y": -3, "z": 0, "type": "stone_terrace" }, { "x": 0, "y": -3, "z": 0, "type": "stone_terrace" }, { "x": 1, "y": -3, "z": 0, "type": "stone_terrace" }, { "x": 2, "y": -3, "z": 0, "type": "stairs" }, { "x": 3, "y": -3, "z": 0, "type": "stone_terrace" }, { "x": 4, "y": -3, "z": 0, "type": "stone_terrace" }, { "x": 5, "y": -3, "z": 0, "type": "stone_terrace" },
+
+		{ "x": -5, "y": -2, "z": 0, "type": "stone_terrace" }, { "x": -4, "y": -2, "z": 0, "type": "stone_terrace" }, { "x": -3, "y": -2, "z": 0, "type": "stone_terrace" }, { "x": -2, "y": -2, "z": 0, "type": "stone_terrace" }, { "x": -1, "y": -2, "z": 0, "type": "stone_terrace" }, { "x": 0, "y": -2, "z": 0, "type": "stone_terrace" }, { "x": 1, "y": -2, "z": 0, "type": "stone_terrace" }, { "x": 2, "y": -2, "z": 0, "type": "stone_terrace" }, { "x": 3, "y": -2, "z": 0, "type": "stone_terrace" }, { "x": 4, "y": -2, "z": 0, "type": "stone_terrace" }, { "x": 5, "y": -2, "z": 0, "type": "stone_terrace" },
+
+		{ "x": -5, "y": -1, "z": 0, "type": "stone_terrace" }, { "x": -4, "y": -1, "z": 0, "type": "stone_terrace" }, { "x": -3, "y": -1, "z": 0, "type": "stone_terrace" }, { "x": -2, "y": -1, "z": 0, "type": "stone_terrace" }, { "x": -1, "y": -1, "z": 0, "type": "stone_terrace" }, { "x": 0, "y": -1, "z": 0, "type": "stone_terrace" }, { "x": 1, "y": -1, "z": 0, "type": "stone_terrace" }, { "x": 2, "y": -1, "z": 0, "type": "stone_terrace" }, { "x": 3, "y": -1, "z": 0, "type": "stone_terrace" }, { "x": 4, "y": -1, "z": 0, "type": "stone_terrace" }, { "x": 5, "y": -1, "z": 0, "type": "stone_terrace" },
+
+		{ "x": -5, "y": 0, "z": 0, "type": "stone_terrace" }, { "x": -4, "y": 0, "z": 0, "type": "stone_terrace" }, { "x": -3, "y": 0, "z": 0, "type": "stone_terrace" }, { "x": -2, "y": 0, "z": 0, "type": "stone_terrace" }, { "x": -1, "y": 0, "z": 0, "type": "stone_terrace" }, { "x": 0, "y": 0, "z": 0, "type": "stone_terrace" }, { "x": 1, "y": 0, "z": 0, "type": "stone_terrace" }, { "x": 2, "y": 0, "z": 0, "type": "stone_terrace" }, { "x": 3, "y": 0, "z": 0, "type": "stone_terrace" }, { "x": 4, "y": 0, "z": 0, "type": "stone_terrace" }, { "x": 5, "y": 0, "z": 0, "type": "stone_terrace" },
+
+		{ "x": -5, "y": 1, "z": 0, "type": "stone_terrace" }, { "x": -4, "y": 1, "z": 0, "type": "stone_terrace" }, { "x": -3, "y": 1, "z": 0, "type": "stone_terrace" }, { "x": -2, "y": 1, "z": 0, "type": "stone_terrace" }, { "x": -1, "y": 1, "z": 0, "type": "stone_terrace" }, { "x": 0, "y": 1, "z": 0, "type": "stone_terrace" }, { "x": 1, "y": 1, "z": 0, "type": "stone_terrace" }, { "x": 2, "y": 1, "z": 0, "type": "stone_terrace" }, { "x": 3, "y": 1, "z": 0, "type": "stone_terrace" }, { "x": 4, "y": 1, "z": 0, "type": "stone_terrace" }, { "x": 5, "y": 1, "z": 0, "type": "stone_terrace" },
+
+		{ "x": -5, "y": 2, "z": 0, "type": "stone_terrace" }, { "x": -4, "y": 2, "z": 0, "type": "stone_terrace" }, { "x": -3, "y": 2, "z": 0, "type": "stone_terrace" }, { "x": -2, "y": 2, "z": 0, "type": "stone_terrace" }, { "x": -1, "y": 2, "z": 0, "type": "stone_terrace" }, { "x": 0, "y": 2, "z": 0, "type": "stone_terrace" }, { "x": 1, "y": 2, "z": 0, "type": "stone_terrace" }, { "x": 2, "y": 2, "z": 0, "type": "stone_terrace" }, { "x": 3, "y": 2, "z": 0, "type": "stone_terrace" }, { "x": 4, "y": 2, "z": 0, "type": "stone_terrace" }, { "x": 5, "y": 2, "z": 0, "type": "stone_terrace" },
+
+		{ "x": -5, "y": 3, "z": 0, "type": "stone_terrace" }, { "x": -4, "y": 3, "z": 0, "type": "stone_terrace" }, { "x": -3, "y": 3, "z": 0, "type": "stone_terrace" }, { "x": -2, "y": 3, "z": 0, "type": "stone_terrace" }, { "x": -1, "y": 3, "z": 0, "type": "stone_terrace" }, { "x": 0, "y": 3, "z": 0, "type": "stone_terrace" }, { "x": 1, "y": 3, "z": 0, "type": "stone_terrace" }, { "x": 2, "y": 3, "z": 0, "type": "stone_terrace" }, { "x": 3, "y": 3, "z": 0, "type": "stone_terrace" }, { "x": 4, "y": 3, "z": 0, "type": "stone_terrace" }, { "x": 5, "y": 3, "z": 0, "type": "stone_terrace" },
+
+		{ "x": -5, "y": 4, "z": 0, "type": "stone_terrace" }, { "x": -4, "y": 4, "z": 0, "type": "stone_terrace" }, { "x": -3, "y": 4, "z": 0, "type": "stone_terrace" }, { "x": -2, "y": 4, "z": 0, "type": "stone_terrace" }, { "x": -1, "y": 4, "z": 0, "type": "stone_terrace" }, { "x": 0, "y": 4, "z": 0, "type": "stone_terrace" }, { "x": 1, "y": 4, "z": 0, "type": "stone_terrace" }, { "x": 2, "y": 4, "z": 0, "type": "stone_terrace" }, { "x": 3, "y": 4, "z": 0, "type": "stone_terrace" }, { "x": 4, "y": 4, "z": 0, "type": "stone_terrace" }, { "x": 5, "y": 4, "z": 0, "type": "stone_terrace" },
+
+		{ "x": -5, "y": 5, "z": 0, "type": "stone_terrace" }, { "x": -4, "y": 5, "z": 0, "type": "stone_terrace" }, { "x": -3, "y": 5, "z": 0, "type": "stone_terrace" }, { "x": -2, "y": 5, "z": 0, "type": "stone_terrace" }, { "x": -1, "y": 5, "z": 0, "type": "stone_terrace" }, { "x": 0, "y": 5, "z": 0, "type": "stone_terrace" }, { "x": 1, "y": 5, "z": 0, "type": "stone_terrace" }, { "x": 2, "y": 5, "z": 0, "type": "stone_terrace" }, { "x": 3, "y": 5, "z": 0, "type": "stone_terrace" }, { "x": 4, "y": 5, "z": 0, "type": "stone_terrace" }, { "x": 5, "y": 5, "z": 0, "type": "stone_terrace" }
+	],
+	"objects": [
+		{
+			"id": "cover_barrel_1",
+			"type": "barrel",
+			"name": "Взрывная бочка",
+			"x": -2,
+			"y": 1,
+			"z": 0,
+			"size": [1, 1],
+			"solid": true,
+			"icon": "🛢️"
+		},
+		{
+			"id": "cover_barrel_2",
+			"type": "barrel",
+			"name": "Взрывная бочка",
+			"x": 2,
+			"y": 1,
+			"z": 0,
+			"size": [1, 1],
+			"solid": true,
+			"icon": "🛢️"
+		},
+		{
+			"id": "cover_wall_l",
+			"type": "fence",
+			"name": "Каменное укрытие",
+			"x": -1,
+			"y": 0,
+			"z": 0,
+			"size": [1, 1],
+			"solid": true,
+			"icon": "🧱"
+		},
+		{
+			"id": "cover_wall_r",
+			"type": "fence",
+			"name": "Каменное укрытие",
+			"x": 1,
+			"y": 0,
+			"z": 0,
+			"size": [1, 1],
+			"solid": true,
+			"icon": "🧱"
+		},
+		{
+			"id": "crates_high",
+			"type": "crate",
+			"name": "Ящики со снарядами",
+			"x": 0,
+			"y": -5,
+			"z": 1,
+			"size": [1, 1],
+			"solid": true,
+			"icon": "📦"
+		}
+	],
+	"exits": []
+}

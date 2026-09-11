@@ -1,21 +1,23 @@
 <template>
-	<div
-		v-show="isVisible"
-		ref="menuRef"
-		class="context-menu"
-		:style="{ top: position.y + 'px', left: position.x + 'px' }"
-		@click.stop
-		@contextmenu.stop
-	>
-		<button
-			v-for="(action, index) in actions"
-			:key="index"
-			class="context-menu-item"
-			@click="handleAction(action)"
+	<Teleport to="body">
+		<div
+			v-show="isVisible"
+			ref="menuRef"
+			class="context-menu"
+			:style="{ top: position.y + 'px', left: position.x + 'px' }"
+			@click.stop
+			@contextmenu.stop
 		>
-			{{ action.label }}
-		</button>
-	</div>
+			<button
+				v-for="(action, index) in actions"
+				:key="index"
+				class="context-menu-item"
+				@click="handleAction(action)"
+			>
+				{{ action.label }}
+			</button>
+		</div>
+	</Teleport>
 </template>
 
 <script setup>

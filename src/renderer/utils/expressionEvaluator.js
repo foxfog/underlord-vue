@@ -146,10 +146,16 @@ export function evaluateExpression(expr, context = {}) {
 
 	function parseMultiplicative() {
 		let left = parsePrimary()
-		while (peek() === '*' || peek() === '/') {
+		while (peek() === '*' || peek() === '/' || peek() === '%') {
 			const op = consume()
 			const right = parsePrimary()
-			left = op === '*' ? left * right : left / right
+			if (op === '*') {
+				left = left * right
+			} else if (op === '/') {
+				left = left / right
+			} else if (op === '%') {
+				left = left % right
+			}
 		}
 		return left
 	}
@@ -279,7 +285,7 @@ function tokenize(input) {
 			continue
 		}
 
-		if (['(', ')', '<', '>', '!', '+', '-', '*', '/'].includes(ch)) {
+		if (['(', ')', '<', '>', '!', '+', '-', '*', '/', '%'].includes(ch)) {
 			if (input.startsWith('{}', i)) {
 				tokens.push('{}')
 				i += 2
@@ -313,7 +319,7 @@ function tokenize(input) {
 		while (
 			i < len &&
 			!/\s/.test(input[i]) &&
-			!['(', ')', '=', '!', '<', '>', '&', '|', '+', '-', '*', '/', ',', ';'].includes(
+			!['(', ')', '=', '!', '<', '>', '&', '|', '+', '-', '*', '/', '%', ',', ';'].includes(
 				input[i]
 			)
 		) {

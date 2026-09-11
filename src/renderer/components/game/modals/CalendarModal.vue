@@ -131,6 +131,9 @@ import {
 	DAYS_OF_WEEK,
 	NEW_WORLD_MONTHS
 } from '@/constants/calendar'
+import { useGameStore } from '@/stores/gameStore'
+
+const gameStore = useGameStore()
 
 const props = defineProps({
 	isVisible: { type: Boolean, default: false },
@@ -142,8 +145,14 @@ const emit = defineEmits(['close'])
 
 const showMonthsList = ref(false)
 
+const effectiveGlobalData = computed(() => {
+	return props.globalData && Object.keys(props.globalData).length > 0
+		? props.globalData
+		: gameStore.globalData
+})
+
 const calendarInfo = computed(() => {
-	return getCalendarInfo(props.globalData)
+	return getCalendarInfo(effectiveGlobalData.value)
 })
 
 const weekdays = DAYS_OF_WEEK
@@ -200,8 +209,8 @@ function closeOnBackground() {
 
 <style scoped>
 .calendar-modal__content {
-	width: min(38em, 95vw);
-	max-height: 88vh;
+	width: min(38em, 90%);
+	max-height: 88%;
 }
 
 .calendar-header-title {
@@ -240,7 +249,7 @@ function closeOnBackground() {
 	border-radius: 0.5em;
 	padding: 0.8em 1em;
 	gap: 0.8em;
-	box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.4);
+	box-shadow: inset 0 0 0.6em rgba(0, 0, 0, 0.4);
 }
 
 .status-date-title {
@@ -332,8 +341,8 @@ function closeOnBackground() {
 .phase-item.active {
 	background: rgba(212, 175, 55, 0.15);
 	border-color: var(--color-primary, #d4af37);
-	box-shadow: 0 0 8px rgba(212, 175, 55, 0.3);
-	transform: translateY(-1px);
+	box-shadow: 0 0 0.5em rgba(212, 175, 55, 0.3);
+	transform: translateY(-0.06em);
 }
 
 .phase-icon {
@@ -455,7 +464,7 @@ function closeOnBackground() {
 	border-color: var(--color-primary, #d4af37);
 	color: #fff;
 	font-weight: bold;
-	box-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
+	box-shadow: 0 0 0.5em rgba(212, 175, 55, 0.4);
 }
 
 .today-marker {

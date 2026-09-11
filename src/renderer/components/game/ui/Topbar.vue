@@ -29,7 +29,7 @@
 
 		<div class="topbar-right">
 			<TimeCalendarWidget
-				:global-data="globalData"
+				:global-data="effectiveGlobalData"
 				:show-next-time-button="showNextTimeButton"
 				:show-date-badge="showDateBadge"
 				:show-exact-time="showExactTime"
@@ -41,7 +41,13 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import TimeCalendarWidget from './TimeCalendarWidget.vue'
+import { useGameStore } from '@/stores/gameStore'
+import { useModalStore } from '@/stores/modalStore'
+
+const gameStore = useGameStore()
+const modalStore = useModalStore()
 
 const props = defineProps({
 	character: {
@@ -78,6 +84,12 @@ const props = defineProps({
 	}
 })
 
+const effectiveGlobalData = computed(() => {
+	return props.globalData && Object.keys(props.globalData).length > 0
+		? props.globalData
+		: gameStore.globalData
+})
+
 const emit = defineEmits([
 	'open-inventory',
 	'open-map',
@@ -87,18 +99,22 @@ const emit = defineEmits([
 ])
 
 function openInventory() {
+	modalStore.toggleInventory()
 	emit('open-inventory')
 }
 
 function openMap() {
+	modalStore.toggleMap()
 	emit('open-map')
 }
 
 function openJournal() {
+	modalStore.toggleJournal()
 	emit('open-journal')
 }
 
 function openCalendar() {
+	modalStore.toggleCalendar()
 	emit('open-calendar')
 }
 

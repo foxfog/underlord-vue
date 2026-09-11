@@ -107,7 +107,7 @@ const hasMod = (modName) => {
 	left: -35%;
 	object-fit: cover;
 	opacity: 0.55;
-	filter: blur(8px);
+	filter: blur(0.5em);
 	transform: translate3d(0, 0, 0) scale(1.1);
 	will-change: transform, opacity;
 	animation-timing-function: ease-in-out;

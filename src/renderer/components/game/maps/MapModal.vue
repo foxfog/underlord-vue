@@ -62,8 +62,8 @@
 				<div ref="contentRef" class="map-modal__dynamic-map" :style="transformStyle">
 					<component
 						:is="mapComponent"
-						:current-location="props.globalData.currentLocation || ''"
-						:global-data="props.globalData"
+						:current-location="effectiveGlobalData.currentLocation || ''"
+						:global-data="effectiveGlobalData"
 						@goto="onChildGoto"
 						@switch-level="switchLevel"
 						@view-local="onViewLocal"
@@ -77,6 +77,7 @@
 <script setup>
 import { computed, defineAsyncComponent, ref, watch, nextTick, onUnmounted } from 'vue'
 import { useSettingsStore } from '@/stores/settings'
+import { useGameStore } from '@/stores/gameStore'
 import { useMapControls } from '@/composables/useMapControls'
 
 const props = defineProps({
@@ -92,6 +93,13 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'goto'])
 const settingsStore = useSettingsStore()
+const gameStore = useGameStore()
+
+const effectiveGlobalData = computed(() => {
+	return props.globalData && Object.keys(props.globalData).length > 0
+		? props.globalData
+		: gameStore.globalData
+})
 
 const {
 	scale,
@@ -120,7 +128,7 @@ const mapComponents = {
 const activeLevel = ref('local') // 'local' | 'world'
 
 const isNewWorld = computed(() => {
-	const g = props.globalData
+	const g = effectiveGlobalData.value
 	return (
 		g?.calendarType === 'new_world' ||
 		g?.worldMap === 'newworld' ||
@@ -132,14 +140,14 @@ const isNewWorld = computed(() => {
 })
 
 const currentLocalMap = computed(() => {
-	const local = (props.globalData?.localMap || settingsStore.currentMap || '').toLowerCase()
+	const local = (effectiveGlobalData.value?.localMap || settingsStore.currentMap || '').toLowerCase()
 	if (local && mapComponents[local]) return local
 	if (isNewWorld.value) return 'carne'
 	return 'cybercity'
 })
 
 const currentWorldMap = computed(() => {
-	const world = (props.globalData?.worldMap || '').toLowerCase()
+	const world = (effectiveGlobalData.value?.worldMap || '').toLowerCase()
 	if (world && mapComponents[world]) return world
 	if (isNewWorld.value) return 'newworld'
 	return 'cybercity'

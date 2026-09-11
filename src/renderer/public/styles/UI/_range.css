@@ -30,7 +30,7 @@
 		}
 
 		&:focus {
-			box-shadow: 0 0 0 2px var(--color-primary);
+			box-shadow: 0 0 0 0.12em var(--color-primary);
 		}
 	}
 
@@ -54,7 +54,7 @@
 		border-radius: 50%;
 		transform: translateY(-50%);
 		cursor: grab;
-		box-shadow: 0 2px 4px var(--color-shadow);
+		box-shadow: 0 0.12em 0.25em var(--color-shadow);
 
 		.pulse {
 			animation: range-pulse 0.3s ease;
@@ -62,7 +62,7 @@
 
 		&:hover {
 			transform: translateY(-50%) scale(1.1);
-			box-shadow: 0 4px 8px var(--color-shadow-medium);
+			box-shadow: 0 0.25em 0.5em var(--color-shadow-medium);
 		}
 
 		&:active {
@@ -150,11 +150,11 @@ input[type='range'] {
 		border: 2px solid var(--color-primary);
 		border-radius: 50%;
 		cursor: pointer;
-		box-shadow: 0 2px 4px var(--color-shadow);
+		box-shadow: 0 0.12em 0.25em var(--color-shadow);
 
 		&:hover {
 			transform: scale(1.1);
-			box-shadow: 0 4px 8px var(--color-shadow-medium);
+			box-shadow: 0 0.25em 0.5em var(--color-shadow-medium);
 		}
 	}
 
@@ -172,7 +172,7 @@ input[type='range'] {
 		border: 2px solid var(--color-primary);
 		border-radius: 50%;
 		cursor: pointer;
-		box-shadow: 0 2px 4px var(--color-shadow);
+		box-shadow: 0 0.12em 0.25em var(--color-shadow);
 	}
 }
 

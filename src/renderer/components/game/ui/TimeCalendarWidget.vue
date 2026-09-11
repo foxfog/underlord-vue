@@ -48,6 +48,9 @@
 <script setup>
 import { computed } from 'vue'
 import { getCalendarInfo } from '@/utils/timeCalendar'
+import { useGameStore } from '@/stores/gameStore'
+
+const gameStore = useGameStore()
 
 const props = defineProps({
 	globalData: {
@@ -71,7 +74,11 @@ const props = defineProps({
 defineEmits(['open-calendar', 'advance-time'])
 
 const calendarInfo = computed(() => {
-	return getCalendarInfo(props.globalData)
+	const g =
+		props.globalData && Object.keys(props.globalData).length > 0
+			? props.globalData
+			: gameStore.globalData
+	return getCalendarInfo(g)
 })
 </script>
 

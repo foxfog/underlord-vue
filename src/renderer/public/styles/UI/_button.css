@@ -39,7 +39,7 @@
 			background-color: rgba(212, 175, 55, 0.25);
 			border-color: var(--color-primary-light);
 			box-shadow: 0 0 0.8em var(--color-primary-alpha);
-			transform: translateY(-1px);
+			transform: translateY(-0.06em);
 			color: #fff;
 		}
 
@@ -59,7 +59,7 @@
 			background-color: var(--color-bg-overlay-medium);
 			border-color: var(--color-scrollbar);
 			color: #fff;
-			transform: translateY(-1px);
+			transform: translateY(-0.06em);
 		}
 
 		&:active {
@@ -80,7 +80,7 @@
 			border-color: var(--color-tertiary);
 			box-shadow: 0 0 0.8em rgba(194, 24, 58, 0.3);
 			color: #fff;
-			transform: translateY(-1px);
+			transform: translateY(-0.06em);
 		}
 
 		&:active {

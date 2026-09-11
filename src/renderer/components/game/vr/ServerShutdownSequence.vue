@@ -72,7 +72,7 @@ function startContinuousHissing() {
 		const sound = (settingsStore.audio?.soundVolume ?? 100) / 100
 		const targetVol = Math.max(0.04, Math.min(0.35, common * sound * 0.3))
 
-		const bufferSize = audioCtx.sampleRate * 2
+		const bufferSize = Math.floor(audioCtx.sampleRate * 0.25)
 		const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate)
 		const data = buffer.getChannelData(0)
 		for (let i = 0; i < bufferSize; i++) {

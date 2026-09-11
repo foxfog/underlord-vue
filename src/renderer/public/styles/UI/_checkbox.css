@@ -28,7 +28,7 @@
 		position: relative;
 		width: calc(1.4 * var(--size));
 		height: calc(1.4 * var(--size));
-		border-radius: 3px;
+		border-radius: 0.2em;
 		border: 2px solid var(--color-border-alpha);
 		background: var(--color-bg-transparent);
 		display: flex;
@@ -54,7 +54,7 @@
 		.ui-checkbox-box {
 			background: var(--color-primary);
 			border-color: var(--color-primary);
-			box-shadow: 0 0 6px var(--color-shadow-medium);
+			box-shadow: 0 0 0.4em var(--color-shadow-medium);
 		}
 
 		.ui-checkbox-check {
@@ -78,7 +78,7 @@
 		border-radius: calc(0.75 * var(--size));
 		background: var(--color-bg-overlay-medium);
 		border: 1px solid var(--color-border-alpha);
-		box-shadow: inset 0 0 4px var(--color-shadow);
+		box-shadow: inset 0 0 0.25em var(--color-shadow);
 		transition:
 			background 0.2s ease,
 			border-color 0.2s ease,
@@ -93,7 +93,7 @@
 		height: calc(1.2 * var(--size));
 		border-radius: 50%;
 		background: var(--color-white);
-		box-shadow: 0 2px 4px var(--color-shadow-medium);
+		box-shadow: 0 0.12em 0.25em var(--color-shadow-medium);
 		transform: translateY(-50%);
 		transition:
 			transform 0.2s ease,
@@ -104,7 +104,7 @@
 		.ui-checkbox-switch {
 			background: var(--color-primary);
 			border-color: var(--color-primary-light);
-			box-shadow: 0 0 6px var(--color-shadow-medium);
+			box-shadow: 0 0 0.4em var(--color-shadow-medium);
 		}
 
 		.ui-checkbox-switch-thumb {

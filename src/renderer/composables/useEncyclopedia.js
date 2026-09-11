@@ -1,6 +1,5 @@
-// src/renderer/composables/useEncyclopedia.js
-
 import { ref, computed } from 'vue'
+import { eventBus } from '../utils/eventBus'
 
 // Singleton reactive state shared across components
 const characters = ref([])
@@ -48,6 +47,7 @@ export function getAttitudeInfo(symp) {
 }
 
 export function useEncyclopedia(gameState = null) {
+	let localGameState = gameState
 	if (gameState) {
 		globalGameStateRef = gameState
 	}
@@ -56,8 +56,9 @@ export function useEncyclopedia(gameState = null) {
 	const allEntries = computed(() => encyclopediaEntries.value)
 
 	function syncToGameState() {
-		if (globalGameStateRef && globalGameStateRef.global) {
-			globalGameStateRef.global.encyclopedia = getState()
+		const targetState = localGameState || globalGameStateRef
+		if (targetState && targetState.global) {
+			targetState.global.encyclopedia = getState()
 		}
 	}
 
@@ -123,9 +124,7 @@ export function useEncyclopedia(gameState = null) {
 		characters.value.push(newChar)
 		syncToGameState()
 
-		if (typeof window !== 'undefined') {
-			window.dispatchEvent(new CustomEvent('journal-character-added', { detail: newChar }))
-		}
+		eventBus.emit('journal-character-added', newChar)
 
 		console.log(`👤 [Journal Character Added] ${newChar.title} (${newChar.id})`)
 		return newChar
@@ -187,9 +186,7 @@ export function useEncyclopedia(gameState = null) {
 		encyclopediaEntries.value.push(newEntry)
 		syncToGameState()
 
-		if (typeof window !== 'undefined') {
-			window.dispatchEvent(new CustomEvent('encyclopedia-entry-added', { detail: newEntry }))
-		}
+		eventBus.emit('encyclopedia-entry-added', newEntry)
 
 		console.log(`📖 [Encyclopedia Entry Added] ${newEntry.title} (${newEntry.id})`)
 		return newEntry

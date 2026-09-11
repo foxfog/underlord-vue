@@ -183,7 +183,7 @@
 	border: 1px solid rgba(255, 215, 0, 0.4);
 	border-bottom: 2px solid rgba(255, 215, 0, 0.7);
 	border-radius: 0.35em;
-	box-shadow: 0 0.15em 0.35em rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+	box-shadow: 0 0.15em 0.35em rgba(0, 0, 0, 0.5), inset 0 0.06em 0 rgba(255, 255, 255, 0.12);
 	text-align: center;
 	white-space: nowrap;
 	user-select: none;

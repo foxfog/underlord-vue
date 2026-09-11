@@ -94,6 +94,8 @@ export const useSavesStore = defineStore('saves', () => {
 		}
 	}
 
+	const isInitialized = ref(false)
+
 	// List all saves
 	const listSaves = async () => {
 		try {
@@ -111,6 +113,7 @@ export const useSavesStore = defineStore('saves', () => {
 					)
 					saves.value.set(saveFile.slot, saveFile)
 				})
+				isInitialized.value = true
 				console.log('✔ Saves list updated, total:', saves.value.size)
 				console.log('✔ Saves map keys:', Array.from(saves.value.keys()))
 				return { success: true, data: Array.from(saves.value.values()) }
@@ -160,8 +163,10 @@ export const useSavesStore = defineStore('saves', () => {
 	// Сначала заполняет все свободные слоты, затем перезаписывает самый старый.
 	const saveQuick = async (gameState, mcName, clipRect) => {
 		try {
-			// Обновляем список сохранений перед операцией
-			await listSaves()
+			// Обновляем список сохранений если еще не загружен
+			if (!isInitialized.value || saves.value.size === 0) {
+				await listSaves()
+			}
 
 			const existingQuick = quickSaves.value
 			let targetSlot = null

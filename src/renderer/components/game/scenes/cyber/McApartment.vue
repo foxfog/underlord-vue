@@ -98,12 +98,12 @@ const onInteract = (itemName) => {
 	position: absolute;
 	background: rgba(0, 0, 0, 0.7);
 	color: #fff;
-	padding: 4px 8px;
-	border-radius: 4px;
-	font-size: 12px;
+	padding: 0.25em 0.5em;
+	border-radius: 0.25em;
+	font-size: 0.75em;
 	white-space: nowrap;
 	opacity: 0;
-	transition: all 0.3s ease;
+	transition: opacity 0.3s ease;
 	pointer-events: none;
 	z-index: 10;
 }

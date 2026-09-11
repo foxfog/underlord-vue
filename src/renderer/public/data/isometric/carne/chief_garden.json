@@ -1,0 +1,34 @@
+{
+	"id": "carne_chief_garden",
+	"name": "Огород старосты деревни Карн",
+	"description": "Приусадебный участок старосты Карна.",
+	"tileWidth": 64,
+	"tileHeight": 32,
+	"heightStep": 16,
+	"gridWidth": 11,
+	"gridHeight": 11,
+	"bounds": { "minX": -5, "maxX": 5, "minY": -5, "maxY": 5 },
+	"defaultSpawn": { "x": 0, "y": -2, "z": 0, "facing": "SE" },
+	"tiles": [
+		{ "x": -5, "y": -5, "z": 0, "type": "grass" }, { "x": -4, "y": -5, "z": 0, "type": "grass" }, { "x": -3, "y": -5, "z": 0, "type": "grass" }, { "x": -2, "y": -5, "z": 0, "type": "grass" }, { "x": -1, "y": -5, "z": 0, "type": "grass" }, { "x": 0, "y": -5, "z": 0, "type": "grass" }, { "x": 1, "y": -5, "z": 0, "type": "grass" }, { "x": 2, "y": -5, "z": 1, "type": "stone_terrace" }, { "x": 3, "y": -5, "z": 1, "type": "stone_terrace" }, { "x": 4, "y": -5, "z": 2, "type": "stone_wall" }, { "x": 5, "y": -5, "z": 2, "type": "stone_wall" },
+		{ "x": -5, "y": -4, "z": 0, "type": "grass" }, { "x": -4, "y": -4, "z": 0, "type": "grass" }, { "x": -3, "y": -4, "z": 0, "type": "grass" }, { "x": -2, "y": -4, "z": 0, "type": "grass" }, { "x": -1, "y": -4, "z": 0, "type": "grass" }, { "x": 0, "y": -4, "z": 0, "type": "grass" }, { "x": 1, "y": -4, "z": 0, "type": "grass" }, { "x": 2, "y": -4, "z": 1, "type": "stone_terrace" }, { "x": 3, "y": -4, "z": 1, "type": "stone_terrace" }, { "x": 4, "y": -4, "z": 2, "type": "stone_wall" }, { "x": 5, "y": -4, "z": 2, "type": "stone_wall" },
+		{ "x": -5, "y": -3, "z": 0, "type": "grass" }, { "x": -4, "y": -3, "z": 0, "type": "grass" }, { "x": -3, "y": -3, "z": 0, "type": "grass" }, { "x": -2, "y": -3, "z": 0, "type": "soil" }, { "x": -1, "y": -3, "z": 0, "type": "soil" }, { "x": 0, "y": -3, "z": 0, "type": "soil" }, { "x": 1, "y": -3, "z": 0, "type": "grass" }, { "x": 2, "y": -3, "z": 1, "type": "stone_terrace" }, { "x": 3, "y": -3, "z": 1, "type": "stone_terrace" }, { "x": 4, "y": -3, "z": 2, "type": "stone_wall" }, { "x": 5, "y": -3, "z": 2, "type": "stone_wall" },
+		{ "x": -5, "y": -2, "z": 0, "type": "grass" }, { "x": -4, "y": -2, "z": 0, "type": "grass" }, { "x": -3, "y": -2, "z": 0, "type": "soil" }, { "x": -2, "y": -2, "z": 0, "type": "soil" }, { "x": -1, "y": -2, "z": 0, "type": "soil" }, { "x": 0, "y": -2, "z": 0, "type": "grass" }, { "x": 1, "y": -2, "z": 0, "type": "grass" }, { "x": 2, "y": -2, "z": 1, "type": "stone_terrace" }, { "x": 3, "y": -2, "z": 1, "type": "stone_terrace" }, { "x": 4, "y": -2, "z": 1, "type": "stone_terrace" }, { "x": 5, "y": -2, "z": 1, "type": "stone_terrace" },
+		{ "x": -5, "y": -1, "z": 0, "type": "grass" }, { "x": -4, "y": -1, "z": 0, "type": "grass" }, { "x": -3, "y": -1, "z": 0, "type": "soil" }, { "x": -2, "y": -1, "z": 0, "type": "soil" }, { "x": -1, "y": -1, "z": 0, "type": "soil" }, { "x": 0, "y": -1, "z": 0, "type": "grass" }, { "x": 1, "y": -1, "z": 0, "type": "grass" }, { "x": 2, "y": -1, "z": 1, "type": "stairs" }, { "x": 3, "y": -1, "z": 1, "type": "stone_terrace" }, { "x": 4, "y": -1, "z": 1, "type": "stone_terrace" }, { "x": 5, "y": -1, "z": 1, "type": "stone_terrace" },
+		{ "x": -5, "y": 0, "z": 0, "type": "grass" }, { "x": -4, "y": 0, "z": 0, "type": "grass" }, { "x": -3, "y": 0, "z": 0, "type": "grass" }, { "x": -2, "y": 0, "z": 0, "type": "grass" }, { "x": -1, "y": 0, "z": 0, "type": "grass" }, { "x": 0, "y": 0, "z": 0, "type": "grass" }, { "x": 1, "y": 0, "z": 0, "type": "grass" }, { "x": 2, "y": 0, "z": 1, "type": "stairs" }, { "x": 3, "y": 0, "z": 1, "type": "stone_terrace" }, { "x": 4, "y": 0, "z": 1, "type": "stone_terrace" }, { "x": 5, "y": 0, "z": 1, "type": "stone_terrace" },
+		{ "x": -5, "y": 1, "z": 0, "type": "grass" }, { "x": -4, "y": 1, "z": 0, "type": "soil" }, { "x": -3, "y": 1, "z": 0, "type": "soil" }, { "x": -2, "y": 1, "z": 0, "type": "soil" }, { "x": -1, "y": 1, "z": 0, "type": "grass" }, { "x": 0, "y": 1, "z": 0, "type": "grass" }, { "x": 1, "y": 1, "z": 0, "type": "grass" }, { "x": 2, "y": 1, "z": 1, "type": "stone_terrace" }, { "x": 3, "y": 1, "z": 1, "type": "stone_terrace" }, { "x": 4, "y": 1, "z": 1, "type": "stone_terrace" }, { "x": 5, "y": 1, "z": 1, "type": "stone_terrace" },
+		{ "x": -5, "y": 2, "z": 0, "type": "grass" }, { "x": -4, "y": 2, "z": 0, "type": "soil" }, { "x": -3, "y": 2, "z": 0, "type": "soil" }, { "x": -2, "y": 2, "z": 0, "type": "soil" }, { "x": -1, "y": 2, "z": 0, "type": "grass" }, { "x": 0, "y": 2, "z": 0, "type": "grass" }, { "x": 1, "y": 2, "z": 0, "type": "grass" }, { "x": 2, "y": 2, "z": 1, "type": "stone_terrace" }, { "x": 3, "y": 2, "z": 1, "type": "stone_terrace" }, { "x": 4, "y": 2, "z": 1, "type": "stone_terrace" }, { "x": 5, "y": 2, "z": 1, "type": "stone_terrace" },
+		{ "x": -5, "y": 3, "z": 0, "type": "grass" }, { "x": -4, "y": 3, "z": 0, "type": "grass" }, { "x": -3, "y": 3, "z": 0, "type": "grass" }, { "x": -2, "y": 3, "z": 0, "type": "grass" }, { "x": -1, "y": 3, "z": 0, "type": "soil" }, { "x": 0, "y": 3, "z": 0, "type": "soil" }, { "x": 1, "y": 3, "z": 0, "type": "grass" }, { "x": 2, "y": 3, "z": 0, "type": "grass" }, { "x": 3, "y": 3, "z": 0, "type": "grass" }, { "x": 4, "y": 3, "z": 0, "type": "grass" }, { "x": 5, "y": 3, "z": 0, "type": "grass" },
+		{ "x": -5, "y": 4, "z": 0, "type": "grass" }, { "x": -4, "y": 4, "z": 0, "type": "grass" }, { "x": -3, "y": 4, "z": 0, "type": "grass" }, { "x": -2, "y": 4, "z": 0, "type": "grass" }, { "x": -1, "y": 4, "z": 0, "type": "grass" }, { "x": 0, "y": 4, "z": 0, "type": "grass" }, { "x": 1, "y": 4, "z": 0, "type": "grass" }, { "x": 2, "y": 4, "z": 0, "type": "grass" }, { "x": 3, "y": 4, "z": 0, "type": "grass" }, { "x": 4, "y": 4, "z": 0, "type": "grass" }, { "x": 5, "y": 4, "z": 0, "type": "grass" },
+		{ "x": -5, "y": 5, "z": 0, "type": "grass" }, { "x": -4, "y": 5, "z": 0, "type": "grass" }, { "x": -3, "y": 5, "z": 0, "type": "grass" }, { "x": -2, "y": 5, "z": 0, "type": "grass" }, { "x": -1, "y": 5, "z": 0, "type": "grass" }, { "x": 0, "y": 5, "z": 0, "type": "grass" }, { "x": 1, "y": 5, "z": 0, "type": "grass" }, { "x": 2, "y": 5, "z": 0, "type": "grass" }, { "x": 3, "y": 5, "z": 0, "type": "grass" }, { "x": 4, "y": 5, "z": 0, "type": "grass" }, { "x": 5, "y": 5, "z": 0, "type": "grass" }
+	],
+	"objects": [
+		{ "id": "well_carne", "type": "well", "name": "Каменный колодец", "x": 3, "y": 1, "z": 1, "size": [2, 2], "solid": true, "interactive": true, "icon": "⛲" },
+		{ "id": "barrel_1", "type": "barrel", "name": "Дубовая бочка", "x": 2, "y": -2, "z": 1, "size": [1, 1], "solid": true, "icon": "🛢️" },
+		{ "id": "barrel_2", "type": "barrel", "name": "Дубовая бочка", "x": 3, "y": -3, "z": 1, "size": [1, 1], "solid": true, "icon": "🛢️" },
+		{ "id": "fence_w", "type": "fence", "name": "Деревянный плетень", "x": -5, "y": -4, "z": 0, "size": [1, 5], "solid": true, "icon": "🪵" }
+	],
+	"exits": [
+		{ "id": "exit_to_house", "label": "Вернуться в дом старосты", "trigger": { "x": 0, "y": -5, "z": 0 }, "targetType": "scene", "target": "carne_chief_house" }
+	]
+}

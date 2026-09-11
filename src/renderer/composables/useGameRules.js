@@ -8,10 +8,9 @@
 import { ref, watch } from 'vue'
 import GameRulesEngine from '@/services/gameRulesEngine'
 
-let rulesEngine = null
-let stopWatcher = null // stores the Vue watcher unsubscribe fn
-
 export function useGameRules(gameState) {
+	let rulesEngine = null
+	let stopWatcher = null // stores the Vue watcher unsubscribe fn
 	const stats = ref(null)
 	const isRunning = ref(false)
 
@@ -54,8 +53,7 @@ export function useGameRules(gameState) {
 
 	/**
 	 * Запускает реактивную проверку правил через Vue watcher.
-	 * Правила проверяются только при реальном изменении gameState,
-	 * а не по таймеру — это эффективнее и не нагружает консоль.
+	 * Наблюдает за изменениями глобальных переменных, персонажей и состояния игры.
 	 */
 	const startRules = () => {
 		const engine = initEngine()
@@ -69,7 +67,11 @@ export function useGameRules(gameState) {
 		}
 
 		stopWatcher = watch(
-			() => gameState,
+			[
+				() => gameState?.global,
+				() => gameState?.character,
+				() => gameState?.game
+			],
 			() => {
 				if (rulesEngine) rulesEngine.checkRules()
 			},

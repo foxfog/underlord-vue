@@ -4,9 +4,9 @@
 
 .modal._inventory {
 	.modal-content {
-		width: min(75em, 94vw);
-		height: min(51.25em, 88vh);
-		max-height: 88vh;
+		width: min(75em, 94%);
+		height: min(51.25em, 88%);
+		max-height: 88%;
 	}
 
 	.modal-body {
@@ -472,7 +472,7 @@
 		border: 1px solid var(--color-border-alpha);
 		overflow: hidden;
 		position: relative;
-		box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
+		box-shadow: inset 0 0.06em 0.2em rgba(0, 0, 0, 0.6);
 
 		.stat-fill {
 			height: 100%;
@@ -515,7 +515,7 @@
 		&:hover {
 			background-color: var(--card-bg-hover);
 			border-color: rgba(212, 175, 55, 0.3);
-			transform: translateX(2px);
+			transform: translateX(0.12em);
 		}
 
 		.ability-name {

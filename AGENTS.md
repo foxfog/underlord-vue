@@ -123,6 +123,12 @@ body {
 * **Система сохранений (Save & Load)**:
   Сериализация `gameState` (`globalData`, `characterData`, `discoveredLocations`), IPC с Main процессом.
   📖 Документация: [`docs/systems/SaveSystem.md`](docs/systems/SaveSystem.md)
+* **Архитектура новеллы и стейт-менеджмент (Story Architecture)**:
+  Декомпозиция `useVisualNovel.js` на модули `useStory*` (`composables/story/`), хранилища `gameStore.js` (устранение prop-drilling), `modalStore.js` (модальные окна) и сервис `saveManager.js`.
+  📖 Документация: [`docs/systems/StoryArchitecture.md`](docs/systems/StoryArchitecture.md)
+* **Изометрические локации и тактическая система (Isometric 2.5D System)**:
+  Ромбовидная 2:1 сетка (64×32), многоуровневый рельеф с дискретными высотами $Z$, пошаговое перемещение ГГ (A* pathfinding с ограничением перепада высот), интерактивные объекты (прополка сорняков), раздел «Тесты» в Главном меню, интеграция со сценами и картами.
+  📖 Документация: [`docs/systems/IsometricSystem.md`](docs/systems/IsometricSystem.md)
 * **Аудиосистема**:
   Расчет громкости любых звуков строго через `commonVolume` и категорию (`commonVolume * musicVolume / 10000`).
 * **Модальные окна**:

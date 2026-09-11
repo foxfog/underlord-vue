@@ -13,6 +13,7 @@
 * [Миграция стилей на CSS Nesting](./ui/StylesMigration.md)
 
 ## ⚙️ Системы (Systems)
+* [Архитектура движка новеллы и хранилища (Story Architecture)](./systems/StoryArchitecture.md)
 * [Система Карт и открытие локаций (Map & Marker Discovery)](./systems/MapSystem.md)
 * [Интерактивные маркеры сцен (Scene Hotspots)](./systems/SceneHotspots.md)
 * [Система Времени и Календаря (Time & Calendar)](./systems/TimeCalendar.md)
@@ -22,6 +23,7 @@
 * [Система Экипировки (Equipment System)](./systems/EquipmentSystem.md)
 * [Энциклопедия и Журнал персонажей (Encyclopedia & Characters)](./systems/EncyclopediaSystem.md)
 * [Система распорядка дня и присутствия NPC (NPC Schedule & Presence)](./systems/NPCScheduleSystem.md)
+* [Изометрические локации и тактическая система (Isometric 2.5D System)](./systems/IsometricSystem.md)
 
 ## 🤖 Разработка и Агенты
 * [Руководство для ИИ-агентов и правила адаптивной верстки (AGENTS.md)](../AGENTS.md)

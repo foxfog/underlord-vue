@@ -25,8 +25,8 @@
 				<div class="tab-content">
 					<InventoryItems
 						v-show="activeTab === 'inventory'"
-						:character="character"
-						:items="props.character?.inventory?.items || []"
+						:character="effectiveCharacter"
+						:items="effectiveCharacter?.inventory?.items || []"
 						:items-data="propsItemsData"
 						:equipment-slots="equipmentSlots"
 						@equip="(e) => emit('equip', e)"
@@ -36,7 +36,7 @@
 						@drag-inventory-drop="handleInventoryDrop"
 					/>
 
-					<InventoryStats v-show="activeTab === 'statistics'" :character="character" />
+					<InventoryStats v-show="activeTab === 'statistics'" :character="effectiveCharacter" />
 
 					<InventoryAbilities v-show="activeTab === 'abilities'" :abilities="abilities" />
 				</div>
@@ -50,6 +50,9 @@ import { computed, ref, watch } from 'vue'
 import InventoryItems from './InventoryItems.vue'
 import InventoryStats from './InventoryStats.vue'
 import InventoryAbilities from './InventoryAbilities.vue'
+import { useGameStore } from '@/stores/gameStore'
+
+const gameStore = useGameStore()
 
 const props = defineProps({
 	isVisible: {
@@ -64,6 +67,10 @@ const props = defineProps({
 		type: Object,
 		default: () => ({})
 	}
+})
+
+const effectiveCharacter = computed(() => {
+	return props.character || gameStore.characterData?.mc || {}
 })
 
 const emit = defineEmits(['close', 'equip', 'unequip', 'swap', 'drop'])
@@ -95,9 +102,10 @@ const tabs = [
 ]
 
 const inventoryItems = computed(() => {
-	if (!props.character?.inventory?.items) return []
+	const char = effectiveCharacter.value
+	if (!char?.inventory?.items) return []
 
-	return props.character.inventory.items.map((invItem) => {
+	return char.inventory.items.map((invItem) => {
 		// Получаем описание предмета из itemsData (equipment или other)
 		const itemDef = localItemsData.value[invItem.itemId] || {
 			id: invItem.itemId,
@@ -114,9 +122,10 @@ const inventoryItems = computed(() => {
 })
 
 const abilities = computed(() => {
-	if (!props.character?.abilities) return []
+	const char = effectiveCharacter.value
+	if (!char?.abilities) return []
 
-	return props.character.abilities.map((ability) => ({
+	return char.abilities.map((ability) => ({
 		id: ability.id || ability.name,
 		name: ability.name,
 		description: ability.description || 'Нет описания'
@@ -124,16 +133,18 @@ const abilities = computed(() => {
 })
 
 const hpPercentage = computed(() => {
-	if (!props.character) return 0
-	const hp = props.character.stats?.hp ?? props.character.hp ?? 0
-	const hpmax = props.character.stats?.hpmax ?? props.character.hpmax ?? 0
+	const char = effectiveCharacter.value
+	if (!char) return 0
+	const hp = char.stats?.hp ?? char.hp ?? 0
+	const hpmax = char.stats?.hpmax ?? char.hpmax ?? 0
 	return hpmax > 0 ? (hp / hpmax) * 100 : 0
 })
 
 const mpPercentage = computed(() => {
-	if (!props.character) return 0
-	const mp = props.character.stats?.mp ?? props.character.mp ?? 0
-	const mpmax = props.character.stats?.mpmax ?? props.character.mpmax ?? 0
+	const char = effectiveCharacter.value
+	if (!char) return 0
+	const mp = char.stats?.mp ?? char.mp ?? 0
+	const mpmax = char.stats?.mpmax ?? char.mpmax ?? 0
 	return mpmax > 0 ? (mp / mpmax) * 100 : 0
 })
 
@@ -156,11 +167,12 @@ function closeModal() {
 }
 
 const equipmentSlots = computed(() => {
-	if (!props.character) return {}
+	const char = effectiveCharacter.value
+	if (!char) return {}
 	return (
-		props.character.equipment_slots ||
-		props.character.equipmentSlots ||
-		props.character.equipment ||
+		char.equipment_slots ||
+		char.equipmentSlots ||
+		char.equipment ||
 		{}
 	)
 })

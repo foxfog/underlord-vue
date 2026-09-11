@@ -138,16 +138,16 @@ function onCardClick() {
 }
 
 .status-active .quest-node-card {
-	border-left: 4px solid #38bdf8;
+	border-left: 0.25em solid #38bdf8;
 }
 
 .status-completed .quest-node-card {
-	border-left: 4px solid #4ade80;
+	border-left: 0.25em solid #4ade80;
 	opacity: 0.85;
 }
 
 .status-failed .quest-node-card {
-	border-left: 4px solid #f87171;
+	border-left: 0.25em solid #f87171;
 	opacity: 0.7;
 }
 

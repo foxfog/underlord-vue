@@ -123,6 +123,10 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 
+import { useGameStore } from '@/stores/gameStore'
+
+const gameStore = useGameStore()
+
 const props = defineProps({
 	initialPhase: {
 		type: String,
@@ -141,11 +145,18 @@ const connectProgress = ref(0)
 const currentStatusText = ref('Инициализация нейроинтерфейса...')
 const logEntries = ref([])
 
+const effectiveGlobalData = computed(() => {
+	return props.globalData && Object.keys(props.globalData).length > 0
+		? props.globalData
+		: gameStore.globalData
+})
+
 const formattedVrTime = computed(() => {
-	const time = props.globalData?.time || '21:14'
-	const day = String(props.globalData?.dayOfMonth || 18).padStart(2, '0')
-	const month = String(props.globalData?.month || 12).padStart(2, '0')
-	const year = props.globalData?.year || 2138
+	const g = effectiveGlobalData.value
+	const time = g?.time || '21:14'
+	const day = String(g?.dayOfMonth || 18).padStart(2, '0')
+	const month = String(g?.month || 12).padStart(2, '0')
+	const year = g?.year || 2138
 	return `${time} • ${day}.${month}.${year}`
 })
 

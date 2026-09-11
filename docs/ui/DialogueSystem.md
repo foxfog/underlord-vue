@@ -187,4 +187,16 @@ visualNovel.value.setDialogueHideUI(['hotbar', 'stats-button'])
 * **По центру экрана (по умолчанию)**: `layout: "center"` (или если свойство опущено). Варианты отображаются в центрированном оверлее поверх сцены с адаптивными размерами в `em`. Если в шаге задан текст вопроса (`text`) или говорящий (`speaker`), диалоговое окно внизу экрана отображает вопрос, а кнопки выбора располагаются по центру экрана.
 * **Внутри/под диалоговым окном (опционально)**: `layout: "dialogue"` (или `layout: "bottom"`, `position: "dialogue"`). Кнопки вариантов выводятся непосредственно внутри нижнего диалогового окна под текстом.
 
+---
+
+## Архитектура системы диалогов и истории
+
+* **`src/renderer/composables/story/useStoryDialogue.js`**:
+  Инкапсулирует реактивные состояния текста, нарратива, выборов и буфера пишущей машинки: `currentDialogue`, `currentNarration`, `currentTitle`, `currentTitleEffects`, `currentSpeaker`, `currentChoices`, `currentChoicesLayout`, `multiStepDialogueBuffer`, `multiStepPrintedLength`.
+* **`src/renderer/composables/story/useStoryHistory.js`**:
+  Инкапсулирует кольцевой буфер истории диалогов и сюжетных логов (`historyEntries`, `addToHistory`, `getHistory`, `clearHistory`, `setHistory`).
+* **`src/renderer/composables/useVisualNovel.js`**:
+  Выступает в роли оркестратора, связывая сценарный процессор с модулями диалогов и истории.
+
+
 

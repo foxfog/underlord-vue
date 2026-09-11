@@ -49,7 +49,7 @@
 			font-family: Kurale, sans-serif;
 			font-size: 0.95em;
 			transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-			backdrop-filter: blur(4px);
+			backdrop-filter: blur(0.25em);
 
 			&:hover:not(:disabled) {
 				border-color: rgba(212, 175, 55, 0.5);
@@ -74,13 +74,13 @@
 
 	.seves-slots-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+		grid-template-columns: repeat(auto-fill, minmax(17.5em, 1fr));
 		gap: 1.2em;
 		width: 100%;
 		height: auto;
 		max-height: 100%;
 		overflow-y: auto;
-		padding: 4px;
+		padding: 0.25em;
 	}
 
 	.seves-slot {
@@ -93,13 +93,13 @@
 		display: flex;
 		flex-direction: column;
 		overflow: hidden;
-		backdrop-filter: blur(10px);
+		backdrop-filter: blur(0.625em);
 		position: relative;
-		height: 220px;
+		height: 13.75em;
 
 		.thumb {
 			width: 100%;
-			height: 135px;
+			height: 8.45em;
 			background: #111;
 			display: flex;
 			align-items: center;
@@ -127,7 +127,7 @@
 				padding: 0.2em 0.5em;
 				border-radius: 0.25em;
 				border: 1px solid var(--color-border-alpha);
-				backdrop-filter: blur(4px);
+				backdrop-filter: blur(0.25em);
 				pointer-events: none;
 			}
 		}
@@ -190,7 +190,7 @@
 		}
 
 		&:hover {
-			transform: translateY(-3px);
+			transform: translateY(-0.2em);
 			border-color: rgba(212, 175, 55, 0.4);
 			background: rgba(32, 32, 38, 0.85);
 			box-shadow:

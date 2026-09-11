@@ -4,6 +4,7 @@ import { ref, computed } from 'vue'
 import { evaluateExpression } from '../utils/expressionEvaluator'
 import { normalizeTimeOfDay, getCalendarInfo } from '../utils/timeCalendar'
 import { DAYS_OF_WEEK, NEW_WORLD_MONTHS, REAL_MONTHS } from '../constants/calendar'
+import { getMapTitle } from '../constants/maps'
 import { useQuests } from './useQuests'
 
 // Singleton reactive state shared across components
@@ -359,6 +360,29 @@ export function useNpcSchedule() {
 		return result
 	}
 
+	function buildNpcInstance(charData, npc) {
+		return {
+			...charData,
+			position: npc.position,
+			orientation: npc.orientation,
+			scale: npc.scale,
+			...(npc.customClass ? { customClass: npc.customClass } : {}),
+			...(npc.interaction ? { interaction: npc.interaction } : {}),
+			_isScheduledNpc: true
+		}
+	}
+
+	function upsertVisibleCharacter(visibleCharactersRef, charInstance, charId) {
+		const existingIdx = visibleCharactersRef.value.findIndex(
+			(c) => c.id === charId
+		)
+		if (existingIdx !== -1) {
+			visibleCharactersRef.value[existingIdx] = charInstance
+		} else {
+			visibleCharactersRef.value.push(charInstance)
+		}
+	}
+
 	function populateSceneCharacters(sceneId, context = {}, visibleCharactersRef, characterDataRef) {
 		if (!sceneId || !visibleCharactersRef || !characterDataRef) return []
 
@@ -368,22 +392,8 @@ export function useNpcSchedule() {
 		for (const npc of npcs) {
 			const charData = characterDataRef.value[npc.characterId]
 			if (charData) {
-				const charInstance = { ...charData }
-				charInstance.position = npc.position
-				charInstance.orientation = npc.orientation
-				charInstance.scale = npc.scale
-				if (npc.customClass) charInstance.customClass = npc.customClass
-				if (npc.interaction) charInstance.interaction = npc.interaction
-				charInstance._isScheduledNpc = true
-
-				const existingIdx = visibleCharactersRef.value.findIndex(
-					(c) => c.id === npc.characterId
-				)
-				if (existingIdx !== -1) {
-					visibleCharactersRef.value[existingIdx] = charInstance
-				} else {
-					visibleCharactersRef.value.push(charInstance)
-				}
+				const charInstance = buildNpcInstance(charData, npc)
+				upsertVisibleCharacter(visibleCharactersRef, charInstance, npc.characterId)
 
 				// Player visited scene -> automatically discover location in journal
 				setNpcLocationKnown(npc.characterId, true)
@@ -412,23 +422,8 @@ export function useNpcSchedule() {
 		for (const npc of scheduledNpcs) {
 			const charData = characterDataRef.value[npc.characterId]
 			if (charData) {
-				const charInstance = { ...charData }
-				charInstance.position = npc.position
-				charInstance.orientation = npc.orientation
-				charInstance.scale = npc.scale
-				if (npc.customClass) charInstance.customClass = npc.customClass
-				if (npc.interaction) charInstance.interaction = npc.interaction
-				charInstance._isScheduledNpc = true
-
-				const existingIdx = visibleCharactersRef.value.findIndex(
-					(c) => c.id === npc.characterId
-				)
-				if (existingIdx !== -1) {
-					visibleCharactersRef.value[existingIdx] = charInstance
-				} else {
-					visibleCharactersRef.value.push(charInstance)
-				}
-
+				const charInstance = buildNpcInstance(charData, npc)
+				upsertVisibleCharacter(visibleCharactersRef, charInstance, npc.characterId)
 				setNpcLocationKnown(npc.characterId, true)
 			}
 		}
@@ -450,12 +445,7 @@ export function useNpcSchedule() {
 		if (scene) {
 			const sceneName = loc.locationName || scene.name || loc.sceneId
 			const mapKey = scene.localMap || scene.worldMap
-			const mapNames = {
-				carne: 'Деревня Карн',
-				newworld: 'Новый Мир',
-				cybercity: 'Кибергород'
-			}
-			const mapTitle = mapNames[mapKey] || mapKey
+			const mapTitle = getMapTitle(mapKey)
 			return mapTitle && mapTitle !== sceneName ? `${sceneName} (${mapTitle})` : sceneName
 		}
 

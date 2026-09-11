@@ -4,8 +4,8 @@
 
 .history-modal {
 	.history-inner {
-		width: min(57.5em, 94vw);
-		max-height: 84vh;
+		width: min(57.5em, 94%);
+		max-height: 84%;
 		display: flex;
 		flex-direction: column;
 	}

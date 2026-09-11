@@ -62,6 +62,10 @@ const showSaves = () => {
 	currentView.value = 'saves'
 }
 
+const showTests = () => {
+	currentView.value = 'tests'
+}
+
 const handleNavigation = (view) => {
 	// If we are leaving settings with unsaved changes, ask user first
 	if (currentView.value === 'settings' && view !== 'settings' && isSettingsDirty.value) {
@@ -81,6 +85,8 @@ function navigateImmediate(view) {
 		showSaves()
 	} else if (view === 'saves') {
 		showSaves()
+	} else if (view === 'tests') {
+		showTests()
 	} else if (view === 'main-menu') {
 		showMainMenu()
 	}

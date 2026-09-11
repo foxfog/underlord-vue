@@ -1,4 +1,6 @@
 import { computed } from 'vue'
+import { calculateEquipmentBySlot } from '../utils/equipment'
+import { eventBus } from '../utils/eventBus'
 
 export function useCharacterEquipment(
 	mcCharacter,
@@ -9,38 +11,10 @@ export function useCharacterEquipment(
 ) {
 	function rebuildEquipmentBySlot() {
 		if (!mcCharacter.value) return
-
-		const equipmentMap = {}
-		if (Array.isArray(mcCharacter.value.equipment)) {
-			mcCharacter.value.equipment.forEach((item) => {
-				if (item && item.id) equipmentMap[item.id] = item
-			})
-		}
-
-		const equipmentBySlot = {}
-		const slots = mcCharacter.value.equipment_slots || {}
-		for (const [slotName, itemRef] of Object.entries(slots)) {
-			let itemId = null
-			if (itemRef === null || typeof itemRef === 'undefined') {
-				itemId = null
-			} else if (typeof itemRef === 'string' || typeof itemRef === 'number') {
-				itemId = itemRef
-			} else if (typeof itemRef === 'object' && itemRef.id) {
-				itemId = itemRef.id
-			} else if (typeof itemRef === 'object' && itemRef.item && itemRef.item.id) {
-				itemId = itemRef.item.id
-			}
-
-			if (itemId && equipmentMap[itemId]) {
-				equipmentBySlot[slotName] = {
-					id: itemId,
-					item: equipmentMap[itemId],
-					parts: equipmentMap[itemId].parts || []
-				}
-			}
-		}
-
-		mcCharacter.value.equipmentBySlot = equipmentBySlot
+		mcCharacter.value.equipmentBySlot = calculateEquipmentBySlot(
+			mcCharacter.value.equipment_slots,
+			mcCharacter.value.equipment
+		)
 	}
 
 	function handleEquip({ slot, itemId, inventoryIndex }) {
@@ -102,11 +76,7 @@ export function useCharacterEquipment(
 		if (mcCharacter.value) {
 			gameState.character.mc = mcCharacter.value
 		}
-		if (typeof window !== 'undefined') {
-			window.dispatchEvent(
-				new CustomEvent('item-equipped', { detail: { slot, itemId } })
-			)
-		}
+		eventBus.emit('item-equipped', { slot, itemId })
 		onEquipmentChanged({ action: 'equip', slot, itemId })
 	}
 

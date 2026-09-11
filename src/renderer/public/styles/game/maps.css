@@ -4,9 +4,9 @@
 
 .map-modal {
 	.map-modal__content {
-		width: min(75em, 94vw);
-		height: min(51.25em, 88vh);
-		max-height: 88vh;
+		width: min(75em, 94%);
+		height: min(51.25em, 88%);
+		max-height: 88%;
 		display: flex;
 		flex-direction: column;
 		gap: 0;

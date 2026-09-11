@@ -352,7 +352,10 @@ import { ref, computed } from 'vue'
 import { useQuests } from '../../../composables/useQuests'
 import { useEncyclopedia, getAttitudeInfo } from '../../../composables/useEncyclopedia'
 import { useNpcSchedule } from '../../../composables/useNpcSchedule'
+import { useGameStore } from '@/stores/gameStore'
 import QuestTreeItem from './QuestTreeItem.vue'
+
+const gameStore = useGameStore()
 
 const props = defineProps({
 	isVisible: { type: Boolean, default: false },
@@ -402,7 +405,8 @@ const selectedCharacter = computed(() => {
 function getCharacterSympathy(char) {
 	if (!char) return 0
 	const varName = char.sympVariable || `${char.id}_mc_symp`
-	const val = props.gameState?.global?.[varName]
+	const gData = props.gameState?.global || gameStore.globalData || {}
+	const val = gData[varName]
 	return typeof val === 'number' ? val : Number(val) || 0
 }
 
@@ -414,7 +418,8 @@ function getCharacterAttitude(char) {
 function getCharacterTitleToMc(char) {
 	if (!char) return 'Путник'
 	const varName = char.titleVariable || `${char.id}_mc_title`
-	const val = props.gameState?.global?.[varName]
+	const gData = props.gameState?.global || gameStore.globalData || {}
+	const val = gData[varName]
 	if (val && String(val).trim() !== '') return String(val)
 	return char.defaultTitle || 'Путник'
 }
@@ -423,10 +428,10 @@ function getCharacterLocation(char) {
 	if (!char) return 'Неизвестно'
 	const { getNpcLocationDisplay } = useNpcSchedule()
 	const context = {
-		globalData: props.gameState?.global || {},
-		characterData: props.gameState?.character || {}
+		globalData: props.gameState?.global || gameStore.globalData || {},
+		characterData: props.gameState?.character || gameStore.characterData || {}
 	}
-	const sceneData = props.gameState?.sceneData || {}
+	const sceneData = props.gameState?.sceneData || gameStore.sceneData || {}
 	return getNpcLocationDisplay(char.id, context, sceneData)
 }
 
@@ -518,10 +523,10 @@ function closeOnBackground() {
 	transition: all 0.2s ease;
 }
 .active-quest {
-	border-left: 4px solid #4fc3f7;
+	border-left: 0.25em solid #4fc3f7;
 }
 .completed-quest {
-	border-left: 4px solid #81c784;
+	border-left: 0.25em solid #81c784;
 	opacity: 0.75;
 }
 .quest-item-header {
@@ -625,7 +630,7 @@ function closeOnBackground() {
 
 .detail-desc-box {
 	background: rgba(255, 255, 255, 0.04);
-	border-left: 3px solid #38bdf8;
+	border-left: 0.2em solid #38bdf8;
 	padding: 0.8em 1em;
 	border-radius: 0.25em;
 	font-size: 0.95em;
@@ -925,7 +930,7 @@ function closeOnBackground() {
 
 .journal-block-card {
 	background: rgba(255, 255, 255, 0.03);
-	border-left: 3px solid #38bdf8;
+	border-left: 0.2em solid #38bdf8;
 	border-radius: 0.25em;
 	padding: 0.7em 0.9em;
 }

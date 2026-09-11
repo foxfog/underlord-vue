@@ -8,6 +8,7 @@
 	"scripts": {
 		"format": "prettier --write .",
 		"lint": "eslint --cache .",
+		"lint:styles": "node scripts/lint-styles.js",
 		"start": "electron-vite preview",
 		"dev": "electron-vite dev",
 		"test": "vitest",

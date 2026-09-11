@@ -6,7 +6,7 @@
 	&:focus-within {
 		.ui-dropdown-toggle {
 			border-color: var(--color-primary);
-			box-shadow: 0 0 0 2px var(--color-primary-alpha);
+			box-shadow: 0 0 0 0.12em var(--color-primary-alpha);
 		}
 	}
 
@@ -16,7 +16,7 @@
 			bottom: 100%;
 			margin-top: 0;
 			margin-bottom: 0.25em;
-			transform: translateY(10px);
+			transform: translateY(0.6em);
 
 			&._active {
 				transform: translateY(0);
@@ -30,7 +30,7 @@
 		padding: 0.75em 1em;
 		background: var(--color-bg-overlay);
 		border: 1px solid var(--color-border-alpha);
-		border-radius: 6px;
+		border-radius: 0.375em;
 		color: var(--color-white);
 		cursor: pointer;
 		transition: all 0.3s ease;
@@ -47,7 +47,7 @@
 		&._active {
 			background: var(--color-bg-overlay-medium);
 			border-color: var(--color-primary);
-			box-shadow: 0 0 0 2px var(--color-primary-alpha);
+			box-shadow: 0 0 0 0.12em var(--color-primary-alpha);
 		}
 
 		&:active {
@@ -66,15 +66,15 @@
 		right: 0;
 		background: var(--color-bg-panel);
 		border: 1px solid var(--color-border-alpha);
-		border-radius: 6px;
-		box-shadow: 0 4px 20px var(--color-shadow-strong);
-		max-height: 200px;
+		border-radius: 0.375em;
+		box-shadow: 0 0.25em 1.25em var(--color-shadow-strong);
+		max-height: 12.5em;
 		overflow-y: auto;
 		z-index: 1001;
 		margin-top: 0.25em;
 		opacity: 0;
 		visibility: hidden;
-		transform: translateY(-10px);
+		transform: translateY(-0.6em);
 		transition: all 0.3s ease;
 		pointer-events: none;
 
@@ -87,17 +87,17 @@
 		}
 
 		&::-webkit-scrollbar {
-			width: 6px;
+			width: 0.375em;
 		}
 
 		&::-webkit-scrollbar-track {
 			background: var(--color-bg-overlay);
-			border-radius: 3px;
+			border-radius: 0.2em;
 		}
 
 		&::-webkit-scrollbar-thumb {
 			background: var(--color-scrollbar);
-			border-radius: 3px;
+			border-radius: 0.2em;
 
 			&:hover {
 				background-color: var(--color-text-placeholder);
@@ -163,7 +163,7 @@
 
 .ui-select {
 	width: 100%;
-	max-width: 300px;
+	max-width: 18.75em;
 
 	&._disabled {
 		opacity: 0.5;
@@ -215,7 +215,7 @@
 @keyframes dropdownFadeIn {
 	from {
 		opacity: 0;
-		transform: translateY(-10px) scale(0.95);
+		transform: translateY(-0.6em) scale(0.95);
 	}
 	to {
 		opacity: 1;
@@ -230,7 +230,7 @@
 	}
 	to {
 		opacity: 0;
-		transform: translateY(-10px) scale(0.95);
+		transform: translateY(-0.6em) scale(0.95);
 	}
 }
 
@@ -244,7 +244,7 @@
 	.ui-dropdown-menu {
 		background: var(--color-bg-panel-dark);
 		border-color: var(--color-border-alpha);
-		backdrop-filter: blur(10px);
+		backdrop-filter: blur(0.625em);
 	}
 
 	.ui-dropdown-item {

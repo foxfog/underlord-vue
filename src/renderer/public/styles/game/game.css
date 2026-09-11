@@ -39,10 +39,10 @@
 
 	.hotbar-btn {
 		text-shadow:
-			-1px -1px 0 rgba(0, 0, 0, 0.7),
-			1px -1px 0 rgba(0, 0, 0, 0.7),
-			-1px 1px 0 rgba(0, 0, 0, 0.7),
-			1px 1px 0 rgba(0, 0, 0, 0.7);
+			-0.06em -0.06em 0 rgba(0, 0, 0, 0.7),
+			0.06em -0.06em 0 rgba(0, 0, 0, 0.7),
+			-0.06em 0.06em 0 rgba(0, 0, 0, 0.7),
+			0.06em 0.06em 0 rgba(0, 0, 0, 0.7);
 		background: none;
 		color: #e0e0e0;
 		border: 0;
@@ -57,10 +57,10 @@
 			color: #fff;
 			text-shadow:
 				0 0 0.8em var(--color-primary),
-				1px -1px 0 var(--color-primary),
-				-1px 1px 0 var(--color-primary),
-				1px 1px 0 var(--color-primary);
-			transform: translateY(-1px);
+				0.06em -0.06em 0 var(--color-primary),
+				-0.06em 0.06em 0 var(--color-primary),
+				0.06em 0.06em 0 var(--color-primary);
+			transform: translateY(-0.06em);
 		}
 
 		&:focus {
@@ -110,7 +110,7 @@ body.screenshot-mode .modal {
 
 	.content-area {
 		flex: 1;
-		padding: 24px;
+		padding: 1.5em;
 	}
 }
 
@@ -136,7 +136,7 @@ body.screenshot-mode .modal {
 	align-items: center;
 	padding: 0.6em 1em;
 	z-index: 100;
-	backdrop-filter: blur(4px);
+	backdrop-filter: blur(0.25em);
 
 	.topbar-left {
 		display: flex;
@@ -171,7 +171,7 @@ body.screenshot-mode .modal {
 			border-color: var(--color-primary);
 			color: var(--color-primary-light);
 			box-shadow: 0 0 0.6em var(--color-primary-alpha);
-			transform: translateY(-1px);
+			transform: translateY(-0.06em);
 		}
 
 		&:active {

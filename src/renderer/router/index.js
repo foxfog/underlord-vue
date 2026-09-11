@@ -28,6 +28,18 @@ const router = createRouter({
 			path: '/game/new',
 			component: () => import('@/views/Game.vue'),
 			meta: { newGame: true }
+		},
+		{
+			id: 4,
+			name: 'iso-tester',
+			path: '/test/isometric',
+			component: () => import('@/views/IsoTesterView.vue')
+		},
+		{
+			id: 5,
+			name: 'iso-editor',
+			path: '/test/isometric-editor',
+			component: () => import('@/views/IsoEditorView.vue')
 		}
 	]
 })

@@ -3,17 +3,11 @@
 		<!-- Top Toolbar -->
 		<Topbar
 			v-if="showTopbar && !isUiHidden"
-			:character="mcCharacter"
 			:show-inventory-button="showInventoryButton"
 			:show-journal-button="showJournalButton"
 			:show-map-button="showMapButton"
 			:show-next-time-button="showNextTimeButton"
 			:show-date-badge="showDateBadge"
-			:global-data="gameState.global"
-			@open-inventory="toggleInventoryModal"
-			@open-map="toggleMapModal"
-			@open-journal="toggleJournalModal"
-			@open-calendar="toggleCalendarModal"
 			@advance-time="handleAdvanceTime"
 		/>
 
@@ -34,8 +28,8 @@
 				ref="visualNovel"
 				:src="novelsrc"
 				@end="onEnd"
-				@character-loaded="onCharacterLoaded"
-				@global-data-changed="onGlobalDataChanged"
+
+
 				@ui-visibility-changed="onUiVisibilityChanged"
 				@ready="onVisualNovelReady"
 			/>
@@ -65,10 +59,9 @@
 
 		<!-- Inventory Modal -->
 		<InventoryModal
-			:is-visible="showInventoryModal"
-			:character="mcCharacter"
+			:is-visible="modalStore.showInventoryModal"
 			:items-data="itemsData"
-			@close="toggleInventoryModal"
+			@close="modalStore.closeInventory"
 			@equip="onEquipItem"
 			@unequip="handleUnequip"
 			@swap="handleSwap"
@@ -77,22 +70,19 @@
 
 		<!-- Map Modal -->
 		<MapModal
-			:is-visible="showMapModal"
-			:global-data="gameState.global"
-			@close="toggleMapModal"
+			:is-visible="modalStore.showMapModal"
+			@close="modalStore.closeMap"
 			@goto="handleMapGoto"
 		/>
 
 		<JournalModal
-			:isVisible="showJournalModal"
-			:gameState="gameState"
-			@close="showJournalModal = false"
+			:is-visible="modalStore.showJournalModal"
+			@close="modalStore.closeJournal"
 		/>
 
 		<CalendarModal
-			:is-visible="showCalendarModal"
-			:global-data="gameState.global"
-			@close="showCalendarModal = false"
+			:is-visible="modalStore.showCalendarModal"
+			@close="modalStore.closeCalendar"
 		/>
 
 		<!-- VR Helmet Launcher & Dashboard -->
@@ -100,7 +90,6 @@
 			v-if="showVrLauncher"
 			ref="vrLauncherRef"
 			:initial-phase="vrLauncherPhase"
-			:global-data="gameState.global"
 			@exit-vr="onVrExit"
 			@launch-yggdrasil="onLaunchYggdrasil"
 		/>
@@ -177,9 +166,9 @@
 
 	<!-- History modal -->
 	<HistoryModal
-		:isVisible="showHistoryModal"
+		:isVisible="modalStore.showHistoryModal"
 		:entries="historyList"
-		@close="showHistoryModal = false"
+		@close="modalStore.closeHistory"
 	/>
 
 	<ConfirmModal
@@ -245,20 +234,21 @@ import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import { useGameOverlay } from '@/composables/useGameOverlay'
 import { useCharacterEquipment } from '@/composables/useCharacterEquipment'
 import { useRegisterModal, handleEscape, clearModalStack, hasModals } from '@/composables/useModalStack'
+import { eventBus } from '@/utils/eventBus'
 
 const router = useRouter()
 const route = useRoute()
 const settingsStore = useSettingsStore()
 const savesStore = useSavesStore()
 const visualNovel = ref(null)
-const showMapModal = ref(false)
-const showInventoryModal = ref(false)
-const showJournalModal = ref(false)
-const showCalendarModal = ref(false)
-const mcCharacter = ref(null)
+import { useGameStore } from '@/stores/gameStore'
+import { useModalStore } from '@/stores/modalStore'
+
+const gameStore = useGameStore()
+const modalStore = useModalStore()
+const mcCharacter = computed(() => gameStore.characterData?.mc)
 const itemsData = ref({})
 const dynamicContentAreaRef = ref(null)
-const showHistoryModal = ref(false)
 const historyList = ref([])
 
 // Loading screen state
@@ -326,24 +316,24 @@ const {
 const handleNavigation = (view) => handleNavigationInternal(view, currentView.value)
 
 // Register modals in the global LIFO modal stack for Escape key handling
-useRegisterModal('inventory', showInventoryModal, () => {
-	showInventoryModal.value = false
+useRegisterModal('inventory', () => modalStore.showInventoryModal, () => {
+	modalStore.closeInventory()
 })
 
-useRegisterModal('map', showMapModal, () => {
-	showMapModal.value = false
+useRegisterModal('map', () => modalStore.showMapModal, () => {
+	modalStore.closeMap()
 })
 
-useRegisterModal('journal', showJournalModal, () => {
-	showJournalModal.value = false
+useRegisterModal('journal', () => modalStore.showJournalModal, () => {
+	modalStore.closeJournal()
 })
 
-useRegisterModal('calendar', showCalendarModal, () => {
-	showCalendarModal.value = false
+useRegisterModal('calendar', () => modalStore.showCalendarModal, () => {
+	modalStore.closeCalendar()
 })
 
-useRegisterModal('history', showHistoryModal, () => {
-	showHistoryModal.value = false
+useRegisterModal('history', () => modalStore.showHistoryModal, () => {
+	modalStore.closeHistory()
 })
 
 useRegisterModal('vr-launcher', showVrLauncher, () => {
@@ -371,17 +361,18 @@ useRegisterModal('game-menu', menuVisible, () => {
 	currentView.value = 'main-menu'
 })
 
+
+// Keep settingsStore map in sync with gameStore
+watch(() => gameStore.globalData?.currentMap, (newMap) => {
+    if (newMap && settingsStore.currentMap !== newMap) {
+        settingsStore.setCurrentMap(newMap)
+    }
+})
+
 // Game Rules Engine
 const gameState = reactive({
-	character: {
-		mc: {
-			health: 100,
-			equipment_slots: {
-				mask: null
-			}
-		}
-	},
-	global: {}, // ← добавляем объект для глобальных переменных
+	get character() { return gameStore.characterData },
+	get global() { return gameStore.globalData },
 	game: {
 		location: 'city_street',
 		activeStory: 'start',
@@ -389,15 +380,7 @@ const gameState = reactive({
 	},
 	storyEngine: null,
 	closeModal: (modalName) => {
-		// Закрывает модальное окно по имени
-		if (modalName === 'inventory') {
-			showInventoryModal.value = false
-		} else if (modalName === 'stats') {
-			showStatsModal.value = false
-		} else if (modalName === 'map') {
-			showMapModal.value = false
-		}
-		console.log(`✓ Modal closed: ${modalName}`)
+		modalStore.close(modalName)
 	}
 })
 
@@ -565,66 +548,9 @@ watch(
 	}
 )
 
-// Watch for character changes and update gameState
-watch(
-	() => mcCharacter.value,
-	(newChar) => {
-		if (newChar && gameState.character.mc !== newChar) {
-			// Убедимся, что gameState указывает на реальный объект персонажа, а не копию
-			gameState.character.mc = newChar
-		}
-		if (visualNovel.value && gameState.storyEngine !== visualNovel.value) {
-			gameState.storyEngine = markRaw(visualNovel.value)
-		}
-	}
-)
 
-// Handler for global-data-changed event from VisualNovel
-function onGlobalDataChanged(newGlobalData) {
-	if (newGlobalData) {
-		const raw = newGlobalData?.value ? newGlobalData.value : newGlobalData
-		Object.assign(gameState.global, raw)
-		console.log('✅ onGlobalDataChanged: synced to gameState.global:', gameState.global)
-		if (raw.currentMap && settingsStore.currentMap !== raw.currentMap) {
-			console.log('🔁 Syncing currentMap from story to Pinia:', raw.currentMap)
-			settingsStore.setCurrentMap(raw.currentMap)
-		}
-	}
-}
 
-// Watch for global data changes from VisualNovel and sync to gameState
-watch(
-	() => {
-		const vn = visualNovel.value
-		if (!vn) return null
-		return vn.globalData?.value || vn.globalData
-	},
-	(newGlobalData) => {
-		if (newGlobalData) {
-			const raw = newGlobalData?.value ? newGlobalData.value : newGlobalData
-			console.log('🌍 globalData changed in visualNovel:', raw)
-			Object.assign(gameState.global, raw)
-			console.log('✅ Updated gameState.global:', gameState.global)
-			if (raw.currentMap && settingsStore.currentMap !== raw.currentMap) {
-				console.log('🔁 Syncing currentMap from story to Pinia:', raw.currentMap)
-				settingsStore.setCurrentMap(raw.currentMap)
-			}
-		}
-	},
-	{ deep: true, immediate: true }
-)
 
-watch(
-	() => settingsStore.currentMap,
-	(newMap) => {
-		const vnGlobal = visualNovel.value?.globalData?.value || visualNovel.value?.globalData
-		if (!vnGlobal) return
-		if (newMap && vnGlobal.currentMap !== newMap) {
-			console.log('🔁 Syncing currentMap from Pinia to story globalData:', newMap)
-			vnGlobal.currentMap = newMap
-		}
-	}
-)
 
 let isSyncingEquipment = false
 function syncEquipmentToScene(characterId = 'mc') {
@@ -672,19 +598,19 @@ function onEnd() {
 }
 
 function toggleInventoryModal() {
-	showInventoryModal.value = !showInventoryModal.value
+	modalStore.toggleInventory()
 }
 
 function toggleMapModal() {
-	showMapModal.value = !showMapModal.value
+	modalStore.toggleMap()
 }
 
 function toggleJournalModal() {
-	showJournalModal.value = !showJournalModal.value
+	modalStore.toggleJournal()
 }
 
 function toggleCalendarModal() {
-	showCalendarModal.value = !showCalendarModal.value
+	modalStore.toggleCalendar()
 }
 
 function handleAdvanceTime() {
@@ -712,20 +638,13 @@ function handleMapGoto(gotoPayload) {
 	if (target && visualNovel.value?.goto) {
 		visualNovel.value.goto(target)
 	}
-	showMapModal.value = false
+	modalStore.closeMap()
 }
 
+import { audioService } from '@/services/audioService'
+
 function playClothSound() {
-	try {
-		const common = settingsStore.audio.commonVolume / 100
-		const sound = settingsStore.audio.soundVolume / 100
-		const volume = Math.max(0, Math.min(1, common * sound))
-		const audio = new Audio(SOUND_CLOTH)
-		audio.volume = volume
-		audio.play().catch(() => {})
-	} catch (e) {
-		console.warn('Failed to play cloth sound:', e)
-	}
+	audioService.playSound(SOUND_CLOTH, 'sound')
 }
 
 const { handleEquip, handleUnequip, handleSwap, handleDrop, rebuildEquipmentBySlot } =
@@ -742,18 +661,24 @@ const encyclopediaManager = useEncyclopedia(gameState)
 
 function onEquipItem(payload) {
 	handleEquip(payload)
-	if (payload?.itemId === 'neuro_helmet' && payload?.slot === 'head') {
-		handleNeuroHelmetEquipped()
-	}
 }
 
 function handleNeuroHelmetEquipped() {
+	if (
+		showVrLauncher.value ||
+		showYggIntro.value ||
+		showYggAuth.value ||
+		showCharCreate.value ||
+		showShutdownSequence.value
+	) {
+		return
+	}
 	console.log('🥽 [VR Flow] Neuro helmet equipped! Starting VR launcher sequence...')
 	if (questsManager.isQuestActive('try_neuro_helmet')) {
 		questsManager.completeTask('try_neuro_helmet', 'equip_helmet_step')
 		questsManager.completeQuest('try_neuro_helmet')
 	}
-	showInventoryModal.value = false
+	modalStore.closeInventory()
 	lastWorldScene.value = visualNovel.value?.getGameState()?.currentScene || 'mc_apartment'
 	vrLauncherPhase.value = 'connecting'
 	showVrLauncher.value = true
@@ -763,27 +688,12 @@ let yggBgmAudio = null
 
 function playYggBgm() {
 	stopYggBgm()
-	try {
-		const common = (settingsStore.audio?.commonVolume ?? 100) / 100
-		const music = (settingsStore.audio?.musicVolume ?? 100) / 100
-		const volume = Math.max(0, Math.min(1, common * music))
-		yggBgmAudio = new Audio('audio/music/pw-ost.mp3')
-		yggBgmAudio.loop = true
-		yggBgmAudio.volume = volume
-		yggBgmAudio.play().catch((e) => console.warn('Failed to play ygg bgm:', e))
-	} catch (err) {
-		console.warn('Error creating ygg bgm audio:', err)
-	}
+	yggBgmAudio = audioService.playMusic('audio/music/pw-ost.mp3', true)
 }
 
 function stopYggBgm() {
-	if (yggBgmAudio) {
-		try {
-			yggBgmAudio.pause()
-			yggBgmAudio.currentTime = 0
-		} catch (e) {}
-		yggBgmAudio = null
-	}
+	audioService.stopAudio(yggBgmAudio)
+	yggBgmAudio = null
 }
 
 function onVrExit() {
@@ -918,29 +828,13 @@ async function onShutdownSequenceComplete() {
 	}
 }
 
-function handleItemEquippedEvent(e) {
-	if (e.detail?.itemId === 'neuro_helmet' && e.detail?.slot === 'head') {
+function handleItemEquippedEvent(payload) {
+	const detail = payload?.detail || payload
+	if (detail?.itemId === 'neuro_helmet' && detail?.slot === 'head') {
 		handleNeuroHelmetEquipped()
 	}
 }
 
-function onCharacterLoaded(characterData) {
-	if (characterData?.mc) {
-		lastEquipmentSlotsStr = JSON.stringify(characterData.mc.equipment_slots || {})
-		const oldMask = mcCharacter.value?.equipment_slots?.mask
-		const newMask = characterData.mc?.equipment_slots?.mask
-		console.log('🔄 onCharacterLoaded - updating mcCharacter', {
-			oldMask,
-			newMask,
-			stack: new Error().stack.split('\n').slice(1, 3).join(' | ')
-		})
-		mcCharacter.value = characterData.mc
-		if (gameState.character.mc !== characterData.mc) {
-			gameState.character.mc = characterData.mc
-		}
-		rebuildEquipmentBySlot()
-	}
-}
 
 
 
@@ -1131,7 +1025,7 @@ function openHistory() {
 	if (visualNovel.value) {
 		historyList.value = visualNovel.value.getHistory()
 	}
-	showHistoryModal.value = true
+	modalStore.openHistory()
 }
 
 function isInputElementActive() {
@@ -1250,7 +1144,7 @@ onMounted(() => {
 	window.addEventListener('keydown', onKeyDown)
 	window.addEventListener('keyup', onKeyUp)
 	window.addEventListener('blur', onWindowBlur)
-	window.addEventListener('item-equipped', handleItemEquippedEvent)
+	eventBus.on('item-equipped', handleItemEquippedEvent)
 
 	// ВАЖНО: Инициализируем gameState.storyEngine ДО запуска Rules Engine
 	if (visualNovel.value) {
@@ -1352,7 +1246,7 @@ onUnmounted(() => {
 	window.removeEventListener('keydown', onKeyDown)
 	window.removeEventListener('keyup', onKeyUp)
 	window.removeEventListener('blur', onWindowBlur)
-	window.removeEventListener('item-equipped', handleItemEquippedEvent)
+	eventBus.off('item-equipped', handleItemEquippedEvent)
 	clearModalStack()
 	// Fully destroy the rules engine singleton so the next game session
 	// gets a fresh engine with the correct gameState reference

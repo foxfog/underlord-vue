@@ -1,6 +1,5 @@
-// src/renderer/composables/useQuests.js
-
 import { ref, computed } from 'vue'
+import { eventBus } from '../utils/eventBus'
 
 // Singleton reactive state shared across components
 const quests = ref([])
@@ -109,9 +108,7 @@ export function useQuests(gameState = null) {
 		quests.value.push(newQuest)
 		syncToGameState()
 
-		if (typeof window !== 'undefined') {
-			window.dispatchEvent(new CustomEvent('quest-started', { detail: newQuest }))
-		}
+		eventBus.emit('quest-started', newQuest)
 
 		console.log(
 			`📜 [Quest Started] ${newQuest.title} (${newQuest.id}${newQuest.parentId ? ` child of ${newQuest.parentId}` : ''})`
@@ -128,9 +125,7 @@ export function useQuests(gameState = null) {
 			quest.completedAt = Date.now()
 			syncToGameState()
 
-			if (typeof window !== 'undefined') {
-				window.dispatchEvent(new CustomEvent('quest-completed', { detail: quest }))
-			}
+			eventBus.emit('quest-completed', quest)
 
 			console.log(`🏆 [Quest Completed] ${quest.title} (${quest.id})`)
 			return quest
@@ -147,9 +142,7 @@ export function useQuests(gameState = null) {
 			quest.failedAt = Date.now()
 			syncToGameState()
 
-			if (typeof window !== 'undefined') {
-				window.dispatchEvent(new CustomEvent('quest-failed', { detail: quest }))
-			}
+			eventBus.emit('quest-failed', quest)
 
 			console.log(`❌ [Quest Failed] ${quest.title} (${quest.id})`)
 			return quest
@@ -200,11 +193,7 @@ export function useQuests(gameState = null) {
 			task.completed = !!completed
 			syncToGameState()
 
-			if (typeof window !== 'undefined') {
-				window.dispatchEvent(
-					new CustomEvent('quest-task-updated', { detail: { questId, task } })
-				)
-			}
+			eventBus.emit('quest-task-updated', { questId, task })
 			console.log(
 				`🎯 [Quest Task Updated] ${quest.title}: ${task.text} -> ${task.completed ? 'COMPLETED' : 'INCOMPLETE'}`
 			)
@@ -225,11 +214,7 @@ export function useQuests(gameState = null) {
 		quest.storyEntries.push(entryText)
 		syncToGameState()
 
-		if (typeof window !== 'undefined') {
-			window.dispatchEvent(
-				new CustomEvent('quest-story-updated', { detail: { questId, entry: entryText } })
-			)
-		}
+		eventBus.emit('quest-story-updated', { questId, entry: entryText })
 		console.log(`📖 [Quest Story Added] ${quest.title}: ${entryText}`)
 		return quest
 	}

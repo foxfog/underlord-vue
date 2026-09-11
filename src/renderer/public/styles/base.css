@@ -140,7 +140,8 @@ p {
 		width: 100%;
 		height: 100%;
 		overflow-y: auto;
-		.settings-wrapper {
+		.settings-wrapper,
+		.tests-wrapper {
 			height: 100%;
 			display: flex;
 			flex-direction: column;
@@ -208,6 +209,7 @@ p {
 }
 
 .settings-content .page-header,
-.saves-content .page-header {
+.saves-content .page-header,
+.tests-wrapper .page-header {
 	margin-bottom: 1.5em;
 }

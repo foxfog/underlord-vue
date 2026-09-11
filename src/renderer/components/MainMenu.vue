@@ -42,6 +42,15 @@
 				{{ t('mainmenu.settings') }}
 			</a>
 
+			<a
+				v-if="!inGameContext"
+				class="nav-link"
+				:class="{ _active: currentView === 'tests' }"
+				@click="navigateToTests"
+			>
+				{{ t('mainmenu.test') || 'Тесты' }}
+			</a>
+
 			<a class="nav-link" @click="handleButtonClick">
 				{{ t('mainmenu.close') }}
 			</a>
@@ -102,6 +111,10 @@ const handleContinueClick = () => {
 
 const navigateToSettings = () => {
 	emit('navigate', 'settings')
+}
+
+const navigateToTests = () => {
+	emit('navigate', 'tests')
 }
 
 const openSave = () => {

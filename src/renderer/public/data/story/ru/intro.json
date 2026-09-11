@@ -966,6 +966,30 @@
 			"text": "Вы переступаете порог просторного бревенчатого дома старосты. Пахнет сушеными травами, свежим хлебом и старым деревом."
 		},
 		{
+			"type": "journal",
+			"target": "character",
+			"id": "carne-chief",
+			"name": "Староста",
+			"surname": "",
+			"title": "Староста деревни Карн",
+			"avatar": "images/sprites/characters/carne-chief/default.webp",
+			"sympVariable": "chief_mc_symp",
+			"titleVariable": "chief_mc_title",
+			"defaultTitle": "Путник",
+			"blocks": [
+				{
+					"id": "general",
+					"title": "Староста деревни",
+					"text": "Пожилой мудрый староста деревни Карн. Заботится о жителях и благополучии поселения."
+				}
+			]
+		},
+		{
+			"type": "dialogue",
+			"character": "carne-chief",
+			"text": "Добро пожаловать в мой дом, путник. Энри уже успела предупредить меня о вашем прибытии... Присаживайтесь к столу."
+		},
+		{
 			"variable": "delete global.mapOverrides.carne.carne_chief_house"
 		},
 		{

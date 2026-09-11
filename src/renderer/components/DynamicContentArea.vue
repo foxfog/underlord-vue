@@ -29,6 +29,14 @@
 					@tab-change="onSavesTabChange"
 				/>
 			</div>
+
+			<!-- Tests content -->
+			<div v-else-if="currentView === 'tests'" key="tests" class="tests-wrapper">
+				<div class="page-header">
+					<div class="page-title">{{ $t('mainmenu.test') || 'Тесты' }}</div>
+				</div>
+				<TestsContent />
+			</div>
 		</Transition>
 
 		<!-- Additional content can be added here -->
@@ -41,6 +49,7 @@ import { watch, ref } from 'vue'
 import HomeContent from '@/components/HomeContent.vue'
 import SettingsContent from '@/components/settings/SettingsContent.vue'
 import SavesContent from '@/components/saves/SavesContent.vue'
+import TestsContent from '@/components/tests/TestsContent.vue'
 
 const props = defineProps({
 	currentView: {

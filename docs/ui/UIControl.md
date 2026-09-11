@@ -42,6 +42,9 @@
 }
 ```
 
+### Архитектура модуля:
+Логика видимости UI (`baseUiVisibility`, `uiVisibility`, `handleUIStep`, `setDialogueHideUI`, `toggleHideUi`, `hideUi`, `unhideUi`) инкапсулирована в композабле `src/renderer/composables/story/useStoryUI.js` и подключается в `useVisualNovel.js`.
+
 ---
 
 ## 2. Кинематографичные переходы (Fade Transitions)

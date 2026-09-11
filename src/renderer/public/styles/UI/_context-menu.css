@@ -10,12 +10,10 @@
 	border-radius: 0.35em;
 	box-shadow:
 		0 0.8em 2em rgba(0, 0, 0, 0.7),
-		inset 0 1px 0 rgba(255, 255, 255, 0.08);
-	backdrop-filter: blur(8px);
+		inset 0 0.06em 0 rgba(255, 255, 255, 0.08);
+	backdrop-filter: blur(0.5em);
 	overflow: hidden;
 	min-width: 9em;
-	margin-top: calc((100dvh - var(--appH)) / -2);
-	margin-left: calc((100dvw - var(--appW)) / -2);
 	animation: modalPopIn 0.15s ease-out;
 
 	.context-menu-item {
