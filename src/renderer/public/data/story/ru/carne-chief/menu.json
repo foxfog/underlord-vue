@@ -1,0 +1,24 @@
+{
+	"id": "carne-chief-menu",
+	"steps": [
+		{
+			"id": "chief_menu_choice",
+			"type": "choice",
+			"layout": "center",
+			"options": [
+				{
+					"text": "Поговорить",
+					"actions": [
+						{ "type": "goto", "target": "carne-chief/talk" }
+					]
+				},
+				{
+					"text": "Назад",
+					"actions": [
+						{ "type": "goto", "target": "carne_chief_house" }
+					]
+				}
+			]
+		}
+	]
+}

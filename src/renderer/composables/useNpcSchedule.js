@@ -316,7 +316,7 @@ export function useNpcSchedule() {
 					orientation: rule.orientation || 'right',
 					scale: rule.scale ?? 1,
 					customClass: rule.customClass || null,
-					interaction: rule.interaction || null,
+					interaction: rule.interaction || charConfig.defaultInteraction || null,
 					locationName: rule.locationName || charConfig.locationName || null,
 					ruleId: rule.id
 				}

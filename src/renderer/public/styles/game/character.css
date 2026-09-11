@@ -13,6 +13,10 @@
 	}
 	&.is-interactive {
 		cursor: pointer;
+		transition: filter 0.2s ease;
+		&:hover {
+			filter: brightness(1.12) drop-shadow(0 0 0.5em rgba(255, 230, 150, 0.45));
+		}
 	}
 	.char-body {
 		position: relative;

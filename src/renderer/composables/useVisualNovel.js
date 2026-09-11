@@ -1074,6 +1074,8 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		}
 		const mods = typeof sceneIdOrStep === 'object' ? sceneIdOrStep.mods || [] : scene.mods || []
 		currentScene.value = { ...scene, mods }
+		isInDialogueMode.value = false
+		clearDialogueHiding()
 
 		// Очистка персонажей со сцены при смене локации (если указано в шаге или в описании сцены)
 		const clearParam =
@@ -1414,6 +1416,8 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 
 				case 'goto': {
 					advanceStoryOverride = null
+					isInDialogueMode.value = false
+					clearDialogueHiding()
 					currentDialogue.value = ''
 					currentNarration.value = ''
 					currentSpeaker.value = ''
@@ -1435,6 +1439,45 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 
 				case 'variable':
 					if (action.variable) applyVariable(action.variable)
+					runNextAction()
+					break
+
+				case 'quest':
+					handleQuestStep(action)
+					runNextAction()
+					break
+
+				case 'discover-location':
+				case 'discover-marker':
+				case 'map-marker':
+					handleDiscoverLocationStep(action)
+					runNextAction()
+					break
+
+				case 'inventory-add':
+					handleInventoryAddStep(action)
+					runNextAction()
+					break
+
+				case 'inventory-remove':
+					handleInventoryRemoveStep(action)
+					runNextAction()
+					break
+
+				case 'notification':
+					if (!isRestoringGameState.value && notificationComponent.value && action.text) {
+						const html = substituteVariables(action.text)
+						notificationComponent.value.showNotification(
+							html,
+							action.notificationType || 'info',
+							action.duration || 3000
+						)
+					}
+					runNextAction()
+					break
+
+				case 'ui':
+					handleUIStep(action)
 					runNextAction()
 					break
 
@@ -1514,6 +1557,8 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		// Direct scene navigation: if target is a registered scene in sceneData (scenes.json)
 		if (!stepTarget && sceneData.value && sceneData.value[checkTarget]) {
 			advanceStoryOverride = null
+			isInDialogueMode.value = false
+			clearDialogueHiding()
 			currentDialogue.value = ''
 			currentNarration.value = ''
 			currentSpeaker.value = ''
@@ -1565,6 +1610,8 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	}
 
 	function handleContinue() {
+		isInDialogueMode.value = false
+		clearDialogueHiding()
 		if (callStack.value.length > 0) {
 			const returnPosition = callStack.value.pop()
 			// Очищаем диалоги при возврате из макроса/подстории
@@ -1574,7 +1621,6 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			currentChoices.value = []
 			loadReturnStory(returnPosition.storyId, returnPosition.stepIndex)
 		} else {
-			clearDialogueHiding()
 			emit && emit('end')
 		}
 	}

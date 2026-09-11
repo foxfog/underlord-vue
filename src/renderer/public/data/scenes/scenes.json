@@ -81,6 +81,16 @@
 					"fallbackStatus": "hidden"
 				},
 				{
+					"id": "to_chief_garden",
+					"locationId": "carne_chief_garden",
+					"label": "Огород старосты",
+					"icon": "garden",
+					"target": "carne_chief_garden_iso",
+					"position": { "right": "10%", "bottom": "22%" },
+					"condition": "global.discoveredLocations?.carne?.includes('carne_chief_garden')",
+					"fallbackStatus": "hidden"
+				},
+				{
 					"id": "to_entrance",
 					"locationId": "carne_village_entrance",
 					"label": "К воротам деревни",
@@ -109,6 +119,16 @@
 					"target": "carne_village_square",
 					"position": { "left": "8em", "bottom": "3em" },
 					"status": "active"
+				},
+				{
+					"id": "to_chief_garden",
+					"locationId": "carne_chief_garden",
+					"label": "Задний двор (Огород)",
+					"icon": "garden",
+					"target": "carne_chief_garden_iso",
+					"position": { "right": "8em", "bottom": "3em" },
+					"condition": "global.discoveredLocations?.carne?.includes('carne_chief_garden')",
+					"fallbackStatus": "hidden"
 				}
 			]
 		},
@@ -132,6 +152,16 @@
 					"status": "active"
 				}
 			]
+		},
+		{
+			"id": "carne_chief_garden_iso",
+			"name": "Огород старосты",
+			"bg": "images/sprites/backgrounds/carne/carne-square.jpg",
+			"clearCharacters": true,
+			"isometric": "carne_chief_garden",
+			"worldMap": "newworld",
+			"localMap": "carne",
+			"locationId": "carne_chief_garden"
 		}
 	]
 }

@@ -8,7 +8,7 @@
 		@goto="goto"
 		@hotspot-click="onHotspotClick"
 	/>
-	<CharacterList :characters="visibleCharacters" />
+	<CharacterList :characters="visibleCharacters" @character-click="$emit('character-click', $event)" />
 
 	<TitleBlock
 		v-if="!isUiHidden"
@@ -76,7 +76,8 @@ const emit = defineEmits([
 	'character-loaded',
 	'global-data-changed',
 	'ui-visibility-changed',
-	'ready'
+	'ready',
+	'character-click'
 ])
 
 const notificationComponent = ref(null)
@@ -85,6 +86,7 @@ const vn = useVisualNovel({ src: props.src, emit, notificationComponent })
 
 const {
 	currentScene,
+	sceneData,
 	visibleCharacters,
 	currentDialogue,
 	currentNarration,
@@ -170,6 +172,8 @@ defineExpose({
 	resumeAllStreams,
 	uiVisibility,
 	globalData,
+	currentScene,
+	sceneData,
 	visibleCharacters,
 	rebuildEquipmentBySlot,
 	syncCharacterEquipment,

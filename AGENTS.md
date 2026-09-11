@@ -118,7 +118,7 @@ body {
   Карточки персонажей, модульные блочные заметки (`{ id, title, text }`), дерево категорий и подкатегорий, динамические уведомления об изменении отношений (`*_symp`). Композабл `useEncyclopedia.js`.
   📖 Документация: [`docs/systems/EncyclopediaSystem.md`](docs/systems/EncyclopediaSystem.md)
 * **Распорядок дня и присутствие NPC (NPC Schedule & Presence)**:
-  Многоуровневая система размещения NPC (Skyrim-style), распорядки дня по времени суток и сезону, приоритет сюжетных экшенов (`override`), дельта-сохранения в `globalData.npcStates`, отображение местоположения в карточках Журнала. Композабл `useNpcSchedule.js`.
+  Многоуровневая система размещения NPC (Skyrim-style), распорядки дня по времени суток и сезону, приоритет сюжетных экшенов (`override`), дельта-сохранения в `globalData.npcStates`, отображение местоположения в карточках Журнала, интерактивность персонажей на сцене (`interaction`, диалоговые контекстные меню `npc-menu`). Композабл `useNpcSchedule.js`.
   📖 Документация: [`docs/systems/NPCScheduleSystem.md`](docs/systems/NPCScheduleSystem.md)
 * **Система сохранений (Save & Load)**:
   Сериализация `gameState` (`globalData`, `characterData`, `discoveredLocations`), IPC с Main процессом.
@@ -127,7 +127,7 @@ body {
   Декомпозиция `useVisualNovel.js` на модули `useStory*` (`composables/story/`), хранилища `gameStore.js` (устранение prop-drilling), `modalStore.js` (модальные окна) и сервис `saveManager.js`.
   📖 Документация: [`docs/systems/StoryArchitecture.md`](docs/systems/StoryArchitecture.md)
 * **Изометрические локации и тактическая система (Isometric 2.5D System)**:
-  Ромбовидная 2:1 сетка (64×32), многоуровневый рельеф с дискретными высотами $Z$, пошаговое перемещение ГГ (A* pathfinding с ограничением перепада высот), интерактивные объекты (прополка сорняков), раздел «Тесты» в Главном меню, редактор карт с масштабированием по 4 сторонам и якорям 3×3, гибридный RLE-формат карт (`terrain` + `overrides` + `prefabs` с экономией размера до 98%), интеграция со сценами и картами.
+  Ромбовидная 2:1 сетка (64×32), многоуровневый рельеф с дискретными высотами $Z$, пошаговое перемещение ГГ (A* pathfinding с ограничением перепада высот), интерактивные объекты (прополка сорняков), раздел «Тесты» в Главном меню, редактор карт с масштабированием по 4 сторонам и якорям 3×3, гибридный RLE-формат карт (`terrain` + `overrides` + `prefabs` с экономией размера до 98%), интеграция со сценами и картами через сюжетный оверлей `IsometricGameOverlay.vue` (квесты, прополка огорода).
   📖 Документация: [`docs/systems/IsometricSystem.md`](docs/systems/IsometricSystem.md)
 * **Аудиосистема**:
   Расчет громкости любых звуков строго через `commonVolume` и категорию (`commonVolume * musicVolume / 10000`).

@@ -1,0 +1,260 @@
+﻿{
+	"id": "carne-chief-talk",
+	"steps": [
+		{
+			"id": "talk_start",
+			"type": "goto",
+			"if": "!global.chief_met",
+			"target": "talk_first_meeting_choice"
+		},
+		{
+			"type": "goto",
+			"if": "global.chief_quest_rewarded",
+			"target": "talk_already_rewarded"
+		},
+		{
+			"type": "goto",
+			"if": "global.chief_quest_done",
+			"target": "talk_turn_in_choice"
+		},
+		{
+			"type": "goto",
+			"if": "global.chief_met",
+			"target": "talk_in_progress"
+		},
+
+		{
+			"id": "talk_first_meeting_choice",
+			"type": "choice",
+			"layout": "center",
+			"options": [
+				{
+					"text": "Представиться",
+					"actions": [
+						{ "type": "goto", "target": "talk_first_meeting_intro" }
+					]
+				}
+			]
+		},
+
+		{
+			"id": "talk_first_meeting_intro",
+			"type": "dialogue",
+			"character": "mc",
+			"title": "???",
+			"text": "(Пожилой мужчина с мозолистыми руками и усталым взглядом... Местный староста? Выглядит пугающе реалистично для NPC.)"
+		},
+		{
+			"type": "dialogue",
+			"character": "carne-chief",
+			"title": "Ниньо",
+			"text": "Приветствую в деревне Карн! Редко к нам заглядывают путешественники из-за Великого Леса Тоб."
+		},
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"title": "???",
+			"text": "(Он принимает меня за путешественника... Что ж, лучше не спорить, пока не разберусь в ситуации.)"
+		},
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"title": "Я",
+			"text": "Здравствуйте. Да, я... искатель приключений. Немного сбился с пути."
+		},
+		{
+			"type": "dialogue",
+			"character": "carne-chief",
+			"title": "Ниньо",
+			"text": "Искатель приключений! Как кстати. Меня зовут Ниньо, я здешний староста. Не найдётся ли у вас минутки для просьбы старика?"
+		},
+		{
+			"type": "dialogue",
+			"character": "carne-chief",
+			"title": "Ниньо",
+			"text": "Мой задний двор совсем зарос сорняками, а спина уже не та, чтобы часами гнуться к земле. Не поможете прополоть?"
+		},
+		{
+			"id": "talk_help_choice",
+			"type": "choice",
+			"layout": "center",
+			"options": [
+				{
+					"text": "Помочь с сорняками",
+					"actions": [
+						{ "type": "goto", "target": "talk_help_accepted" }
+					]
+				},
+				{
+					"text": "Извините, сейчас некогда",
+					"actions": [
+						{ "type": "goto", "target": "talk_help_declined" }
+					]
+				}
+			]
+		},
+
+		{
+			"id": "talk_help_accepted",
+			"type": "dialogue",
+			"character": "carne-chief",
+			"title": "Ниньо",
+			"text": "Вот и замечательно! Задний двор прямо за домом. Сорняков там немного, но лучше убрать поскорее."
+		},
+		{
+			"type": "dialogue",
+			"character": "carne-chief",
+			"title": "Ниньо",
+			"text": "Как закончите — возвращайтесь, я отблагодарю вас монеткой."
+		},
+		{ "variable": "global.chief_met = true" },
+		{
+			"type": "quest",
+			"id": "chief_garden_quest",
+			"title": "Прополка огорода",
+			"description": "Помочь старосте Ниньо убрать сорняки на заднем дворе его дома.",
+			"category": "side",
+			"tasks": [
+				{ "id": "weed_task", "text": "Убрать сорняки на заднем дворе старосты" }
+			]
+		},
+		{
+			"type": "discover-location",
+			"map": "carne",
+			"location": "carne_chief_garden",
+			"title": "Огород старосты",
+			"notification": "Новая точка на карте: Огород старосты"
+		},
+		{
+			"type": "ui",
+			"action": "show",
+			"target": ["map-button", "inventory-button", "journal-button"]
+		},
+		{ "type": "goto", "target": "carne_chief_house" },
+
+		{
+			"id": "talk_help_declined",
+			"type": "dialogue",
+			"character": "carne-chief",
+			"title": "Ниньо",
+			"text": "Понимаю, дела... Если освободитесь — заходите, предложение остаётся в силе."
+		},
+		{ "variable": "global.chief_met = true" },
+		{
+			"type": "ui",
+			"action": "show",
+			"target": ["map-button", "inventory-button", "journal-button"]
+		},
+		{ "type": "goto", "target": "carne_chief_house" },
+
+		{
+			"id": "talk_in_progress",
+			"type": "dialogue",
+			"character": "mc",
+			"title": "Я",
+			"text": "(Сначала нужно выполоть сорняки на заднем дворе старосты, а потом уже возвращаться.)"
+		},
+		{
+			"type": "dialogue",
+			"character": "carne-chief",
+			"title": "Ниньо",
+			"text": "Как успехи на заднем дворе? Сорняки сами себя не выдернут!"
+		},
+		{
+			"type": "ui",
+			"action": "show",
+			"target": ["map-button", "inventory-button", "journal-button"]
+		},
+		{ "type": "goto", "target": "carne_chief_house" },
+
+		{
+			"id": "talk_turn_in_choice",
+			"type": "choice",
+			"layout": "center",
+			"options": [
+				{
+					"text": "Сдать квест: Прополка огорода",
+					"actions": [
+						{ "type": "goto", "target": "talk_turn_in" }
+					]
+				}
+			]
+		},
+
+		{
+			"id": "talk_turn_in",
+			"type": "dialogue",
+			"character": "mc",
+			"title": "Я",
+			"text": "Господин Ниньо, я закончил работу на заднем дворе. Все сорняки убраны."
+		},
+		{
+			"type": "dialogue",
+			"character": "carne-chief",
+			"title": "Ниньо",
+			"text": "(Осматривает вас с нескрываемым изумлением)"
+		},
+		{
+			"type": "dialogue",
+			"character": "carne-chief",
+			"title": "Ниньо",
+			"text": "Вы... и правда всё убрали? И так ловко! Настоящий искатель приключений."
+		},
+		{
+			"type": "dialogue",
+			"character": "carne-chief",
+			"title": "Ниньо",
+			"text": "Держите, вы честно заработали эту награду."
+		},
+		{
+			"type": "inventory-add",
+			"character": "mc",
+			"itemId": "reestize-coin-gold",
+			"quantity": 3
+		},
+		{
+			"type": "quest",
+			"id": "chief_garden_quest",
+			"action": "task-complete",
+			"taskId": "weed_task"
+		},
+		{
+			"type": "quest",
+			"id": "chief_garden_quest",
+			"action": "complete"
+		},
+		{ "variable": "global.chief_quest_rewarded = true" },
+		{
+			"type": "notification",
+			"text": "<p><b>Получено: 3 золотые монеты Рэ-Эстиза</b></p>",
+			"notificationType": "success",
+			"duration": 3500
+		},
+		{
+			"type": "dialogue",
+			"character": "carne-chief",
+			"title": "Ниньо",
+			"text": "Деревня Карн в долгу перед вами. Заходите, если понадоблюсь!"
+		},
+		{
+			"type": "ui",
+			"action": "show",
+			"target": ["map-button", "inventory-button", "journal-button"]
+		},
+		{ "type": "goto", "target": "carne_chief_house" },
+
+		{
+			"id": "talk_already_rewarded",
+			"type": "dialogue",
+			"character": "carne-chief",
+			"title": "Ниньо",
+			"text": "Снова приветствую, странник! Огород благодаря вам выглядит просто отлично. Деревня всегда рада вам."
+		},
+		{
+			"type": "ui",
+			"action": "show",
+			"target": ["map-button", "inventory-button", "journal-button"]
+		},
+		{ "type": "goto", "target": "carne_chief_house" }
+	]
+}

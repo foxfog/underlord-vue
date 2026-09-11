@@ -13,11 +13,11 @@
 
 		<!-- Sidebars -->
 		<SidebarLeft
-			v-if="!showVrLauncher && !showYggAuth && !showCharCreate && !showShutdownSequence && !isUiHidden"
+			v-if="!showVrLauncher && !showYggAuth && !showCharCreate && !showShutdownSequence && !isUiHidden && !showIsometricOverlay"
 			:has-dialogue="hasDialogue"
 		/>
 		<SidebarRight
-			v-if="!showVrLauncher && !showYggAuth && !showCharCreate && !showShutdownSequence && !isUiHidden"
+			v-if="!showVrLauncher && !showYggAuth && !showCharCreate && !showShutdownSequence && !isUiHidden && !showIsometricOverlay"
 			:is-helmet-equipped="isHelmetEquipped"
 			:has-dialogue="hasDialogue"
 			@open-vr="openVrFromSidebar"
@@ -32,6 +32,7 @@
 
 				@ui-visibility-changed="onUiVisibilityChanged"
 				@ready="onVisualNovelReady"
+				@character-click="onCharacterClick"
 			/>
 		</div>
 
@@ -152,6 +153,14 @@
 		</div>
 	</div>
 
+	<!-- Isometric Location Overlay -->
+	<IsometricGameOverlay
+		v-if="showIsometricOverlay"
+		:location-id="activeIsometricLocationId"
+		@exit="onIsometricExit"
+		@quest-completed="onIsometricQuestCompleted"
+	/>
+
 	<!-- Bottom hotbar -->
 	<Hotbar
 		:visible="showHotbar"
@@ -221,6 +230,7 @@ import YggdrasilAuthModal from '../components/game/vr/YggdrasilAuthModal.vue'
 import YggdrasilCharacterCreation from '../components/game/vr/YggdrasilCharacterCreation.vue'
 import ServerShutdownSequence from '../components/game/vr/ServerShutdownSequence.vue'
 import GameLoadingScreen from '../components/game/GameLoadingScreen.vue'
+import IsometricGameOverlay from '../components/game/IsometricGameOverlay.vue'
 import { useQuests } from '@/composables/useQuests'
 import { useEncyclopedia } from '@/composables/useEncyclopedia'
 import { useSavesStore } from '@/stores/saves'
@@ -273,6 +283,10 @@ const showYggAuth = ref(false)
 const showCharCreate = ref(false)
 const showShutdownSequence = ref(false)
 const lastWorldScene = ref('mc_apartment')
+
+// Isometric overlay state
+const showIsometricOverlay = ref(false)
+const activeIsometricLocationId = ref('')
 
 const {
 	menuVisible,
@@ -359,6 +373,10 @@ useRegisterModal('settings-leave-confirm', showLeaveConfirm, () => {
 useRegisterModal('game-menu', menuVisible, () => {
 	menuVisible.value = false
 	currentView.value = 'main-menu'
+})
+
+useRegisterModal('isometric-overlay', showIsometricOverlay, () => {
+	onIsometricExit()
 })
 
 
@@ -487,7 +505,7 @@ const showDateBadge = computed(() => {
 })
 
 const showTopbar = computed(() => {
-	if (isUiHidden.value) return false
+	if (isUiHidden.value || showIsometricOverlay.value) return false
 	const v = currentUiVisibility.value
 	if (v.all) return true
 	return !!(
@@ -499,6 +517,7 @@ const showTopbar = computed(() => {
 })
 
 const showHotbar = computed(() => {
+	if (showIsometricOverlay.value) return false
 	const v = currentUiVisibility.value
 	return !!(v.all || v.hotbar)
 })
@@ -635,11 +654,61 @@ function handleMapGoto(gotoPayload) {
 		gameState.global.currentLocation = locationId
 	}
 
+	// Check if this scene is an isometric location
+	const scenesMap = visualNovel.value?.sceneData?.value || visualNovel.value?.sceneData || {}
+	const targetScene = scenesMap[target]
+	if (targetScene?.isometric) {
+		activeIsometricLocationId.value = targetScene.isometric
+		showIsometricOverlay.value = true
+		modalStore.closeMap()
+		return
+	}
+
 	if (target && visualNovel.value?.goto) {
 		visualNovel.value.goto(target)
 	}
 	modalStore.closeMap()
 }
+
+// Watch currentScene in case navigation happens through hotspot (e.g. from village square)
+watch(
+	() => visualNovel.value?.currentScene?.value || visualNovel.value?.currentScene,
+	(newScene) => {
+		if (newScene?.isometric) {
+			activeIsometricLocationId.value = newScene.isometric
+			showIsometricOverlay.value = true
+		}
+	},
+	{ deep: true }
+)
+
+function onCharacterClick({ character, interaction }) {
+	if (!interaction || interaction.type !== 'npc-menu' || !interaction.story) return
+	if (visualNovel.value?.goto) {
+		visualNovel.value.goto(interaction.story)
+	}
+}
+
+function onIsometricExit() {
+	showIsometricOverlay.value = false
+	activeIsometricLocationId.value = ''
+	// Return to chief house scene
+	if (visualNovel.value?.goto) {
+		visualNovel.value.goto('carne_chief_house')
+	}
+}
+
+function onIsometricQuestCompleted() {
+	// Mark weeds cleared in global state
+	const vnGlobal = visualNovel.value?.globalData?.value || visualNovel.value?.globalData
+	if (vnGlobal) {
+		vnGlobal.chief_quest_done = true
+	}
+	gameState.global.chief_quest_done = true
+	// Complete the quest task
+	questsManager.completeTask('chief_garden_quest', 'weed_task')
+}
+
 
 import { audioService } from '@/services/audioService'
 

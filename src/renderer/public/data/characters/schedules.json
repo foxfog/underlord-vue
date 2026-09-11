@@ -3,6 +3,10 @@
 		"carne-chief": {
 			"defaultLocation": "carne_chief_house",
 			"locationKnown": true,
+			"defaultInteraction": {
+				"type": "npc-menu",
+				"story": "carne-chief/menu"
+			},
 			"schedules": [
 				{
 					"id": "chief_in_house",
@@ -10,6 +14,10 @@
 					"position": { "r": 15, "l": "auto", "b": 0 },
 					"orientation": "left",
 					"scale": 1,
+					"interaction": {
+						"type": "npc-menu",
+						"story": "carne-chief/menu"
+					},
 					"conditions": {
 						"timePhase": ["morning", "day", "evening", "night"]
 					}

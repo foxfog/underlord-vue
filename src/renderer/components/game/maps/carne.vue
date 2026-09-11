@@ -62,6 +62,14 @@ const locations = ref([
 		target: 'carne_chief_house'
 	},
 	{
+		id: 'carne_chief_garden',
+		name: 'Огород старосты',
+		x: 68,
+		y: 42,
+		class: 'map-place-garden',
+		target: 'carne_chief_garden_iso'
+	},
+	{
 		id: 'carne_emmot_house',
 		name: 'Дом семьи Эммот',
 		x: 40,

@@ -214,3 +214,45 @@
    - `equipment.json`
 3. Зарегистрируйте `<char-id>` в `src/renderer/public/data/characters/characters.json`.
 4. Задайте распорядок дня в `src/renderer/public/data/characters/schedules.json`.
+
+---
+
+## 8. Интерактивность и диалоговые меню при клике на NPC (Character Interaction & NPC Menus)
+
+Персонажи на сцене могут реагировать на клик игрока (появление курсора `pointer` и плавной подсветки `brightness/drop-shadow`).
+
+### Конфигурация в `schedules.json`
+Интерактивность настраивается либо на уровне персонажа (`defaultInteraction`), либо в конкретном правиле расписания (`interaction`):
+
+```json
+{
+  "carne-chief": {
+    "defaultLocation": "carne_chief_house",
+    "defaultInteraction": {
+      "type": "npc-menu",
+      "story": "carne-chief/menu"
+    },
+    "schedules": [
+      {
+        "id": "chief_in_house",
+        "targetScene": "carne_chief_house",
+        "position": { "r": 15, "l": "auto", "b": 0 },
+        "orientation": "left",
+        "scale": 1,
+        "interaction": {
+          "type": "npc-menu",
+          "story": "carne-chief/menu"
+        }
+      }
+    ]
+  }
+}
+```
+
+### Поток событий:
+1. `Character.vue` отслеживает клик и при наличии `interaction` эмитит `character-click`.
+2. `CharacterList.vue` проксирует событие в `VisualNovel.vue`, откуда оно передаётся в `Game.vue`.
+3. `Game.vue` при получении `interaction.type === 'npc-menu'` запускает макрос меню через `visualNovel.value.goto(interaction.story)`.
+4. Макрос (например, `carne-chief/menu.json`) выводит выбор («Поговорить» / «Назад»):
+   - «Поговорить» → переход к диалоговой ветке (`carne-chief/talk.json`).
+   - «Назад» → `{ "type": "goto", "target": "<scene_id>" }` (возврат в интерактивный режим сцены).
