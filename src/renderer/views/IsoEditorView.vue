@@ -1077,12 +1077,45 @@
 		</div>
 
 		<!-- Modal: Export JSON -->
-		<div v-if="showExportModal" class="editor-modal-overlay">
+		<div v-if="showExportModal" class="editor-modal-overlay" @click.self="showExportModal = false">
 			<div class="editor-modal editor-modal-wide">
-				<h2 class="modal-title">Экспорт JSON карты</h2>
-				<p class="modal-subtitle">
-					Скопируйте полученный JSON или скачайте файл в папку <code>public/data/isometric/</code>.
-				</p>
+				<div class="export-modal-top">
+					<div class="export-modal-titles">
+						<h2 class="modal-title">Экспорт JSON карты</h2>
+						<p class="modal-subtitle">
+							Скопируйте полученный JSON или скачайте файл в папку <code>public/data/isometric/</code>.
+						</p>
+					</div>
+
+					<!-- Format Switcher -->
+					<div class="export-format-selector">
+						<button
+							class="format-tab-btn"
+							:class="{ __active: exportFormat === 'hybrid' }"
+							@click="exportFormat = 'hybrid'"
+						>
+							⚡ Гибридный RLE (Компактный)
+						</button>
+						<button
+							class="format-tab-btn"
+							:class="{ __active: exportFormat === 'full' }"
+							@click="exportFormat = 'full'"
+						>
+							📜 Полный JSON (Все тайлы)
+						</button>
+					</div>
+				</div>
+
+				<div class="export-stats-banner">
+					<span class="stats-item">💾 Размер: <strong>{{ exportSizeKb }} КБ</strong></span>
+					<span v-if="exportFormat === 'hybrid' && savingsPercent > 0" class="stats-savings">
+						🔥 Сжатие: -{{ savingsPercent }}% (полный вес: {{ fullSizeKb }} КБ)
+					</span>
+					<span v-else class="stats-info">
+						Формат с полным описанием каждого тайла сетки
+					</span>
+				</div>
+
 				<textarea
 					:value="exportedJsonText"
 					class="json-export-textarea"
@@ -1116,7 +1149,12 @@ import {
 	calculateDirectionalBounds,
 	calculateAnchorBounds
 } from '@/utils/isometric/isoCoords'
-import { loadCatalogs, normalizeLocationData } from '@/utils/isometric/isoLoader.js'
+import {
+	loadCatalogs,
+	normalizeLocationData,
+	packRleTerrain,
+	compactObjectForExport
+} from '@/utils/isometric/isoLoader.js'
 import defaultGardenJson from '@/public/data/isometric/tests/carne_chief_garden.json'
 import cliffsJson from '@/public/data/isometric/tests/height_cliffs_test.json'
 import arenaJson from '@/public/data/isometric/tests/arena_combat_test.json'
@@ -1345,8 +1383,70 @@ function updateNodePercentY(val) {
 	selectedNode.value.offsetY = offsetY
 }
 
-const exportedJsonText = computed(() => {
+const exportFormat = ref('hybrid') // 'hybrid' | 'full'
+
+const hybridJsonText = computed(() => {
+	const bounds = currentMapBounds.value
+	const { terrain, overrides } = packRleTerrain(bounds, mapData.value.tiles || [])
+	const compactObjects = (mapData.value.objects || []).map(compactObjectForExport)
+
+	const hybridData = {
+		id: mapData.value.id || 'isometric_map',
+		name: mapData.value.name || 'Изометрическая локация',
+		description: mapData.value.description || '',
+		tileWidth: mapData.value.tileWidth || 64,
+		tileHeight: mapData.value.tileHeight || 32,
+		heightStep: mapData.value.heightStep || 16,
+		gridWidth: bounds.maxX - bounds.minX + 1,
+		gridHeight: bounds.maxY - bounds.minY + 1,
+		bounds,
+		defaultSpawn: mapData.value.defaultSpawn || { x: 0, y: 0, z: 0, facing: 'SE' },
+		terrain
+	}
+
+	if (overrides && Object.keys(overrides).length > 0) {
+		hybridData.overrides = overrides
+	}
+
+	if (compactObjects.length > 0) {
+		hybridData.objects = compactObjects
+	}
+
+	if (Array.isArray(mapData.value.characters) && mapData.value.characters.length > 0) {
+		hybridData.characters = mapData.value.characters
+	}
+
+	if (Array.isArray(mapData.value.exits) && mapData.value.exits.length > 0) {
+		hybridData.exits = mapData.value.exits
+	}
+
+	return JSON.stringify(hybridData, null, 2)
+})
+
+const fullJsonText = computed(() => {
 	return JSON.stringify(mapData.value, null, 2)
+})
+
+const exportedJsonText = computed(() => {
+	return exportFormat.value === 'hybrid' ? hybridJsonText.value : fullJsonText.value
+})
+
+const exportSizeKb = computed(() => {
+	const bytes = new Blob([exportedJsonText.value]).size
+	return (bytes / 1024).toFixed(1)
+})
+
+const fullSizeKb = computed(() => {
+	const bytes = new Blob([fullJsonText.value]).size
+	return (bytes / 1024).toFixed(1)
+})
+
+const savingsPercent = computed(() => {
+	const fullBytes = new Blob([fullJsonText.value]).size
+	const hybridBytes = new Blob([hybridJsonText.value]).size
+	if (fullBytes <= 0) return 0
+	const saved = Math.round(((fullBytes - hybridBytes) / fullBytes) * 100)
+	return Math.max(0, saved)
 })
 
 // Tree search helpers
@@ -2988,6 +3088,74 @@ onUnmounted(() => {
 .form-hint {
 	font-size: 0.78em;
 	color: #64748b;
+}
+
+.export-modal-top {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 1em;
+	margin-bottom: 0.6em;
+	flex-wrap: wrap;
+}
+
+.export-modal-titles {
+	flex: 1;
+	min-width: 15em;
+}
+
+.export-format-selector {
+	display: inline-flex;
+	background: rgba(0, 0, 0, 0.4);
+	border: 1px solid rgba(255, 255, 255, 0.15);
+	border-radius: 0.5em;
+	padding: 0.2em;
+	gap: 0.25em;
+	align-self: center;
+}
+
+.format-tab-btn {
+	background: transparent;
+	border: none;
+	color: #94a3b8;
+	padding: 0.35em 0.75em;
+	border-radius: 0.35em;
+	font-size: 0.8em;
+	font-family: inherit;
+	cursor: pointer;
+	transition: all 0.2s;
+}
+
+.format-tab-btn:hover {
+	color: #f8fafc;
+}
+
+.format-tab-btn.__active {
+	background: #3b82f6;
+	color: #ffffff;
+	font-weight: 600;
+	box-shadow: 0 0.1em 0.4em rgba(59, 130, 246, 0.4);
+}
+
+.export-stats-banner {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	background: rgba(15, 23, 42, 0.8);
+	border: 1px solid rgba(56, 189, 248, 0.25);
+	border-radius: 0.4em;
+	padding: 0.4em 0.8em;
+	font-size: 0.8em;
+	margin-bottom: 0.6em;
+}
+
+.stats-savings {
+	color: #4ade80;
+	font-weight: 600;
+}
+
+.stats-info {
+	color: #94a3b8;
 }
 
 .json-export-textarea {
