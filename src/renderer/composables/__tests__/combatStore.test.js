@@ -998,6 +998,12 @@ describe('combatStore', () => {
 			expect(target.x).toBe(3)
 			expect(store.combatLog.some((l) => l.text.includes('скользит по гладкому льду'))).toBe(true)
 		})
+
+		it('экспортирует функцию addLog и добавляет записи в combatLog', () => {
+			expect(typeof store.addLog).toBe('function')
+			store.addLog('Тестовое сообщение', 'info')
+			expect(store.combatLog.some((l) => l.text === 'Тестовое сообщение')).toBe(true)
+		})
 	})
 })
 

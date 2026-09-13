@@ -6,7 +6,7 @@ import App from './App.vue'
 import i18n from './locales'
 import router from './router'
 import { initSettingsStore } from './stores/settings'
-import uiCompontents from './components/UI'
+import uiComponents from './components/UI'
 
 async function main() {
 	const settings = await window.electronAPI.getSettings() // получить настройки из userData/settings.json
@@ -25,7 +25,7 @@ async function main() {
 	const app = createApp(App)
 	const pinia = createPinia()
 
-	uiCompontents.forEach((uiComponent) => {
+	uiComponents.forEach((uiComponent) => {
 		app.component(uiComponent.name, uiComponent)
 	})
 

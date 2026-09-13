@@ -16,7 +16,7 @@ export default defineConfig({
     resolve: {
       alias: {
         '@': resolve(__dirname, 'src/renderer'),
-        '@resources': resolve(__dirname, 'resources'),
+        '@data': resolve(__dirname, 'src/renderer/public/data')
       }
     },
     plugins: [vue()],

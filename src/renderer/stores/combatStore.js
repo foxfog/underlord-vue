@@ -537,7 +537,7 @@ export const useCombatStore = defineStore('combat', () => {
 	return {
 		mapId, mapTiles, mapObjects, units, turnQueue, currentUnitIndex, round, phase, combatLog, floatingTexts, selectedAction, selectedTarget,
 		allies, allAllies, enemies, currentUnit, isPlayerTurn, isOver,
-		initCombat, setMapData, startTurn, endTurn, executeAction, skipTurn, moveUnit, isTargetInRange, addFloatingText,
+		initCombat, setMapData, startTurn, endTurn, executeAction, skipTurn, moveUnit, isTargetInRange, addFloatingText, addLog,
 		applyDamage, applyHeal, applyStatus, hasStatus, resetCombat, getUnit, calcDamage, effectiveDefense
 	}
 })

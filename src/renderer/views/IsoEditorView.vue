@@ -1155,10 +1155,10 @@ import {
 	packRleTerrain,
 	compactObjectForExport
 } from '@/utils/isometric/isoLoader.js'
-import defaultGardenJson from '@/data/isometric/tests/carne_chief_garden.json'
-import cliffsJson from '@/data/isometric/tests/height_cliffs_test.json'
-import arenaJson from '@/data/isometric/tests/arena_combat_test.json'
-import mcApartmentJson from '@/data/isometric/cybercity/mc_apartment.json'
+import defaultGardenJson from '@data/isometric/tests/carne_chief_garden.json'
+import cliffsJson from '@data/isometric/tests/height_cliffs_test.json'
+import arenaJson from '@data/isometric/tests/arena_combat_test.json'
+import mcApartmentJson from '@data/isometric/cybercity/mc_apartment.json'
 
 const router = useRouter()
 const canvasRef = ref(null)

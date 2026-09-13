@@ -6,6 +6,7 @@
 			'__is-panning': camera.isDragging,
 			'__action-mode': Boolean(selectedAction)
 		}"
+		@mouseenter="updateContainerBounds"
 		@mousedown="onMouseDown"
 		@mousemove="onMouseMove"
 		@mouseup="onMouseUp"
@@ -236,6 +237,22 @@ const plannedPathSet = computed(() => {
 	return set
 })
 
+const containerRect = {
+	left: 0,
+	top: 0,
+	width: 800,
+	height: 600
+}
+
+function updateContainerBounds() {
+	if (!containerRef.value) return
+	const r = containerRef.value.getBoundingClientRect()
+	containerRect.left = r.left
+	containerRect.top = r.top
+	containerRect.width = r.width || containerRef.value.clientWidth || 800
+	containerRect.height = r.height || containerRef.value.clientHeight || 600
+}
+
 const vfxManager = createVfxManager()
 const movingUnits = new Map()
 let lastFrameTime = performance.now()
@@ -443,10 +460,8 @@ function buildFallbackMap() {
 }
 
 function resetCamera() {
-	const container = containerRef.value
-	if (!container) return
-	camera.value.x = container.clientWidth / 2
-	camera.value.y = container.clientHeight / 2 - 20
+	camera.value.x = (containerRect.width || 800) / 2
+	camera.value.y = (containerRect.height || 600) / 2 - 20
 	camera.value.zoom = DEFAULT_ZOOM
 	requestRender()
 }
@@ -475,13 +490,15 @@ function render() {
 	vfxManager.update(deltaMs, props.combatSpeed)
 	updateMovementAnimations(deltaMs)
 
-	const viewW = container.clientWidth || 800
-	const viewH = container.clientHeight || 600
+	const viewW = containerRect.width || 800
+	const viewH = containerRect.height || 600
 	const dpr = window.devicePixelRatio || 1
+	const targetW = Math.round(viewW * dpr)
+	const targetH = Math.round(viewH * dpr)
 
-	if (canvas.width !== viewW * dpr || canvas.height !== viewH * dpr) {
-		canvas.width = viewW * dpr
-		canvas.height = viewH * dpr
+	if (canvas.width !== targetW || canvas.height !== targetH) {
+		canvas.width = targetW
+		canvas.height = targetH
 	}
 
 	ctx.save()
@@ -1080,9 +1097,8 @@ function updateTooltip(e) {
 	const container = containerRef.value
 	if (!canvas || !container) return
 
-	const rect = container.getBoundingClientRect()
-	const screenX = (e.clientX - rect.left - camera.value.x) / camera.value.zoom
-	const screenY = (e.clientY - rect.top - camera.value.y) / camera.value.zoom
+	const screenX = (e.clientX - containerRect.left - camera.value.x) / camera.value.zoom
+	const screenY = (e.clientY - containerRect.top - camera.value.y) / camera.value.zoom
 
 	const tileW = mapData.value?.tileWidth || 64
 	const tileH = mapData.value?.tileHeight || 32
@@ -1096,8 +1112,8 @@ function updateTooltip(e) {
 		if (unit) {
 			hoveredUnitTooltip.value = unit
 			tooltipPos.value = {
-				x: Math.min(e.clientX - rect.left + 15, rect.width - 150),
-				y: Math.max(10, e.clientY - rect.top - 70)
+				x: Math.min(e.clientX - containerRect.left + 15, (containerRect.width || 800) - 150),
+				y: Math.max(10, e.clientY - containerRect.top - 70)
 			}
 		} else {
 			hoveredUnitTooltip.value = null
@@ -1258,9 +1274,8 @@ function handleCanvasClick(e) {
 	const container = containerRef.value
 	if (!container) return
 
-	const rect = container.getBoundingClientRect()
-	const screenX = (e.clientX - rect.left - camera.value.x) / camera.value.zoom
-	const screenY = (e.clientY - rect.top - camera.value.y) / camera.value.zoom
+	const screenX = (e.clientX - containerRect.left - camera.value.x) / camera.value.zoom
+	const screenY = (e.clientY - containerRect.top - camera.value.y) / camera.value.zoom
 
 	const tileW = mapData.value?.tileWidth || 64
 	const tileH = mapData.value?.tileHeight || 32
@@ -1695,11 +1710,22 @@ watch(
 )
 
 onMounted(() => {
+	updateContainerBounds()
 	loadMap()
 	unlistenSprites = onSpriteLoaded(() => requestRender())
 
 	if (containerRef.value) {
-		resizeObserver = new ResizeObserver(() => {
+		resizeObserver = new ResizeObserver((entries) => {
+			if (entries && entries[0]) {
+				const cr = entries[0].contentRect
+				containerRect.width = cr.width
+				containerRect.height = cr.height
+				const r = containerRef.value.getBoundingClientRect()
+				containerRect.left = r.left
+				containerRect.top = r.top
+			} else {
+				updateContainerBounds()
+			}
 			resetCamera()
 		})
 		resizeObserver.observe(containerRef.value)

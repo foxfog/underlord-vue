@@ -6,8 +6,8 @@
  */
 
 import { buildAssetUrl } from './isoSprites.js'
-import defaultTilesCatalog from '../../data/isometric/tiles.json'
-import defaultObjectsCatalog from '../../data/isometric/objects.json'
+import defaultTilesCatalog from '@data/isometric/tiles.json'
+import defaultObjectsCatalog from '@data/isometric/objects.json'
 
 let tilesCatalog = defaultTilesCatalog.tiles || {}
 let objectsCatalog = defaultObjectsCatalog.objects || {}
