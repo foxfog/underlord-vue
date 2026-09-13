@@ -1,4 +1,4 @@
-﻿{
+{
 	"id": "carne-chief-talk",
 	"steps": [
 		{
@@ -224,6 +224,21 @@
 			"action": "complete"
 		},
 		{ "variable": "global.chief_quest_rewarded = true" },
+		{
+			"type": "undiscover-location",
+			"map": "carne",
+			"location": "carne_chief_garden"
+		},
+		{
+			"type": "hide-hotspot",
+			"scene": "carne_chief_house",
+			"id": "to_chief_garden"
+		},
+		{
+			"type": "hide-hotspot",
+			"scene": "carne_village_square",
+			"id": "to_chief_garden"
+		},
 		{
 			"type": "notification",
 			"text": "<p><b>Получено: 3 золотые монеты Рэ-Эстиза</b></p>",

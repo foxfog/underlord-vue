@@ -73,16 +73,23 @@ export function loadSprite(src) {
 	return img
 }
 
+export const CHARACTER_ALIASES = {
+	ainz: 'momonga'
+}
+
 /**
  * Generates the prioritized candidate sprite paths for a given character ID.
  * Follows the fallback rule:
  * 1. Specific character (isometric or icometric)
- * 2. Default char fallback (isometric or icometric)
+ * 2. Alias character (e.g. ainz -> momonga)
+ * 3. Default char fallback (isometric or icometric)
  *
- * @param {string} characterId - e.g. 'mc', 'momonga', 'char'
+ * @param {string} characterId - e.g. 'mc', 'momonga', 'ainz', 'char'
+ * @param {Object} options
+ * @param {boolean} [options.includeFallback=true]
  * @returns {string[]} List of relative asset paths in priority order
  */
-export function getCharacterSpriteCandidates(characterId = 'mc') {
+export function getCharacterSpriteCandidates(characterId = 'mc', { includeFallback = true } = {}) {
 	const id = normalizeSpriteName(characterId) || 'mc'
 	const candidates = []
 
@@ -90,11 +97,19 @@ export function getCharacterSpriteCandidates(characterId = 'mc') {
 	if (id !== 'char') {
 		candidates.push(`images/sprites/characters/${id}/isometric/char.png`)
 		candidates.push(`images/sprites/characters/${id}/icometric/char.png`)
+
+		const alias = CHARACTER_ALIASES[id]
+		if (alias) {
+			candidates.push(`images/sprites/characters/${alias}/isometric/char.png`)
+			candidates.push(`images/sprites/characters/${alias}/icometric/char.png`)
+		}
 	}
 
 	// 2. Default char fallback paths
-	candidates.push('images/sprites/characters/char/isometric/char.png')
-	candidates.push('images/sprites/characters/char/icometric/char.png')
+	if (includeFallback) {
+		candidates.push('images/sprites/characters/char/isometric/char.png')
+		candidates.push('images/sprites/characters/char/icometric/char.png')
+	}
 
 	return candidates
 }
@@ -108,35 +123,41 @@ const resolvedCharacterUrls = new Map()
  * Retrieves the best available character sprite Image object with automatic fallback.
  *
  * @param {string} characterId
+ * @param {Object} [options]
+ * @param {boolean} [options.allowFallback=true]
  * @returns {HTMLImageElement|null}
  */
-export function resolveCharacterSprite(characterId = 'mc') {
+export function resolveCharacterSprite(characterId = 'mc', { allowFallback = true } = {}) {
 	const id = normalizeSpriteName(characterId) || 'mc'
+	const cacheKey = `${id}_fb_${allowFallback}`
 
 	// If already resolved to a working URL, return that image
-	if (resolvedCharacterUrls.has(id)) {
-		const cachedUrl = resolvedCharacterUrls.get(id)
-		return loadSprite(cachedUrl)
+	if (resolvedCharacterUrls.has(cacheKey)) {
+		const cachedUrl = resolvedCharacterUrls.get(cacheKey)
+		return cachedUrl ? loadSprite(cachedUrl) : null
 	}
 
-	const candidates = getCharacterSpriteCandidates(id)
+	const candidates = getCharacterSpriteCandidates(id, { includeFallback: allowFallback })
 
 	for (const path of candidates) {
 		const img = loadSprite(path)
 		if (img && img.complete && img.naturalWidth > 0) {
-			resolvedCharacterUrls.set(id, path)
+			resolvedCharacterUrls.set(cacheKey, path)
 			return img
 		}
 	}
 
-	// If no candidate is yet fully loaded, return the first candidate's image element (loading in background)
-	// and set up error handlers to advance fallback
+	// If no candidate paths available (e.g. no fallback requested and character has no sprite)
+	if (candidates.length === 0) {
+		return null
+	}
+
 	const primaryPath = candidates[0]
 	const primaryImg = loadSprite(primaryPath)
 
 	if (primaryImg) {
 		primaryImg.onload = () => {
-			resolvedCharacterUrls.set(id, primaryPath)
+			resolvedCharacterUrls.set(cacheKey, primaryPath)
 			notifySpriteLoaded(primaryPath)
 		}
 		primaryImg.onerror = () => {
@@ -146,7 +167,7 @@ export function resolveCharacterSprite(characterId = 'mc') {
 				const fallbackImg = loadSprite(fallbackPath)
 				if (fallbackImg) {
 					fallbackImg.onload = () => {
-						resolvedCharacterUrls.set(id, fallbackPath)
+						resolvedCharacterUrls.set(cacheKey, fallbackPath)
 						notifySpriteLoaded(fallbackPath)
 					}
 				}
@@ -156,6 +177,7 @@ export function resolveCharacterSprite(characterId = 'mc') {
 
 	return primaryImg
 }
+
 
 /**
  * Mapping of tile types to texture filenames in `images/sprites/isometric/tiles/bot/`.

@@ -40,6 +40,12 @@ const router = createRouter({
 			name: 'iso-editor',
 			path: '/test/isometric-editor',
 			component: () => import('@/views/IsoEditorView.vue')
+		},
+		{
+			id: 6,
+			name: 'combat-tester',
+			path: '/test/combat',
+			component: () => import('@/views/CombatTesterView.vue')
 		}
 	]
 })

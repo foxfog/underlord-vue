@@ -31,7 +31,9 @@ export function initSettingsStore(settings) {
 				language: settings?.general?.language ?? 'ru',
 				textSpeed: settings?.general?.textSpeed ?? 100,
 				skipSplash: settings?.general?.skipSplash ?? false,
-				sceneTransitions: settings?.general?.sceneTransitions ?? true
+				sceneTransitions: settings?.general?.sceneTransitions ?? true,
+				combatAnimations: settings?.general?.combatAnimations ?? true,
+				combatSpeed: settings?.general?.combatSpeed ?? 1.0
 			},
 
 			video: {
@@ -84,6 +86,14 @@ export function initSettingsStore(settings) {
 
 			setSceneTransitions(value) {
 				this.general.sceneTransitions = Boolean(value)
+			},
+
+			setCombatAnimations(value) {
+				this.general.combatAnimations = Boolean(value)
+			},
+
+			setCombatSpeed(speed) {
+				this.general.combatSpeed = Number(speed) || 1.0
 			},
 
 			setKeyboardLayout(layout) {

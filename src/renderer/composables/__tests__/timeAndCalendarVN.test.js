@@ -6,6 +6,7 @@ import { useVisualNovel } from '../useVisualNovel'
 import { useQuests } from '../useQuests'
 import { DIALOGUE_HIDE_UI_CONFIG } from '../../constants/dialogue'
 import { advanceTimeOfDay, getCalendarInfo } from '../../utils/timeCalendar'
+import { serializeGameState } from '../../services/saveService'
 
 describe('Time and Calendar Visual Novel Integration', () => {
 	it('should include next-time-button in DIALOGUE_HIDE_UI_CONFIG', () => {
@@ -929,6 +930,46 @@ describe('UI Visibility for date-badge and next-time-button', () => {
 			stepIndex: 10
 		}
 		await vn.restoreGameState(legacySave)
+		expect(vn.uiVisibility.value['date-badge']).toBe(false)
+		expect(vn.uiVisibility.value['calendar-button']).toBe(false)
+	})
+
+	it('serializeGameState preserves false values for date-badge and calendar-button in uiVisibility', () => {
+		const rawState = {
+			uiVisibility: {
+				'date-badge': false,
+				'calendar-button': false,
+				topbar: true,
+				hotbar: true
+			},
+			characterData: {},
+			storyData: { id: 'test' }
+		}
+		const serialized = serializeGameState(rawState)
+		expect(serialized.uiVisibility['date-badge']).toBe(false)
+		expect(serialized.uiVisibility['calendar-button']).toBe(false)
+		expect(serialized.uiVisibility.topbar).toBe(true)
+	})
+
+	it('restores date-badge and calendar-button as false when restoring a save with uiVisibility in New World', async () => {
+		const vn = useVisualNovel({})
+		const saveWithUi = {
+			global: {
+				calendarType: 'new_world',
+				year: 0,
+				month: 3,
+				dayOfMonth: 1
+			},
+			uiVisibility: {
+				topbar: true,
+				hotbar: true,
+				'inventory-button': true
+			},
+			character: { mc: { name: 'Player' } },
+			currentStory: 'intro',
+			stepIndex: 10
+		}
+		await vn.restoreGameState(saveWithUi)
 		expect(vn.uiVisibility.value['date-badge']).toBe(false)
 		expect(vn.uiVisibility.value['calendar-button']).toBe(false)
 	})

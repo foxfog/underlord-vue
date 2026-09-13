@@ -71,6 +71,22 @@ describe('isoSprites', () => {
 			const candidates = getCharacterSpriteCandidates()
 			expect(candidates[0]).toContain('/mc/')
 		})
+
+		it('resolves ainz to momonga candidate paths via alias', () => {
+			const candidates = getCharacterSpriteCandidates('ainz')
+			expect(candidates).toContain('images/sprites/characters/momonga/icometric/char.png')
+			expect(candidates).toContain('images/sprites/characters/momonga/isometric/char.png')
+		})
+
+		it('omits char fallback when includeFallback is false', () => {
+			const candidates = getCharacterSpriteCandidates('bandit_archer', { includeFallback: false })
+			expect(candidates).not.toContain('images/sprites/characters/char/isometric/char.png')
+			expect(candidates).not.toContain('images/sprites/characters/char/icometric/char.png')
+			expect(candidates).toEqual([
+				'images/sprites/characters/bandit_archer/isometric/char.png',
+				'images/sprites/characters/bandit_archer/icometric/char.png'
+			])
+		})
 	})
 
 	describe('getTileSpritePath', () => {

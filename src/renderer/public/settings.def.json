@@ -10,7 +10,9 @@
 	},
 	"general": {
 		"language": "ru",
-		"sceneTransitions": true
+		"sceneTransitions": true,
+		"combatAnimations": true,
+		"combatSpeed": 1.0
 	},
 	"video": {
 		"fullscreen": true,

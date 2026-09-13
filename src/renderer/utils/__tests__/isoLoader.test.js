@@ -241,6 +241,34 @@ describe('isoLoader', () => {
 			expect(table.children[0].children.length).toBe(1)
 			expect(table.children[0].children[0].name).toBe('Салат')
 		})
+
+		it('preserves exits configuration in normalized location data', () => {
+			const rawWithExits = {
+				id: 'garden_with_exit',
+				gridWidth: 3,
+				gridHeight: 3,
+				terrain: {
+					palette: ['grass'],
+					rle: '0:9'
+				},
+				exits: [
+					{
+						id: 'exit_house',
+						label: 'Вернуться в дом старосты',
+						trigger: { x: 0, y: -5, z: 0 },
+						targetType: 'scene',
+						target: 'carne_chief_house'
+					}
+				]
+			}
+
+			const normalized = normalizeLocationData(rawWithExits)
+			expect(normalized.exits).toBeDefined()
+			expect(normalized.exits.length).toBe(1)
+			expect(normalized.exits[0].id).toBe('exit_house')
+			expect(normalized.exits[0].trigger).toEqual({ x: 0, y: -5, z: 0 })
+			expect(normalized.exits[0].target).toBe('carne_chief_house')
+		})
 	})
 
 	describe('loot string helpers', () => {

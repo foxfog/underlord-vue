@@ -1155,10 +1155,10 @@ import {
 	packRleTerrain,
 	compactObjectForExport
 } from '@/utils/isometric/isoLoader.js'
-import defaultGardenJson from '@/public/data/isometric/tests/carne_chief_garden.json'
-import cliffsJson from '@/public/data/isometric/tests/height_cliffs_test.json'
-import arenaJson from '@/public/data/isometric/tests/arena_combat_test.json'
-import mcApartmentJson from '@/public/data/isometric/cybercity/mc_apartment.json'
+import defaultGardenJson from '@/data/isometric/tests/carne_chief_garden.json'
+import cliffsJson from '@/data/isometric/tests/height_cliffs_test.json'
+import arenaJson from '@/data/isometric/tests/arena_combat_test.json'
+import mcApartmentJson from '@/data/isometric/cybercity/mc_apartment.json'
 
 const router = useRouter()
 const canvasRef = ref(null)
@@ -1298,7 +1298,10 @@ const tileTypes = [
 	{ id: 'slab-cube', name: 'Куб-блок', color: '#475569', texture: 'slab-cube' },
 	{ id: 'slab-cube-dark', name: 'Темный куб', color: '#1e293b', texture: 'slab-cube-dark' },
 	{ id: 'watter', name: 'Вода', color: '#0284c7', texture: 'watter' },
-	{ id: 'watter-slab', name: 'Водная плита', color: '#0369a1', texture: 'watter-slab' }
+	{ id: 'watter-slab', name: 'Водная плита', color: '#0369a1', texture: 'watter-slab' },
+	{ id: 'ice', name: '🧊 Лёд (скользкий)', color: '#bae6fd' },
+	{ id: 'lava', name: '🔥 Лава (раскаленная)', color: '#ea580c' },
+	{ id: 'water', name: '🌊 Вода (глубокая)', color: '#0284c7' }
 ]
 
 const wallTypes = [

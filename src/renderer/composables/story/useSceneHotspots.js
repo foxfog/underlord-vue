@@ -59,6 +59,27 @@ export function useSceneHotspots({
 		return false
 	}
 
+	function undiscoverLocation(mapId, locationInput) {
+		if (!mapId || !locationInput) return false
+		if (!globalData.value?.discoveredLocations?.[mapId]) return false
+
+		const list = globalData.value.discoveredLocations[mapId]
+		const locationsToRemove = Array.isArray(locationInput) ? locationInput : [locationInput]
+		const initialLen = list.length
+		globalData.value.discoveredLocations[mapId] = list.filter(
+			(locId) => !locationsToRemove.includes(locId)
+		)
+
+		if (globalData.value.discoveredLocations[mapId].length !== initialLen) {
+			console.log(`🗺 [Location Undiscovered] map="${mapId}":`, locationsToRemove)
+			if (emit) {
+				emit('global-data-changed', globalData.value)
+			}
+			return true
+		}
+		return false
+	}
+
 	function isLocationDiscovered(mapId, locationId) {
 		if (!globalData.value?.discoveredLocations) return false
 		const list = globalData.value.discoveredLocations[mapId]
@@ -205,6 +226,7 @@ export function useSceneHotspots({
 
 	return {
 		discoverLocation,
+		undiscoverLocation,
 		isLocationDiscovered,
 		setHotspotStatus,
 		getHotspotStatus,

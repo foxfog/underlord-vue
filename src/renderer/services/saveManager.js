@@ -175,11 +175,15 @@ export const saveManager = {
 		}
 
 		// 5. UI visibility
+		const isNewWorld =
+			globalData.value?.calendarType === 'new_world' || globalData.value?.year === 0
 		if (saveData.uiVisibility && typeof saveData.uiVisibility === 'object') {
 			baseUiVisibility.value = { ...baseUiVisibility.value, ...saveData.uiVisibility }
+			if (isNewWorld) {
+				baseUiVisibility.value['date-badge'] = false
+				baseUiVisibility.value['calendar-button'] = false
+			}
 		} else {
-			const isNewWorld =
-				globalData.value?.calendarType === 'new_world' || globalData.value?.year === 0
 			baseUiVisibility.value = {
 				...baseUiVisibility.value,
 				'date-badge': !isNewWorld,

@@ -51,26 +51,27 @@
 				</div>
 			</div>
 
-			<!-- Card 3: Tactical Combat Tester (Disabled / Planned) -->
-			<div class="test-card __disabled">
+			<!-- Card 3: Tactical Combat Tester (Active) -->
+			<div class="test-card __active" @click="launchCombatTester">
 				<div class="test-card-header">
 					<div class="test-card-icon">⚔️</div>
-					<span class="test-status-badge __planned">Запланировано</span>
+					<span class="test-status-badge __ready">Доступно</span>
 				</div>
 				<div class="test-card-body">
-					<h2 class="test-card-title">Тактический бой (TRPG / XCOM)</h2>
+					<h2 class="test-card-title">Пошаговый тактический бой</h2>
 					<p class="test-card-desc">
-						Пошаговая тактическая боевая система: таймлайн ходов, очки действий AP/MP, укрытия, влияние высоты на дальность атаки и управление группой.
+						Пошаговая тактическая боёвка в стиле Sword of Convallaria: очередность ходов по инициативе, очки действий AP, мана MP, классы (боец, воин, маг, лучник) и боевой AI противников.
 					</p>
 					<div class="test-tags">
-						<span class="test-tag">Turn Order</span>
-						<span class="test-tag">Cover System</span>
-						<span class="test-tag">Anime XCOM</span>
+						<span class="test-tag">SoC Style</span>
+						<span class="test-tag">Инициатива</span>
+						<span class="test-tag">Очки AP / MP</span>
+						<span class="test-tag">Боевой AI</span>
 					</div>
 				</div>
 				<div class="test-card-footer">
-					<button class="test-btn test-btn-disabled" disabled>
-						Запланировано
+					<button class="test-btn test-btn-primary" @click.stop="launchCombatTester">
+						Запустить бой →
 					</button>
 				</div>
 			</div>
@@ -89,6 +90,10 @@ function launchIsoTester() {
 
 function launchIsoEditor() {
 	router.push('/test/isometric-editor')
+}
+
+function launchCombatTester() {
+	router.push('/test/combat')
 }
 </script>
 

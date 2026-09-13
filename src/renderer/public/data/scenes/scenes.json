@@ -87,7 +87,7 @@
 					"icon": "garden",
 					"target": "carne_chief_garden_iso",
 					"position": { "right": "10%", "bottom": "22%" },
-					"condition": "global.discoveredLocations?.carne?.includes('carne_chief_garden')",
+					"condition": "global.discoveredLocations?.carne?.includes('carne_chief_garden') && !global.chief_quest_rewarded",
 					"fallbackStatus": "hidden"
 				},
 				{
@@ -127,7 +127,7 @@
 					"icon": "garden",
 					"target": "carne_chief_garden_iso",
 					"position": { "right": "8em", "bottom": "3em" },
-					"condition": "global.discoveredLocations?.carne?.includes('carne_chief_garden')",
+					"condition": "global.discoveredLocations?.carne?.includes('carne_chief_garden') && !global.chief_quest_rewarded",
 					"fallbackStatus": "hidden"
 				}
 			]
@@ -162,6 +162,16 @@
 			"worldMap": "newworld",
 			"localMap": "carne",
 			"locationId": "carne_chief_garden"
+		},
+		{
+			"id": "carne_bandits_combat",
+			"name": "Нападение бандитов",
+			"bg": "images/sprites/backgrounds/carne/carne-entrance.jpg",
+			"clearCharacters": true,
+			"combat": "carne_bandits",
+			"worldMap": "newworld",
+			"localMap": "carne",
+			"locationId": "carne_village_entrance"
 		}
 	]
 }

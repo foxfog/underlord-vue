@@ -6,8 +6,8 @@
  */
 
 import { buildAssetUrl } from './isoSprites.js'
-import defaultTilesCatalog from '../../public/data/isometric/tiles.json'
-import defaultObjectsCatalog from '../../public/data/isometric/objects.json'
+import defaultTilesCatalog from '../../data/isometric/tiles.json'
+import defaultObjectsCatalog from '../../data/isometric/objects.json'
 
 let tilesCatalog = defaultTilesCatalog.tiles || {}
 let objectsCatalog = defaultObjectsCatalog.objects || {}
@@ -766,6 +766,7 @@ export function normalizeLocationData(raw, activeLevelId = 'level-1') {
 		tiles,
 		objects,
 		characters,
+		exits: data.exits || (data.levels && data.levels[activeLevelId]?.exits) || [],
 		levels: data.levels || null
 	}
 }

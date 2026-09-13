@@ -64,6 +64,39 @@
 				</UiCheckbox>
 			</div>
 		</div>
+
+		<div class="settings-item">
+			<div class="left">
+				<div class="settings-item-label">Анимации в бою:</div>
+				<div class="settings-item-description">плавное перемещение и визуальные эффекты</div>
+			</div>
+			<div class="right">
+				<UiCheckbox
+					v-model="store.general.combatAnimations"
+					mode="switch"
+					@change="onCombatAnimationsChange"
+				>
+				</UiCheckbox>
+			</div>
+		</div>
+
+		<div class="settings-item" v-if="store.general.combatAnimations">
+			<div class="left">
+				<div class="settings-item-label">Скорость боя:</div>
+				<div class="settings-item-description">множитель скорости перемещения и эффектов</div>
+			</div>
+			<div class="right">
+				<UiSelect
+					v-model="store.general.combatSpeed"
+					:options="combatSpeedOptions"
+					valueKey="value"
+					labelKey="label"
+					placeholder="Выберите скорость..."
+					@change="onCombatSpeedChange"
+					class="settings-select"
+				/>
+			</div>
+		</div>
 	</div>
 </template>
 
@@ -183,6 +216,58 @@ async function autoSaveSceneTransitionsSetting() {
 		console.log('Scene transitions setting auto-saved')
 	} catch (error) {
 		console.error('Failed to auto-save scene transitions setting:', error)
+	}
+}
+
+const combatSpeedOptions = [
+	{ value: 1.0, label: '1.0x (Обычная)' },
+	{ value: 1.5, label: '1.5x (Быстрая)' },
+	{ value: 2.0, label: '2.0x (Турбо)' }
+]
+
+function onCombatAnimationsChange() {
+	store.setCombatAnimations(store.general.combatAnimations)
+	console.log('Combat animations changed to:', store.general.combatAnimations)
+	autoSaveCombatAnimationsSetting()
+}
+
+function onCombatSpeedChange() {
+	store.setCombatSpeed(store.general.combatSpeed)
+	console.log('Combat speed changed to:', store.general.combatSpeed)
+	autoSaveCombatSpeedSetting()
+}
+
+async function autoSaveCombatAnimationsSetting() {
+	try {
+		const current = await window.electronAPI.getSettings()
+		const updated = {
+			...current,
+			general: {
+				...current.general,
+				combatAnimations: store.general.combatAnimations
+			}
+		}
+		window.electronAPI.saveSettings(JSON.parse(JSON.stringify(updated)))
+		console.log('Combat animations setting auto-saved')
+	} catch (error) {
+		console.error('Failed to auto-save combat animations setting:', error)
+	}
+}
+
+async function autoSaveCombatSpeedSetting() {
+	try {
+		const current = await window.electronAPI.getSettings()
+		const updated = {
+			...current,
+			general: {
+				...current.general,
+				combatSpeed: store.general.combatSpeed
+			}
+		}
+		window.electronAPI.saveSettings(JSON.parse(JSON.stringify(updated)))
+		console.log('Combat speed setting auto-saved')
+	} catch (error) {
+		console.error('Failed to auto-save combat speed setting:', error)
 	}
 }
 </script>

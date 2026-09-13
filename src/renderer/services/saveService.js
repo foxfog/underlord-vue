@@ -77,8 +77,10 @@ export function serializeGameState(gameState, characterDefaults = {}) {
 
 	const serializedUiVisibility = {}
 	Object.entries(gameState.uiVisibility || {}).forEach(([key, value]) => {
-		if (value === true) {
-			serializedUiVisibility[key] = true
+		if (typeof value === 'boolean') {
+			serializedUiVisibility[key] = value
+		} else if (value !== undefined && value !== null) {
+			serializedUiVisibility[key] = value
 		}
 	})
 

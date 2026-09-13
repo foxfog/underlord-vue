@@ -94,6 +94,9 @@ const locations = ref([
 ])
 
 function isLocationDiscovered(location) {
+	if (location.id === 'carne_chief_garden' && props.globalData?.chief_quest_rewarded) {
+		return false
+	}
 	const list = props.globalData?.discoveredLocations?.carne
 	if (Array.isArray(list)) {
 		return list.includes(location.id)

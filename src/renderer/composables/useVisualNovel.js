@@ -628,21 +628,30 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 	function handleDiscoverLocationStep(step) {
 		if (isRestoringGameState.value) return
 		const isDiscoverAction =
-			!step.action || step.action === 'discover' || step.action === 'add'
+			(!step.action || step.action === 'discover' || step.action === 'add') &&
+			step.type !== 'undiscover-location'
+		const targetMap =
+			step.map ||
+			step.localMap ||
+			globalData.value.localMap ||
+			globalData.value.currentMap ||
+			'current'
+		const locs = step.location || step.locations || step.locationId
+
 		if (isDiscoverAction) {
-			const targetMap =
-				step.map ||
-				step.localMap ||
-				globalData.value.localMap ||
-				globalData.value.currentMap ||
-				'current'
-			const locs = step.location || step.locations || step.locationId
 			discoverLocation(targetMap, locs, {
 				title: step.title,
 				notification: step.notification || step.text,
 				notify: step.notify,
 				duration: step.duration
 			})
+		} else if (
+			step.action === 'remove' ||
+			step.action === 'hide' ||
+			step.action === 'undiscover' ||
+			step.type === 'undiscover-location'
+		) {
+			undiscoverLocation(targetMap, locs)
 		}
 	}
 
@@ -933,6 +942,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					handleFadeStep(step)
 					break
 				case 'discover-location':
+				case 'undiscover-location':
 				case 'discover-marker':
 				case 'map-marker':
 					handleDiscoverLocationStep(step)
@@ -1448,6 +1458,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					break
 
 				case 'discover-location':
+				case 'undiscover-location':
 				case 'discover-marker':
 				case 'map-marker':
 					handleDiscoverLocationStep(action)
@@ -1950,6 +1961,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 
 	const {
 		discoverLocation,
+		undiscoverLocation,
 		isLocationDiscovered,
 		setHotspotStatus,
 		getHotspotStatus,
@@ -2024,6 +2036,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		advanceTime,
 		// location discovery methods
 		discoverLocation,
+		undiscoverLocation,
 		isLocationDiscovered,
 		// scene hotspot methods
 		setHotspotStatus,

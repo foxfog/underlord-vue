@@ -29,6 +29,32 @@
 			<span class="tooltip-icon">{{ actionTooltip.icon }}</span>
 			<span class="tooltip-text">{{ actionTooltip.text }}</span>
 		</div>
+
+		<!-- Context menu for interactive object -->
+		<div
+			v-if="activeContextMenu"
+			class="iso-context-menu"
+			:style="{
+				left: activeContextMenu.x + 'px',
+				top: activeContextMenu.y + 'px'
+			}"
+			@mousedown.stop
+			@mouseup.stop
+			@click.stop
+		>
+			<div class="iso-menu-header">
+				<span class="iso-menu-icon">{{ (activeContextMenu.object.action === 'weed' || activeContextMenu.object.type === 'weed') ? '🌿' : '📦' }}</span>
+				<span class="iso-menu-title">{{ activeContextMenu.object.name || (activeContextMenu.object.type === 'weed' ? 'Сорняк' : 'Объект') }}</span>
+			</div>
+			<div class="iso-menu-actions">
+				<button class="iso-menu-btn iso-menu-btn-primary" @click="handleContextMenuAction(activeContextMenu.object)">
+					{{ (activeContextMenu.object.action === 'weed' || activeContextMenu.object.type === 'weed') ? 'Собрать' : 'Взаимодействовать' }}
+				</button>
+				<button class="iso-menu-btn iso-menu-btn-cancel" @click="closeContextMenu">
+					Отмена
+				</button>
+			</div>
+		</div>
 	</div>
 </template>
 
@@ -57,6 +83,7 @@ import {
 	resolveWallSprite,
 	onSpriteLoaded
 } from '@/utils/isometric/isoSprites'
+import { drawIsometricFacingIndicator } from '@/utils/isometric/isoFacing'
 
 const props = defineProps({
 	locationData: { type: Object, required: true },
@@ -93,7 +120,8 @@ const emit = defineEmits([
 	'editor-brush-apply',
 	'turn-changed',
 	'points-changed',
-	'action-failed'
+	'action-failed',
+	'exit-triggered'
 ])
 
 const containerRef = ref(null)
@@ -154,6 +182,19 @@ const hoveredInteractiveObject = ref(null)
 const hoveredDoorWall = ref(null)
 const tooltipPos = ref({ x: 0, y: 0 })
 let animationFrameId = null
+
+// Planned Movement Path & Object Context Menu (2-click movement)
+const plannedPath = ref([])
+const selectedDestinationTile = ref(null)
+const activeContextMenu = ref(null)
+
+const plannedPathSet = computed(() => {
+	const set = new Set()
+	for (const p of plannedPath.value) {
+		set.add(`${p.x},${p.y}`)
+	}
+	return set
+})
 
 // Floating particles for weeding action
 const particles = ref([])
@@ -341,16 +382,40 @@ const staticRenderQueue = computed(() => {
 })
 
 const actionTooltip = computed(() => {
-	if (hoveredInteractiveObject.value && isPlayerNear(hoveredInteractiveObject.value)) {
+	if (activeContextMenu.value) return null
+
+	if (hoveredInteractiveObject.value) {
+		const obj = hoveredInteractiveObject.value
+		const isWeed = obj.action === 'weed' || obj.type === 'weed'
+		const name = obj.name || (isWeed ? 'Сорняк' : 'Объект')
+		const icon = obj.icon || (isWeed ? '🌿' : '📦')
 		return {
-			icon: hoveredInteractiveObject.value.action === 'weed' ? '✂️' : '✋',
-			text: hoveredInteractiveObject.value.action === 'weed' ? 'Прополоть сорняк' : 'Взаимодействовать'
+			icon,
+			text: name
 		}
 	}
-	if (hoveredDoorWall.value && isPlayerNear(hoveredDoorWall.value.tile)) {
+	if (hoveredDoorWall.value) {
+		const isNear = isPlayerNear(hoveredDoorWall.value.tile)
+		if (isNear) {
+			return {
+				icon: '🚪',
+				text: hoveredDoorWall.value.wall.open ? 'Закрыть дверь' : 'Открыть дверь'
+			}
+		}
 		return {
 			icon: '🚪',
-			text: hoveredDoorWall.value.wall.open ? 'Закрыть дверь' : 'Открыть дверь'
+			text: 'Дверь'
+		}
+	}
+	if (hoveredTile.value && props.locationData?.exits) {
+		const exit = props.locationData.exits.find(
+			(e) => e.trigger && e.trigger.x === hoveredTile.value.x && e.trigger.y === hoveredTile.value.y
+		)
+		if (exit) {
+			return {
+				icon: '🚪',
+				text: exit.label || 'Выход'
+			}
 		}
 	}
 	return null
@@ -460,6 +525,13 @@ watch(
 
 watch(
 	() => reachableTileSet.value,
+	() => {
+		requestRender()
+	}
+)
+
+watch(
+	() => plannedPathSet.value,
 	() => {
 		requestRender()
 	}
@@ -800,6 +872,7 @@ function onMouseMove(e) {
 		const newY = e.clientY - camera.value.dragStartY
 		if (Math.hypot(newX - camera.value.x, newY - camera.value.y) > 4) {
 			camera.value.hasMovedSinceDown = true
+			closeContextMenu()
 		}
 		camera.value.x = newX
 		camera.value.y = newY
@@ -864,7 +937,7 @@ function onMouseMove(e) {
 		}
 	}
 
-	// Check if hovering over an interactive object or door
+	// Check if hovering over an interactive object or door or exit
 	if (picked) {
 		const obj = objects.value.find(
 			(o) => o.x === picked.x && o.y === picked.y && o.interactive
@@ -883,12 +956,36 @@ function onMouseMove(e) {
 		}
 		hoveredDoorWall.value = doorFound
 
-		if (obj || doorFound) {
+		// Check exit on tile
+		const exitFound = (props.locationData?.exits || []).some(
+			(e) => e.trigger && e.trigger.x === picked.x && e.trigger.y === picked.y
+		)
+
+		if (obj || doorFound || exitFound) {
 			tooltipPos.value = { x: mouseX + 15, y: mouseY - 25 }
 		}
 	} else {
 		hoveredInteractiveObject.value = null
 		hoveredDoorWall.value = null
+	}
+}
+
+function closeContextMenu() {
+	activeContextMenu.value = null
+}
+
+function handleContextMenuAction(obj) {
+	closeContextMenu()
+	executeObjectAction(obj)
+}
+
+function checkExitTrigger() {
+	if (!props.locationData?.exits) return
+	const exit = props.locationData.exits.find(
+		(e) => e.trigger && e.trigger.x === player.value.x && e.trigger.y === player.value.y
+	)
+	if (exit) {
+		emit('exit-triggered', exit)
 	}
 }
 
@@ -922,12 +1019,31 @@ function onMouseUp(e) {
 		return
 	}
 
+	// If player is already on an exit tile and clicks it, trigger exit immediately
+	const exitOnTarget = (props.locationData?.exits || []).find(
+		(e) => e.trigger && e.trigger.x === target.x && e.trigger.y === target.y
+	)
+	if (
+		exitOnTarget &&
+		player.value.x === exitOnTarget.trigger.x &&
+		player.value.y === exitOnTarget.trigger.y
+	) {
+		closeContextMenu()
+		emit('exit-triggered', exitOnTarget)
+		return
+	}
+
 	// Check if clicked a door on target tile walls
 	if (target.walls) {
 		for (const edge of ['NW', 'NE', 'SW', 'SE']) {
 			const w = target.walls[edge]
 			if (w && w.door) {
 				if (isPlayerNear(target)) {
+					if (exitOnTarget) {
+						closeContextMenu()
+						emit('exit-triggered', exitOnTarget)
+						return
+					}
 					toggleDoor(w, target, edge)
 					return
 				}
@@ -942,10 +1058,34 @@ function onMouseUp(e) {
 
 	if (obj) {
 		if (isPlayerNear(obj)) {
-			executeObjectAction(obj)
+			// Player is near: open context menu!
+			plannedPath.value = []
+			selectedDestinationTile.value = null
+
+			const r = containerRef.value ? containerRef.value.getBoundingClientRect() : containerRect.value
+			const clickX = e.clientX - (r?.left || 0)
+			const clickY = e.clientY - (r?.top || 0)
+
+			// Clamp position within container boundaries
+			const viewW = r?.width || containerRef.value?.clientWidth || 800
+			const viewH = r?.height || containerRef.value?.clientHeight || 600
+			const menuW = 140
+			const menuH = 95
+			const posX = Math.min(Math.max(10, clickX), Math.max(10, viewW - menuW - 10))
+			const posY = Math.min(Math.max(10, clickY), Math.max(10, viewH - menuH - 10))
+
+			activeContextMenu.value = {
+				object: obj,
+				x: posX,
+				y: posY
+			}
+			requestRender()
 			return
 		}
-		// If not near, pathfind to adjacent cell
+
+		// If not near, player approaches object first with 2-click movement
+		closeContextMenu()
+
 		const adjacentTiles = tiles.value.filter(
 			(t) =>
 				isAdjacent(t, obj, false) &&
@@ -955,6 +1095,7 @@ function onMouseUp(e) {
 
 		if (adjacentTiles.length > 0) {
 			let bestPath = null
+			let bestAdj = null
 			for (const adj of adjacentTiles) {
 				const p = findPath({
 					start: { x: player.value.x, y: player.value.y, z: player.value.z },
@@ -965,42 +1106,99 @@ function onMouseUp(e) {
 				})
 				if (p && (!bestPath || p.length < bestPath.length)) {
 					bestPath = p
+					bestAdj = adj
 				}
 			}
-			if (bestPath) {
-				// In turn-based mode, ensure we have enough MP
-				if (props.movementMode === 'turn-based' && bestPath.length > currentMp.value) {
-					emit('action-failed', { reason: 'not_enough_mp' })
+			if (bestPath && bestPath.length > 0) {
+				const isSameTarget =
+					selectedDestinationTile.value &&
+					((selectedDestinationTile.value.targetType === 'object' && selectedDestinationTile.value.objectId === obj.id) ||
+						(selectedDestinationTile.value.x === bestAdj.x && selectedDestinationTile.value.y === bestAdj.y))
+
+				if (isSameTarget) {
+					// Second click: execute movement to adjacent tile (no auto-weed!)
+					if (props.movementMode === 'turn-based' && plannedPath.value.length > currentMp.value) {
+						emit('action-failed', { reason: 'not_enough_mp' })
+						return
+					}
+					const pathToWalk = plannedPath.value.length > 0 ? plannedPath.value : bestPath
+					selectedDestinationTile.value = null
+					plannedPath.value = []
+					movePlayerAlongPath(pathToWalk)
+					return
+				} else {
+					// First click: plan path to adjacent tile and highlight
+					selectedDestinationTile.value = {
+						x: bestAdj.x,
+						y: bestAdj.y,
+						z: bestAdj.z || 0,
+						targetType: 'object',
+						objectId: obj.id
+					}
+					plannedPath.value = bestPath
+					requestRender()
 					return
 				}
-				movePlayerAlongPath(bestPath, () => {
-					executeObjectAction(obj)
-				})
-				return
 			}
 		}
+		// If unreachable, clear
+		selectedDestinationTile.value = null
+		plannedPath.value = []
+		requestRender()
+		return
 	}
 
 	// Normal move to clicked tile
+	closeContextMenu()
+
 	const isReachable = reachableTiles.value.some(
 		(r) => r.x === target.x && r.y === target.y
 	)
 
 	if (isReachable) {
-		const path = findPath({
-			start: { x: player.value.x, y: player.value.y, z: player.value.z },
-			target,
-			tiles: tiles.value,
-			obstacles: objects.value,
-			maxClimbHeight: 1
-		})
-		if (path && path.length > 0) {
-			if (props.movementMode === 'turn-based' && path.length > currentMp.value) {
+		const isSameTarget =
+			selectedDestinationTile.value &&
+			selectedDestinationTile.value.x === target.x &&
+			selectedDestinationTile.value.y === target.y
+
+		if (isSameTarget) {
+			// Second click on same tile: execute movement!
+			if (props.movementMode === 'turn-based' && plannedPath.value.length > currentMp.value) {
 				emit('action-failed', { reason: 'not_enough_mp' })
 				return
 			}
-			movePlayerAlongPath(path)
+			const pathToWalk = plannedPath.value.length > 0 ? plannedPath.value : null
+			selectedDestinationTile.value = null
+			plannedPath.value = []
+			if (pathToWalk) {
+				movePlayerAlongPath(pathToWalk)
+			}
+			return
+		} else {
+			// First click: calculate path and highlight
+			const path = findPath({
+				start: { x: player.value.x, y: player.value.y, z: player.value.z },
+				target,
+				tiles: tiles.value,
+				obstacles: objects.value,
+				maxClimbHeight: 1
+			})
+			if (path && path.length > 0) {
+				selectedDestinationTile.value = {
+					x: target.x,
+					y: target.y,
+					z: target.z || 0,
+					targetType: 'tile'
+				}
+				plannedPath.value = path
+				requestRender()
+				return
+			}
 		}
+	} else {
+		selectedDestinationTile.value = null
+		plannedPath.value = []
+		requestRender()
 	}
 }
 
@@ -1048,6 +1246,7 @@ function onContextMenu(e) {
 }
 
 function onWheel(e) {
+	closeContextMenu()
 	const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9
 	const newZoom = Math.max(0.6, Math.min(3.0, camera.value.zoom * zoomFactor))
 
@@ -1128,6 +1327,7 @@ function movePlayerAlongPath(path, onComplete = null) {
 
 	player.value.isMoving = true
 	reachableTiles.value = []
+	closeContextMenu()
 	requestRender()
 
 	let currentStep = 0
@@ -1146,6 +1346,7 @@ function movePlayerAlongPath(path, onComplete = null) {
 				z: player.value.z,
 				stepsTaken: path.length
 			})
+			checkExitTrigger()
 			requestRender()
 			if (onComplete) onComplete()
 			return
@@ -1275,10 +1476,85 @@ function render() {
 		playerDrawn = true
 	}
 
+	// Render planned movement trail line and destination marker
+	if (plannedPath.value && plannedPath.value.length > 0 && !player.value.isMoving) {
+		drawPlannedPath(ctx, tileW, tileH, heightStep)
+	}
+
 	// Render Particles
 	drawParticles(ctx)
 
 	ctx.restore()
+	ctx.restore()
+}
+
+// Draw connecting trail line and destination marker for 2-click movement
+function drawPlannedPath(ctx, tileW, tileH, heightStep) {
+	const path = plannedPath.value
+	if (!path || path.length === 0) return
+
+	ctx.save()
+
+	// 1. Draw connecting dotted path line from player to each step
+	const pStart = gridToScreen(
+		player.value.x,
+		player.value.y,
+		player.value.z || 0,
+		0,
+		0,
+		tileW,
+		tileH,
+		heightStep
+	)
+
+	ctx.beginPath()
+	ctx.moveTo(pStart.x, pStart.y)
+	for (let i = 0; i < path.length; i++) {
+		const pt = gridToScreen(path[i].x, path[i].y, path[i].z || 0, 0, 0, tileW, tileH, heightStep)
+		ctx.lineTo(pt.x, pt.y)
+	}
+	ctx.strokeStyle = '#38bdf8'
+	ctx.lineWidth = 2
+	ctx.setLineDash([6, 4])
+	ctx.shadowColor = '#38bdf8'
+	ctx.shadowBlur = 5
+	ctx.stroke()
+	ctx.setLineDash([])
+	ctx.shadowBlur = 0
+
+	// 2. Intermediate step dots
+	for (let i = 0; i < path.length - 1; i++) {
+		const pt = gridToScreen(path[i].x, path[i].y, path[i].z || 0, 0, 0, tileW, tileH, heightStep)
+		ctx.beginPath()
+		ctx.arc(pt.x, pt.y, 2.5, 0, Math.PI * 2)
+		ctx.fillStyle = '#ffffff'
+		ctx.fill()
+	}
+
+	// 3. Destination target ring
+	const destPt = gridToScreen(
+		path[path.length - 1].x,
+		path[path.length - 1].y,
+		path[path.length - 1].z || 0,
+		0,
+		0,
+		tileW,
+		tileH,
+		heightStep
+	)
+	ctx.beginPath()
+	ctx.arc(destPt.x, destPt.y, 6, 0, Math.PI * 2)
+	ctx.fillStyle = 'rgba(56, 189, 248, 0.4)'
+	ctx.fill()
+	ctx.strokeStyle = '#ffffff'
+	ctx.lineWidth = 1.5
+	ctx.stroke()
+
+	ctx.beginPath()
+	ctx.arc(destPt.x, destPt.y, 2.5, 0, Math.PI * 2)
+	ctx.fillStyle = '#ffffff'
+	ctx.fill()
+
 	ctx.restore()
 }
 
@@ -1435,6 +1711,15 @@ function drawTile(ctx, tile, tileW, tileH, heightStep) {
 		} else if (tile.type === 'stone_wall') {
 			fillColor = '#3f4756'
 			strokeColor = '#2b313d'
+		} else if (tile.type === 'lava' || tile.type === 'fire') {
+			fillColor = '#ea580c'
+			strokeColor = '#c2410c'
+		} else if (tile.type === 'water') {
+			fillColor = '#0284c7'
+			strokeColor = '#0369a1'
+		} else if (tile.type === 'ice') {
+			fillColor = '#bae6fd'
+			strokeColor = '#7dd3fc'
 		}
 
 		// Height Tinting if enabled
@@ -1480,6 +1765,52 @@ function drawTile(ctx, tile, tileW, tileH, heightStep) {
 
 		ctx.strokeStyle = '#f6c445'
 		ctx.lineWidth = 1.5
+		ctx.stroke()
+	}
+
+	// Exit Marker on Tile (if tile is an exit trigger)
+	const isExitTile = (props.locationData?.exits || []).some(
+		(e) => e.trigger && e.trigger.x === tile.x && e.trigger.y === tile.y
+	)
+	if (isExitTile) {
+		ctx.fillStyle = 'rgba(234, 179, 8, 0.22)'
+		ctx.beginPath()
+		ctx.moveTo(poly[0].x, poly[0].y)
+		ctx.lineTo(poly[1].x, poly[1].y)
+		ctx.lineTo(poly[2].x, poly[2].y)
+		ctx.lineTo(poly[3].x, poly[3].y)
+		ctx.closePath()
+		ctx.fill()
+
+		ctx.strokeStyle = '#eab308'
+		ctx.lineWidth = 1.5
+		ctx.stroke()
+
+		ctx.font = '13px sans-serif'
+		ctx.textAlign = 'center'
+		ctx.textBaseline = 'middle'
+		ctx.fillText('🚪', center.x, center.y - 2)
+	}
+
+	// Planned Path Highlight (2-click movement preview)
+	const isPlannedStep = !player.value.isMoving && plannedPathSet.value.has(`${tile.x},${tile.y}`)
+	if (isPlannedStep) {
+		const isDestination =
+			selectedDestinationTile.value &&
+			selectedDestinationTile.value.x === tile.x &&
+			selectedDestinationTile.value.y === tile.y
+
+		ctx.fillStyle = isDestination ? 'rgba(56, 189, 248, 0.35)' : 'rgba(56, 189, 248, 0.2)'
+		ctx.beginPath()
+		ctx.moveTo(poly[0].x, poly[0].y)
+		ctx.lineTo(poly[1].x, poly[1].y)
+		ctx.lineTo(poly[2].x, poly[2].y)
+		ctx.lineTo(poly[3].x, poly[3].y)
+		ctx.closePath()
+		ctx.fill()
+
+		ctx.strokeStyle = isDestination ? '#ffffff' : '#38bdf8'
+		ctx.lineWidth = isDestination ? 2 : 1.2
 		ctx.stroke()
 	}
 
@@ -1781,11 +2112,21 @@ function drawActor(ctx, actor, tileW, tileH, heightStep) {
 	ctx.ellipse(0, 2, 16, 8, 0, 0, Math.PI * 2)
 	ctx.fill()
 
+	// Directional Facing Indicator
+	drawIsometricFacingIndicator(ctx, {
+		facing: actor.facing || 'SE',
+		team: 'ally',
+		isActive: false,
+		radius: 19,
+		yOffset: 2
+	})
+
 	// Actor Sprite / Icon
 	const actorSprite = resolveCharacterSprite(actor.id || 'char')
 	const hasSprite = actorSprite && actorSprite.complete && actorSprite.naturalWidth > 0
 
-	const isFlipped = actor.facing === 'NW' || actor.facing === 'SW'
+	// Направления спрайтов временно отключены: персонажи всегда смотрят в одну сторону
+	const isFlipped = false
 	if (isFlipped) {
 		ctx.scale(-1, 1)
 	}
@@ -1841,11 +2182,21 @@ function drawPlayer(ctx, p, tileW, tileH, heightStep) {
 	ctx.ellipse(0, 2, 16, 8, 0, 0, Math.PI * 2)
 	ctx.fill()
 
+	// Directional Facing Indicator
+	drawIsometricFacingIndicator(ctx, {
+		facing: player.value.facing || 'SE',
+		team: 'ally',
+		isActive: true,
+		radius: 19,
+		yOffset: 2
+	})
+
 	// Hero Sprite / Icon
 	const charSprite = resolveCharacterSprite(props.characterId || 'mc')
 	const hasSprite = charSprite && charSprite.complete && charSprite.naturalWidth > 0
 
-	const isFlipped = p.facing === 'NW' || p.facing === 'SW'
+	// Направления спрайтов временно отключены: персонажи всегда смотрят в одну сторону
+	const isFlipped = false
 	if (isFlipped) {
 		ctx.scale(-1, 1)
 	}
@@ -1926,6 +2277,19 @@ function handleResize() {
 }
 
 function onKeyDown(e) {
+	if (e.code === 'Escape') {
+		if (activeContextMenu.value) {
+			activeContextMenu.value = null
+			return
+		}
+		if (plannedPath.value.length > 0) {
+			plannedPath.value = []
+			selectedDestinationTile.value = null
+			requestRender()
+			return
+		}
+	}
+
 	if (e.code === 'Space' && !e.repeat) {
 		const target = e.target
 		if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return
@@ -2035,11 +2399,108 @@ onUnmounted(() => {
 @keyframes tooltip-pop {
 	from {
 		opacity: 0;
-		transform: scale(0.9);
+		transform: translate(-50%, -100%) scale(0.9);
+	}
+	to {
+		opacity: 1;
+		transform: translate(-50%, -100%) scale(1);
+	}
+}
+
+@keyframes context-menu-fade-in {
+	from {
+		opacity: 0;
+		transform: scale(0.95);
 	}
 	to {
 		opacity: 1;
 		transform: scale(1);
 	}
+}
+
+.iso-context-menu {
+	position: absolute;
+	transform-origin: top left;
+	background: rgba(14, 18, 26, 0.95);
+	border: 1px solid #e2c97e;
+	border-radius: 0.4em;
+	padding: 0.5em 0.7em;
+	display: flex;
+	flex-direction: column;
+	gap: 0.4em;
+	box-shadow: 0 0.3em 1em rgba(0, 0, 0, 0.7);
+	z-index: 25;
+	animation: context-menu-fade-in 0.12s ease-out;
+	min-width: 7.5em;
+	pointer-events: auto;
+}
+
+.iso-menu-header {
+	display: flex;
+	align-items: center;
+	gap: 0.35em;
+	border-bottom: 1px solid rgba(226, 201, 126, 0.3);
+	padding-bottom: 0.25em;
+}
+
+.iso-menu-icon {
+	font-size: 1em;
+}
+
+.iso-menu-title {
+	font-size: 0.85em;
+	color: #e2c97e;
+	font-weight: bold;
+	font-family: Kurale, sans-serif;
+	white-space: nowrap;
+}
+
+.iso-menu-actions {
+	display: flex;
+	flex-direction: column;
+	gap: 0.3em;
+}
+
+.iso-menu-btn {
+	background: rgba(40, 50, 70, 0.8);
+	color: #e2e8f0;
+	border: 1px solid rgba(255, 255, 255, 0.15);
+	border-radius: 0.3em;
+	padding: 0.3em 0.6em;
+	font-size: 0.8em;
+	font-family: Kurale, sans-serif;
+	cursor: pointer;
+	text-align: center;
+	transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.iso-menu-btn:hover {
+	background: rgba(56, 189, 248, 0.25);
+	border-color: #38bdf8;
+	color: #ffffff;
+}
+
+.iso-menu-btn-primary {
+	background: rgba(34, 197, 94, 0.25);
+	border-color: rgba(34, 197, 94, 0.5);
+	color: #86efac;
+}
+
+.iso-menu-btn-primary:hover {
+	background: rgba(34, 197, 94, 0.45);
+	border-color: #22c55e;
+	color: #ffffff;
+}
+
+.iso-menu-btn-cancel {
+	background: rgba(239, 68, 68, 0.15);
+	border-color: rgba(239, 68, 68, 0.35);
+	color: #fca5a5;
+}
+
+.iso-menu-btn-cancel:hover {
+	background: rgba(239, 68, 68, 0.35);
+	border-color: #ef4444;
+	color: #ffffff;
 }
 </style>

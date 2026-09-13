@@ -13,11 +13,11 @@
 
 		<!-- Sidebars -->
 		<SidebarLeft
-			v-if="!showVrLauncher && !showYggAuth && !showCharCreate && !showShutdownSequence && !isUiHidden && !showIsometricOverlay"
+			v-if="!showVrLauncher && !showYggAuth && !showCharCreate && !showShutdownSequence && !isUiHidden && !showIsometricOverlay && !showCombatOverlay"
 			:has-dialogue="hasDialogue"
 		/>
 		<SidebarRight
-			v-if="!showVrLauncher && !showYggAuth && !showCharCreate && !showShutdownSequence && !isUiHidden && !showIsometricOverlay"
+			v-if="!showVrLauncher && !showYggAuth && !showCharCreate && !showShutdownSequence && !isUiHidden && !showIsometricOverlay && !showCombatOverlay"
 			:is-helmet-equipped="isHelmetEquipped"
 			:has-dialogue="hasDialogue"
 			@open-vr="openVrFromSidebar"
@@ -28,8 +28,7 @@
 				ref="visualNovel"
 				:src="novelsrc"
 				@end="onEnd"
-
-
+				@global-data-changed="onGlobalDataChanged"
 				@ui-visibility-changed="onUiVisibilityChanged"
 				@ready="onVisualNovelReady"
 				@character-click="onCharacterClick"
@@ -156,9 +155,17 @@
 	<!-- Isometric Location Overlay -->
 	<IsometricGameOverlay
 		v-if="showIsometricOverlay"
+		ref="isometricOverlayRef"
 		:location-id="activeIsometricLocationId"
 		@exit="onIsometricExit"
 		@quest-completed="onIsometricQuestCompleted"
+	/>
+
+	<!-- Combat Overlay -->
+	<CombatOverlay
+		v-if="showCombatOverlay"
+		:encounter-id="activeCombatEncounterId"
+		@combat-end="onCombatEnd"
 	/>
 
 	<!-- Bottom hotbar -->
@@ -231,6 +238,7 @@ import YggdrasilCharacterCreation from '../components/game/vr/YggdrasilCharacter
 import ServerShutdownSequence from '../components/game/vr/ServerShutdownSequence.vue'
 import GameLoadingScreen from '../components/game/GameLoadingScreen.vue'
 import IsometricGameOverlay from '../components/game/IsometricGameOverlay.vue'
+import CombatOverlay from '../components/game/CombatOverlay.vue'
 import { useQuests } from '@/composables/useQuests'
 import { useEncyclopedia } from '@/composables/useEncyclopedia'
 import { useSavesStore } from '@/stores/saves'
@@ -287,6 +295,11 @@ const lastWorldScene = ref('mc_apartment')
 // Isometric overlay state
 const showIsometricOverlay = ref(false)
 const activeIsometricLocationId = ref('')
+const isometricOverlayRef = ref(null)
+
+// Combat overlay state
+const showCombatOverlay = ref(false)
+const activeCombatEncounterId = ref('')
 
 const {
 	menuVisible,
@@ -376,9 +389,18 @@ useRegisterModal('game-menu', menuVisible, () => {
 })
 
 useRegisterModal('isometric-overlay', showIsometricOverlay, () => {
-	onIsometricExit()
+	if (isometricOverlayRef.value?.showExitConfirm) {
+		isometricOverlayRef.value.cancelExit()
+	} else if (isometricOverlayRef.value?.requestExit) {
+		isometricOverlayRef.value.requestExit()
+	} else {
+		onIsometricExit()
+	}
 })
 
+useRegisterModal('combat-overlay', showCombatOverlay, () => {
+	// Escape during combat does nothing (combat must be resolved)
+})
 
 // Keep settingsStore map in sync with gameStore
 watch(() => gameStore.globalData?.currentMap, (newMap) => {
@@ -409,7 +431,12 @@ const novelsrc = computed(() => {
 	return `/data/story/${language}/start.json`
 })
 
-// UI visibility states from VisualNovel
+function onGlobalDataChanged(newGlobal) {
+	if (newGlobal && typeof newGlobal === 'object') {
+		gameStore.setGlobalData(newGlobal)
+	}
+}
+
 const vnUiVisibility = ref({})
 
 function onUiVisibilityChanged(newVisibility) {
@@ -492,20 +519,20 @@ const showNextTimeButton = computed(() => {
 })
 
 const showDateBadge = computed(() => {
-	const v = currentUiVisibility.value
 	const isNewWorld =
 		gameState.global?.calendarType === 'new_world' || gameState.global?.year === 0
 	if (isNewWorld) {
 		// В Новом Мире кнопка календаря скрыта (видна только в старом мире)
-		return v['date-badge'] === true && v['calendar-button'] === true
+		return false
 	}
+	const v = currentUiVisibility.value
 	if (v['date-badge'] !== undefined) return !!v['date-badge']
 	if (v['calendar-button'] !== undefined) return !!v['calendar-button']
 	return true
 })
 
 const showTopbar = computed(() => {
-	if (isUiHidden.value || showIsometricOverlay.value) return false
+	if (isUiHidden.value || showIsometricOverlay.value || showCombatOverlay.value) return false
 	const v = currentUiVisibility.value
 	if (v.all) return true
 	return !!(
@@ -517,7 +544,7 @@ const showTopbar = computed(() => {
 })
 
 const showHotbar = computed(() => {
-	if (showIsometricOverlay.value) return false
+	if (showIsometricOverlay.value || showCombatOverlay.value) return false
 	const v = currentUiVisibility.value
 	return !!(v.all || v.hotbar)
 })
@@ -663,6 +690,12 @@ function handleMapGoto(gotoPayload) {
 		modalStore.closeMap()
 		return
 	}
+	if (targetScene?.combat) {
+		activeCombatEncounterId.value = targetScene.combat
+		showCombatOverlay.value = true
+		modalStore.closeMap()
+		return
+	}
 
 	if (target && visualNovel.value?.goto) {
 		visualNovel.value.goto(target)
@@ -677,6 +710,10 @@ watch(
 		if (newScene?.isometric) {
 			activeIsometricLocationId.value = newScene.isometric
 			showIsometricOverlay.value = true
+		}
+		if (newScene?.combat) {
+			activeCombatEncounterId.value = newScene.combat
+			showCombatOverlay.value = true
 		}
 	},
 	{ deep: true }
@@ -709,6 +746,24 @@ function onIsometricQuestCompleted() {
 	questsManager.completeTask('chief_garden_quest', 'weed_task')
 }
 
+function onCombatEnd({ result }) {
+	// Store result in global state for story branching
+	const vnGlobal = visualNovel.value?.globalData?.value || visualNovel.value?.globalData
+	if (vnGlobal) vnGlobal.lastCombatResult = result
+	gameState.global.lastCombatResult = result
+
+	const encounterId = activeCombatEncounterId.value
+	showCombatOverlay.value = false
+	activeCombatEncounterId.value = ''
+
+	// Navigate to win/lose story label based on encounter id
+	const winLabel = `${encounterId}_win`
+	const loseLabel = `${encounterId}_lose`
+	const label = result === 'win' ? winLabel : loseLabel
+	if (visualNovel.value?.goto) {
+		visualNovel.value.goto(label)
+	}
+}
 
 import { audioService } from '@/services/audioService'
 
@@ -936,6 +991,9 @@ async function onLoadRequest(saveData) {
 				await new Promise((r) => setTimeout(r, 60))
 				try {
 					await visualNovel.value.restoreGameState(saveData.gameState)
+					if (visualNovel.value.globalData?.value) {
+						gameStore.setGlobalData(visualNovel.value.globalData.value)
+					}
 					await nextTick()
 					setTimeout(() => {
 						isGameLoading.value = false
@@ -1292,6 +1350,9 @@ onMounted(() => {
 					return
 				}
 				await visualNovel.value.restoreGameState(pending.gameState)
+				if (visualNovel.value.globalData?.value) {
+					gameStore.setGlobalData(visualNovel.value.globalData.value)
+				}
 				savesStore.takePendingLoad()
 				menuVisible.value = false
 				currentView.value = 'main-menu'

@@ -1,0 +1,25 @@
+﻿[
+	{ "label": "trigger_carne_bandits" },
+	{
+		"say": "narrator",
+		"text": "На дороге к деревне послышался шум. Из кустов появились вооружённые люди.",
+		"name": "Рассказчик"
+	},
+	{ "type": "scene", "target": "carne_bandits_combat" },
+
+	{ "label": "carne_bandits_win" },
+	{
+		"say": "narrator",
+		"text": "Бандиты повержены. Дорога снова свободна.",
+		"name": "Рассказчик"
+	},
+	{ "type": "scene", "target": "carne_village_entrance" },
+
+	{ "label": "carne_bandits_lose" },
+	{
+		"say": "narrator",
+		"text": "Силы иссякли... В глазах потемнело.",
+		"name": "Рассказчик"
+	},
+	{ "type": "scene", "target": "carne_village_entrance" }
+]

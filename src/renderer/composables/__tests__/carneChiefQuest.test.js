@@ -9,6 +9,8 @@ import schedulesData from '../../public/data/characters/schedules.json'
 import scenesData from '../../public/data/scenes/scenes.json'
 import menuStory from '../../public/data/story/ru/carne-chief/menu.json'
 import talkStory from '../../public/data/story/ru/carne-chief/talk.json'
+import chiefGardenJson from '../../data/isometric/tests/carne_chief_garden.json'
+import { normalizeLocationData } from '../../utils/isometric/isoLoader'
 
 describe('Carne Chief Weed Quest & Interaction', () => {
 	let scheduleManager
@@ -125,4 +127,93 @@ describe('Carne Chief Weed Quest & Interaction', () => {
 		expect(vn.isInDialogueMode.value).toBe(false)
 		expect(vn.isDialogueActive.value).toBe(false)
 	})
+
+	it('has exit tile configured at (0, -5, 0) targeting carne_chief_house', () => {
+		expect(chiefGardenJson.exits).toBeDefined()
+		const houseExit = chiefGardenJson.exits.find((e) => e.id === 'exit_to_house')
+		expect(houseExit).toBeDefined()
+		expect(houseExit.trigger).toEqual({ x: 0, y: -5, z: 0 })
+		expect(houseExit.target).toBe('carne_chief_house')
+
+		// Verify normalizeLocationData preserves the exit
+		const normalized = normalizeLocationData(chiefGardenJson)
+		expect(normalized.exits).toBeDefined()
+		const normExit = normalized.exits.find((e) => e.id === 'exit_to_house')
+		expect(normExit).toBeDefined()
+		expect(normExit.trigger).toEqual({ x: 0, y: -5, z: 0 })
+	})
+
+	it('talk_turn_in undiscovers carne_chief_garden and hides garden hotspots', () => {
+		const undiscoverStep = talkStory.steps.find(
+			(s) => (s.type === 'undiscover-location' || s.action === 'remove') && s.location === 'carne_chief_garden'
+		)
+		expect(undiscoverStep).toBeDefined()
+		expect(undiscoverStep.map).toBe('carne')
+
+		const hideHouseHotspot = talkStory.steps.find(
+			(s) => s.type === 'hide-hotspot' && s.scene === 'carne_chief_house' && s.id === 'to_chief_garden'
+		)
+		expect(hideHouseHotspot).toBeDefined()
+
+		const hideSquareHotspot = talkStory.steps.find(
+			(s) => s.type === 'hide-hotspot' && s.scene === 'carne_village_square' && s.id === 'to_chief_garden'
+		)
+		expect(hideSquareHotspot).toBeDefined()
+
+		// Verify scenes.json conditions
+		const houseScene = scenesData.scenes.find((s) => s.id === 'carne_chief_house')
+		const houseGardenHotspot = houseScene.hotspots.find((h) => h.id === 'to_chief_garden')
+		expect(houseGardenHotspot.condition).toContain('!global.chief_quest_rewarded')
+
+		const squareScene = scenesData.scenes.find((s) => s.id === 'carne_village_square')
+		const squareGardenHotspot = squareScene.hotspots.find((h) => h.id === 'to_chief_garden')
+		expect(squareGardenHotspot.condition).toContain('!global.chief_quest_rewarded')
+	})
+
+	it('undiscoverLocation removes location from globalData.discoveredLocations', () => {
+		const vn = useVisualNovel({ src: '/data/story/ru/start.json' })
+		vn.discoverLocation('carne', 'carne_chief_garden')
+		expect(vn.globalData.value.discoveredLocations.carne).toContain('carne_chief_garden')
+
+		vn.undiscoverLocation('carne', 'carne_chief_garden')
+		expect(vn.globalData.value.discoveredLocations.carne).not.toContain('carne_chief_garden')
+	})
+
+	it('IsometricGameOverlay contains exit confirmation dialog logic', async () => {
+		const fs = await import('fs')
+		const path = await import('path')
+		const overlayPath = path.resolve(__dirname, '../../components/game/IsometricGameOverlay.vue')
+		const overlayContent = fs.readFileSync(overlayPath, 'utf-8')
+
+		expect(overlayContent).toContain('showExitConfirm')
+		expect(overlayContent).toContain('requestExit')
+		expect(overlayContent).toContain('confirmExit')
+		expect(overlayContent).toContain('cancelExit')
+		expect(overlayContent).toContain('Покинуть локацию?')
+	})
+
+	it('IsoCanvas positions context menu at click location without jump animation', async () => {
+		const fs = await import('fs')
+		const path = await import('path')
+		const canvasPath = path.resolve(__dirname, '../../components/game/isometric/IsoCanvas.vue')
+		const canvasContent = fs.readFileSync(canvasPath, 'utf-8')
+
+		expect(canvasContent).toContain('activeContextMenu.value = {')
+		expect(canvasContent).toContain('clickX = e.clientX - (r?.left || 0)')
+		expect(canvasContent).toContain('clickY = e.clientY - (r?.top || 0)')
+		expect(canvasContent).toContain('context-menu-fade-in')
+		expect(canvasContent).toContain('transform-origin: top left')
+	})
+
+	it('IsoCanvas displays object name in actionTooltip on hover', async () => {
+		const fs = await import('fs')
+		const path = await import('path')
+		const canvasPath = path.resolve(__dirname, '../../components/game/isometric/IsoCanvas.vue')
+		const canvasContent = fs.readFileSync(canvasPath, 'utf-8')
+
+		expect(canvasContent).toContain('hoveredInteractiveObject.value')
+		expect(canvasContent).toContain("const name = obj.name || (isWeed ? 'Сорняк' : 'Объект')")
+		expect(canvasContent).toContain('text: name')
+	})
 })
+
