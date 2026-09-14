@@ -25,6 +25,7 @@
 * [Система распорядка дня и присутствия NPC (NPC Schedule & Presence)](./systems/NPCScheduleSystem.md)
 * [Изометрические локации и тактическая система (Isometric 2.5D System)](./systems/IsometricSystem.md)
 * [Пошаговая боевая система (Turn-Based Combat System)](./systems/CombatSystem.md)
+* [Редактор данных и управление локализацией (Data Editor & Localization System)](./systems/DataEditorSystem.md)
 
 ## 🤖 Разработка и Агенты
 * [Руководство для ИИ-агентов и правила адаптивной верстки (AGENTS.md)](../AGENTS.md)

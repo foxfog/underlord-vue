@@ -1,37 +1,785 @@
 [
-	{
-		"id": "sceleton",
-		"name": "Скелет",
-		"points-per-lvl": {
-			"hp": 3,
-			"mp": 2,
-			"attack": 1,
-			"defense": 1
-		}
-	},
-	{
-		"id": "overlord",
-		"name": "Повелитель",
-		"points-per-lvl": {
-			"hp": 5,
-			"mp": 5,
-			"attack": 1,
-			"defense": 1
-		}
-	},
-	{
-		"id": "human",
-		"name": "Человек",
-		"tags": ["humanoid"],
-		"baffes": {
-			"attack": "2%",
-			"defense": "2%"
-		},
-		"points-per-lvl": {
-			"hp": 1,
-			"mp": 1,
-			"attack": 1,
-			"defense": 1
-		}
-	}
+  {
+    "id": "human",
+    "name": "Человек",
+    "icon": "👤",
+    "parent_id": null,
+    "category": "humanoid",
+    "tags": [
+      "human",
+      "mortal"
+    ],
+    "lvl_min": 1,
+    "description": "Базовая раса Иггдрасиля и Нового Мира. Не имеет расовых уровней, только классовые (Job).",
+    "baffes": {
+      "attack": "2%",
+      "defense": "2%"
+    },
+    "points-per-lvl": {
+      "hp": 1,
+      "mp": 1,
+      "attack": 1,
+      "defense": 1
+    }
+  },
+  {
+    "id": "half-elf",
+    "name": "Полуэльф",
+    "icon": "🧝",
+    "parent_id": null,
+    "category": "humanoid",
+    "tags": [
+      "half-elf"
+    ],
+    "lvl_min": 1,
+    "description": "Потомки союза человека и эльфа, сочетающие черты обеих рас."
+  },
+  {
+    "id": "elf",
+    "name": "Эльф",
+    "icon": "🧝",
+    "parent_id": null,
+    "category": "humanoid",
+    "tags": [
+      "elf"
+    ],
+    "lvl_min": 1,
+    "description": "Живут в лесах (например, Великий Лес Тов). Враждуют с Теократией Слейн."
+  },
+  {
+    "id": "dark-elf",
+    "name": "Тёмный эльф",
+    "icon": "🧝",
+    "parent_id": null,
+    "category": "humanoid",
+    "tags": [
+      "elf",
+      "dark-elf"
+    ],
+    "lvl_min": 1,
+    "description": "Разновидность эльфов с тёмной кожей. Близнецы Аура и Маре принадлежат к этой расе."
+  },
+  {
+    "id": "dwarf",
+    "name": "Дварф",
+    "icon": "🧔",
+    "parent_id": null,
+    "category": "humanoid",
+    "tags": [
+      "dwarf"
+    ],
+    "lvl_min": 1,
+    "description": "Живут под землёй (Горы Азерлисия). Известны кузнечным делом и рунной магией."
+  },
+  {
+    "id": "dark-dwarf",
+    "name": "Темный дварф",
+    "icon": "🧔",
+    "parent_id": null,
+    "category": "humanoid",
+    "tags": [
+      "dwarf",
+      "dark-dwarf"
+    ],
+    "lvl_min": 1,
+    "description": "Подземные сородичи дварфов, живущие в глубоких шахтах и пещерах."
+  },
+  {
+    "id": "goblin",
+    "name": "Гоблин",
+    "icon": "👺",
+    "parent_id": null,
+    "category": "demi-human",
+    "tags": [
+      "goblin"
+    ],
+    "lvl_min": 1,
+    "description": "Слабые полулюди, часто объединяются в стаи. Армия Энри состоит из них."
+  },
+  {
+    "id": "hobgoblin",
+    "name": "Хобгоблин",
+    "icon": "👺",
+    "parent_id": "goblin",
+    "category": "demi-human",
+    "tags": [
+      "goblin",
+      "hobgoblin"
+    ],
+    "lvl_min": 5,
+    "description": "Усиленная эволюция гоблинов. Крупнее, сильнее и дисциплинированнее."
+  },
+  {
+    "id": "orc",
+    "name": "Орк",
+    "icon": "🐗",
+    "parent_id": null,
+    "category": "demi-human",
+    "tags": [
+      "orc"
+    ],
+    "lvl_min": 1,
+    "description": "Воинственные полулюди, известные своей прожорливостью."
+  },
+  {
+    "id": "ogre",
+    "name": "Огр",
+    "icon": "👹",
+    "parent_id": null,
+    "category": "demi-human",
+    "tags": [
+      "ogre_kin"
+    ],
+    "lvl_min": 1,
+    "description": "Крупные и физически сильные полулюди с низким интеллектом."
+  },
+  {
+    "id": "merrow",
+    "name": "Мэрроу",
+    "icon": "👹",
+    "parent_id": null,
+    "category": "demi-human",
+    "tags": [
+      "ogre_kin"
+    ],
+    "lvl_min": 1,
+    "description": "Разновидность огров, обитающая вблизи водоёмов."
+  },
+  {
+    "id": "troll",
+    "name": "Тролль",
+    "icon": "🧌",
+    "parent_id": null,
+    "category": "demi-human",
+    "tags": [
+      "troll"
+    ],
+    "lvl_min": 1,
+    "description": "Обладают мощной регенерацией. Слабы к огню и кислоте."
+  },
+  {
+    "id": "scrag",
+    "name": "Скраг",
+    "icon": "🧌",
+    "parent_id": "troll",
+    "category": "demi-human",
+    "tags": [
+      "troll"
+    ],
+    "lvl_min": 1,
+    "description": "Водные тролли с повышенной живучестью в сырой среде."
+  },
+  {
+    "id": "beastman",
+    "name": "Зверолюд",
+    "icon": "🐺",
+    "parent_id": null,
+    "category": "demi-human",
+    "tags": [
+      "beastman"
+    ],
+    "lvl_min": 1,
+    "description": "Зверолюди. В Новом Мире создали мощные государства, враждующие с людьми."
+  },
+  {
+    "id": "lizardman",
+    "name": "Людоящер",
+    "icon": "🦎",
+    "parent_id": null,
+    "category": "demi-human",
+    "tags": [
+      "reptilian",
+      "lizardman",
+      "beastman"
+    ],
+    "lvl_min": 1,
+    "description": "Гордые воины-рептилии из болот. Объединены Коцитом под властью Назарика."
+  },
+  {
+    "id": "quagoa",
+    "name": "Квагоа",
+    "icon": "🦔",
+    "parent_id": null,
+    "category": "demi-human",
+    "tags": [
+      "quagoa",
+      "beastman"
+    ],
+    "lvl_min": 1,
+    "description": "Кротоподобные полулюди из гор Азерлисия. Едят руду, чтобы укреплять шкуру."
+  },
+  {
+    "id": "minotaur",
+    "name": "Минотавр",
+    "icon": "🐂",
+    "parent_id": null,
+    "category": "demi-human",
+    "tags": [
+      "beastman",
+      "minotaur"
+    ],
+    "lvl_min": 1,
+    "description": "Быкоподобные полулюди. В Новом Мире создали нацию благодаря Минотавру-Мудрецу."
+  },
+  {
+    "id": "centaur",
+    "name": "Кентавр",
+    "icon": "🐎",
+    "parent_id": null,
+    "category": "demi-human",
+    "tags": [
+      "beastman",
+      "centaur"
+    ],
+    "lvl_min": 1,
+    "description": "Полулюди с телом лошади и торсом человека."
+  },
+  {
+    "id": "naga",
+    "name": "Нага",
+    "icon": "🐍",
+    "parent_id": null,
+    "category": "demi-human",
+    "tags": [
+      "reptilian",
+      "naga"
+    ],
+    "lvl_min": 1,
+    "description": "Змеелюди. Часто обладают магическими способностями."
+  },
+  {
+    "id": "armot",
+    "name": "Армот",
+    "icon": "🐀",
+    "parent_id": null,
+    "category": "demi-human",
+    "tags": [
+      "beastman"
+    ],
+    "lvl_min": 1,
+    "description": "Армоты описаны как двуногие крысоподобные существа с прочной, как железо, шерстью."
+  },
+  {
+    "id": "skeleton",
+    "name": "Скелет",
+    "icon": "🦴",
+    "parent_id": null,
+    "category": "heteromorphic",
+    "tags": [
+      "undead",
+      "skeleton"
+    ],
+    "lvl_min": 1,
+    "description": "Базовая скелетная нежить, невосприимчивая к ядам и колющему урону."
+  },
+  {
+    "id": "skeleton-archer",
+    "name": "Скелет-лучник",
+    "icon": "🏹",
+    "parent_id": "skeleton",
+    "category": "heteromorphic",
+    "tags": [
+      "undead",
+      "skeleton"
+    ],
+    "lvl_min": 1,
+    "description": "Скелет, специализированный на стрельбе из лука."
+  },
+  {
+    "id": "skeleton-warrior",
+    "name": "Скелет-воин",
+    "icon": "⚔️",
+    "parent_id": "skeleton",
+    "category": "heteromorphic",
+    "tags": [
+      "undead",
+      "skeleton"
+    ],
+    "lvl_min": 1,
+    "description": "Скелет, владеющий оружием ближнего боя и щитом."
+  },
+  {
+    "id": "skeleton-mage",
+    "name": "Скелет-маг",
+    "icon": "🔮",
+    "parent_id": "skeleton",
+    "category": "heteromorphic",
+    "tags": [
+      "undead",
+      "skeleton"
+    ],
+    "lvl_min": 1,
+    "description": "Базовая нежить-заклинатель (15 уровней)."
+  },
+  {
+    "id": "lich",
+    "name": "Лич",
+    "icon": "💀",
+    "parent_id": "skeleton-mage",
+    "category": "heteromorphic",
+    "tags": [
+      "undead",
+      "skeleton",
+      "lich"
+    ],
+    "lvl_min": 1,
+    "description": "Продвинутая нежить-заклинатель."
+  },
+  {
+    "id": "elder-lich",
+    "name": "Старший лич",
+    "icon": "☠️",
+    "parent_id": "lich",
+    "category": "heteromorphic",
+    "tags": [
+      "undead",
+      "skeleton",
+      "lich"
+    ],
+    "lvl_min": 10,
+    "description": "Старший лич. Высшая нежить, специализирующаяся на магии (10 уровней)."
+  },
+  {
+    "id": "night-lich",
+    "name": "Ночной лич",
+    "icon": "🌌",
+    "parent_id": "elder-lich",
+    "category": "heteromorphic",
+    "tags": [
+      "undead",
+      "skeleton",
+      "lich"
+    ],
+    "lvl_min": 1,
+    "description": "Уникальная эволюция в Новом Мире (организация «Тело Бездны»). Могут использовать магию 6+ тира."
+  },
+  {
+    "id": "overlord",
+    "name": "Повелитель",
+    "icon": "👑",
+    "parent_id": "elder-lich",
+    "category": "heteromorphic",
+    "tags": [
+      "undead",
+      "skeleton",
+      "lich"
+    ],
+    "lvl_min": 10,
+    "description": "Высшая форма нежити. Мощнейшие заклинатели, правители смерти (5 уровней). Раса Аинза."
+  },
+  {
+    "id": "zombie",
+    "name": "Зомби",
+    "icon": "🧟",
+    "parent_id": null,
+    "category": "heteromorphic",
+    "tags": [
+      "undead"
+    ],
+    "lvl_min": 1,
+    "description": "Оживший мертвец с медлительными движениями и выносливым телом."
+  },
+  {
+    "id": "ghoul",
+    "name": "Упырь",
+    "icon": "🧟‍♂️",
+    "parent_id": "zombie",
+    "category": "heteromorphic",
+    "tags": [
+      "undead"
+    ],
+    "lvl_min": 1,
+    "description": "Быстрая плотоядная нежить с парализующими когтями."
+  },
+  {
+    "id": "vampire",
+    "name": "Вампир",
+    "icon": "🧛",
+    "parent_id": null,
+    "category": "heteromorphic",
+    "tags": [
+      "undead",
+      "vampire"
+    ],
+    "lvl_min": 1,
+    "description": "Нежить, питающаяся кровью. Имеют множество иммунитетов, но уязвимы к свету/серебру."
+  },
+  {
+    "id": "true-vampire",
+    "name": "Истинный вампир",
+    "icon": "🩸",
+    "parent_id": "vampire",
+    "category": "heteromorphic",
+    "tags": [
+      "undead",
+      "vampire",
+      "true_vampire"
+    ],
+    "lvl_min": 1,
+    "description": "Истинный вампир. Высшая ступень эволюции. Раса Шалтир Бладфоллен."
+  },
+  {
+    "id": "imp",
+    "name": "Бес",
+    "icon": "😈",
+    "parent_id": null,
+    "category": "heteromorphic",
+    "tags": [
+      "planarextra",
+      "fiend",
+      "infernal",
+      "imp"
+    ],
+    "lvl_min": 1,
+    "description": "Низший демон. Базовая раса для большинства обитателей Пылающего Ада."
+  },
+  {
+    "id": "archdevil",
+    "name": "Высший демон",
+    "icon": "👿",
+    "parent_id": "imp",
+    "category": "heteromorphic",
+    "tags": [
+      "planarextra",
+      "fiend",
+      "infernal",
+      "imp",
+      "devil",
+      "archdevil"
+    ],
+    "lvl_min": 1,
+    "description": "Высший дьявол. Командиры демонических легионов."
+  },
+  {
+    "id": "succubus",
+    "name": "Суккуб",
+    "icon": "🖤",
+    "parent_id": "imp",
+    "category": "heteromorphic",
+    "tags": [
+      "planarextra",
+      "fiend",
+      "infernal",
+      "imp"
+    ],
+    "lvl_min": 1,
+    "description": "Демоны искушения. Альбедо принадлежит к этой расе."
+  },
+  {
+    "id": "angel",
+    "name": "Ангел",
+    "icon": "🪽",
+    "parent_id": null,
+    "category": "heteromorphic",
+    "tags": [
+      "planarextra",
+      "celestial",
+      "third_sphere"
+    ],
+    "lvl_min": 1,
+    "description": "Небесные создания. Часто призываются Слейнской Теократией."
+  },
+  {
+    "id": "angel-guardian",
+    "name": "Ангел-хранитель",
+    "icon": "🛡️",
+    "parent_id": "angel",
+    "category": "heteromorphic",
+    "tags": [
+      "planarextra",
+      "celestial",
+      "third_sphere"
+    ],
+    "lvl_min": 10,
+    "description": "Ангел Третьей Сферы. Базовый страж с щитом и мечом, обеспечивающий прикрытие. Призыв 2-го тира."
+  },
+  {
+    "id": "archangel-flame",
+    "name": "Архангел Огня",
+    "icon": "🔥",
+    "parent_id": "angel-guardian",
+    "category": "heteromorphic",
+    "tags": [
+      "planarextra",
+      "celestial",
+      "third_sphere",
+      "archangel"
+    ],
+    "lvl_min": 15,
+    "description": "Ангел Третьей Сферы. Боевой ангел с пылающим мечом. Основная сила Писания Солнечного Света. Призыв 3-го тира."
+  },
+  {
+    "id": "principality-observation",
+    "name": "Князь Наблюдения",
+    "icon": "👁️",
+    "parent_id": "archangel-flame",
+    "category": "heteromorphic",
+    "tags": [
+      "planarextra",
+      "celestial",
+      "third_sphere",
+      "principality"
+    ],
+    "lvl_min": 25,
+    "description": "Ангел Третьей Сферы (Начала). Оснащен щитом, специализируется на разведке и защите. Призыв среднего ранга (4-й тир)."
+  },
+  {
+    "id": "principality-peace",
+    "name": "Князь Мира",
+    "icon": "🕊️",
+    "parent_id": "archangel-flame",
+    "category": "heteromorphic",
+    "tags": [
+      "planarextra",
+      "celestial",
+      "third_sphere",
+      "principality"
+    ],
+    "lvl_min": 25,
+    "description": "Ангел Третьей Сферы (Начала). Поддерживающий ангел с исцеляющими аурами и баффами. Призыв среднего ранга (4-й тир)."
+  },
+  {
+    "id": "dominion-authority",
+    "name": "Доминион Власти",
+    "icon": "📜",
+    "parent_id": null,
+    "category": "heteromorphic",
+    "tags": [
+      "planarextra",
+      "celestial",
+      "second_sphere",
+      "dominion"
+    ],
+    "lvl_min": 45,
+    "description": "Ангел Второй Сферы (Господства). Бестелесный лик из крыльев со скрижалью. Призыв 7-го тира (козырь Слейнской Теократии)."
+  },
+  {
+    "id": "cherubim-gatekeeper",
+    "name": "Херувимский Привратник",
+    "icon": "⚔️",
+    "parent_id": "dominion-authority",
+    "category": "heteromorphic",
+    "tags": [
+      "planarextra",
+      "celestial",
+      "first_sphere",
+      "cherubim"
+    ],
+    "lvl_min": 80,
+    "description": "Ангел Первой Сферы. Элитный страж Назарика с огромным щитом и копьем. Призыв 10-го тира (80 ур.)."
+  },
+  {
+    "id": "seraph",
+    "name": "Серафим",
+    "icon": "🌟",
+    "parent_id": "cherubim-gatekeeper",
+    "category": "heteromorphic",
+    "tags": [
+      "planarextra",
+      "celestial",
+      "first_sphere",
+      "seraph"
+    ],
+    "lvl_min": 90,
+    "description": "Серафим — высший ангел. В Иггдрасиле существовали высокоуровневые серафимы-боссы."
+  },
+  {
+    "id": "seraph-empyrean",
+    "name": "Серафим неземной",
+    "icon": "✨",
+    "parent_id": "seraph",
+    "category": "heteromorphic",
+    "tags": [
+      "planarextra",
+      "celestial",
+      "first_sphere",
+      "seraph"
+    ],
+    "lvl_min": 90,
+    "description": "Ангел Первой Сферы. Высший чин, обладающий колоссальной святой защитой и магией. Сверхтировый ранг призыва (100 ур.)."
+  },
+  {
+    "id": "seraph-aerosphere",
+    "name": "Серафим Эсфера",
+    "icon": "💫",
+    "parent_id": "seraph",
+    "category": "heteromorphic",
+    "tags": [
+      "planarextra",
+      "celestial",
+      "first_sphere",
+      "seraph"
+    ],
+    "lvl_min": 90,
+    "description": "Ангел Первой Сферы. Высокоуровневый боевой серафим в сияющих доспехах. Призыв высшего ранга (10-й тир / 90+ ур.)."
+  },
+  {
+    "id": "slime",
+    "name": "Слайм",
+    "icon": "🧪",
+    "parent_id": null,
+    "category": "heteromorphic",
+    "tags": [
+      "slime",
+      "amorphous"
+    ],
+    "lvl_min": 1,
+    "description": "Базовая аморфная раса (15 уровней). Неуязвимы к критическим ударам."
+  },
+  {
+    "id": "black-ooze",
+    "name": "Чёрная тина",
+    "icon": "🖤",
+    "parent_id": "slime",
+    "category": "heteromorphic",
+    "tags": [
+      "slime",
+      "amorphous"
+    ],
+    "lvl_min": 1,
+    "description": "Продвинутая слизь с высокой кислотностью."
+  },
+  {
+    "id": "elder-black-ooze",
+    "name": "Старшая чёрная тина",
+    "icon": "☣️",
+    "parent_id": "black-ooze",
+    "category": "heteromorphic",
+    "tags": [
+      "slime",
+      "amorphous"
+    ],
+    "lvl_min": 1,
+    "description": "Мощнейшая кислотная слизь (10 уровней). Способна растворять эквипировку."
+  },
+  {
+    "id": "shoggoth",
+    "name": "Шоггот",
+    "icon": "👁️",
+    "parent_id": "slime",
+    "category": "heteromorphic",
+    "tags": [
+      "slime",
+      "amorphous",
+      "shoggoth"
+    ],
+    "lvl_min": 1,
+    "description": "Ужасающая аморфная масса из лавкрафтианских мифов (10 уровней)."
+  },
+  {
+    "id": "ubbo-sathla",
+    "name": "Уббо-Сатла",
+    "icon": "🌌",
+    "parent_id": "shoggoth",
+    "category": "heteromorphic",
+    "tags": [
+      "slime",
+      "amorphous",
+      "ubbo_sathla"
+    ],
+    "lvl_min": 1,
+    "description": "Божественный аморфный прародитель (5 уровней). Высшая форма расы Хэрохэро."
+  },
+  {
+    "id": "insectoid",
+    "name": "Инсектоид",
+    "icon": "🦗",
+    "parent_id": null,
+    "category": "heteromorphic",
+    "tags": [
+      "insectoid"
+    ],
+    "lvl_min": 1,
+    "description": "Насекомоподобные гетероморфы. Раса Коцита и Энтомы."
+  },
+  {
+    "id": "doppelganger",
+    "name": "Доппельгангер",
+    "icon": "🎭",
+    "parent_id": null,
+    "category": "heteromorphic",
+    "tags": [
+      "shapeshifter"
+    ],
+    "lvl_min": 1,
+    "description": "Меняющие форму. Могут копировать внешность и навыки. Раса Актёра Пандоры и Нарберал."
+  },
+  {
+    "id": "dragonoid",
+    "name": "Драконид",
+    "icon": "🐉👤",
+    "parent_id": null,
+    "category": "heteromorphic",
+    "tags": [
+      "dragon_kin"
+    ],
+    "lvl_min": 1,
+    "description": "Дракониды. Гуманоиды с чертами дракона. Раса Себаса Тиана."
+  },
+  {
+    "id": "frost-dragon",
+    "name": "Морозный дракон",
+    "icon": "🐉❄️",
+    "parent_id": null,
+    "category": "heteromorphic",
+    "tags": [
+      "dragon_kin",
+      "dragon"
+    ],
+    "lvl_min": 1,
+    "description": "Вид драконов, обитающих в холодном климате гор Азерлисия. К этому виду относится Хеджинмал."
+  },
+  {
+    "id": "fire-dragon",
+    "name": "Огненный дракон",
+    "icon": "🐉🔥",
+    "parent_id": null,
+    "category": "heteromorphic",
+    "tags": [
+      "dragon_kin",
+      "dragon"
+    ],
+    "lvl_min": 1,
+    "description": "Классические свирепые драконы, управляющие стихией огня."
+  },
+  {
+    "id": "true-dragon-lord",
+    "name": "Истинный Лорд Драконов",
+    "icon": "🐉✨",
+    "parent_id": null,
+    "category": "heteromorphic",
+    "tags": [
+      "dragon_kin",
+      "dragon"
+    ],
+    "lvl_min": 1,
+    "description": "Высшие сущности Нового Мира. Единственные, кто может использовать первозданную Дикую Магию, как Платиновый Лорд Драконов."
+  },
+  {
+    "id": "automaton",
+    "name": "Автоматон",
+    "icon": "🤖",
+    "parent_id": null,
+    "category": "heteromorphic",
+    "tags": [
+      "construct",
+      "artificial"
+    ],
+    "lvl_min": 1,
+    "description": "Искусственные конструкты. Не нуждаются в еде и сне. Раса Сизу Дельты (CZ2128)."
+  },
+  {
+    "id": "homunculus",
+    "name": "Гомункул",
+    "icon": "🧪",
+    "parent_id": null,
+    "category": "heteromorphic",
+    "tags": [
+      "construct",
+      "artificial",
+      "homunculus"
+    ],
+    "lvl_min": 1,
+    "description": "Искусственные создания, сотворённые с помощью алхимии. Относятся к гетероморфам. Раса большинства обычных горничных Назарика."
+  }
 ]

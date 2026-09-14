@@ -1,0 +1,238 @@
+{
+  "human": {
+    "name": "Human",
+    "description": "Basic race of Yggdrasil and the New World. Possesses no racial levels, only job levels."
+  },
+  "half-elf": {
+    "name": "Half-Elf",
+    "description": "Descendants of humans and elves, blending characteristics of both lineages."
+  },
+  "elf": {
+    "name": "Elf",
+    "description": "Dwellers of deep woodlands such as the Great Forest of Tob. In conflict with the Slane Theocracy."
+  },
+  "dark-elf": {
+    "name": "Dark Elf",
+    "description": "Dark-skinned variant of elves. Aura and Mare Bella Fiora belong to this race."
+  },
+  "dwarf": {
+    "name": "Dwarf",
+    "description": "Subterranean folk inhabiting the Azerlisia Mountains. Renowned for smithing and rune crafting."
+  },
+  "dark-dwarf": {
+    "name": "Dark Dwarf",
+    "description": "Subterranean kin of dwarves dwelling in the deepest cavernous shafts."
+  },
+  "goblin": {
+    "name": "Goblin",
+    "description": "Frail demi-humans prone to swarming. Enri Emmot commands an army of them."
+  },
+  "hobgoblin": {
+    "name": "Hobgoblin",
+    "description": "Enhanced goblin evolution: physically larger, stronger, and more disciplined."
+  },
+  "orc": {
+    "name": "Orc",
+    "description": "Warlike demi-humans renowned for their ferocious gluttony and combat pride."
+  },
+  "ogre": {
+    "name": "Ogre",
+    "description": "Bulky, physically imposing demi-humans with limited intellect."
+  },
+  "merrow": {
+    "name": "Merrow",
+    "description": "Ogre-kin variant dwelling along aquatic wetlands and coastal margins."
+  },
+  "troll": {
+    "name": "Troll",
+    "description": "Creatures endowed with rapid flesh regeneration, vulnerable to flame and acid."
+  },
+  "scrag": {
+    "name": "Scrag",
+    "description": "Aquatic troll variant boasting superior resilience in moist environments."
+  },
+  "beastman": {
+    "name": "Beastman",
+    "description": "Beastfolk who established formidable nations in the New World rivaling human kingdoms."
+  },
+  "lizardman": {
+    "name": "Lizardman",
+    "description": "Proud reptilian marshland warriors unified under Cocytus and the rule of Nazarick."
+  },
+  "quagoa": {
+    "name": "Quagoa",
+    "description": "Mole-like demi-humans from the Azerlisia range that consume ore to temper their hides."
+  },
+  "minotaur": {
+    "name": "Minotaur",
+    "description": "Bovine demi-humans who advanced civilization under the guidance of the Minotaur Sage."
+  },
+  "centaur": {
+    "name": "Centaur",
+    "description": "Noble half-human, half-equine wanderers possessing swift overland speed."
+  },
+  "naga": {
+    "name": "Naga",
+    "description": "Serpentine demi-humans frequently displaying innate magical talents."
+  },
+  "armot": {
+    "name": "Armot",
+    "description": "Bipedal rodent-like creatures coated with iron-hard bristle coats."
+  },
+  "skeleton": {
+    "name": "Skeleton",
+    "description": "Animated skeletal frame immune to poison, biological afflictions, and piercing blows."
+  },
+  "skeleton-archer": {
+    "name": "Skeleton Archer",
+    "description": "Skeletal combatant specialized in long-range bowmanship."
+  },
+  "skeleton-warrior": {
+    "name": "Skeleton Warrior",
+    "description": "Armed skeletal soldier proficient with sword, axe, and shield in frontline melee."
+  },
+  "skeleton-mage": {
+    "name": "Skeleton Mage",
+    "description": "Basic skeletal spellcaster race (up to 15 levels)."
+  },
+  "lich": {
+    "name": "Lich",
+    "description": "Advanced undead spellcaster wielding potent necromantic arcana."
+  },
+  "elder-lich": {
+    "name": "Elder Lich",
+    "description": "High-tier undead scholar specializing in deeper spellcraft (up to 10 levels)."
+  },
+  "night-lich": {
+    "name": "Night Lich",
+    "description": "Unique New World evolution (Corpus of the Abyss). Capable of casting 6th-tier+ magic."
+  },
+  "overlord": {
+    "name": "Overlord",
+    "description": "Apex of undead skeletal evolution. Supreme masters of death and magic (5 levels). Race of Ainz."
+  },
+  "zombie": {
+    "name": "Zombie",
+    "description": "Reanimated cadaver characterized by shambling tenacity and blunt resilience."
+  },
+  "ghoul": {
+    "name": "Ghoul",
+    "description": "Swift carnivorous undead equipped with paralyzing claws."
+  },
+  "vampire": {
+    "name": "Vampire",
+    "description": "Blood-drinking undead with multifaceted immunities, weak to sunlight and silver."
+  },
+  "true-vampire": {
+    "name": "True Vampire",
+    "description": "True Vampire. The zenith of vampiric evolution. Race of Shalltear Bloodfallen."
+  },
+  "imp": {
+    "name": "Imp",
+    "description": "Lesser demon representing the foundational race of the Burning Hells."
+  },
+  "archdevil": {
+    "name": "Archdevil",
+    "description": "High archfiend commanding demonic legions and abyssal forces."
+  },
+  "succubus": {
+    "name": "Succubus",
+    "description": "Demonic temptress skilled in charm, mental barriers, and unarmed combat. Race of Albedo."
+  },
+  "angel": {
+    "name": "Angel",
+    "description": "Celestial entities frequently summoned through the holy rituals of the Slane Theocracy."
+  },
+  "angel-guardian": {
+    "name": "Angel Guardian",
+    "description": "Third Sphere celestial guard armed with sword and shield to protect allies (2nd tier)."
+  },
+  "archangel-flame": {
+    "name": "Archangel of Flame",
+    "description": "Third Sphere warrior angel with a flaming sword. Core offensive unit of the Sunlight Scripture (3rd tier)."
+  },
+  "principality-observation": {
+    "name": "Principality of Observation",
+    "description": "Third Sphere Principality angel specialized in aerial reconnaissance and barrier warding (4th tier)."
+  },
+  "principality-peace": {
+    "name": "Principality of Peace",
+    "description": "Third Sphere Principality angel providing healing auras and restorative blessing buffs (4th tier)."
+  },
+  "dominion-authority": {
+    "name": "Dominion Authority",
+    "description": "Second Sphere winged disembodied visage holding a holy tablet (7th tier Slane trump card)."
+  },
+  "cherubim-gatekeeper": {
+    "name": "Cherubim Gatekeeper",
+    "description": "First Sphere elite Nazarick sentinel with a massive tower shield and holy spear (80th level, 10th tier)."
+  },
+  "seraph": {
+    "name": "Seraph",
+    "description": "Highest order celestial seraphim. High-level raid bosses in Yggdrasil."
+  },
+  "seraph-empyrean": {
+    "name": "Seraph Empyrean",
+    "description": "First Sphere pinnacle angel commanding monumental holy aegis and divine radiance (100th level super-tier)."
+  },
+  "seraph-aerosphere": {
+    "name": "Seraph Aerosphere",
+    "description": "First Sphere martial seraph encased in luminous armor (90+ level high-tier celestial)."
+  },
+  "slime": {
+    "name": "Slime",
+    "description": "Basic amorphous creature (15 levels). Completely immune to critical strikes and piercing."
+  },
+  "black-ooze": {
+    "name": "Black Ooze",
+    "description": "Advanced corrosive slime variant secreting concentrated acid."
+  },
+  "elder-black-ooze": {
+    "name": "Elder Black Ooze",
+    "description": "Devastating acidic ooze (10 levels) capable of instantly dissolving durable equipment."
+  },
+  "shoggoth": {
+    "name": "Shoggoth",
+    "description": "Terrifying eldritch amorphous entity inspired by Lovecraftian lore (10 levels)."
+  },
+  "ubbo-sathla": {
+    "name": "Ubbo-Sathla",
+    "description": "Divine primordial slime demiurge (5 levels). Supreme evolutionary race of Herohero."
+  },
+  "insectoid": {
+    "name": "Insectoid",
+    "description": "Insectoid heteromorphs with exoskeleton carapaces. Race of Cocytus and Entoma."
+  },
+  "doppelganger": {
+    "name": "Doppelgänger",
+    "description": "Shapeshifters capable of replicating appearance and skillsets. Race of Pandora's Actor and Narberal."
+  },
+  "dragonoid": {
+    "name": "Dragonoid",
+    "description": "Humanoid beings bearing noble draconic traits and immense fortitude. Race of Sebas Tian."
+  },
+  "frost-dragon": {
+    "name": "Frost Dragon",
+    "description": "Draconic species adapted to the sub-zero peaks of the Azerlisia range. Race of Hejinmal."
+  },
+  "fire-dragon": {
+    "name": "Fire Dragon",
+    "description": "Classic ferocious dragons commanding destructive elemental infernos."
+  },
+  "true-dragon-lord": {
+    "name": "True Dragon Lord",
+    "description": "Supreme entities of the New World wielders of primordial Wild Magic, such as the Platinum Dragon Lord."
+  },
+  "automaton": {
+    "name": "Automaton",
+    "description": "Artificial clockwork constructs free from hunger, fatigue, and sleep. Race of CZ2128 Delta."
+  },
+  "homunculus": {
+    "name": "Homunculus",
+    "description": "Artificial beings created through advanced alchemy. Race of the standard Pleiades and Nazarick maid staff."
+  },
+  "sceleton": {
+    "name": "Skeleton",
+    "description": "Animated skeletal frame immune to poison, biological afflictions, and piercing blows."
+  }
+}

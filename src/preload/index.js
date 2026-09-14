@@ -16,7 +16,17 @@ const api = {
 		ipcRenderer.invoke('save-game', slotNumber, saveFile, clipRect),
 	loadGame: (slotNumber) => ipcRenderer.invoke('load-game', slotNumber),
 	listSaves: () => ipcRenderer.invoke('list-saves'),
-	deleteSave: (slotNumber) => ipcRenderer.invoke('delete-save', slotNumber)
+	deleteSave: (slotNumber) => ipcRenderer.invoke('delete-save', slotNumber),
+	// Data Editor IPC
+	dataEditor: {
+		getInfo: () => ipcRenderer.invoke('data-editor-get-info'),
+		readFile: (relPath) => ipcRenderer.invoke('data-editor-read-file', relPath),
+		writeFile: (relPath, data) => ipcRenderer.invoke('data-editor-write-file', relPath, data),
+		deleteFile: (relPath) => ipcRenderer.invoke('data-editor-delete-file', relPath),
+		copyLocale: (params) => ipcRenderer.invoke('data-editor-copy-locale', params),
+		listLocales: () => ipcRenderer.invoke('data-editor-list-locales'),
+		deleteLocale: (lang) => ipcRenderer.invoke('data-editor-delete-locale', lang)
+	}
 }
 
 if (process.contextIsolated) {

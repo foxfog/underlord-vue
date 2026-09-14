@@ -1,362 +1,126 @@
-[
-  {
-    "id": "re-estize",
+{
+  "re-estize": {
     "name": "Королевство Ре-Эстиз",
-    "icon": "👑",
-    "type": "nation",
-    "parent_id": null,
-    "tags": [
-      "nation",
-      "kingdom",
-      "re-estize"
-    ],
     "description": "Феодальное человеческое королевство, раздираемое внутренними конфликтами дворянства и королевской власти."
   },
-  {
-    "id": "king-faction",
+  "king-faction": {
     "name": "Фракция короля",
-    "icon": "🤴",
-    "type": "faction",
-    "parent_id": "re-estize",
-    "tags": [
-      "faction",
-      "re-estize",
-      "royalty"
-    ],
     "description": "Сторонники короля Рампосы III и принца Занака, борющиеся за централизацию власти."
   },
-  {
-    "id": "royal-nobles",
+  "royal-nobles": {
     "name": "Высшие дворяне",
-    "icon": "🏛️",
-    "type": "faction",
-    "parent_id": "re-estize",
-    "tags": [
-      "faction",
-      "re-estize",
-      "nobles"
-    ],
     "description": "Могущественная коалиция знатных лордов Королевства Ре-Эстиз, отстаивающая свои феодальные привилегии."
   },
-  {
-    "id": "baharuth",
+  "baharuth": {
     "name": "Империя Бахарут",
-    "icon": "🦅",
-    "type": "nation",
-    "parent_id": null,
-    "tags": [
-      "nation",
-      "empire",
-      "baharuth"
-    ],
     "description": "Милитаризованная империя под властью Кровавого Императора Зиркнифа, обладающая мощной профессиональной армией."
   },
-  {
-    "id": "roble",
+  "roble": {
     "name": "Святое Королевство Робл",
-    "icon": "🕊️",
-    "type": "nation",
-    "parent_id": null,
-    "tags": [
-      "nation",
-      "kingdom",
-      "holy"
-    ],
     "description": "Религиозное государство, защищённое Великой Стеной от постоянных набегов полулюдей с Холмов."
   },
-  {
-    "id": "slane-theocracy",
+  "slane-theocracy": {
     "name": "Слейновская Теократия",
-    "icon": "☀️",
-    "type": "religious",
-    "parent_id": null,
-    "tags": [
-      "religious",
-      "theocracy",
-      "humanity"
-    ],
     "description": "Старейшее оплот человечества, почитающее Шестерых Великих Богов и ведущее войну против иных рас."
   },
-  {
-    "id": "black-scripture",
+  "black-scripture": {
     "name": "Черное писание",
-    "icon": "🖤",
-    "type": "guild",
-    "parent_id": "slane-theocracy",
-    "tags": [
-      "special-forces",
-      "scripture",
-      "god-kin"
-    ],
     "description": "Сильнейший тайный отряд Слейнской Теократии, состоящий из полубогов (Богорождённых) героев."
   },
-  {
-    "id": "agrand-council",
+  "agrand-council": {
     "name": "Союз Агранд",
-    "icon": "🐉",
-    "type": "nation",
-    "parent_id": null,
-    "tags": [
-      "nation",
-      "dragons",
-      "council"
-    ],
     "description": "Союз государств под предводительством совета древних Драконьих Лордов."
   },
-  {
-    "id": "dragon-kingdom",
+  "dragon-kingdom": {
     "name": "Драконье Королевство",
-    "icon": "🐲",
-    "type": "nation",
-    "parent_id": null,
-    "tags": [
-      "nation",
-      "kingdom",
-      "dragon"
-    ],
     "description": "Южное королевство, возглавляемое потомком Драконьего Лорда, постоянно страдающее от вторжений зверолюдей."
   },
-  {
-    "id": "dwarven-kingdom",
+  "dwarven-kingdom": {
     "name": "Королевство гномов",
-    "icon": "⚒️",
-    "type": "nation",
-    "parent_id": null,
-    "tags": [
-      "nation",
-      "dwarf",
-      "subterranean"
-    ],
     "description": "Подземное государство мастеров-дварфов в горах Азерлисия, славящееся добычей руд и рунной магией."
   },
-  {
-    "id": "ainz-ooal-gown",
+  "ainz-ooal-gown": {
     "name": "Аинз Оал Гоун",
-    "icon": "⚔️",
-    "type": "guild",
-    "parent_id": null,
-    "tags": [
-      "guild",
-      "yggdrasil",
-      "supreme-beings"
-    ],
     "description": "Легендарная гильдия Иггдрасиля, объединившая 41 Высшее Существо под предводительством Момонги."
   },
-  {
-    "id": "nazarick",
+  "nazarick": {
     "name": "Великая Гробница Назарик",
-    "icon": "🏰",
-    "type": "stronghold",
-    "parent_id": "ainz-ooal-gown",
-    "tags": [
-      "dungeon",
-      "headquarters",
-      "sacred"
-    ],
     "description": "Неприступная подземная база гильдии из 10 этажей, населённая преданными НИП и монстрами."
   },
-  {
-    "id": "sorcerer-kingdom",
+  "sorcerer-kingdom": {
     "name": "Колдовское Королевство",
-    "icon": "👑",
-    "type": "nation",
-    "parent_id": "ainz-ooal-gown",
-    "tags": [
-      "nation",
-      "kingdom",
-      "overlord"
-    ],
     "description": "Суверенное государство со столицей в Э-Рантgroups, основанное Королём-Заклинателем Аинзом Оал Гоуном."
   },
-  {
-    "id": "floor-guardians",
+  "floor-guardians": {
     "name": "Стражи этажей",
-    "icon": "🛡️",
-    "type": "guild",
-    "parent_id": "nazarick",
-    "tags": [
-      "guardians",
-      "commanders",
-      "nazarick"
-    ],
     "description": "Верховные командующие обороной этажей Великой Гробницы Назарик под началом Смотрителя Альбедо."
   },
-  {
-    "id": "pleiades",
+  "pleiades": {
     "name": "Плеяды",
-    "icon": "💫",
-    "type": "guild",
-    "parent_id": "nazarick",
-    "tags": [
-      "battle-maids",
-      "nazarick"
-    ],
     "description": "Отряд боевых горничных Назарика, выполняющих особые боевые и дипломатические поручения."
   },
-  {
-    "id": "shalltear-faction",
+  "shalltear-faction": {
     "name": "Фракция Шалтир",
-    "icon": "🩸",
-    "type": "clan",
-    "parent_id": "floor-guardians",
-    "tags": [
-      "undead",
-      "vampires",
-      "nazarick"
-    ],
     "description": "Слуги и приспешники Истинного Вампира Шалтир Бладфоллен на первых трёх этажах Назарика."
   },
-  {
-    "id": "albedo-faction",
+  "albedo-faction": {
     "name": "Фракция Альбедо",
-    "icon": "🖤",
-    "type": "clan",
-    "parent_id": "floor-guardians",
-    "tags": [
-      "demons",
-      "overseer",
-      "nazarick"
-    ],
     "description": "Административное крыло и доверенные слуги Смотрителя Стражей Альбедо."
   },
-  {
-    "id": "adventurers",
+  "adventurers": {
     "name": "Авантюристы",
-    "icon": "🧭",
-    "type": "guild",
-    "parent_id": null,
-    "tags": [
-      "guild",
-      "monsters",
-      "contracts"
-    ],
     "description": "Международная гильдия наёмников-защитников, принимающая контракты на охоту на монстров."
   },
-  {
-    "id": "workers",
+  "workers": {
     "name": "Работники",
-    "icon": "💼",
-    "type": "guild",
-    "parent_id": null,
-    "tags": [
-      "mercenary",
-      "underground"
-    ],
     "description": "Вольные наёмники вне юрисдикции Гильдии Авантюристов, готовые браться за любую незаконную работу."
   },
-  {
-    "id": "eight-fingers",
+  "eight-fingers": {
     "name": "Восемь Пальцев",
-    "icon": "🖐️",
-    "type": "clan",
-    "parent_id": null,
-    "tags": [
-      "syndicate",
-      "criminal",
-      "underworld"
-    ],
     "description": "Могущественный теневой преступный синдикат Королевства Ре-Эстиз из 8 отделов."
   },
-  {
-    "id": "six-arms",
+  "six-arms": {
     "name": "Шесть рук",
-    "icon": "⚔️",
-    "type": "clan",
-    "parent_id": "eight-fingers",
-    "tags": [
-      "syndicate",
-      "security",
-      "enforcers"
-    ],
     "description": "Элитное силовое подразделение синдиката Восемь Пальцев, состоящее из сильнейших бойцов подземного мира."
   },
-  {
-    "id": "blue-rose",
+  "blue-rose": {
     "name": "Синяя Роза",
-    "icon": "🌹",
-    "type": "guild",
-    "parent_id": "adventurers",
-    "tags": [
-      "adamantite",
-      "adventurers",
-      "all-female"
-    ],
     "description": "Адамантитовая команда авантюристов Королевства Ре-Эстиз во главе с Лакиус."
   },
-  {
-    "id": "swords-of-darkness",
+  "swords-of-darkness": {
     "name": "Меч тьмы",
-    "icon": "🗡️",
-    "parent_id": "adventurers",
-    "tags": [
-      "adventurers",
-      "silver-rank"
-    ],
     "description": "Молодая серебряная группа авантюристов, сопровождавшая Момона в деревню Карн."
   },
-  {
-    "id": "darkness",
+  "darkness": {
     "name": "Тьма",
-    "icon": "🌑",
-    "type": "guild",
-    "parent_id": "adventurers",
-    "tags": [
-      "adamantite",
-      "momon",
-      "legend"
-    ],
     "description": "Легендарная адамантитовая пара авантюристов — тёмный рыцарь Момон и прекрасная воительница Набе."
   },
-  {
-    "id": "zuranon",
+  "zuranon": {
     "name": "Зуранон",
-    "icon": "💀",
-    "type": "religious",
-    "parent_id": null,
-    "tags": [
-      "cult",
-      "undead",
-      "evil"
-    ],
     "description": "Зловещий тайный культ некромантов, стремящийся погрузить мир в смерть."
   },
-  {
-    "id": "great-tribe",
+  "great-tribe": {
     "name": "Большое племя",
-    "icon": "🦎",
-    "type": "clan",
-    "parent_id": null,
-    "tags": [
-      "tribal",
-      "lizardman",
-      "alliance"
-    ],
     "description": "Объединение пяти племён людоящеров болот перед угрозой Назарика."
   },
-  {
-    "id": "green-claw",
+  "green-claw": {
     "name": "Зеленый коготь",
-    "icon": "🦎",
-    "type": "clan",
-    "parent_id": "great-tribe",
-    "tags": [
-      "lizardman",
-      "clan",
-      "zaryusu"
-    ],
     "description": "Одно из сильнейших племён людоящеров, родина Зариуса Шаши."
   },
-  {
-    "id": "demi-human-alliance",
+  "demi-human-alliance": {
     "name": "Альянс полулюдей",
-    "icon": "🐺",
-    "type": "clan",
-    "parent_id": null,
-    "tags": [
-      "demi-human",
-      "horde",
-      "hills"
-    ],
     "description": "Коалиция свирепых племён полулюдей с Абельонских Холмов, вторгшаяся в Святое Королевство."
+  },
+  "pnines-own-goal": {
+    "name": "Аинз Оал Гоун",
+    "description": "Легендарная гильдия Иггдрасиля, объединившая 41 Высшее Существо под предводительством Момонги."
+  },
+  "nazaric": {
+    "name": "Великая Гробница Назарик",
+    "description": "Неприступная подземная база гильдии из 10 этажей, населённая преданными НИП и монстрами."
+  },
+  "carne-village": {
+    "name": "Деревня Карн",
+    "description": "Сельское пограничное поселение на окраине Великого Леса Тоб, находящееся под покровительством Назарика."
   }
-]
+}

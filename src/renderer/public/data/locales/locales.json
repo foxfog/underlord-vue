@@ -1,0 +1,13 @@
+[
+  {
+    "code": "ru",
+    "label": "Русский",
+    "flag": "🇷🇺",
+    "isDefault": true
+  },
+  {
+    "code": "en",
+    "label": "English",
+    "flag": "🇬🇧"
+  }
+]

@@ -1,0 +1,126 @@
+{
+  "re-estize": {
+    "name": "Re-Estize Kingdom",
+    "description": "Feudal human kingdom troubled by friction between nobility and the royal crown."
+  },
+  "king-faction": {
+    "name": "King's Faction",
+    "description": "Loyalists supporting King Ramposa III and Prince Zanac to centralize royal power."
+  },
+  "royal-nobles": {
+    "name": "High Nobles",
+    "description": "Powerful aristocratic coalition fighting to defend their feudal privileges."
+  },
+  "baharuth": {
+    "name": "Baharuth Empire",
+    "description": "Militarized empire ruled by the Bloody Emperor Jircniv with a standing army."
+  },
+  "roble": {
+    "name": "Roble Holy Kingdom",
+    "description": "Deeply religious nation shielded by the Great Wall from demi-human incursions."
+  },
+  "slane-theocracy": {
+    "name": "Slane Theocracy",
+    "description": "Ancient human bastion venerating the Six Great Gods in holy wars."
+  },
+  "black-scripture": {
+    "name": "Black Scripture",
+    "description": "Elite secret division of the Theocracy comprising legendary God-kin."
+  },
+  "agrand-council": {
+    "name": "Agrand Council Alliance",
+    "description": "Council of allied nations presided over by elder Dragon Lords."
+  },
+  "dragon-kingdom": {
+    "name": "Dragon Kingdom",
+    "description": "Southern realm led by a Dragon Lord scion under threat of beastman hordes."
+  },
+  "dwarven-kingdom": {
+    "name": "Dwarven Kingdom",
+    "description": "Subterranean dwarven realm within the Azerlisia range famed for runecraft."
+  },
+  "ainz-ooal-gown": {
+    "name": "Ainz Ooal Gown",
+    "description": "Legendary Yggdrasil guild uniting 41 Supreme Beings under Momonga."
+  },
+  "nazarick": {
+    "name": "Great Tomb of Nazarick",
+    "description": "Impregnable 10-floor guild stronghold populated by faithful NPCs and monsters."
+  },
+  "sorcerer-kingdom": {
+    "name": "Sorcerer Kingdom",
+    "description": "Sovereign nation with capital E-Rantel founded by the Sorcerer King Ainz Ooal Gown."
+  },
+  "floor-guardians": {
+    "name": "Floor Guardians",
+    "description": "Supreme defensive commanders of the Great Tomb of Nazarick led by Albedo."
+  },
+  "pleiades": {
+    "name": "Pleiades",
+    "description": "Squad of combat battle maids undertaking special martial and covert duties."
+  },
+  "shalltear-faction": {
+    "name": "Shalltear Faction",
+    "description": "Minions and vampire thralls under True Vampire Shalltear on floors 1-3."
+  },
+  "albedo-faction": {
+    "name": "Albedo Faction",
+    "description": "Administrative staff and trusted subordinates of Guardian Overseer Albedo."
+  },
+  "adventurers": {
+    "name": "Adventurers",
+    "description": "International guild of monster hunters accepting public defense contracts."
+  },
+  "workers": {
+    "name": "Workers",
+    "description": "Independent mercenaries operating outside guild laws to undertake illicit jobs."
+  },
+  "eight-fingers": {
+    "name": "Eight Fingers",
+    "description": "Underworld crime syndicate pulling the strings of the Re-Estize Kingdom."
+  },
+  "six-arms": {
+    "name": "Six Arms",
+    "description": "Elite enforcer division of Eight Fingers composed of deadly underground martial artists."
+  },
+  "blue-rose": {
+    "name": "Blue Rose",
+    "description": "All-female adamantine-rank adventurer party led by Lakyus in Re-Estize."
+  },
+  "swords-of-darkness": {
+    "name": "Swords of Darkness",
+    "description": "Promising silver-ranked adventurer group that escorted Momon to Carne."
+  },
+  "darkness": {
+    "name": "Darkness",
+    "description": "Legendary adamantine duo featuring dark warrior Momon and beautiful spellcaster Nabe."
+  },
+  "zuranon": {
+    "name": "Zuranon",
+    "description": "Sinister secret death cult of necromancers seeking to shroud the world in demise."
+  },
+  "great-tribe": {
+    "name": "Great Tribe",
+    "description": "Confederation of five lizardman marshland tribes united against Nazarick."
+  },
+  "green-claw": {
+    "name": "Green Claw",
+    "description": "One of the prominent lizardman clans and homeland of Zaryusu Shasha."
+  },
+  "demi-human-alliance": {
+    "name": "Demi-Human Alliance",
+    "description": "Host of ferocious Abelion Hill tribes invading the Holy Kingdom."
+  },
+  "pnines-own-goal": {
+    "name": "Ainz Ooal Gown",
+    "description": "Legendary Yggdrasil guild uniting 41 Supreme Beings under Momonga."
+  },
+  "nazaric": {
+    "name": "Great Tomb of Nazarick",
+    "description": "Impregnable 10-floor guild stronghold populated by faithful NPCs and monsters."
+  },
+  "carne-village": {
+    "name": "Carne Village",
+    "description": "Frontier agricultural settlement on the border of the Great Forest of Tob under the protection of Nazarick."
+  }
+}

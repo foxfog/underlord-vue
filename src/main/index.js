@@ -280,6 +280,280 @@ ipcMain.handle('delete-save', async (_event, slotNumber) => {
 	}
 })
 
+// ==========================================
+// IPC для Редактора данных (Data Editor)
+// ==========================================
+function getDataDirectory() {
+	return is.dev
+		? join(__dirname, '../../src/renderer/public/data')
+		: join(process.resourcesPath, 'app', 'out', 'renderer', 'data')
+}
+
+ipcMain.handle('data-editor-get-info', async () => {
+	const dir = getDataDirectory()
+	return { basePath: dir, isDev: is.dev }
+})
+
+ipcMain.handle('data-editor-read-file', async (_event, relativePath) => {
+	try {
+		const baseDir = getDataDirectory()
+		const filePath = join(baseDir, relativePath)
+		const content = await fs.readFile(filePath, 'utf-8')
+		return { success: true, data: JSON.parse(content), path: filePath }
+	} catch (error) {
+		if (error.code === 'ENOENT') {
+			return { success: false, notFound: true, error: 'Файл не найден' }
+		}
+		console.error(`⛔ Ошибка при чтении файла данных ${relativePath}:`, error)
+		return { success: false, error: error.message }
+	}
+})
+
+ipcMain.handle('data-editor-write-file', async (_event, relativePath, data) => {
+	try {
+		const baseDir = getDataDirectory()
+		const filePath = join(baseDir, relativePath)
+		const dir = join(filePath, '..')
+		await fs.mkdir(dir, { recursive: true })
+		const content = typeof data === 'string' ? data : JSON.stringify(data, null, 2)
+		await fs.writeFile(filePath, content, 'utf-8')
+		console.log(`✔ Файл данных сохранён: ${filePath}`)
+		return { success: true, path: filePath }
+	} catch (error) {
+		console.error(`⛔ Ошибка при записи файла данных ${relativePath}:`, error)
+		return { success: false, error: error.message }
+	}
+})
+
+ipcMain.handle('data-editor-delete-file', async (_event, relativePath) => {
+	try {
+		const baseDir = getDataDirectory()
+		const filePath = join(baseDir, relativePath)
+		await fs.unlink(filePath)
+		console.log(`✔ Файл данных удалён: ${filePath}`)
+		return { success: true, path: filePath }
+	} catch (error) {
+		console.error(`⛔ Ошибка при удалении файла данных ${relativePath}:`, error)
+		return { success: false, error: error.message }
+	}
+})
+
+ipcMain.handle('data-editor-copy-locale', async (_event, params) => {
+	try {
+		const {
+			sourceLang = 'ru',
+			targetLang,
+			targetLabel,
+			targetFlag,
+			copyEntities = true,
+			copyStory = true
+		} = params || {}
+
+		const cleanTarget = String(targetLang || '').trim().toLowerCase()
+		if (!cleanTarget) throw new Error('Код языка не указан')
+		if (!/^[a-z]{2,5}(-[a-z0-9]+)?$/i.test(cleanTarget)) {
+			throw new Error('Код языка должен состоять из 2-5 латинских букв (например: de, ja, zh)')
+		}
+
+		const baseDir = getDataDirectory()
+		let copiedEntitiesCount = 0
+		let copiedStoryCount = 0
+
+		// 1. Copy Entity Locales (locales/{source} -> locales/{target})
+		if (copyEntities) {
+			const sourceLocaleDir = join(baseDir, 'locales', sourceLang)
+			const targetLocaleDir = join(baseDir, 'locales', cleanTarget)
+			await fs.mkdir(targetLocaleDir, { recursive: true })
+
+			try {
+				const entries = await fs.readdir(sourceLocaleDir, { withFileTypes: true })
+				for (const entry of entries) {
+					if (entry.isFile() && entry.name.endsWith('.json') && entry.name !== 'locales.json') {
+						const srcFile = join(sourceLocaleDir, entry.name)
+						const destFile = join(targetLocaleDir, entry.name)
+						await fs.copyFile(srcFile, destFile)
+						copiedEntitiesCount++
+					}
+				}
+			} catch (err) {
+				console.warn(`[data-editor-copy-locale] Ошибка копирования словарей сущностей:`, err)
+			}
+		}
+
+		// 2. Copy Story Scenarios (story/{source} -> story/{target})
+		if (copyStory) {
+			const sourceStoryDir = join(baseDir, 'story', sourceLang)
+			const targetStoryDir = join(baseDir, 'story', cleanTarget)
+
+			async function copyDirRecursive(src, dest) {
+				await fs.mkdir(dest, { recursive: true })
+				const entries = await fs.readdir(src, { withFileTypes: true })
+				let count = 0
+				for (const entry of entries) {
+					const srcPath = join(src, entry.name)
+					const destPath = join(dest, entry.name)
+					if (entry.isDirectory()) {
+						count += await copyDirRecursive(srcPath, destPath)
+					} else if (entry.isFile()) {
+						await fs.copyFile(srcPath, destPath)
+						count++
+					}
+				}
+				return count
+			}
+
+			try {
+				const stat = await fs.stat(sourceStoryDir)
+				if (stat.isDirectory()) {
+					copiedStoryCount = await copyDirRecursive(sourceStoryDir, targetStoryDir)
+				}
+			} catch (err) {
+				console.warn(`[data-editor-copy-locale] Исходная папка сценариев не найдена: ${sourceStoryDir}`)
+			}
+		}
+
+		// 3. Update locales/locales.json
+		const registryPath = join(baseDir, 'locales', 'locales.json')
+		let localesRegistry = []
+		try {
+			const regContent = await fs.readFile(registryPath, 'utf-8')
+			localesRegistry = JSON.parse(regContent)
+			if (!Array.isArray(localesRegistry)) localesRegistry = []
+		} catch {
+			localesRegistry = [
+				{ code: 'ru', label: 'Русский', flag: '🇷🇺', isDefault: true },
+				{ code: 'en', label: 'English', flag: '🇬🇧' }
+			]
+		}
+
+		const existingIdx = localesRegistry.findIndex((l) => l.code === cleanTarget)
+		const newLocaleItem = {
+			code: cleanTarget,
+			label: String(targetLabel || cleanTarget.toUpperCase()).trim(),
+			flag: String(targetFlag || '🌐').trim()
+		}
+
+		if (existingIdx >= 0) {
+			localesRegistry[existingIdx] = { ...localesRegistry[existingIdx], ...newLocaleItem }
+		} else {
+			localesRegistry.push(newLocaleItem)
+		}
+
+		await fs.writeFile(registryPath, JSON.stringify(localesRegistry, null, 2), 'utf-8')
+		console.log(`✔ Локализация «${newLocaleItem.label}» (${cleanTarget}) успешно создана на основе «${sourceLang}»!`)
+
+		return {
+			success: true,
+			locale: newLocaleItem,
+			copiedEntitiesCount,
+			copiedStoryCount,
+			locales: localesRegistry
+		}
+	} catch (error) {
+		console.error('⛔ Ошибка при копировании локализации:', error)
+		return { success: false, error: error.message }
+	}
+})
+
+ipcMain.handle('data-editor-list-locales', async () => {
+	try {
+		const baseDir = getDataDirectory()
+		const registryPath = join(baseDir, 'locales', 'locales.json')
+		let registry = []
+		try {
+			const regContent = await fs.readFile(registryPath, 'utf-8')
+			registry = JSON.parse(regContent)
+			if (!Array.isArray(registry)) registry = []
+		} catch {
+			registry = [
+				{ code: 'ru', label: 'Русский', flag: '🇷🇺', isDefault: true },
+				{ code: 'en', label: 'English', flag: '🇬🇧' }
+			]
+		}
+
+		const enriched = await Promise.all(
+			registry.map(async (loc) => {
+				let entityFiles = 0
+				let storyFiles = 0
+				try {
+					const entDir = join(baseDir, 'locales', loc.code)
+					const files = await fs.readdir(entDir)
+					entityFiles = files.filter((f) => f.endsWith('.json') && f !== 'locales.json').length
+				} catch {}
+
+				try {
+					const storyDir = join(baseDir, 'story', loc.code)
+					async function countFiles(dir) {
+						let c = 0
+						const list = await fs.readdir(dir, { withFileTypes: true })
+						for (const item of list) {
+							if (item.isDirectory()) c += await countFiles(join(dir, item.name))
+							else if (item.isFile() && item.name.endsWith('.json')) c++
+						}
+						return c
+					}
+					storyFiles = await countFiles(storyDir)
+				} catch {}
+
+				return {
+					...loc,
+					entityFiles,
+					storyFiles,
+					isDefault: loc.code === 'ru' || !!loc.isDefault
+				}
+			})
+		)
+
+		return { success: true, locales: enriched }
+	} catch (error) {
+		console.error('⛔ Ошибка при получении списка локалей:', error)
+		return { success: false, error: error.message }
+	}
+})
+
+ipcMain.handle('data-editor-delete-locale', async (_event, lang) => {
+	try {
+		const cleanLang = String(lang || '').trim().toLowerCase()
+		if (!cleanLang) throw new Error('Код языка не указан')
+		if (cleanLang === 'ru') throw new Error('Нельзя удалить основной язык (Русский)')
+
+		const baseDir = getDataDirectory()
+
+		// 1. Remove locales/{lang}
+		const locDir = join(baseDir, 'locales', cleanLang)
+		try {
+			await fs.rm(locDir, { recursive: true, force: true })
+		} catch (err) {
+			console.warn(`[data-editor-delete-locale] Папка локали не найдена: ${locDir}`)
+		}
+
+		// 2. Remove story/{lang} if exists
+		const storyDir = join(baseDir, 'story', cleanLang)
+		try {
+			await fs.rm(storyDir, { recursive: true, force: true })
+		} catch {}
+
+		// 3. Update locales/locales.json
+		const registryPath = join(baseDir, 'locales', 'locales.json')
+		let registry = []
+		try {
+			const regContent = await fs.readFile(registryPath, 'utf-8')
+			registry = JSON.parse(regContent)
+			if (Array.isArray(registry)) {
+				registry = registry.filter((l) => l.code !== cleanLang)
+				await fs.writeFile(registryPath, JSON.stringify(registry, null, 2), 'utf-8')
+			}
+		} catch {}
+
+		console.log(`✔ Локализация «${cleanLang}» удалена`)
+		return { success: true, locales: registry }
+	} catch (error) {
+		console.error('⛔ Ошибка при удалении локализации:', error)
+		return { success: false, error: error.message }
+	}
+})
+
+
 async function getInitialSettings() {
 	const file = join(app.getPath('userData'), 'settings.json')
 	const text = await fs.readFile(file, 'utf-8')

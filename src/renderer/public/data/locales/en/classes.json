@@ -1,0 +1,210 @@
+{
+  "warrior": {
+    "name": "Warrior",
+    "description": "Melee combat master wielding heavy weaponry and armor to overwhelm foes."
+  },
+  "berserker": {
+    "name": "Berserker",
+    "description": "Ferocious combatant entering blood frenzy, sacrificing defense for raw power."
+  },
+  "knight": {
+    "name": "Knight",
+    "description": "Heavily armored guardian of chivalry, specialized in stalwart defense."
+  },
+  "paladin": {
+    "name": "Paladin",
+    "description": "Holy warrior of light blending martial prowess with restorative healing aura."
+  },
+  "cursed-paladin": {
+    "name": "Cursed Paladin",
+    "description": "Fallen knight channeling dark vows and maledictions against enemies."
+  },
+  "valkyrie": {
+    "name": "Valkyrie",
+    "description": "Martial battle maiden wielding holy spears with sacred fury (Shalltear class)."
+  },
+  "dark-knight": {
+    "name": "Dark Knight",
+    "description": "Knight of shadow feeding on enemy terror and dealing unholy ruin."
+  },
+  "niflheim-knight": {
+    "name": "Niflheim Knight",
+    "description": "Elite frost sentinel encased in glacial northern legends."
+  },
+  "guardian": {
+    "name": "Guardian",
+    "description": "Steadfast shieldbearer devoted to intercepting incoming attacks on allies."
+  },
+  "fencer": {
+    "name": "Fencer",
+    "description": "Agile rapier duelist capitalizing on precise thrusts, parries, and evasions."
+  },
+  "champion": {
+    "name": "Champion",
+    "description": "Decorated arena veteran with immaculate weapon mastery."
+  },
+  "world-champion": {
+    "name": "World Champion",
+    "description": "Legendary tournament title class of Yggdrasil possessing peerless martial dominance."
+  },
+  "slayer-of-evil": {
+    "name": "Slayer of Evil",
+    "description": "Zealous hunter of undead and fiends delivering multiplied holy smites."
+  },
+  "holy-lord": {
+    "name": "Holy Lord",
+    "description": "Pinnacle of paladins radiating celestial blessings and divine protection."
+  },
+  "thief": {
+    "name": "Thief",
+    "description": "Nimble scout skilled in lockpicking, pickpocketing, and silent infiltration."
+  },
+  "assassin": {
+    "name": "Assassin",
+    "description": "Lethal executioner specialized in backstabs, stealth ambushes, and poisons."
+  },
+  "ninja": {
+    "name": "Ninja",
+    "description": "Eastern covert operative employing shurikens, shadow techniques, and ninjutsu."
+  },
+  "spy": {
+    "name": "Spy",
+    "description": "Master of intelligence gathering, reconnaissance, and covert disguise."
+  },
+  "detective": {
+    "name": "Detective",
+    "description": "Inquisitor adept at tracking clues, deducing weaknesses, and solving mysteries."
+  },
+  "archer": {
+    "name": "Archer",
+    "description": "Long-range marksman showering battlefields with lethal barrages of arrows."
+  },
+  "monk": {
+    "name": "Monk",
+    "description": "Unarmed martial artist forging their body into living tempered steel."
+  },
+  "ki-master": {
+    "name": "Ki Master",
+    "description": "Master of internal spiritual Ki energy delivering devastating bursts (Sebas class)."
+  },
+  "wizard": {
+    "name": "Wizard",
+    "description": "Scholarly arcanist studying spellcraft and commanding destructive elements."
+  },
+  "sorcerer": {
+    "name": "Sorcerer",
+    "description": "Innate spellcaster shaping primal magic through sheer force of will."
+  },
+  "necromancer": {
+    "name": "Necromancer",
+    "description": "Master of dark rites raising the dead and commanding spirits."
+  },
+  "master-of-death": {
+    "name": "Master of Death",
+    "description": "Apex death sovereign (Eclipse) wielding spells like The Goal of All Life is Death."
+  },
+  "demonologist": {
+    "name": "Demonologist",
+    "description": "Summoner binding infernal fiends and demonic entities from the abyss."
+  },
+  "summoner": {
+    "name": "Summoner",
+    "description": "Conjurer summoning magical beasts, elementals, and outer planar spirits."
+  },
+  "sage": {
+    "name": "Sage",
+    "description": "Venerable scholar of high arcana unlocking primordial secrets."
+  },
+  "cleric": {
+    "name": "Cleric",
+    "description": "Devout priest granting divine healing, protection, and blessed wards."
+  },
+  "bishop": {
+    "name": "Bishop",
+    "description": "High church official channeling extensive radiant prayers and blessings."
+  },
+  "churchman": {
+    "name": "Churchman",
+    "description": "Pious cleric bolstering moral resolve and religious fortitude."
+  },
+  "miko": {
+    "name": "Miko",
+    "description": "Shrine maiden performing purification rites and dispelling curses."
+  },
+  "shaman": {
+    "name": "Shaman",
+    "description": "Spiritual guide bridging nature spirits and communion with ancestors."
+  },
+  "general": {
+    "name": "General",
+    "description": "Tactical commander directing battlefield movements and inspiring armies (Enri class)."
+  },
+  "noble": {
+    "name": "Noble",
+    "description": "High-born aristocrat wielding diplomatic authority, prestige, and estate wealth."
+  },
+  "pack-leader": {
+    "name": "Pack Leader",
+    "description": "Alpha creature commanding wild packs and buffing feral kin."
+  },
+  "blood-drinker": {
+    "name": "Blood Drinker",
+    "description": "Martial class drawing vitality and stamina by drinking the blood of foes."
+  },
+  "minimum": {
+    "name": "Minimum",
+    "description": "A specialized vocational class allowing the user to manipulate their body size and shape."
+  },
+  "cavalry": {
+    "name": "Cavalry",
+    "description": "Mounted lancer utilizing momentum for destructive charge impacts."
+  },
+  "beast-rider": {
+    "name": "Beast Rider",
+    "description": "Mounted combatant riding exotic beasts and ferocious war monsters."
+  },
+  "beast-tamer": {
+    "name": "Beast Tamer",
+    "description": "Trainer subduing untamed predators and directing them in battle."
+  },
+  "craftsman": {
+    "name": "Craftsman",
+    "description": "Artisan skilled in manual labor and constructing basic utilities."
+  },
+  "blacksmith": {
+    "name": "Blacksmith",
+    "description": "Forge master smelting metals into resilient armor and weaponry."
+  },
+  "runesmith": {
+    "name": "Runesmith",
+    "description": "Ancient dwarven craft infusing arms with permanent magical runes."
+  },
+  "weaponsmith": {
+    "name": "Weaponsmith",
+    "description": "Foremost blade specialist balancing and honing lethal weapon edges."
+  },
+  "alchemist": {
+    "name": "Alchemist",
+    "description": "Brewer of potions, curative elixirs, and volatile alchemical concoctions."
+  },
+  "jeweler": {
+    "name": "Jeweler",
+    "description": "Lapidary enchanting precious gemstones into warding rings and amulets."
+  },
+  "tailor": {
+    "name": "Tailor",
+    "description": "Textile master sewing wizard robes, garments, and lightweight leather armors."
+  },
+  "merchant": {
+    "name": "Merchant",
+    "description": "Astute trader and negotiator skilled in economic appraisal and commerce."
+  },
+  "mage": {
+    "name": "Wizard",
+    "description": "Scholarly arcanist studying spellcraft and commanding destructive elements."
+  },
+  "overlord": {
+    "name": "Master of Death",
+    "description": "Apex death sovereign (Eclipse) wielding spells like The Goal of All Life is Death."
+  }
+}

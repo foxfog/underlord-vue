@@ -75,6 +75,55 @@
 					</button>
 				</div>
 			</div>
+
+			<!-- Card 4: Data Editor (Active) -->
+			<div class="test-card __active" @click="launchDataEditor">
+				<div class="test-card-header">
+					<div class="test-card-icon">📚</div>
+					<span class="test-status-badge __ready">Доступно</span>
+				</div>
+				<div class="test-card-body">
+					<h2 class="test-card-title">Редактор данных</h2>
+					<p class="test-card-desc">
+						CRUD-интерфейс управления игровыми сущностями (Персонажи, Классы, Фракции, Расы, Предметы) с прямой записью в файлы JSON и связями по ID.
+					</p>
+					<div class="test-tags">
+						<span class="test-tag">JSON CRUD</span>
+						<span class="test-tag">Связи по ID</span>
+						<span class="test-tag">Файловая система</span>
+					</div>
+				</div>
+				<div class="test-card-footer">
+					<button class="test-btn test-btn-primary" @click.stop="launchDataEditor">
+						Открыть редактор →
+					</button>
+				</div>
+			</div>
+
+			<!-- Card 5: Localization Manager (Active) -->
+			<div class="test-card __active" @click="launchLocalizationManager">
+				<div class="test-card-header">
+					<div class="test-card-icon">🌐</div>
+					<span class="test-status-badge __ready">Доступно</span>
+				</div>
+				<div class="test-card-body">
+					<h2 class="test-card-title">Добавить локализацию</h2>
+					<p class="test-card-desc">
+						Создание новых языковых пакетов на основе дефолтного или выбранного языка с автоматическим копированием словарей сущностей и сценариев новеллы для ручного перевода.
+					</p>
+					<div class="test-tags">
+						<span class="test-tag">Мультиязычность</span>
+						<span class="test-tag">Клонирование</span>
+						<span class="test-tag">JSON Словари</span>
+						<span class="test-tag">Сценарии</span>
+					</div>
+				</div>
+				<div class="test-card-footer">
+					<button class="test-btn test-btn-primary" @click.stop="launchLocalizationManager">
+						Создать локализацию →
+					</button>
+				</div>
+			</div>
 		</div>
 	</div>
 </template>
@@ -94,6 +143,14 @@ function launchIsoEditor() {
 
 function launchCombatTester() {
 	router.push('/test/combat')
+}
+
+function launchDataEditor() {
+	router.push('/test/data-editor')
+}
+
+function launchLocalizationManager() {
+	router.push('/test/localization')
 }
 </script>
 

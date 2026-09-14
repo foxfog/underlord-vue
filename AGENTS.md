@@ -132,6 +132,9 @@ body {
 * **Пошаговая боевая система (Turn-Based Combat System)**:
   Тактическая боёвка в стиле Sword of Convallaria (SoC): очередность ходов по инициативе, очки действий AP, мана MP, роли (боец, танк, маг, лучник), шаблоны направлений ударов и типы оружия (`combatGeometry.js`), боевой AI (`useCombatAI.js`), физика отталкивания (`knockback: N`), урон от столкновений с препятствиями и юнитами, сброс в бездну (Ring-Out) и левитация (`flying: true`), опасные поверхности (лава, вода, горение `burning`), полноэкранный тактический оверлей `CombatOverlay.vue` с 2.5D ареной `IsoCombatArena.vue`.
   📖 Документация: [`docs/systems/CombatSystem.md`](docs/systems/CombatSystem.md)
+* **Редактор данных и управление сущностями (Data Editor & Localization)**:
+  CRUD-редактор игровых сущностей (Персонажи, Классы, Фракции, Расы, Предметы) и Менеджер создания локализаций («Добавить локализацию» с клонированием дефолтного языка `ru`) в разделе «Тесты», прямая синхронизация с файловой системой через Electron IPC (`src/main/index.js`, `src/preload/index.js`), связи между сущностями по `id` (множественные расы, классы, фракции у персонажей, `parent_id` у классов/рас/фракций), композаблы `useDataEditor.js`, `useLocalizationManager.js`, оверлеи `DataEditorView.vue` и `LocalizationManagerView.vue`.
+  📖 Документация: [`docs/systems/DataEditorSystem.md`](docs/systems/DataEditorSystem.md)
 * **Хранение данных и статических ресурсов (Data & Public Directory)**:
   Единый источник правды для всех игровых данных (сценарии, сцены, персонажи, изометрия, предметы) — строго директория `src/renderer/public/data/`. Запрещено создавать дублирующие папки `src/renderer/data/`. Для импорта JSON в коде и тестах настроен алиас `@data` (`import ... from '@data/isometric/...'`), а в рантайме файлы подгружаются динамически по путям `/data/...`.
 * **Аудиосистема**:

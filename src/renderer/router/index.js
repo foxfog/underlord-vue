@@ -46,6 +46,18 @@ const router = createRouter({
 			name: 'combat-tester',
 			path: '/test/combat',
 			component: () => import('@/views/CombatTesterView.vue')
+		},
+		{
+			id: 7,
+			name: 'data-editor',
+			path: '/test/data-editor',
+			component: () => import('@/views/DataEditorView.vue')
+		},
+		{
+			id: 8,
+			name: 'localization-manager',
+			path: '/test/localization',
+			component: () => import('@/views/LocalizationManagerView.vue')
 		}
 	]
 })

@@ -1,0 +1,643 @@
+[
+  {
+    "id": "warrior",
+    "name": "Воин",
+    "icon": "⚔️",
+    "parent_id": null,
+    "tags": [
+      "melee",
+      "physical",
+      "warrior"
+    ],
+    "lvl_min": 1,
+    "description": "Мастер ближнего боя, использующий тяжёлое оружие и доспехи для сокрушения противников."
+  },
+  {
+    "id": "berserker",
+    "name": "Берсерк",
+    "icon": "🪓",
+    "parent_id": "warrior",
+    "tags": [
+      "melee",
+      "physical",
+      "rage"
+    ],
+    "lvl_min": 5,
+    "description": "Неистовый боец, впадающий в боевую ярость и жертвующий защитой ради колоссального урона."
+  },
+  {
+    "id": "knight",
+    "name": "Рыцарь",
+    "icon": "🛡️",
+    "parent_id": "warrior",
+    "tags": [
+      "melee",
+      "physical",
+      "tank",
+      "defense"
+    ],
+    "lvl_min": 5,
+    "description": "Тяжеловооружённый защитник чести, обученный стойкой обороне и командному бою."
+  },
+  {
+    "id": "paladin",
+    "name": "Паладин",
+    "icon": "✨",
+    "parent_id": "knight",
+    "tags": [
+      "melee",
+      "holy",
+      "tank",
+      "healing"
+    ],
+    "lvl_min": 10,
+    "description": "Священный воин света, сочетающий воинскую доблесть с исцелением и защитной аурой."
+  },
+  {
+    "id": "cursed-paladin",
+    "name": "Проклятый паладин",
+    "icon": "🩸",
+    "parent_id": "knight",
+    "tags": [
+      "melee",
+      "dark",
+      "curse",
+      "tank"
+    ],
+    "lvl_min": 10,
+    "description": "Падший рыцарь, использующий силу тёмных клятв и проклятий во вред врагам."
+  },
+  {
+    "id": "valkyrie",
+    "name": "Валькирия",
+    "icon": "🪽",
+    "parent_id": "knight",
+    "tags": [
+      "melee",
+      "holy",
+      "valkyrie",
+      "lance"
+    ],
+    "lvl_min": 10,
+    "description": "Воинственная дева битвы с копьём, карающая врагов священной яростью (Класс Шалтир)."
+  },
+  {
+    "id": "dark-knight",
+    "name": "Тёмный рыцарь",
+    "icon": "🌑",
+    "parent_id": "knight",
+    "tags": [
+      "melee",
+      "dark",
+      "curse"
+    ],
+    "lvl_min": 10,
+    "description": "Рыцарь тьмы, впитывающий страх врагов и наносящий сокрушительный нечестивый урон."
+  },
+  {
+    "id": "niflheim-knight",
+    "name": "Рыцарь Нифльхейма",
+    "icon": "❄️",
+    "parent_id": "knight",
+    "tags": [
+      "melee",
+      "ice",
+      "tank"
+    ],
+    "lvl_min": 15,
+    "description": "Элитный ледяной страж, закованный в мерзлоту северных преданий."
+  },
+  {
+    "id": "guardian",
+    "name": "Страж",
+    "icon": "🏰",
+    "parent_id": "warrior",
+    "tags": [
+      "tank",
+      "defense",
+      "shield"
+    ],
+    "lvl_min": 5,
+    "description": "Непоколебимый щитоносец, специализирующийся на перехвате атак союзников."
+  },
+  {
+    "id": "fencer",
+    "name": "Фехтовальщик",
+    "icon": "🤺",
+    "parent_id": "warrior",
+    "tags": [
+      "melee",
+      "agility",
+      "pierce"
+    ],
+    "lvl_min": 5,
+    "description": "Мастер быстрых и точных уколов шпагой, полагающийся на ловкость и парирование."
+  },
+  {
+    "id": "champion",
+    "name": "Чемпион",
+    "icon": "🏆",
+    "parent_id": "warrior",
+    "tags": [
+      "melee",
+      "physical",
+      "champion"
+    ],
+    "lvl_min": 10,
+    "description": "Признанный ветеран сотен дуэлей, в совершенстве владеющий оружием."
+  },
+  {
+    "id": "world-champion",
+    "name": "Чемпион мира",
+    "icon": "👑",
+    "parent_id": "champion",
+    "tags": [
+      "melee",
+      "boss",
+      "legendary",
+      "world-champion"
+    ],
+    "lvl_min": 15,
+    "description": "Легендарный титульный класс турниров Иггдрасиля. Обладает абсолютным физическим мастерством."
+  },
+  {
+    "id": "slayer-of-evil",
+    "name": "Убийца зла",
+    "icon": "⚡",
+    "parent_id": "paladin",
+    "tags": [
+      "holy",
+      "damage",
+      "bane"
+    ],
+    "lvl_min": 10,
+    "description": "Фанатичный истребитель нежити и демонов, наносящий умноженный священный урон."
+  },
+  {
+    "id": "holy-lord",
+    "name": "Святой лорд",
+    "icon": "☀️",
+    "parent_id": "paladin",
+    "tags": [
+      "holy",
+      "support",
+      "aura"
+    ],
+    "lvl_min": 15,
+    "description": "Высший ранг паладинов, распространяющий вокруг себя благословение небес."
+  },
+  {
+    "id": "thief",
+    "name": "Вор",
+    "icon": "🗡️",
+    "parent_id": null,
+    "tags": [
+      "agility",
+      "stealth",
+      "thief"
+    ],
+    "lvl_min": 1,
+    "description": "Ловкий разведчик, искусный во взломе, карманных кражах и скрытном передвижении."
+  },
+  {
+    "id": "assassin",
+    "name": "Убийца",
+    "icon": "🩸",
+    "parent_id": "thief",
+    "tags": [
+      "agility",
+      "stealth",
+      "critical",
+      "poison"
+    ],
+    "lvl_min": 5,
+    "description": "Смертоносный мастер скрытных атак со спины и смертельных ядов."
+  },
+  {
+    "id": "ninja",
+    "name": "Ниндзя",
+    "icon": "🥷",
+    "parent_id": "assassin",
+    "tags": [
+      "agility",
+      "stealth",
+      "jutsu"
+    ],
+    "lvl_min": 10,
+    "description": "Шпион и диверсант древнего восточного стиля, владеющий сюрикенами и теневыми техниками."
+  },
+  {
+    "id": "spy",
+    "name": "Шпион",
+    "icon": "🕵️",
+    "parent_id": "thief",
+    "tags": [
+      "stealth",
+      "information",
+      "disguise"
+    ],
+    "lvl_min": 5,
+    "description": "Специалист по сбору разведданных, маскировке и проникновению на вражеские объекты."
+  },
+  {
+    "id": "detective",
+    "name": "Детектив",
+    "icon": "🔍",
+    "parent_id": "thief",
+    "tags": [
+      "investigation",
+      "perception"
+    ],
+    "lvl_min": 5,
+    "description": "Мастер расследования следов, поиска улик и раскрытия тайн."
+  },
+  {
+    "id": "archer",
+    "name": "Лучник",
+    "icon": "🏹",
+    "parent_id": null,
+    "tags": [
+      "ranged",
+      "agility",
+      "archer"
+    ],
+    "lvl_min": 1,
+    "description": "Стрелок дальнего боя, поражающий противников градом точных стрел."
+  },
+  {
+    "id": "monk",
+    "name": "Монах",
+    "icon": "🥋",
+    "parent_id": null,
+    "tags": [
+      "melee",
+      "unarmed",
+      "ki"
+    ],
+    "lvl_min": 1,
+    "description": "Мастер рукопашного боя без оружия, закаляющий тело до прочности стали."
+  },
+  {
+    "id": "ki-master",
+    "name": "Мастер Ки",
+    "icon": "💥",
+    "parent_id": "monk",
+    "tags": [
+      "ki",
+      "melee",
+      "burst"
+    ],
+    "lvl_min": 10,
+    "description": "Адепт внутренней энергии Ки, высвобождающий сокрушительные энергетические удары (Класс Себаса)."
+  },
+  {
+    "id": "wizard",
+    "name": "Волшебник",
+    "icon": "🔮",
+    "parent_id": null,
+    "tags": [
+      "magic",
+      "ranged",
+      "arcane"
+    ],
+    "lvl_min": 1,
+    "description": "Учёный маг, изучающий тайны заклинаний и повелевающий разрушительными стихиями."
+  },
+  {
+    "id": "sorcerer",
+    "name": "Колдун",
+    "icon": "🪄",
+    "parent_id": "wizard",
+    "tags": [
+      "magic",
+      "ranged",
+      "innate"
+    ],
+    "lvl_min": 5,
+    "description": "Маг с врождённым талантом к чародейству, творящий заклинания усилием воли."
+  },
+  {
+    "id": "necromancer",
+    "name": "Некромант",
+    "icon": "💀",
+    "parent_id": "wizard",
+    "tags": [
+      "magic",
+      "necromancy",
+      "undead"
+    ],
+    "lvl_min": 5,
+    "description": "Повелитель тёмных искусств, способный поднимать мертвецов и повелевать духами."
+  },
+  {
+    "id": "master-of-death",
+    "name": "Властелин смерти",
+    "icon": "👑",
+    "parent_id": "necromancer",
+    "tags": [
+      "necromancy",
+      "boss",
+      "overlord",
+      "death"
+    ],
+    "lvl_min": 15,
+    "description": "Высший маг смерти (Затмение), способный уничтожить саму жизнь заклинанием The Goal of All Life is Death."
+  },
+  {
+    "id": "demonologist",
+    "name": "Демонолог",
+    "icon": "😈",
+    "parent_id": "wizard",
+    "tags": [
+      "magic",
+      "summon",
+      "fiend"
+    ],
+    "lvl_min": 5,
+    "description": "Специалист по призыву и подчинению демонических созданий из глубин ада."
+  },
+  {
+    "id": "summoner",
+    "name": "Призыватель",
+    "icon": "🌀",
+    "parent_id": "wizard",
+    "tags": [
+      "magic",
+      "summon"
+    ],
+    "lvl_min": 5,
+    "description": "Маг, специализирующийся на вызове магических существ, элементалей и духов."
+  },
+  {
+    "id": "sage",
+    "name": "Мудрец",
+    "icon": "📜",
+    "parent_id": "wizard",
+    "tags": [
+      "magic",
+      "lore",
+      "wisdom"
+    ],
+    "lvl_min": 10,
+    "description": "Великий мыслитель и знаток арканы, открывающий доступ к древнейшим секретам мира."
+  },
+  {
+    "id": "cleric",
+    "name": "Жрец",
+    "icon": "⛪",
+    "parent_id": null,
+    "tags": [
+      "holy",
+      "support",
+      "healing"
+    ],
+    "lvl_min": 1,
+    "description": "Служитель богов, дарующий исцеление, благословения и защиту своей пастве."
+  },
+  {
+    "id": "bishop",
+    "name": "Епископ",
+    "icon": "✝️",
+    "parent_id": "cleric",
+    "tags": [
+      "holy",
+      "support",
+      "blessing"
+    ],
+    "lvl_min": 5,
+    "description": "Высокопоставленный священник с мощными массовыми молитвами исцеления."
+  },
+  {
+    "id": "churchman",
+    "name": "Церковник",
+    "icon": "📖",
+    "parent_id": "cleric",
+    "tags": [
+      "holy",
+      "religious"
+    ],
+    "lvl_min": 5,
+    "description": "Ревностный служитель церкви, укрепляющий моральный дух союзников."
+  },
+  {
+    "id": "miko",
+    "name": "Мико",
+    "icon": "⛩️",
+    "parent_id": "cleric",
+    "tags": [
+      "divine",
+      "shrine",
+      "purify"
+    ],
+    "lvl_min": 5,
+    "description": "Жрица храма, проводящая обряды очищения от скверны и защиты от проклятий."
+  },
+  {
+    "id": "shaman",
+    "name": "Шаман",
+    "icon": "🌿",
+    "parent_id": null,
+    "tags": [
+      "nature",
+      "spirit",
+      "totem"
+    ],
+    "lvl_min": 1,
+    "description": "Связующее звено между миром духов и племенем, призывающий силы природы."
+  },
+  {
+    "id": "general",
+    "name": "Генерал",
+    "icon": "🚩",
+    "parent_id": null,
+    "tags": [
+      "command",
+      "tactics",
+      "buff"
+    ],
+    "lvl_min": 5,
+    "description": "Полководец, управляющий войсками на поле боя и вдохновляющий целые армии (Класс Энри)."
+  },
+  {
+    "id": "noble",
+    "name": "Дворянин",
+    "icon": "🤴",
+    "parent_id": null,
+    "tags": [
+      "social",
+      "leadership"
+    ],
+    "lvl_min": 1,
+    "description": "Аристократ высокого происхождения, обладающий авторитетом и богатством."
+  },
+  {
+    "id": "pack-leader",
+    "name": "Вожак стаи",
+    "icon": "🐺",
+    "parent_id": null,
+    "tags": [
+      "beast",
+      "command"
+    ],
+    "lvl_min": 5,
+    "description": "Лидер звериной или монструозной стаи, усиливающий стайных сородичей."
+  },
+  {
+    "id": "blood-drinker",
+    "name": "Кровопийца",
+    "icon": "🩸",
+    "parent_id": null,
+    "tags": [
+      "vampire",
+      "lifesteal"
+    ],
+    "lvl_min": 5,
+    "description": "Особый боевой класс, черпающий силы и выносливость из поглощаемой крови врагов."
+  },
+  {
+    "id": "minimum",
+    "name": "Минимум",
+    "icon": "✨",
+    "parent_id": null,
+    "tags": [
+      "shapeshift",
+      "utility"
+    ],
+    "lvl_min": 1,
+    "description": "Минимум — это профессиональный класс, который позволяет пользователю менять форму или размер своего тела."
+  },
+  {
+    "id": "cavalry",
+    "name": "Скакун",
+    "icon": "🐎",
+    "parent_id": null,
+    "tags": [
+      "mount",
+      "speed"
+    ],
+    "lvl_min": 1,
+    "description": "Наездник на боевом коне, использующий скорость разгона для таранных атак."
+  },
+  {
+    "id": "beast-rider",
+    "name": "Наездник",
+    "icon": "🦖",
+    "parent_id": "cavalry",
+    "tags": [
+      "mount",
+      "beast"
+    ],
+    "lvl_min": 5,
+    "description": "Умелый всадник, управляющий экзотическими боевыми зверями и чудовищами."
+  },
+  {
+    "id": "beast-tamer",
+    "name": "Дрессировщик",
+    "icon": "🐾",
+    "parent_id": "cavalry",
+    "tags": [
+      "beast",
+      "tamer"
+    ],
+    "lvl_min": 5,
+    "description": "Укротитель диких хищников, способный приручать и направлять их в бою."
+  },
+  {
+    "id": "craftsman",
+    "name": "Ремесленник",
+    "icon": "🔨",
+    "parent_id": null,
+    "tags": [
+      "craft",
+      "utility"
+    ],
+    "lvl_min": 1,
+    "description": "Мастер ручного труда, способный создавать базовые предметы и инструменты."
+  },
+  {
+    "id": "blacksmith",
+    "name": "Кузнец",
+    "icon": "⚒️",
+    "parent_id": "craftsman",
+    "tags": [
+      "craft",
+      "forge"
+    ],
+    "lvl_min": 5,
+    "description": "Мастер ковки металлов, создающий прочную броню и грозное холодное оружие."
+  },
+  {
+    "id": "runesmith",
+    "name": "Рунный кузнец",
+    "icon": "🪨",
+    "parent_id": "blacksmith",
+    "tags": [
+      "craft",
+      "rune",
+      "magic"
+    ],
+    "lvl_min": 10,
+    "description": "Древнее дварфийское ремесло наполнения оружия и брони магическими рунами."
+  },
+  {
+    "id": "weaponsmith",
+    "name": "Оружейник",
+    "icon": "🗡️",
+    "parent_id": "blacksmith",
+    "tags": [
+      "craft",
+      "weapon"
+    ],
+    "lvl_min": 10,
+    "description": "Специалист высочайшего класса по балансировке и заточке смертоносных клинков."
+  },
+  {
+    "id": "alchemist",
+    "name": "Алхимик",
+    "icon": "🧪",
+    "parent_id": "craftsman",
+    "tags": [
+      "craft",
+      "potion",
+      "alchemy"
+    ],
+    "lvl_min": 5,
+    "description": "Создатель зелий исцеления, ядов, алхимических смесей и реагентов."
+  },
+  {
+    "id": "jeweler",
+    "name": "Ювелир",
+    "icon": "💎",
+    "parent_id": "craftsman",
+    "tags": [
+      "craft",
+      "gem"
+    ],
+    "lvl_min": 5,
+    "description": "Мастер обработки драгоценных камней и зачарования ювелирных колец и амулетов."
+  },
+  {
+    "id": "tailor",
+    "name": "Портной",
+    "icon": "🧵",
+    "parent_id": "craftsman",
+    "tags": [
+      "craft",
+      "cloth"
+    ],
+    "lvl_min": 5,
+    "description": "Мастер пошива мантий заклинателей, одежды и лёгких кожаных доспехов."
+  },
+  {
+    "id": "merchant",
+    "name": "Торговец",
+    "icon": "💰",
+    "parent_id": null,
+    "tags": [
+      "trade",
+      "economy"
+    ],
+    "lvl_min": 1,
+    "description": "Купец и переговорщик, знающий цену товарам и снижающий торговые издержки."
+  }
+]

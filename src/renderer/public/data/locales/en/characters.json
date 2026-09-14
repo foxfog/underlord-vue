@@ -1,0 +1,44 @@
+{
+  "mc": {
+    "name": "Anon Fox",
+    "description": "Protagonist transported into an uncharted realm via the virtual reality neuro-helmet interface.",
+    "names": [
+      "Anon",
+      "Player",
+      "Traveler"
+    ]
+  },
+  "momonga": {
+    "name": "Momonga",
+    "names": [
+      "Ainz Ooal Gown",
+      "Lord of Nazarick",
+      "Supreme Being"
+    ],
+    "description": "Guildmaster of Ainz Ooal Gown and supreme sovereign of the Great Tomb of Nazarick."
+  },
+  "albedo": {
+    "name": "Albedo",
+    "names": [
+      "Guardian Overseer",
+      "White Devil"
+    ],
+    "description": "Overseer of Floor Guardians in the Great Tomb of Nazarick, wielding unrivaled defense and loyalty."
+  },
+  "enri": {
+    "name": "Enri Emmot",
+    "names": [
+      "Enri",
+      "General Enri"
+    ],
+    "description": "Village girl from Carne who stepped forward to safeguard her people and home."
+  },
+  "carne-chief": {
+    "name": "Carne Village Chief",
+    "names": [
+      "Chief",
+      "Elder"
+    ],
+    "description": "Prudent and elderly village head of Carne, dedicated to the survival of his community."
+  }
+}
