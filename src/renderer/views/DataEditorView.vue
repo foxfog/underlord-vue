@@ -855,9 +855,37 @@
 								</div>
 							</template>
 
-							<!-- CLASSES: MIN LEVEL -->
+							<!-- CLASSES: TIER, POINTS & MIN LEVEL -->
 							<template v-if="activeTab === 'classes'">
 								<div class="field-row __split">
+									<div class="form-field">
+										<label class="field-label">Ступень класса (Tier)</label>
+										<select v-model="selectedEntity.tier" class="editor-select">
+											<option value="basic">Базовый (макс 15 ур.)</option>
+											<option value="advanced">Продвинутый (макс 10 ур.)</option>
+											<option value="rare">Редкий / Секретный (макс 5 ур.)</option>
+										</select>
+									</div>
+									<div class="form-field">
+										<label class="field-label">Очков навыков (SP) за уровень</label>
+										<input
+											v-model.number="selectedEntity.skill_points_per_level"
+											type="number"
+											min="0"
+											max="10"
+											class="editor-input"
+										/>
+									</div>
+									<div class="form-field">
+										<label class="field-label">Очков спелов (MP) за уровень</label>
+										<input
+											v-model.number="selectedEntity.spell_points_per_level"
+											type="number"
+											min="0"
+											max="10"
+											class="editor-input"
+										/>
+									</div>
 									<div class="form-field">
 										<label class="field-label">Минимальный уровень (lvl_min)</label>
 										<input
@@ -871,7 +899,7 @@
 								</div>
 							</template>
 
-							<!-- RACES: CATEGORY & MIN LEVEL -->
+							<!-- RACES: CATEGORY, TIER, POINTS & MIN LEVEL -->
 							<template v-if="activeTab === 'races'">
 								<div class="field-row __split">
 									<div class="form-field">
@@ -882,7 +910,34 @@
 											<option value="heteromorphic">Гетероморфная (heteromorphic)</option>
 										</select>
 									</div>
-
+									<div class="form-field">
+										<label class="field-label">Ступень расы (Tier)</label>
+										<select v-model="selectedEntity.tier" class="editor-select">
+											<option value="basic">Базовая (макс 15 ур.)</option>
+											<option value="advanced">Продвинутая (макс 10 ур.)</option>
+											<option value="rare">Редкая / Секретная (макс 5 ур.)</option>
+										</select>
+									</div>
+									<div class="form-field">
+										<label class="field-label">Очков навыков (SP) за уровень</label>
+										<input
+											v-model.number="selectedEntity.skill_points_per_level"
+											type="number"
+											min="0"
+											max="10"
+											class="editor-input"
+										/>
+									</div>
+									<div class="form-field">
+										<label class="field-label">Очков спелов (MP) за уровень</label>
+										<input
+											v-model.number="selectedEntity.spell_points_per_level"
+											type="number"
+											min="0"
+											max="10"
+											class="editor-input"
+										/>
+									</div>
 									<div class="form-field">
 										<label class="field-label">Минимальный уровень (lvl_min)</label>
 										<input
@@ -1284,6 +1339,183 @@
 								></textarea>
 							</div>
 
+							<!-- SKILL TREES & BRANCHES SECTION (FOR CLASSES & RACES) -->
+							<div v-if="activeTab === 'classes' || activeTab === 'races'" class="skills-editor-section">
+								<div class="skills-section-header">
+									<div class="ssh-left">
+										<span class="ssh-icon">🌳</span>
+										<div class="ssh-text">
+											<h4 class="ssh-title">Ветки скилов и способностей (Skill Trees)</h4>
+											<span class="ssh-subtitle">
+												{{ (selectedEntity.skill_branches || []).length }} веток • {{ (selectedEntity.skills || []).length }} навыков
+											</span>
+										</div>
+									</div>
+									<div class="ssh-actions">
+										<button type="button" class="editor-btn editor-btn-secondary" @click="openAddBranchModal">
+											➕ Новая ветка
+										</button>
+										<button type="button" class="editor-btn editor-btn-primary" @click="openAddSkillModal">
+											➕ Добавить скил
+										</button>
+									</div>
+								</div>
+
+								<!-- Branches Bar -->
+								<div class="skill-branches-bar">
+									<button
+										type="button"
+										class="branch-filter-btn"
+										:class="{ __active: editorSelectedBranch === 'all' }"
+										@click="editorSelectedBranch = 'all'"
+									>
+										<span>Все ветки ({{ (selectedEntity.skills || []).length }})</span>
+									</button>
+									<div
+										v-for="(br, bIdx) in (selectedEntity.skill_branches || [])"
+										:key="br.id"
+										class="branch-pill-item"
+										:class="{ __active: editorSelectedBranch === br.id }"
+										@click="editorSelectedBranch = br.id"
+									>
+										<span class="branch-pill-icon">{{ br.icon || '🌿' }}</span>
+										<span class="branch-pill-name">{{ br.name }}</span>
+										<span class="branch-pill-count">{{ getSkillsCountInBranch(br.id) }}</span>
+										<div class="branch-pill-actions" @click.stop>
+											<button type="button" class="branch-pill-btn" title="Редактировать ветку" @click="openEditBranchModal(bIdx)">✏️</button>
+											<button type="button" class="branch-pill-btn __del" title="Удалить ветку" @click="removeBranch(bIdx)">✕</button>
+										</div>
+									</div>
+								</div>
+
+								<!-- Skills Cellular Grid by Tiers -->
+								<div v-if="filteredEditorSkills.length > 0" class="skills-tier-grid-container">
+									<div
+										v-for="tier in editorTierGrid.tiers"
+										:key="'editor-tier-' + tier.level"
+										class="editor-tier-row"
+									>
+										<div class="editor-tier-header">
+											<div class="eth-left">
+												<span class="eth-badge">УРОВЕНЬ {{ tier.level }}</span>
+												<span class="eth-count">{{ tier.skills.length }} навыков</span>
+											</div>
+											<div class="eth-right">
+												<button
+													type="button"
+													class="editor-btn editor-btn-secondary eth-add-btn"
+													title="Добавить навык на этот уровень"
+													@click="openAddSkillModalAt(tier.level, tier.skills.length)"
+												>
+													➕ Навык на ур. {{ tier.level }}
+												</button>
+											</div>
+										</div>
+
+										<div
+											class="editor-tier-cells"
+											:style="{ gridTemplateColumns: `repeat(${editorTierGrid.maxCols}, 1fr)` }"
+										>
+											<div
+												v-for="(slot, colIdx) in tier.cells"
+												:key="'cell-' + tier.level + '-' + colIdx"
+												class="editor-grid-cell"
+											>
+												<!-- Skill Card in Cell -->
+												<div
+													v-if="slot"
+													class="skill-card-item"
+													:class="`__cat-${slot.category || 'active'}`"
+												>
+													<div class="sci-header">
+														<div class="sci-icon-box">{{ slot.icon || '⚔️' }}</div>
+														<div class="sci-info">
+															<span class="sci-name">{{ slot.name }}</span>
+															<span class="sci-id">#{{ slot.id }}</span>
+														</div>
+														<div class="sci-actions">
+															<button type="button" class="sci-btn" title="Редактировать скил" @click="openEditSkillModal(slot)">✏️</button>
+															<button type="button" class="sci-btn __danger" title="Удалить скил" @click="removeSkill(slot.id)">🗑️</button>
+														</div>
+													</div>
+
+													<!-- Column Shift Bar with arrows -->
+													<div class="sci-col-shift-bar">
+														<button
+															type="button"
+															class="sci-shift-btn"
+															:disabled="colIdx === 0"
+															title="Переместить влево (своп с соседом)"
+															@click="shiftEditorSkill(slot.id, -1)"
+														>
+															◀
+														</button>
+														<span class="sci-slot-label">Слот {{ colIdx + 1 }}</span>
+														<button
+															type="button"
+															class="sci-shift-btn"
+															:disabled="colIdx >= editorTierGrid.maxCols - 1"
+															title="Переместить вправо (своп с соседом)"
+															@click="shiftEditorSkill(slot.id, 1)"
+														>
+															▶
+														</button>
+													</div>
+
+													<div class="sci-badges">
+														<span
+															class="sci-badge sci-cat-badge"
+															:class="`__cat-${slot.category || 'active'}`"
+															:title="getCategoryBadge(slot.category).label"
+														>
+															{{ getCategoryBadge(slot.category).icon }} {{ getCategoryBadge(slot.category).shortLabel }}
+														</span>
+														<span class="sci-badge __level" title="Требуемый уровень класса/расы">Треб. ур. {{ slot.req_level }}</span>
+														<span class="sci-badge __cost" title="Стоимость прокачки">{{ slot.cost }} {{ slot.cost_type === 'spell_point' ? '🔮 MP' : '⚔️ SP' }}</span>
+														<span class="sci-badge __points" title="Очков уровня дает классу/расе">+{{ slot.level_points_given ?? 1 }} ур.</span>
+														<span v-if="slot.branch" class="sci-badge __branch">{{ getBranchName(slot.branch) }}</span>
+													</div>
+
+													<p v-if="slot.description" class="sci-desc">{{ slot.description }}</p>
+
+													<div v-if="slot.parent_ids && slot.parent_ids.length > 0" class="sci-parents">
+														<span class="sci-parents-label">
+															Предки ({{ slot.parent_requirement === 'any' ? 'Любой - OR' : 'Все - AND' }}):
+														</span>
+														<div class="sci-parents-list">
+															<span v-for="pid in slot.parent_ids" :key="pid" class="parent-chip">
+																{{ getSkillNameById(pid) }}
+															</span>
+														</div>
+													</div>
+
+													<div v-if="slot.data && Object.keys(slot.data).length > 0" class="sci-json-preview">
+														<span class="sci-json-label">JSON:</span>
+														<code>{{ JSON.stringify(slot.data) }}</code>
+													</div>
+												</div>
+
+												<!-- Empty Slot Placeholder -->
+												<div
+													v-else
+													class="skill-empty-cell-slot"
+													title="Пустая ячейка. Нажмите, чтобы добавить навык в этот слот"
+													@click="openAddSkillModalAt(tier.level, colIdx)"
+												>
+													<span class="empty-slot-plus">➕</span>
+													<span class="empty-slot-text">Слот {{ colIdx + 1 }} (пусто)</span>
+													<span class="empty-slot-hint">Добавить скил</span>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div v-else class="skills-empty-state">
+									<span class="empty-icon">🍃</span>
+									<p>В этой ветке пока нет навыков. Нажмите «Добавить скил», чтобы создать первый навык.</p>
+								</div>
+							</div>
+
 							<!-- CUSTOM / UNMAPPED JSON FIELDS EDITOR SECTION -->
 							<div class="custom-fields-editor-card">
 								<div class="custom-fields-header">
@@ -1544,6 +1776,312 @@
 				</div>
 			</div>
 		</Transition>
+
+		<!-- Edit Branch Modal -->
+		<Transition name="fade">
+			<div v-if="isBranchModalOpen" class="modal-overlay" @click.self="isBranchModalOpen = false">
+				<div class="branch-modal-card">
+					<div class="modal-header">
+						<span class="modal-icon">🌿</span>
+						<h3 class="modal-title">{{ editingBranchIndex >= 0 ? 'Редактировать ветку' : 'Создать ветку навыков' }}</h3>
+						<button type="button" class="modal-close-icon-btn" @click="isBranchModalOpen = false">✕</button>
+					</div>
+					<div class="modal-body">
+						<div class="form-field">
+							<label class="field-label">Идентификатор ветки (ID, латиница)</label>
+							<input
+								v-model="branchForm.id"
+								type="text"
+								class="editor-input"
+								placeholder="e.g. swordsmanship, defense"
+							/>
+						</div>
+						<div class="field-row __split">
+							<div class="form-field">
+								<label class="field-label">Название ветки</label>
+								<input
+									v-model="branchForm.name"
+									type="text"
+									class="editor-input"
+									placeholder="e.g. Фехтование"
+								/>
+							</div>
+							<div class="form-field __icon-col">
+								<label class="field-label">Иконка</label>
+								<input
+									v-model="branchForm.icon"
+									type="text"
+									class="editor-input"
+									placeholder="🗡️"
+									maxlength="4"
+								/>
+							</div>
+						</div>
+						<div class="form-field">
+							<label class="field-label">Описание ветки</label>
+							<textarea
+								v-model="branchForm.description"
+								class="editor-textarea"
+								rows="2"
+								placeholder="Краткое описание направления прокачки..."
+							></textarea>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button class="editor-btn editor-btn-secondary" @click="isBranchModalOpen = false">
+							Отмена
+						</button>
+						<button
+							class="editor-btn editor-btn-primary"
+							:disabled="!branchForm.id.trim() || !branchForm.name.trim()"
+							@click="saveBranchModal"
+						>
+							💾 Сохранить ветку
+						</button>
+					</div>
+				</div>
+			</div>
+		</Transition>
+
+		<!-- Edit Skill Modal -->
+		<Transition name="fade">
+			<div v-if="isSkillModalOpen" class="modal-overlay" @click.self="isSkillModalOpen = false">
+				<div class="skill-modal-card">
+					<div class="modal-header">
+						<span class="modal-icon">⚔️</span>
+						<h3 class="modal-title">{{ editingSkillId ? 'Редактировать скил' : 'Добавить новый скил' }}</h3>
+						<button type="button" class="modal-close-icon-btn" @click="isSkillModalOpen = false">✕</button>
+					</div>
+					<div class="modal-body skill-modal-body">
+						<div class="field-row __split">
+							<div class="form-field">
+								<label class="field-label">ID скила (уникальный ID)</label>
+								<input
+									v-model="skillForm.id"
+									type="text"
+									class="editor-input"
+									placeholder="slash, shield_bash..."
+									:disabled="!!editingSkillId"
+								/>
+							</div>
+							<div class="form-field">
+								<label class="field-label">Название скила</label>
+								<input
+									v-model="skillForm.name"
+									type="text"
+									class="editor-input"
+									placeholder="Рассекающий удар..."
+								/>
+							</div>
+							<div class="form-field __icon-col">
+								<label class="field-label">Иконка</label>
+								<input
+									v-model="skillForm.icon"
+									type="text"
+									class="editor-input"
+									placeholder="⚔️"
+									maxlength="30"
+								/>
+							</div>
+						</div>
+
+						<div class="field-row __split">
+							<div class="form-field">
+								<label class="field-label">Ветка навыков</label>
+								<select v-model="skillForm.branch" class="editor-select">
+									<option value="">— Без ветки (Общая) —</option>
+									<option
+										v-for="b in (selectedEntity.skill_branches || [])"
+										:key="b.id"
+										:value="b.id"
+									>
+										{{ b.icon || '🌿' }} {{ b.name }} ({{ b.id }})
+									</option>
+								</select>
+							</div>
+							<div class="form-field">
+								<label class="field-label">Требуемый уровень класса/расы (req_level)</label>
+								<input
+									v-model.number="skillForm.req_level"
+									type="number"
+									min="1"
+									max="100"
+									class="editor-input"
+								/>
+							</div>
+							<div class="form-field">
+								<label class="field-label">Очков уровня классу (+Ур.)</label>
+								<input
+									v-model.number="skillForm.level_points_given"
+									type="number"
+									min="0"
+									max="10"
+									class="editor-input"
+								/>
+							</div>
+						</div>
+
+						<div class="field-row __split">
+							<div class="form-field">
+								<label class="field-label">Тип валюты (Cost Type)</label>
+								<select v-model="skillForm.cost_type" class="editor-select">
+									<option value="skill_point">⚔️ Очки навыков (SP)</option>
+									<option value="spell_point">🔮 Очки спелов (MP)</option>
+								</select>
+							</div>
+							<div class="form-field">
+								<label class="field-label">Стоимость прокачки</label>
+								<input
+									v-model.number="skillForm.cost"
+									type="number"
+									min="0"
+									max="50"
+									class="editor-input"
+								/>
+							</div>
+							<div class="form-field">
+								<label class="field-label">Условие родителей (Parent req)</label>
+								<select v-model="skillForm.parent_requirement" class="editor-select">
+									<option value="all">Все родители (AND) — нужны все</option>
+									<option value="any">Любой родитель (OR) — хотя бы один</option>
+								</select>
+							</div>
+						</div>
+
+						<div class="field-row __split">
+							<div class="form-field">
+								<label class="field-label">Категория скила</label>
+								<select v-model="skillForm.category" class="editor-select">
+									<option value="active">⚔️ Активная способность</option>
+									<option value="passive">🛡️ Пассивная способность</option>
+									<option value="aura">✨ Аура</option>
+									<option value="buff">🔼 Бафф</option>
+									<option value="debuff">🔽 Дебафф</option>
+									<option value="spell">🔮 Заклинание</option>
+								</select>
+							</div>
+							<div class="form-field">
+								<label class="field-label">Колонка в сетке уровня (grid_col: 0, 1, 2...)</label>
+								<input
+									v-model.number="skillForm.grid_col"
+									type="number"
+									min="0"
+									max="20"
+									class="editor-input"
+									placeholder="0"
+								/>
+							</div>
+						</div>
+
+						<!-- Parents selector -->
+						<div class="form-field">
+							<label class="field-label">
+								Родительские навыки (Предки):
+								<span class="field-hint">(выберите навыки, которые должны быть прокачаны)</span>
+							</label>
+							<div v-if="availableParentSkills.length > 0" class="skill-parents-selector">
+								<label
+									v-for="parentSk in availableParentSkills"
+									:key="parentSk.id"
+									class="parent-select-label"
+									:class="{ __selected: skillForm.parent_ids.includes(parentSk.id) }"
+								>
+									<input
+										type="checkbox"
+										:checked="skillForm.parent_ids.includes(parentSk.id)"
+										@change="toggleSkillParent(parentSk.id)"
+									/>
+									<span class="psl-icon">{{ parentSk.icon || '⚔️' }}</span>
+									<span class="psl-name">{{ parentSk.name }} (ур. {{ parentSk.req_level }})</span>
+								</label>
+							</div>
+							<div v-else class="no-parents-hint">
+								Нет доступных других навыков для привязки в качестве родителя
+							</div>
+						</div>
+
+						<!-- Description -->
+						<div class="form-field">
+							<label class="field-label">Описание навыка</label>
+							<textarea
+								v-model="skillForm.description"
+								class="editor-textarea"
+								rows="2"
+								placeholder="Подробное описание действия, эффекта и механики..."
+							></textarea>
+						</div>
+
+						<!-- Custom JSON Field Editor -->
+						<div class="custom-fields-editor-card __nested">
+							<div class="custom-fields-header">
+								<div class="cf-header-left">
+									<span class="custom-fields-title">📦 JSON поле данных навыка (data)</span>
+									<span v-if="!skillJsonError" class="custom-fields-badge-tag __valid">✔ Валидный JSON</span>
+									<span v-else class="custom-fields-badge-tag __invalid">❌ Ошибка синтаксиса</span>
+								</div>
+								<div class="cf-header-tools">
+									<button
+										type="button"
+										class="cf-tool-btn"
+										:disabled="!!skillJsonError"
+										@click="formatSkillModalJson"
+									>
+										🪄 Форматировать JSON
+									</button>
+									<button
+										type="button"
+										class="cf-tool-btn"
+										@click="insertSkillTemplate('damage')"
+									>
+										⚔️ Урон
+									</button>
+									<button
+										type="button"
+										class="cf-tool-btn"
+										@click="insertSkillTemplate('defense')"
+									>
+										🛡️ Броня
+									</button>
+									<button
+										type="button"
+										class="cf-tool-btn"
+										@click="insertSkillTemplate('buff')"
+									>
+										✨ Бафф
+									</button>
+								</div>
+							</div>
+
+							<div v-if="skillJsonError" class="custom-fields-alert __error">
+								<span class="alert-icon">⚠️</span>
+								<span class="alert-text">{{ skillJsonError }}</span>
+							</div>
+
+							<textarea
+								v-model="skillJsonStr"
+								class="custom-fields-code-editor"
+								rows="5"
+								spellcheck="false"
+								placeholder="{\n  &quot;type&quot;: &quot;active&quot;\n}"
+								@input="onSkillJsonInput"
+							></textarea>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button class="editor-btn editor-btn-secondary" @click="isSkillModalOpen = false">
+							Отмена
+						</button>
+						<button
+							class="editor-btn editor-btn-primary"
+							:disabled="!skillForm.id.trim() || !skillForm.name.trim() || !!skillJsonError"
+							@click="saveSkillModal"
+						>
+							💾 Сохранить скил
+						</button>
+					</div>
+				</div>
+			</div>
+		</Transition>
 	</div>
 </template>
 
@@ -1552,6 +2090,12 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDataEditor } from '@/composables/useDataEditor'
 import EntityTagPicker from '@/components/tests/EntityTagPicker.vue'
+import {
+	SKILL_CATEGORIES,
+	getCategoryMeta,
+	organizeSkillsByGrid,
+	swapSkillColumns
+} from '@/utils/skillTree'
 
 const router = useRouter()
 const {
@@ -2370,6 +2914,329 @@ async function confirmDelete() {
 	} catch (err) {
 		console.error('Ошибка удаления сущности:', err)
 		setStatus(`Ошибка удаления: ${err.message}`, 'error')
+	}
+}
+
+// --- SKILL TREES & BRANCHES MANAGEMENT ---
+const editorSelectedBranch = ref('all')
+
+const isBranchModalOpen = ref(false)
+const editingBranchIndex = ref(-1)
+const branchForm = ref({
+	id: '',
+	name: '',
+	icon: '🌿',
+	description: ''
+})
+
+const isSkillModalOpen = ref(false)
+const editingSkillId = ref(null)
+const skillForm = ref({
+	id: '',
+	name: '',
+	icon: '⚔️',
+	description: '',
+	branch: '',
+	category: 'active',
+	grid_col: 0,
+	req_level: 1,
+	max_level: 1,
+	cost: 1,
+	cost_type: 'skill_point',
+	level_points_given: 1,
+	parent_ids: [],
+	parent_requirement: 'all'
+})
+const skillJsonStr = ref('{}')
+const skillJsonError = ref(null)
+
+const filteredEditorSkills = computed(() => {
+	if (!selectedEntity.value || !Array.isArray(selectedEntity.value.skills)) return []
+	if (editorSelectedBranch.value === 'all') {
+		return selectedEntity.value.skills
+	}
+	return selectedEntity.value.skills.filter((s) => s.branch === editorSelectedBranch.value)
+})
+
+const editorTierGrid = computed(() => {
+	const skills = filteredEditorSkills.value || []
+	const branches = selectedEntity.value?.skill_branches || []
+	return organizeSkillsByGrid(skills, branches)
+})
+
+const availableParentSkills = computed(() => {
+	if (!selectedEntity.value || !Array.isArray(selectedEntity.value.skills)) return []
+	return selectedEntity.value.skills.filter((s) => s.id !== editingSkillId.value)
+})
+
+function getCategoryBadge(catId) {
+	return getCategoryMeta(catId)
+}
+
+function shiftEditorSkill(skillId, direction) {
+	if (!selectedEntity.value?.skills) return
+	swapSkillColumns(selectedEntity.value.skills, skillId, direction, editorTierGrid.value.maxCols)
+}
+
+function openAddSkillModalAt(reqLevel = 1, gridCol = 0) {
+	openAddSkillModal()
+	skillForm.value.req_level = Math.max(1, reqLevel)
+	skillForm.value.grid_col = gridCol
+}
+
+function getSkillsCountInBranch(branchId) {
+	if (!selectedEntity.value || !Array.isArray(selectedEntity.value.skills)) return 0
+	return selectedEntity.value.skills.filter((s) => s.branch === branchId).length
+}
+
+function getBranchName(branchId) {
+	if (!selectedEntity.value || !Array.isArray(selectedEntity.value.skill_branches)) return branchId
+	const b = selectedEntity.value.skill_branches.find((br) => br.id === branchId)
+	return b ? `${b.icon || '🌿'} ${b.name}` : branchId
+}
+
+function getSkillNameById(skillId) {
+	if (!selectedEntity.value || !Array.isArray(selectedEntity.value.skills)) return skillId
+	const s = selectedEntity.value.skills.find((sk) => sk.id === skillId)
+	return s ? s.name : skillId
+}
+
+// Branch modal actions
+function openAddBranchModal() {
+	editingBranchIndex.value = -1
+	branchForm.value = {
+		id: '',
+		name: '',
+		icon: '🌿',
+		description: ''
+	}
+	isBranchModalOpen.value = true
+}
+
+function openEditBranchModal(idx) {
+	if (!selectedEntity.value?.skill_branches?.[idx]) return
+	editingBranchIndex.value = idx
+	const b = selectedEntity.value.skill_branches[idx]
+	branchForm.value = {
+		id: b.id,
+		name: b.name,
+		icon: b.icon || '🌿',
+		description: b.description || ''
+	}
+	isBranchModalOpen.value = true
+}
+
+function saveBranchModal() {
+	if (!selectedEntity.value) return
+	if (!Array.isArray(selectedEntity.value.skill_branches)) {
+		selectedEntity.value.skill_branches = []
+	}
+
+	const branchObj = {
+		id: String(branchForm.value.id || '').trim(),
+		name: String(branchForm.value.name || '').trim(),
+		icon: branchForm.value.icon || '🌿',
+		description: String(branchForm.value.description || '').trim()
+	}
+
+	if (editingBranchIndex.value >= 0) {
+		const oldBranch = selectedEntity.value.skill_branches[editingBranchIndex.value]
+		const oldId = oldBranch?.id
+		selectedEntity.value.skill_branches[editingBranchIndex.value] = branchObj
+
+		// If ID changed, update linked skills
+		if (oldId && oldId !== branchObj.id && Array.isArray(selectedEntity.value.skills)) {
+			for (const sk of selectedEntity.value.skills) {
+				if (sk.branch === oldId) sk.branch = branchObj.id
+			}
+		}
+	} else {
+		// Check ID duplicate
+		if (selectedEntity.value.skill_branches.some((b) => b.id === branchObj.id)) {
+			setStatus(`Ветка с ID '${branchObj.id}' уже существует`, 'error')
+			return
+		}
+		selectedEntity.value.skill_branches.push(branchObj)
+	}
+	isBranchModalOpen.value = false
+}
+
+function removeBranch(idx) {
+	if (!selectedEntity.value?.skill_branches?.[idx]) return
+	const b = selectedEntity.value.skill_branches[idx]
+	if (confirm(`Удалить ветку навыков "${b.name}"? Навыки из этой ветки станут общими.`)) {
+		selectedEntity.value.skill_branches.splice(idx, 1)
+		// Update skills belonging to this branch
+		if (Array.isArray(selectedEntity.value.skills)) {
+			for (const sk of selectedEntity.value.skills) {
+				if (sk.branch === b.id) sk.branch = ''
+			}
+		}
+		if (editorSelectedBranch.value === b.id) {
+			editorSelectedBranch.value = 'all'
+		}
+	}
+}
+
+// Skill modal actions
+function openAddSkillModal() {
+	editingSkillId.value = null
+	skillForm.value = {
+		id: '',
+		name: '',
+		icon: '⚔️',
+		description: '',
+		branch: editorSelectedBranch.value !== 'all' ? editorSelectedBranch.value : '',
+		category: 'active',
+		grid_col: 0,
+		req_level: 1,
+		max_level: 1,
+		cost: 1,
+		cost_type: 'skill_point',
+		level_points_given: 1,
+		parent_ids: [],
+		parent_requirement: 'all'
+	}
+	skillJsonStr.value = '{\n  "type": "active"\n}'
+	skillJsonError.value = null
+	isSkillModalOpen.value = true
+}
+
+function openEditSkillModal(skill) {
+	editingSkillId.value = skill.id
+	skillForm.value = {
+		id: skill.id,
+		name: skill.name,
+		icon: skill.icon || '⚔️',
+		description: skill.description || '',
+		branch: skill.branch || '',
+		category: skill.category || 'active',
+		grid_col: skill.grid_col ?? 0,
+		req_level: Math.max(1, skill.req_level ?? 1),
+		max_level: 1,
+		cost: skill.cost !== undefined ? Math.max(0, parseInt(skill.cost, 10) || 0) : 1,
+		cost_type: skill.cost_type === 'spell_point' ? 'spell_point' : 'skill_point',
+		level_points_given: skill.level_points_given ?? 1,
+		parent_ids: Array.isArray(skill.parent_ids) ? [...skill.parent_ids] : [],
+		parent_requirement: skill.parent_requirement || 'all'
+	}
+	try {
+		skillJsonStr.value = JSON.stringify(skill.data || {}, null, 2)
+	} catch (e) {
+		skillJsonStr.value = '{}'
+	}
+	skillJsonError.value = null
+	isSkillModalOpen.value = true
+}
+
+function toggleSkillParent(pid) {
+	const current = skillForm.value.parent_ids
+	const idx = current.indexOf(pid)
+	if (idx >= 0) {
+		current.splice(idx, 1)
+	} else {
+		current.push(pid)
+	}
+}
+
+function onSkillJsonInput() {
+	try {
+		JSON.parse(skillJsonStr.value)
+		skillJsonError.value = null
+	} catch (err) {
+		skillJsonError.value = err.message
+	}
+}
+
+function formatSkillModalJson() {
+	try {
+		const parsed = JSON.parse(skillJsonStr.value)
+		skillJsonStr.value = JSON.stringify(parsed, null, 2)
+		skillJsonError.value = null
+	} catch (err) {
+		skillJsonError.value = err.message
+	}
+}
+
+function insertSkillTemplate(type) {
+	let tpl = {}
+	if (type === 'damage') {
+		tpl = { type: 'active', damage_multiplier: 1.5, ap_cost: 2, cooldown: 1, element: 'physical' }
+	} else if (type === 'defense') {
+		tpl = { type: 'passive', armor_bonus: 15, block_chance: 10 }
+	} else if (type === 'buff') {
+		tpl = { type: 'active', buff_name: 'rage', stat: 'attack', boost_percent: 25, duration: 3 }
+	}
+	skillJsonStr.value = JSON.stringify(tpl, null, 2)
+	skillJsonError.value = null
+}
+
+function saveSkillModal() {
+	if (!selectedEntity.value) return
+	if (!Array.isArray(selectedEntity.value.skills)) {
+		selectedEntity.value.skills = []
+	}
+
+	let parsedData = {}
+	try {
+		parsedData = JSON.parse(skillJsonStr.value)
+	} catch (e) {
+		skillJsonError.value = e.message
+		return
+	}
+
+	const parsedCost = parseInt(skillForm.value.cost, 10)
+	const cost = isNaN(parsedCost) ? 1 : Math.max(0, parsedCost)
+
+	const skillObj = {
+		id: String(skillForm.value.id || '').trim(),
+		name: String(skillForm.value.name || '').trim(),
+		icon: skillForm.value.icon || '⚔️',
+		description: String(skillForm.value.description || '').trim(),
+		branch: skillForm.value.branch || '',
+		category: skillForm.value.category || 'active',
+		grid_col: Math.max(0, parseInt(skillForm.value.grid_col, 10) || 0),
+		req_level: Math.max(1, parseInt(skillForm.value.req_level, 10) || 1),
+		max_level: 1,
+		cost,
+		cost_type: skillForm.value.cost_type === 'spell_point' ? 'spell_point' : 'skill_point',
+		level_points_given: Math.max(0, parseInt(skillForm.value.level_points_given, 10) || 0),
+		parent_ids: skillForm.value.parent_ids || [],
+		parent_requirement: skillForm.value.parent_requirement === 'any' ? 'any' : 'all',
+		data: parsedData
+	}
+
+	if (editingSkillId.value) {
+		const idx = selectedEntity.value.skills.findIndex((s) => s.id === editingSkillId.value)
+		if (idx >= 0) {
+			selectedEntity.value.skills[idx] = skillObj
+		}
+	} else {
+		// Duplicate ID check
+		if (selectedEntity.value.skills.some((s) => s.id === skillObj.id)) {
+			setStatus(`Навык с ID '${skillObj.id}' уже существует`, 'error')
+			return
+		}
+		selectedEntity.value.skills.push(skillObj)
+	}
+
+	isSkillModalOpen.value = false
+}
+
+function removeSkill(skillId) {
+	if (!selectedEntity.value?.skills) return
+	const idx = selectedEntity.value.skills.findIndex((s) => s.id === skillId)
+	if (idx >= 0) {
+		const name = selectedEntity.value.skills[idx].name
+		if (confirm(`Удалить навык '${name}'?`)) {
+			selectedEntity.value.skills.splice(idx, 1)
+			// Remove as parent from other skills if present
+			for (const sk of selectedEntity.value.skills) {
+				if (Array.isArray(sk.parent_ids)) {
+					sk.parent_ids = sk.parent_ids.filter((pid) => pid !== skillId)
+				}
+			}
+		}
 	}
 }
 </script>
@@ -4676,5 +5543,567 @@ async function confirmDelete() {
 .fade-enter-from,
 .fade-leave-to {
 	opacity: 0;
+}
+
+/* --- SKILL TREES & BRANCHES SECTION STYLES --- */
+.skills-editor-section {
+	background: rgba(15, 23, 42, 0.6);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: 0.5em;
+	padding: 1em;
+	margin-bottom: 1.2em;
+	display: flex;
+	flex-direction: column;
+	gap: 0.8em;
+}
+
+.skills-section-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+	padding-bottom: 0.6em;
+}
+
+.ssh-left {
+	display: flex;
+	align-items: center;
+	gap: 0.6em;
+}
+
+.ssh-icon {
+	font-size: 1.5em;
+}
+
+.ssh-title {
+	margin: 0;
+	font-size: 1.05em;
+	color: #f1f5f9;
+	font-family: Kurale, sans-serif;
+}
+
+.ssh-subtitle {
+	font-size: 0.75em;
+	color: #94a3b8;
+}
+
+.ssh-actions {
+	display: flex;
+	gap: 0.5em;
+}
+
+/* Branch Pills */
+.skill-branches-bar {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.4em;
+	align-items: center;
+	padding: 0.3em 0;
+}
+
+.branch-filter-btn {
+	background: rgba(255, 255, 255, 0.05);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	color: #cbd5e1;
+	border-radius: 0.4em;
+	padding: 0.35em 0.8em;
+	font-size: 0.82em;
+	cursor: pointer;
+	transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.branch-filter-btn.__active {
+	background: rgba(246, 196, 69, 0.18);
+	border-color: #f6c445;
+	color: #f6c445;
+	font-weight: bold;
+}
+
+.branch-pill-item {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4em;
+	background: rgba(30, 41, 59, 0.7);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 0.4em;
+	padding: 0.3em 0.6em;
+	font-size: 0.82em;
+	cursor: pointer;
+	transition: background 0.15s, border-color 0.15s;
+}
+
+.branch-pill-item.__active {
+	background: rgba(16, 185, 129, 0.2);
+	border-color: #10b981;
+	color: #6ee7b7;
+}
+
+.branch-pill-count {
+	background: rgba(0, 0, 0, 0.3);
+	padding: 0.1em 0.4em;
+	border-radius: 0.3em;
+	font-size: 0.8em;
+	color: #94a3b8;
+}
+
+.branch-pill-actions {
+	display: inline-flex;
+	gap: 0.2em;
+	margin-left: 0.2em;
+}
+
+.branch-pill-btn {
+	background: transparent;
+	border: none;
+	cursor: pointer;
+	font-size: 0.85em;
+	padding: 0 0.15em;
+	opacity: 0.7;
+}
+
+.branch-pill-btn:hover {
+	opacity: 1;
+}
+
+.branch-pill-btn.__del:hover {
+	color: #f87171;
+}
+
+/* Skills Cellular Grid by Tiers */
+.skills-tier-grid-container {
+	display: flex;
+	flex-direction: column;
+	gap: 1.2em;
+}
+
+.editor-tier-row {
+	background: rgba(10, 15, 26, 0.6);
+	border: 1px solid rgba(255, 255, 255, 0.07);
+	border-radius: 0.6em;
+	padding: 0.8em;
+	display: flex;
+	flex-direction: column;
+	gap: 0.6em;
+}
+
+.editor-tier-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+	padding-bottom: 0.4em;
+}
+
+.eth-left {
+	display: flex;
+	align-items: center;
+	gap: 0.6em;
+}
+
+.eth-badge {
+	font-weight: bold;
+	font-size: 0.85em;
+	letter-spacing: 0.05em;
+	background: rgba(59, 130, 246, 0.2);
+	border: 1px solid #3b82f6;
+	color: #93c5fd;
+	padding: 0.2em 0.6em;
+	border-radius: 0.35em;
+}
+
+.eth-count {
+	font-size: 0.78em;
+	color: #94a3b8;
+}
+
+.eth-add-btn {
+	font-size: 0.78em;
+	padding: 0.25em 0.6em;
+}
+
+.editor-tier-cells {
+	display: grid;
+	gap: 0.8em;
+}
+
+.editor-grid-cell {
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+}
+
+.skill-card-item {
+	background: rgba(18, 26, 43, 0.85);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: 0.5em;
+	padding: 0.7em;
+	display: flex;
+	flex-direction: column;
+	gap: 0.45em;
+	height: 100%;
+	transition: border-color 0.15s, transform 0.15s;
+}
+
+.skill-card-item:hover {
+	border-color: rgba(246, 196, 69, 0.4);
+	transform: translateY(-0.1em);
+}
+
+.sci-col-shift-bar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	background: rgba(0, 0, 0, 0.25);
+	border: 1px solid rgba(255, 255, 255, 0.06);
+	border-radius: 0.35em;
+	padding: 0.15em 0.3em;
+}
+
+.sci-shift-btn {
+	background: rgba(255, 255, 255, 0.08);
+	border: 1px solid rgba(255, 255, 255, 0.15);
+	color: #f1f5f9;
+	border-radius: 0.25em;
+	padding: 0.1em 0.4em;
+	font-size: 0.75em;
+	cursor: pointer;
+	transition: background 0.15s, color 0.15s;
+}
+
+.sci-shift-btn:hover:not(:disabled) {
+	background: #3b82f6;
+	color: #fff;
+}
+
+.sci-shift-btn:disabled {
+	opacity: 0.3;
+	cursor: not-allowed;
+}
+
+.sci-slot-label {
+	font-size: 0.72em;
+	color: #cbd5e1;
+	font-weight: 500;
+}
+
+/* Category Badges */
+.sci-cat-badge.__cat-active {
+	background: rgba(239, 68, 68, 0.2);
+	border: 1px solid #ef4444;
+	color: #fca5a5;
+}
+
+.sci-cat-badge.__cat-passive {
+	background: rgba(59, 130, 246, 0.2);
+	border: 1px solid #3b82f6;
+	color: #93c5fd;
+}
+
+.sci-cat-badge.__cat-aura {
+	background: rgba(245, 158, 11, 0.2);
+	border: 1px solid #f59e0b;
+	color: #fde68a;
+}
+
+.sci-cat-badge.__cat-buff {
+	background: rgba(16, 185, 129, 0.2);
+	border: 1px solid #10b981;
+	color: #6ee7b7;
+}
+
+.sci-cat-badge.__cat-debuff {
+	background: rgba(168, 85, 247, 0.2);
+	border: 1px solid #a855f7;
+	color: #d8b4fe;
+}
+
+/* Empty Cell Slot */
+.skill-empty-cell-slot {
+	min-height: 9em;
+	border: 1px dashed rgba(255, 255, 255, 0.15);
+	border-radius: 0.5em;
+	background: rgba(0, 0, 0, 0.2);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 0.3em;
+	cursor: pointer;
+	padding: 0.8em;
+	text-align: center;
+	transition: background 0.15s, border-color 0.15s;
+}
+
+.skill-empty-cell-slot:hover {
+	background: rgba(59, 130, 246, 0.1);
+	border-color: #3b82f6;
+}
+
+.empty-slot-plus {
+	font-size: 1.4em;
+	opacity: 0.7;
+}
+
+.empty-slot-text {
+	font-size: 0.78em;
+	color: #94a3b8;
+}
+
+.empty-slot-hint {
+	font-size: 0.72em;
+	color: #60a5fa;
+}
+
+.sci-header {
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+}
+
+.sci-icon-box {
+	width: 2.2em;
+	height: 2.2em;
+	background: rgba(0, 0, 0, 0.35);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 0.4em;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 1.1em;
+}
+
+.sci-info {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+.sci-name {
+	font-size: 0.95em;
+	font-weight: bold;
+	color: #f1f5f9;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.sci-id {
+	font-size: 0.72em;
+	color: #64748b;
+}
+
+.sci-actions {
+	display: flex;
+	gap: 0.3em;
+}
+
+.sci-btn {
+	background: rgba(255, 255, 255, 0.05);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	color: #cbd5e1;
+	border-radius: 0.3em;
+	padding: 0.25em 0.4em;
+	cursor: pointer;
+	font-size: 0.85em;
+}
+
+.sci-btn:hover {
+	background: rgba(255, 255, 255, 0.12);
+}
+
+.sci-btn.__danger:hover {
+	background: rgba(239, 68, 68, 0.2);
+	border-color: #ef4444;
+}
+
+.sci-badges {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.3em;
+}
+
+.sci-badge {
+	font-size: 0.72em;
+	padding: 0.15em 0.45em;
+	border-radius: 0.25em;
+	font-weight: 500;
+}
+
+.sci-badge.__level {
+	background: rgba(59, 130, 246, 0.2);
+	border: 1px solid #3b82f6;
+	color: #93c5fd;
+}
+
+.sci-badge.__points {
+	background: rgba(16, 185, 129, 0.2);
+	border: 1px solid #10b981;
+	color: #6ee7b7;
+}
+
+.sci-badge.__cost {
+	background: rgba(245, 158, 11, 0.2);
+	border: 1px solid #f59e0b;
+	color: #fde68a;
+}
+
+.sci-badge.__max {
+	background: rgba(148, 163, 184, 0.15);
+	border: 1px solid rgba(148, 163, 184, 0.3);
+	color: #cbd5e1;
+}
+
+.sci-badge.__branch {
+	background: rgba(168, 85, 247, 0.2);
+	border: 1px solid #a855f7;
+	color: #d8b4fe;
+}
+
+.sci-desc {
+	font-size: 0.8em;
+	color: #94a3b8;
+	margin: 0;
+	line-height: 1.35;
+}
+
+.sci-parents {
+	display: flex;
+	flex-direction: column;
+	gap: 0.2em;
+	font-size: 0.75em;
+}
+
+.sci-parents-label {
+	color: #64748b;
+}
+
+.sci-parents-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.25em;
+}
+
+.parent-chip {
+	background: rgba(255, 255, 255, 0.06);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 0.25em;
+	padding: 0.1em 0.4em;
+	color: #cbd5e1;
+}
+
+.sci-json-preview {
+	display: flex;
+	align-items: center;
+	gap: 0.4em;
+	background: rgba(0, 0, 0, 0.3);
+	border-radius: 0.3em;
+	padding: 0.25em 0.5em;
+	font-size: 0.72em;
+	overflow: hidden;
+}
+
+.sci-json-label {
+	color: #64748b;
+}
+
+.sci-json-preview code {
+	color: #38bdf8;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.skills-empty-state {
+	text-align: center;
+	padding: 1.5em;
+	color: #64748b;
+	font-size: 0.9em;
+}
+
+.skills-empty-state .empty-icon {
+	font-size: 2em;
+	display: block;
+	margin-bottom: 0.3em;
+}
+
+/* Modals */
+.branch-modal-card {
+	background: #0f172a;
+	border: 1px solid rgba(246, 196, 69, 0.4);
+	border-radius: 0.6em;
+	width: 26em;
+	max-width: 90%;
+	box-shadow: 0 0.8em 2em rgba(0, 0, 0, 0.6);
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+.skill-modal-card {
+	background: #0f172a;
+	border: 1px solid rgba(246, 196, 69, 0.4);
+	border-radius: 0.6em;
+	width: 42em;
+	max-width: 95%;
+	max-height: 90%;
+	box-shadow: 0 0.8em 2.5em rgba(0, 0, 0, 0.7);
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+.skill-modal-body {
+	overflow-y: auto;
+	max-height: 35em;
+	padding: 1em;
+	display: flex;
+	flex-direction: column;
+	gap: 0.8em;
+}
+
+.skill-parents-selector {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(14em, 1fr));
+	gap: 0.35em;
+	max-height: 7em;
+	overflow-y: auto;
+	background: rgba(0, 0, 0, 0.25);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: 0.4em;
+	padding: 0.4em;
+}
+
+.parent-select-label {
+	display: flex;
+	align-items: center;
+	gap: 0.4em;
+	font-size: 0.8em;
+	color: #cbd5e1;
+	cursor: pointer;
+	padding: 0.2em 0.3em;
+	border-radius: 0.25em;
+}
+
+.parent-select-label:hover {
+	background: rgba(255, 255, 255, 0.05);
+}
+
+.parent-select-label.__selected {
+	background: rgba(246, 196, 69, 0.15);
+	color: #f6c445;
+}
+
+.no-parents-hint {
+	font-size: 0.78em;
+	color: #64748b;
+	font-style: italic;
+}
+
+.custom-fields-editor-card.__nested {
+	background: rgba(0, 0, 0, 0.25);
+	border-color: rgba(255, 255, 255, 0.06);
+	padding: 0.7em;
+	margin-top: 0.2em;
 }
 </style>

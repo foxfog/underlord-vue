@@ -20,7 +20,62 @@
       "mp": 1,
       "attack": 1,
       "defense": 1
-    }
+    },
+    "skill_branches": [
+      {
+        "id": "human_adaptability",
+        "name": "Адаптивность",
+        "icon": "🌿",
+        "description": "Уникальная гибкость и обучаемость человеческой расы"
+      }
+    ],
+    "skills": [
+      {
+        "id": "human_potential",
+        "name": "Скрытый потенциал",
+        "icon": "💡",
+        "description": "Ускоряет получение опыта и дает 1 очко расового уровня.",
+        "branch": "human_adaptability",
+        "category": "passive",
+        "grid_col": 0,
+        "req_level": 1,
+        "max_level": 1,
+        "cost": 0,
+        "level_points_given": 1,
+        "parent_ids": [],
+        "parent_requirement": "all",
+        "data": {
+          "type": "passive",
+          "exp_multiplier": 1.15
+        },
+        "cost_type": "skill_point"
+      },
+      {
+        "id": "human_versatility",
+        "name": "Разносторонность",
+        "icon": "🎭",
+        "description": "Повышает все основные характеристики. Требует 1 уровень расы и знание Скрытого потенциала.",
+        "branch": "human_adaptability",
+        "category": "buff",
+        "grid_col": 1,
+        "req_level": 2,
+        "max_level": 1,
+        "cost": 2,
+        "level_points_given": 1,
+        "parent_ids": [
+          "human_potential"
+        ],
+        "parent_requirement": "all",
+        "data": {
+          "type": "passive",
+          "all_stats_bonus": 5
+        },
+        "cost_type": "skill_point"
+      }
+    ],
+    "tier": "basic",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "half-elf",
@@ -32,7 +87,10 @@
       "half-elf"
     ],
     "lvl_min": 1,
-    "description": "Потомки союза человека и эльфа, сочетающие черты обеих рас."
+    "description": "Потомки союза человека и эльфа, сочетающие черты обеих рас.",
+    "tier": "basic",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "elf",
@@ -44,7 +102,10 @@
       "elf"
     ],
     "lvl_min": 1,
-    "description": "Живут в лесах (например, Великий Лес Тов). Враждуют с Теократией Слейн."
+    "description": "Живут в лесах (например, Великий Лес Тов). Враждуют с Теократией Слейн.",
+    "tier": "basic",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "dark-elf",
@@ -57,7 +118,10 @@
       "dark-elf"
     ],
     "lvl_min": 1,
-    "description": "Разновидность эльфов с тёмной кожей. Близнецы Аура и Маре принадлежат к этой расе."
+    "description": "Разновидность эльфов с тёмной кожей. Близнецы Аура и Маре принадлежат к этой расе.",
+    "tier": "basic",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "dwarf",
@@ -69,7 +133,10 @@
       "dwarf"
     ],
     "lvl_min": 1,
-    "description": "Живут под землёй (Горы Азерлисия). Известны кузнечным делом и рунной магией."
+    "description": "Живут под землёй (Горы Азерлисия). Известны кузнечным делом и рунной магией.",
+    "tier": "basic",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "dark-dwarf",
@@ -82,7 +149,10 @@
       "dark-dwarf"
     ],
     "lvl_min": 1,
-    "description": "Подземные сородичи дварфов, живущие в глубоких шахтах и пещерах."
+    "description": "Подземные сородичи дварфов, живущие в глубоких шахтах и пещерах.",
+    "tier": "basic",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "goblin",
@@ -94,7 +164,10 @@
       "goblin"
     ],
     "lvl_min": 1,
-    "description": "Слабые полулюди, часто объединяются в стаи. Армия Энри состоит из них."
+    "description": "Слабые полулюди, часто объединяются в стаи. Армия Энри состоит из них.",
+    "tier": "basic",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "hobgoblin",
@@ -107,7 +180,10 @@
       "hobgoblin"
     ],
     "lvl_min": 5,
-    "description": "Усиленная эволюция гоблинов. Крупнее, сильнее и дисциплинированнее."
+    "description": "Усиленная эволюция гоблинов. Крупнее, сильнее и дисциплинированнее.",
+    "tier": "advanced",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "orc",
@@ -119,7 +195,10 @@
       "orc"
     ],
     "lvl_min": 1,
-    "description": "Воинственные полулюди, известные своей прожорливостью."
+    "description": "Воинственные полулюди, известные своей прожорливостью.",
+    "tier": "basic",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "ogre",
@@ -131,7 +210,10 @@
       "ogre_kin"
     ],
     "lvl_min": 1,
-    "description": "Крупные и физически сильные полулюди с низким интеллектом."
+    "description": "Крупные и физически сильные полулюди с низким интеллектом.",
+    "tier": "basic",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "merrow",
@@ -143,7 +225,10 @@
       "ogre_kin"
     ],
     "lvl_min": 1,
-    "description": "Разновидность огров, обитающая вблизи водоёмов."
+    "description": "Разновидность огров, обитающая вблизи водоёмов.",
+    "tier": "basic",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "troll",
@@ -155,7 +240,10 @@
       "troll"
     ],
     "lvl_min": 1,
-    "description": "Обладают мощной регенерацией. Слабы к огню и кислоте."
+    "description": "Обладают мощной регенерацией. Слабы к огню и кислоте.",
+    "tier": "basic",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "scrag",
@@ -167,7 +255,10 @@
       "troll"
     ],
     "lvl_min": 1,
-    "description": "Водные тролли с повышенной живучестью в сырой среде."
+    "description": "Водные тролли с повышенной живучестью в сырой среде.",
+    "tier": "advanced",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "beastman",
@@ -179,7 +270,10 @@
       "beastman"
     ],
     "lvl_min": 1,
-    "description": "Зверолюди. В Новом Мире создали мощные государства, враждующие с людьми."
+    "description": "Зверолюди. В Новом Мире создали мощные государства, враждующие с людьми.",
+    "tier": "basic",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "lizardman",
@@ -193,7 +287,10 @@
       "beastman"
     ],
     "lvl_min": 1,
-    "description": "Гордые воины-рептилии из болот. Объединены Коцитом под властью Назарика."
+    "description": "Гордые воины-рептилии из болот. Объединены Коцитом под властью Назарика.",
+    "tier": "basic",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "quagoa",
@@ -206,7 +303,10 @@
       "beastman"
     ],
     "lvl_min": 1,
-    "description": "Кротоподобные полулюди из гор Азерлисия. Едят руду, чтобы укреплять шкуру."
+    "description": "Кротоподобные полулюди из гор Азерлисия. Едят руду, чтобы укреплять шкуру.",
+    "tier": "basic",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "minotaur",
@@ -219,7 +319,10 @@
       "minotaur"
     ],
     "lvl_min": 1,
-    "description": "Быкоподобные полулюди. В Новом Мире создали нацию благодаря Минотавру-Мудрецу."
+    "description": "Быкоподобные полулюди. В Новом Мире создали нацию благодаря Минотавру-Мудрецу.",
+    "tier": "basic",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "centaur",
@@ -232,7 +335,10 @@
       "centaur"
     ],
     "lvl_min": 1,
-    "description": "Полулюди с телом лошади и торсом человека."
+    "description": "Полулюди с телом лошади и торсом человека.",
+    "tier": "basic",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "naga",
@@ -245,7 +351,10 @@
       "naga"
     ],
     "lvl_min": 1,
-    "description": "Змеелюди. Часто обладают магическими способностями."
+    "description": "Змеелюди. Часто обладают магическими способностями.",
+    "tier": "basic",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "armot",
@@ -257,7 +366,10 @@
       "beastman"
     ],
     "lvl_min": 1,
-    "description": "Армоты описаны как двуногие крысоподобные существа с прочной, как железо, шерстью."
+    "description": "Армоты описаны как двуногие крысоподобные существа с прочной, как железо, шерстью.",
+    "tier": "basic",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "skeleton",
@@ -270,7 +382,64 @@
       "skeleton"
     ],
     "lvl_min": 1,
-    "description": "Базовая скелетная нежить, невосприимчивая к ядам и колющему урону."
+    "description": "Базовая скелетная нежить, невосприимчивая к ядам и колющему урону.",
+    "skill_branches": [
+      {
+        "id": "necromancy",
+        "name": "Некромантия и Кости",
+        "icon": "💀",
+        "description": "Управление костяной структурой и энергией смерти"
+      }
+    ],
+    "skills": [
+      {
+        "id": "skeleton_bone_armor",
+        "name": "Костяной панцирь",
+        "icon": "🦴",
+        "description": "Укрепляет костную ткань, уменьшая получаемый физический урон.",
+        "branch": "necromancy",
+        "category": "passive",
+        "grid_col": 0,
+        "req_level": 1,
+        "max_level": 1,
+        "cost": 1,
+        "level_points_given": 1,
+        "parent_ids": [],
+        "parent_requirement": "all",
+        "data": {
+          "type": "passive",
+          "pierce_resistance": 50,
+          "armor": 20
+        },
+        "cost_type": "skill_point"
+      },
+      {
+        "id": "skeleton_death_chill",
+        "name": "Загробный холод",
+        "icon": "❄️",
+        "description": "Окутывает атаки леденящей энергией отрицательной магии. Требует 1 уровень расы.",
+        "branch": "necromancy",
+        "category": "active",
+        "grid_col": 1,
+        "req_level": 2,
+        "max_level": 1,
+        "cost": 2,
+        "level_points_given": 1,
+        "parent_ids": [
+          "skeleton_bone_armor"
+        ],
+        "parent_requirement": "all",
+        "data": {
+          "type": "active",
+          "cold_damage": 80,
+          "slow_percent": 30
+        },
+        "cost_type": "skill_point"
+      }
+    ],
+    "tier": "basic",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "skeleton-archer",
@@ -283,7 +452,10 @@
       "skeleton"
     ],
     "lvl_min": 1,
-    "description": "Скелет, специализированный на стрельбе из лука."
+    "description": "Скелет, специализированный на стрельбе из лука.",
+    "tier": "advanced",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "skeleton-warrior",
@@ -296,7 +468,10 @@
       "skeleton"
     ],
     "lvl_min": 1,
-    "description": "Скелет, владеющий оружием ближнего боя и щитом."
+    "description": "Скелет, владеющий оружием ближнего боя и щитом.",
+    "tier": "advanced",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "skeleton-mage",
@@ -309,7 +484,10 @@
       "skeleton"
     ],
     "lvl_min": 1,
-    "description": "Базовая нежить-заклинатель (15 уровней)."
+    "description": "Базовая нежить-заклинатель (15 уровней).",
+    "tier": "advanced",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 1
   },
   {
     "id": "lich",
@@ -323,7 +501,10 @@
       "lich"
     ],
     "lvl_min": 1,
-    "description": "Продвинутая нежить-заклинатель."
+    "description": "Продвинутая нежить-заклинатель.",
+    "tier": "advanced",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 1
   },
   {
     "id": "elder-lich",
@@ -337,7 +518,10 @@
       "lich"
     ],
     "lvl_min": 10,
-    "description": "Старший лич. Высшая нежить, специализирующаяся на магии (10 уровней)."
+    "description": "Старший лич. Высшая нежить, специализирующаяся на магии (10 уровней).",
+    "tier": "advanced",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 1
   },
   {
     "id": "night-lich",
@@ -351,7 +535,10 @@
       "lich"
     ],
     "lvl_min": 1,
-    "description": "Уникальная эволюция в Новом Мире (организация «Тело Бездны»). Могут использовать магию 6+ тира."
+    "description": "Уникальная эволюция в Новом Мире (организация «Тело Бездны»). Могут использовать магию 6+ тира.",
+    "tier": "rare",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 1
   },
   {
     "id": "overlord",
@@ -365,7 +552,10 @@
       "lich"
     ],
     "lvl_min": 10,
-    "description": "Высшая форма нежити. Мощнейшие заклинатели, правители смерти (5 уровней). Раса Аинза."
+    "description": "Высшая форма нежити. Мощнейшие заклинатели, правители смерти (5 уровней). Раса Аинза.",
+    "tier": "rare",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "zombie",
@@ -377,7 +567,10 @@
       "undead"
     ],
     "lvl_min": 1,
-    "description": "Оживший мертвец с медлительными движениями и выносливым телом."
+    "description": "Оживший мертвец с медлительными движениями и выносливым телом.",
+    "tier": "basic",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "ghoul",
@@ -389,7 +582,10 @@
       "undead"
     ],
     "lvl_min": 1,
-    "description": "Быстрая плотоядная нежить с парализующими когтями."
+    "description": "Быстрая плотоядная нежить с парализующими когтями.",
+    "tier": "advanced",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "vampire",
@@ -402,7 +598,10 @@
       "vampire"
     ],
     "lvl_min": 1,
-    "description": "Нежить, питающаяся кровью. Имеют множество иммунитетов, но уязвимы к свету/серебру."
+    "description": "Нежить, питающаяся кровью. Имеют множество иммунитетов, но уязвимы к свету/серебру.",
+    "tier": "basic",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "true-vampire",
@@ -416,7 +615,10 @@
       "true_vampire"
     ],
     "lvl_min": 1,
-    "description": "Истинный вампир. Высшая ступень эволюции. Раса Шалтир Бладфоллен."
+    "description": "Истинный вампир. Высшая ступень эволюции. Раса Шалтир Бладфоллен.",
+    "tier": "rare",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "imp",
@@ -431,7 +633,10 @@
       "imp"
     ],
     "lvl_min": 1,
-    "description": "Низший демон. Базовая раса для большинства обитателей Пылающего Ада."
+    "description": "Низший демон. Базовая раса для большинства обитателей Пылающего Ада.",
+    "tier": "basic",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "archdevil",
@@ -448,7 +653,10 @@
       "archdevil"
     ],
     "lvl_min": 1,
-    "description": "Высший дьявол. Командиры демонических легионов."
+    "description": "Высший дьявол. Командиры демонических легионов.",
+    "tier": "rare",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "succubus",
@@ -463,7 +671,10 @@
       "imp"
     ],
     "lvl_min": 1,
-    "description": "Демоны искушения. Альбедо принадлежит к этой расе."
+    "description": "Демоны искушения. Альбедо принадлежит к этой расе.",
+    "tier": "advanced",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "angel",
@@ -477,7 +688,10 @@
       "third_sphere"
     ],
     "lvl_min": 1,
-    "description": "Небесные создания. Часто призываются Слейнской Теократией."
+    "description": "Небесные создания. Часто призываются Слейнской Теократией.",
+    "tier": "basic",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "angel-guardian",
@@ -491,7 +705,10 @@
       "third_sphere"
     ],
     "lvl_min": 10,
-    "description": "Ангел Третьей Сферы. Базовый страж с щитом и мечом, обеспечивающий прикрытие. Призыв 2-го тира."
+    "description": "Ангел Третьей Сферы. Базовый страж с щитом и мечом, обеспечивающий прикрытие. Призыв 2-го тира.",
+    "tier": "advanced",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "archangel-flame",
@@ -506,7 +723,10 @@
       "archangel"
     ],
     "lvl_min": 15,
-    "description": "Ангел Третьей Сферы. Боевой ангел с пылающим мечом. Основная сила Писания Солнечного Света. Призыв 3-го тира."
+    "description": "Ангел Третьей Сферы. Боевой ангел с пылающим мечом. Основная сила Писания Солнечного Света. Призыв 3-го тира.",
+    "tier": "advanced",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "principality-observation",
@@ -521,7 +741,10 @@
       "principality"
     ],
     "lvl_min": 25,
-    "description": "Ангел Третьей Сферы (Начала). Оснащен щитом, специализируется на разведке и защите. Призыв среднего ранга (4-й тир)."
+    "description": "Ангел Третьей Сферы (Начала). Оснащен щитом, специализируется на разведке и защите. Призыв среднего ранга (4-й тир).",
+    "tier": "advanced",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "principality-peace",
@@ -536,7 +759,10 @@
       "principality"
     ],
     "lvl_min": 25,
-    "description": "Ангел Третьей Сферы (Начала). Поддерживающий ангел с исцеляющими аурами и баффами. Призыв среднего ранга (4-й тир)."
+    "description": "Ангел Третьей Сферы (Начала). Поддерживающий ангел с исцеляющими аурами и баффами. Призыв среднего ранга (4-й тир).",
+    "tier": "advanced",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "dominion-authority",
@@ -551,7 +777,10 @@
       "dominion"
     ],
     "lvl_min": 45,
-    "description": "Ангел Второй Сферы (Господства). Бестелесный лик из крыльев со скрижалью. Призыв 7-го тира (козырь Слейнской Теократии)."
+    "description": "Ангел Второй Сферы (Господства). Бестелесный лик из крыльев со скрижалью. Призыв 7-го тира (козырь Слейнской Теократии).",
+    "tier": "basic",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "cherubim-gatekeeper",
@@ -566,7 +795,10 @@
       "cherubim"
     ],
     "lvl_min": 80,
-    "description": "Ангел Первой Сферы. Элитный страж Назарика с огромным щитом и копьем. Призыв 10-го тира (80 ур.)."
+    "description": "Ангел Первой Сферы. Элитный страж Назарика с огромным щитом и копьем. Призыв 10-го тира (80 ур.).",
+    "tier": "advanced",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "seraph",
@@ -581,7 +813,10 @@
       "seraph"
     ],
     "lvl_min": 90,
-    "description": "Серафим — высший ангел. В Иггдрасиле существовали высокоуровневые серафимы-боссы."
+    "description": "Серафим — высший ангел. В Иггдрасиле существовали высокоуровневые серафимы-боссы.",
+    "tier": "rare",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "seraph-empyrean",
@@ -596,7 +831,10 @@
       "seraph"
     ],
     "lvl_min": 90,
-    "description": "Ангел Первой Сферы. Высший чин, обладающий колоссальной святой защитой и магией. Сверхтировый ранг призыва (100 ур.)."
+    "description": "Ангел Первой Сферы. Высший чин, обладающий колоссальной святой защитой и магией. Сверхтировый ранг призыва (100 ур.).",
+    "tier": "advanced",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "seraph-aerosphere",
@@ -611,7 +849,10 @@
       "seraph"
     ],
     "lvl_min": 90,
-    "description": "Ангел Первой Сферы. Высокоуровневый боевой серафим в сияющих доспехах. Призыв высшего ранга (10-й тир / 90+ ур.)."
+    "description": "Ангел Первой Сферы. Высокоуровневый боевой серафим в сияющих доспехах. Призыв высшего ранга (10-й тир / 90+ ур.).",
+    "tier": "advanced",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "slime",
@@ -624,7 +865,10 @@
       "amorphous"
     ],
     "lvl_min": 1,
-    "description": "Базовая аморфная раса (15 уровней). Неуязвимы к критическим ударам."
+    "description": "Базовая аморфная раса (15 уровней). Неуязвимы к критическим ударам.",
+    "tier": "basic",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "black-ooze",
@@ -637,7 +881,10 @@
       "amorphous"
     ],
     "lvl_min": 1,
-    "description": "Продвинутая слизь с высокой кислотностью."
+    "description": "Продвинутая слизь с высокой кислотностью.",
+    "tier": "advanced",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "elder-black-ooze",
@@ -650,7 +897,10 @@
       "amorphous"
     ],
     "lvl_min": 1,
-    "description": "Мощнейшая кислотная слизь (10 уровней). Способна растворять эквипировку."
+    "description": "Мощнейшая кислотная слизь (10 уровней). Способна растворять эквипировку.",
+    "tier": "advanced",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "shoggoth",
@@ -664,7 +914,10 @@
       "shoggoth"
     ],
     "lvl_min": 1,
-    "description": "Ужасающая аморфная масса из лавкрафтианских мифов (10 уровней)."
+    "description": "Ужасающая аморфная масса из лавкрафтианских мифов (10 уровней).",
+    "tier": "advanced",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "ubbo-sathla",
@@ -678,7 +931,10 @@
       "ubbo_sathla"
     ],
     "lvl_min": 1,
-    "description": "Божественный аморфный прародитель (5 уровней). Высшая форма расы Хэрохэро."
+    "description": "Божественный аморфный прародитель (5 уровней). Высшая форма расы Хэрохэро.",
+    "tier": "advanced",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "insectoid",
@@ -690,7 +946,10 @@
       "insectoid"
     ],
     "lvl_min": 1,
-    "description": "Насекомоподобные гетероморфы. Раса Коцита и Энтомы."
+    "description": "Насекомоподобные гетероморфы. Раса Коцита и Энтомы.",
+    "tier": "basic",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "doppelganger",
@@ -702,7 +961,10 @@
       "shapeshifter"
     ],
     "lvl_min": 1,
-    "description": "Меняющие форму. Могут копировать внешность и навыки. Раса Актёра Пандоры и Нарберал."
+    "description": "Меняющие форму. Могут копировать внешность и навыки. Раса Актёра Пандоры и Нарберал.",
+    "tier": "basic",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "dragonoid",
@@ -714,7 +976,10 @@
       "dragon_kin"
     ],
     "lvl_min": 1,
-    "description": "Дракониды. Гуманоиды с чертами дракона. Раса Себаса Тиана."
+    "description": "Дракониды. Гуманоиды с чертами дракона. Раса Себаса Тиана.",
+    "tier": "basic",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "frost-dragon",
@@ -727,7 +992,10 @@
       "dragon"
     ],
     "lvl_min": 1,
-    "description": "Вид драконов, обитающих в холодном климате гор Азерлисия. К этому виду относится Хеджинмал."
+    "description": "Вид драконов, обитающих в холодном климате гор Азерлисия. К этому виду относится Хеджинмал.",
+    "tier": "basic",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "fire-dragon",
@@ -740,7 +1008,10 @@
       "dragon"
     ],
     "lvl_min": 1,
-    "description": "Классические свирепые драконы, управляющие стихией огня."
+    "description": "Классические свирепые драконы, управляющие стихией огня.",
+    "tier": "basic",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "true-dragon-lord",
@@ -753,7 +1024,10 @@
       "dragon"
     ],
     "lvl_min": 1,
-    "description": "Высшие сущности Нового Мира. Единственные, кто может использовать первозданную Дикую Магию, как Платиновый Лорд Драконов."
+    "description": "Высшие сущности Нового Мира. Единственные, кто может использовать первозданную Дикую Магию, как Платиновый Лорд Драконов.",
+    "tier": "rare",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "automaton",
@@ -766,7 +1040,10 @@
       "artificial"
     ],
     "lvl_min": 1,
-    "description": "Искусственные конструкты. Не нуждаются в еде и сне. Раса Сизу Дельты (CZ2128)."
+    "description": "Искусственные конструкты. Не нуждаются в еде и сне. Раса Сизу Дельты (CZ2128).",
+    "tier": "basic",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   },
   {
     "id": "homunculus",
@@ -780,6 +1057,9 @@
       "homunculus"
     ],
     "lvl_min": 1,
-    "description": "Искусственные создания, сотворённые с помощью алхимии. Относятся к гетероморфам. Раса большинства обычных горничных Назарика."
+    "description": "Искусственные создания, сотворённые с помощью алхимии. Относятся к гетероморфам. Раса большинства обычных горничных Назарика.",
+    "tier": "basic",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0
   }
 ]

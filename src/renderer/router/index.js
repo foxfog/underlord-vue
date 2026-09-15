@@ -58,6 +58,12 @@ const router = createRouter({
 			name: 'localization-manager',
 			path: '/test/localization',
 			component: () => import('@/views/LocalizationManagerView.vue')
+		},
+		{
+			id: 9,
+			name: 'skill-tree-tester',
+			path: '/test/skill-tree',
+			component: () => import('@/views/SkillTreeTesterView.vue')
 		}
 	]
 })

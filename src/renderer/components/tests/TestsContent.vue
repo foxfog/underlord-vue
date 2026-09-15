@@ -124,6 +124,31 @@
 					</button>
 				</div>
 			</div>
+
+			<!-- Card 6: Skill Tree Tester (Active) -->
+			<div class="test-card __active" @click="launchSkillTreeTester">
+				<div class="test-card-header">
+					<div class="test-card-icon">🌳</div>
+					<span class="test-status-badge __ready">Доступно</span>
+				</div>
+				<div class="test-card-body">
+					<h2 class="test-card-title">Древо навыков и прокачка</h2>
+					<p class="test-card-desc">
+						Интерактивная уровневая сетка навыков для классов и рас: прокачка за очки SP, начисление очков уровня класса, условия предков (ALL/ANY) и просмотр произвольных JSON данных.
+					</p>
+					<div class="test-tags">
+						<span class="test-tag">Уровневая сетка</span>
+						<span class="test-tag">Очки SP</span>
+						<span class="test-tag">Предки ALL/ANY</span>
+						<span class="test-tag">JSON Data</span>
+					</div>
+				</div>
+				<div class="test-card-footer">
+					<button class="test-btn test-btn-primary" @click.stop="launchSkillTreeTester">
+						Запустить тестер →
+					</button>
+				</div>
+			</div>
 		</div>
 	</div>
 </template>
@@ -151,6 +176,10 @@ function launchDataEditor() {
 
 function launchLocalizationManager() {
 	router.push('/test/localization')
+}
+
+function launchSkillTreeTester() {
+	router.push('/test/skill-tree')
 }
 </script>
 

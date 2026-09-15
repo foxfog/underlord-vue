@@ -27,6 +27,7 @@
 * [Пошаговая боевая система (Turn-Based Combat System)](./systems/CombatSystem.md)
 * [Редактор данных и управление локализацией (Data Editor & Localization System)](./systems/DataEditorSystem.md)
 * [Система Крафта, Ковки и Экземпляров предметов (Crafting & Item Instances)](./systems/CraftingSystem.md)
+* [Древо навыков и система прокачки (Skill Tree System)](./systems/SkillTreeSystem.md)
 
 ## 🤖 Разработка и Агенты
 * [Руководство для ИИ-агентов и правила адаптивной верстки (AGENTS.md)](../AGENTS.md)

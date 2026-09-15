@@ -140,6 +140,9 @@ body {
 * **Система крафта, ковки и экземпляров предметов (Crafting & Item Instances)**:
   9 уровней редкости предметов (`src/renderer/constants/rarity.js`), включая древний (черный) и мировой (радужный), множественные категории (`categories.json`, локализации), разделение шаблонов предметов (`equipment.json`) и уникальных экземпляров (`ItemInstance` в инвентаре игрока с каскадным резолвингом), изометрическая локация «Кузница Карна» (`carne_smithy`), наковальня с ковкой мечей, система контейнеров/сундуков с сохранением в `globalData.containers` и двухпанельным окном обмена `ChestModal.vue` (`useContainers.js`), рандомизатор качества и статов `useSmithing.js`, модальное окно `SmithingModal.vue`, доступность Topbar (инвентарь, журнал, карта, время) в мирных изометрических локациях.
   📖 Документация: [`docs/systems/CraftingSystem.md`](docs/systems/CraftingSystem.md)
+* **Древо навыков и система прокачки (Skill Tree System)**:
+  Ветки навыков для каждого класса и каждой расы (`skill_branches`, `skills`), древовидные связи (0 предков, 1 предок, несколько предков с логикой `all` и `any`), уровневая сетка требований (`req_level`), начисление очков уровней класса/расы (`level_points_given`), прокачка за очки SP (`cost`), произвольные свойства в JSON (`data`), интеграция в Редактор данных (`DataEditorView.vue`), интерактивный полноэкранный тестер в разделе «Тесты» (`SkillTreeTesterView.vue`, маршрут `/test/skill-tree`), отображение в инвентаре способностей (`InventoryAbilities.vue`), утилиты `skillTree.js` и композабл `useSkillTree.js`.
+  📖 Документация: [`docs/systems/SkillTreeSystem.md`](docs/systems/SkillTreeSystem.md)
 * **Аудиосистема**:
   Расчет громкости любых звуков строго через `commonVolume` и категорию (`commonVolume * musicVolume / 10000`).
 * **Модальные окна**:

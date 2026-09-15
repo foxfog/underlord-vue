@@ -1,6 +1,7 @@
 // src/renderer/composables/useDataEditor.js
 import { ref, computed } from 'vue'
 import { ITEM_RARITIES, getRarity, getRarityColor, getRarityBadgeStyle } from '../constants/rarity.js'
+import { normalizeSkill, normalizeSkillBranch } from '../utils/skillTree.js'
 
 // Singleton state
 const activeTab = ref('characters') // 'characters' | 'classes' | 'fractions' | 'races' | 'items' | 'tags'
@@ -242,7 +243,12 @@ export function useDataEditor() {
 					parent_id: null,
 					tags: [],
 					lvl_min: 1,
-					description: ''
+					tier: 'basic',
+					skill_points_per_level: 1,
+					spell_points_per_level: 0,
+					description: '',
+					skill_branches: [],
+					skills: []
 				}
 			case 'fractions':
 				return {
@@ -263,7 +269,12 @@ export function useDataEditor() {
 					category: 'humanoid',
 					tags: [],
 					lvl_min: 1,
-					description: ''
+					tier: 'basic',
+					skill_points_per_level: 1,
+					spell_points_per_level: 0,
+					description: '',
+					skill_branches: [],
+					skills: []
 				}
 			case 'items':
 				return {
@@ -315,6 +326,14 @@ export function useDataEditor() {
 			if (!Array.isArray(cloned.races)) cloned.races = []
 			if (!Array.isArray(cloned.classs)) cloned.classs = []
 			if (!Array.isArray(cloned.fractions)) cloned.fractions = []
+		}
+
+		if (activeTab.value === 'classes' || activeTab.value === 'races') {
+			if (!cloned.tier) cloned.tier = 'basic'
+			if (cloned.skill_points_per_level === undefined) cloned.skill_points_per_level = 1
+			if (cloned.spell_points_per_level === undefined) cloned.spell_points_per_level = 0
+			if (!Array.isArray(cloned.skill_branches)) cloned.skill_branches = []
+			if (!Array.isArray(cloned.skills)) cloned.skills = []
 		}
 
 		if (activeTab.value === 'items') {
@@ -658,6 +677,18 @@ export function useDataEditor() {
 		if (type === 'classes' || type === 'races') {
 			if (copy.lvl_min !== undefined) copy.lvl_min = Number(copy.lvl_min) || 1
 			if (copy.parent_id === '') copy.parent_id = null
+
+			if (Array.isArray(copy.skill_branches) && copy.skill_branches.length > 0) {
+				copy.skill_branches = copy.skill_branches.map(normalizeSkillBranch)
+			} else {
+				delete copy.skill_branches
+			}
+
+			if (Array.isArray(copy.skills) && copy.skills.length > 0) {
+				copy.skills = copy.skills.map(normalizeSkill)
+			} else {
+				delete copy.skills
+			}
 		}
 
 		if (type === 'fractions') {
@@ -999,9 +1030,9 @@ export function useDataEditor() {
 	// Known standard keys per type to identify custom/manual JSON fields
 	const STANDARD_KEYS = {
 		characters: ['id', 'name', 'names', 'icon', 'gender', 'races', 'classs', 'fractions', 'tags', 'description'],
-		classes: ['id', 'name', 'icon', 'parent_id', 'tags', 'lvl_min', 'description'],
+		classes: ['id', 'name', 'icon', 'parent_id', 'tags', 'lvl_min', 'description', 'skill_branches', 'skills'],
 		fractions: ['id', 'name', 'icon', 'type', 'parent_id', 'tags', 'description'],
-		races: ['id', 'name', 'icon', 'parent_id', 'category', 'tags', 'lvl_min', 'description'],
+		races: ['id', 'name', 'icon', 'parent_id', 'category', 'tags', 'lvl_min', 'description', 'skill_branches', 'skills'],
 		items: [
 			'id',
 			'name',

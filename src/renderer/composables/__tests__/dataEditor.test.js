@@ -890,6 +890,52 @@ describe('useDataEditor Composable', () => {
 			const savedBlank = editor.entities.value.items.find((i) => i.id === 'blank_item')
 			expect(savedBlank.categories).toBeUndefined()
 		})
+
+		it('saves and normalizes skill_branches and skills for classes and races', async () => {
+			const warriorWithSkills = {
+				id: 'warrior_master',
+				name: 'Мастер клинка',
+				skill_branches: [
+					{ id: 'sword', name: 'Мечи', icon: '🗡️', description: 'Ветка клинка' }
+				],
+				skills: [
+					{
+						id: 'blade_dance',
+						name: 'Танец клинков',
+						icon: '✨',
+						branch: 'sword',
+						req_level: 0,
+						max_level: 3,
+						cost: 1,
+						level_points_given: 1,
+						parent_ids: [],
+						parent_requirement: 'all',
+						data: { power: 150 }
+					}
+				]
+			}
+
+			await editor.saveEntity('classes', warriorWithSkills)
+			const savedClass = editor.entities.value.classes.find((c) => c.id === 'warrior_master')
+			expect(savedClass).toBeDefined()
+			expect(savedClass.skill_branches).toHaveLength(1)
+			expect(savedClass.skill_branches[0].id).toBe('sword')
+			expect(savedClass.skills).toHaveLength(1)
+			expect(savedClass.skills[0].id).toBe('blade_dance')
+			expect(savedClass.skills[0].data).toEqual({ power: 150 })
+
+			// Classes with empty skills omit the keys on normalize
+			const classWithoutSkills = {
+				id: 'simple_fighter',
+				name: 'Боец',
+				skill_branches: [],
+				skills: []
+			}
+			await editor.saveEntity('classes', classWithoutSkills)
+			const savedFighter = editor.entities.value.classes.find((c) => c.id === 'simple_fighter')
+			expect(savedFighter.skill_branches).toBeUndefined()
+			expect(savedFighter.skills).toBeUndefined()
+		})
 	})
 })
 
