@@ -135,6 +135,7 @@ describe('useDataEditor Composable', () => {
 	it('creates default empty entity objects for each type', () => {
 		const char = editor.createEmptyEntity('characters')
 		expect(char.id).toBe('')
+		expect(char.gender).toBe('male')
 		expect(Array.isArray(char.races)).toBe(true)
 		expect(Array.isArray(char.classs)).toBe(true)
 		expect(Array.isArray(char.fractions)).toBe(true)
@@ -149,6 +150,11 @@ describe('useDataEditor Composable', () => {
 		const item = editor.createEmptyEntity('items')
 		expect(item.type).toBe('equipment')
 		expect(item.stackable).toBe(false)
+		expect(item.lvl).toBe(1)
+		expect(Array.isArray(item.classs)).toBe(true)
+		expect(Array.isArray(item.races)).toBe(true)
+		expect(Array.isArray(item.characters)).toBe(true)
+		expect(Array.isArray(item.genders)).toBe(true)
 	})
 
 	it('resolves relational entity names correctly', () => {
@@ -620,5 +626,271 @@ describe('useDataEditor Composable', () => {
 		expect(editor.getEntityText('races', 'human', 'description', 'de')).toBe('Gewöhnlicher Mensch')
 		expect(editor.getRaceName('human')).toBe('Mensch') // activeLocale is 'de'
 	})
+
+	it('saves and normalizes character gender correctly', async () => {
+		editor.activeTab.value = 'characters'
+		editor.startCreate()
+
+		const femaleChar = {
+			id: 'albedo',
+			name: 'Альбедо',
+			gender: 'female',
+			races: ['succubus'],
+			classs: ['paladin'],
+			fractions: ['nazaric']
+		}
+
+		await editor.saveEntity('characters', femaleChar)
+		const saved = editor.entities.value.characters.find((c) => c.id === 'albedo')
+		expect(saved).toBeDefined()
+		expect(saved.gender).toBe('female')
+
+		// Invalid gender falls back to 'male'
+		const invalidGenderChar = {
+			id: 'unknown_hero',
+			name: 'Герой',
+			gender: 'invalid_value'
+		}
+		await editor.saveEntity('characters', invalidGenderChar)
+		const savedInvalid = editor.entities.value.characters.find((c) => c.id === 'unknown_hero')
+		expect(savedInvalid.gender).toBe('male')
+	})
+
+	it('saves equipment items with restrictions (lvl, classs, races, genders, characters)', async () => {
+		editor.activeTab.value = 'items'
+		editor.startCreate()
+
+		const restrictedItem = {
+			id: 'holy_armor',
+			name: 'Священная броня',
+			type: 'equipment',
+			slot: 'torso-2',
+			lvl: 5,
+			classs: ['paladin'],
+			races: ['human'],
+			genders: ['female'],
+			characters: ['albedo'],
+			weight: 12.5,
+			stackable: false
+		}
+
+		await editor.saveEntity('items', restrictedItem)
+		const saved = editor.entities.value.items.find((i) => i.id === 'holy_armor')
+		expect(saved).toBeDefined()
+		expect(saved.lvl).toBe(5)
+		expect(saved.classs).toEqual(['paladin'])
+		expect(saved.races).toEqual(['human'])
+		expect(saved.genders).toEqual(['female'])
+		expect(saved.characters).toEqual(['albedo'])
+	})
+
+	it('omits empty requirement arrays on items so JSON is not cluttered', async () => {
+		editor.activeTab.value = 'items'
+		editor.startCreate()
+
+		const unrestrictiveItem = {
+			id: 'simple_shirt',
+			name: 'Простая рубаха',
+			type: 'equipment',
+			slot: 'torso-1',
+			lvl: 1,
+			classs: [],
+			races: [],
+			genders: [],
+			characters: []
+		}
+
+		await editor.saveEntity('items', unrestrictiveItem)
+		const saved = editor.entities.value.items.find((i) => i.id === 'simple_shirt')
+		expect(saved).toBeDefined()
+		expect(saved.classs).toBeUndefined()
+		expect(saved.races).toBeUndefined()
+		expect(saved.genders).toBeUndefined()
+		expect(saved.characters).toBeUndefined()
+	})
+
+	it('provides gender and slot helper methods and options', () => {
+		expect(editor.GENDER_OPTIONS).toHaveLength(4)
+		expect(editor.getGenderLabel('male')).toBe('Мужской')
+		expect(editor.getGenderLabel('female')).toBe('Женский')
+		expect(editor.getGenderLabel('genderless')).toBe('Бесполое')
+		expect(editor.getGenderLabel('hermaphrodite')).toBe('Гермафродит')
+
+		expect(editor.getGenderIcon('male')).toBe('♂️')
+		expect(editor.getGenderIcon('female')).toBe('♀️')
+		expect(editor.getGenderIcon('genderless')).toBe('⚪')
+		expect(editor.getGenderIcon('hermaphrodite')).toBe('⚧')
+
+		expect(editor.getSlotDisplayName('weapon-hand-1')).toBe('Основное оружие (weapon-hand-1)')
+		expect(editor.getSlotDisplayName('torso-1')).toBe('Верхняя одежда / Рубашка (torso-1)')
+	})
+
+	describe('EntityTagPicker logic & filtering', () => {
+		const sampleClasses = [
+			{ id: 'warrior', name: 'Воин', icon: '⚔️' },
+			{ id: 'paladin', name: 'Паладин', parent_id: 'warrior', icon: '🛡️' },
+			{ id: 'mage', name: 'Маг', icon: '🔮' },
+			{ id: 'archmage', name: 'Архимаг', parent_id: 'mage', icon: '✨' }
+		]
+
+		it('filters out already selected IDs from available choices', () => {
+			const selectedIds = ['warrior', 'mage']
+			const available = sampleClasses.filter((c) => !selectedIds.includes(c.id))
+			expect(available.map((c) => c.id)).toEqual(['paladin', 'archmage'])
+		})
+
+		it('filters choices by query matching id or localized name case-insensitively', () => {
+			const query = 'маг'
+			const matches = sampleClasses.filter((c) => {
+				const idMatch = c.id.toLowerCase().includes(query)
+				const nameMatch = c.name.toLowerCase().includes(query)
+				return idMatch || nameMatch
+			})
+			expect(matches.map((c) => c.id)).toEqual(['mage', 'archmage'])
+		})
+
+		it('supports adding and removing items cleanly without mutating unexpected fields', () => {
+			let selected = ['warrior']
+			// Add
+			selected = [...selected, 'paladin']
+			expect(selected).toEqual(['warrior', 'paladin'])
+			// Remove
+			selected = selected.filter((id) => id !== 'warrior')
+			expect(selected).toEqual(['paladin'])
+			// Clear
+			selected = []
+			expect(selected).toEqual([])
+		})
+	})
+
+	describe('Custom Fields JSON editing, additions, modifications, and deletions', () => {
+		it('extracts only custom non-standard fields with getCustomFieldsObject', () => {
+			const entity = {
+				id: 'fire_sword',
+				name: 'Огненный меч',
+				lvl: 10,
+				tags: ['weapon'],
+				_locales: { ru: { name: 'Меч' } },
+				_customFields: { should_be_ignored: 1 },
+				custom_burn_chance: 0.25,
+				durability: 100,
+				nested_gem_slots: ['ruby', 'sapphire']
+			}
+
+			const custom = editor.getCustomFieldsObject(entity, 'items')
+			expect(custom).toEqual({
+				custom_burn_chance: 0.25,
+				durability: 100,
+				nested_gem_slots: ['ruby', 'sapphire']
+			})
+			expect(custom.id).toBeUndefined()
+			expect(custom.name).toBeUndefined()
+			expect(custom.lvl).toBeUndefined()
+			expect(custom.tags).toBeUndefined()
+			expect(custom._locales).toBeUndefined()
+			expect(custom._customFields).toBeUndefined()
+		})
+
+		it('applies updated, added, and deleted custom fields on saveEntity via _customFields', async () => {
+			editor.activeTab.value = 'items'
+			editor.startCreate()
+
+			const initialItem = {
+				id: 'enchanted_ring',
+				name: 'Кольцо зачарования',
+				type: 'equipment',
+				slot: 'neck-1',
+				old_field_to_remove: 'remove_me',
+				field_to_change: 10
+			}
+
+			await editor.saveEntity('items', initialItem)
+			let saved = editor.entities.value.items.find((i) => i.id === 'enchanted_ring')
+			expect(saved.old_field_to_remove).toBe('remove_me')
+			expect(saved.field_to_change).toBe(10)
+
+			// Now edit entity passing updated _customFields (old_field_to_remove is omitted, field_to_change is updated, new_field is added)
+			const editPayload = {
+				...saved,
+				_customFields: {
+					field_to_change: 25,
+					newly_added_field: ['mana_boost', 'shield']
+				}
+			}
+
+			await editor.saveEntity('items', editPayload)
+			saved = editor.entities.value.items.find((i) => i.id === 'enchanted_ring')
+
+			// Deleted key is removed
+			expect(saved.old_field_to_remove).toBeUndefined()
+			// Updated key has new value
+			expect(saved.field_to_change).toBe(25)
+			// Newly added key is present
+			expect(saved.newly_added_field).toEqual(['mana_boost', 'shield'])
+			// Internal _customFields is never saved in entity
+			expect(saved._customFields).toBeUndefined()
+		})
+
+		it('ignores collisions in _customFields with standard managed fields', async () => {
+			editor.activeTab.value = 'classes'
+			editor.startCreate()
+
+			const classItem = {
+				id: 'elementalist',
+				name: 'Элементалист',
+				lvl_min: 5,
+				_customFields: {
+					id: 'hacked_id', // collision
+					name: 'hacked_name', // collision
+					magic_affinity: 'fire' // valid custom field
+				}
+			}
+
+			await editor.saveEntity('classes', classItem)
+			const saved = editor.entities.value.classes.find((c) => c.id === 'elementalist')
+			expect(saved).toBeDefined()
+			expect(saved.id).toBe('elementalist') // protected
+			expect(saved.name).toBe('Элементалист') // protected
+			expect(saved.magic_affinity).toBe('fire') // saved
+		})
+
+		it('saves item rarity and categories and cleans empty categories on save', async () => {
+			editor.activeTab.value = 'items'
+			editor.startCreate()
+
+			editor.itemCategories.value = [
+				{ id: 'weapon', name: 'Оружие', icon: '⚔️' },
+				{ id: 'one_handed', name: 'Одноручное', icon: '🗡️' }
+			]
+
+			const sword = {
+				id: 'custom_katana',
+				name: 'Катана',
+				type: 'equipment',
+				rarity: 'ancient',
+				categories: ['weapon', 'one_handed']
+			}
+
+			await editor.saveEntity('items', sword)
+			const saved = editor.entities.value.items.find((i) => i.id === 'custom_katana')
+			expect(saved).toBeDefined()
+			expect(saved.rarity).toBe('ancient')
+			expect(saved.categories).toEqual(['weapon', 'one_handed'])
+
+			expect(editor.getItemCategoryName('weapon')).toBe('⚔️ Оружие')
+			expect(editor.getItemCategoryName('unknown_cat')).toBe('unknown_cat')
+
+			// Saving with empty categories cleans it up
+			const emptyCatItem = {
+				id: 'blank_item',
+				name: 'Пустышка',
+				categories: []
+			}
+			await editor.saveEntity('items', emptyCatItem)
+			const savedBlank = editor.entities.value.items.find((i) => i.id === 'blank_item')
+			expect(savedBlank.categories).toBeUndefined()
+		})
+	})
 })
+
 

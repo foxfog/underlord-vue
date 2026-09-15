@@ -70,6 +70,14 @@ const locations = ref([
 		target: 'carne_chief_garden_iso'
 	},
 	{
+		id: 'carne_smithy',
+		name: 'Кузница',
+		x: 35,
+		y: 62,
+		class: 'map-place-house',
+		target: 'carne_smithy_iso'
+	},
+	{
 		id: 'carne_emmot_house',
 		name: 'Дом семьи Эммот',
 		x: 40,
@@ -101,7 +109,7 @@ function isLocationDiscovered(location) {
 	if (Array.isArray(list)) {
 		return list.includes(location.id)
 	}
-	return location.id === 'carne_village_entrance'
+	return location.id === 'carne_village_entrance' || location.id === 'carne_smithy'
 }
 
 const discoveredLocations = computed(() => {

@@ -166,7 +166,7 @@ function launchLocalizationManager() {
 
 .tests-grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(18em, 1fr));
+	grid-template-columns: repeat(auto-fit, minmax(20em, 3fr));
 	gap: 1.5em;
 	padding-bottom: 2em;
 }

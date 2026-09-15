@@ -1,0 +1,19 @@
+{
+	"weapon": "Weapon",
+	"one_handed": "One-Handed",
+	"two_handed": "Two-Handed",
+	"shield": "Shield",
+	"ammunition": "Ammunition",
+	"armor": "Armor",
+	"helmet": "Helmet / Headwear",
+	"cloak": "Cloak / Cape",
+	"accessory": "Accessory / Amulet",
+	"potion": "Potion / Alchemy",
+	"food": "Food",
+	"drink": "Drink",
+	"scroll": "Scroll / Book",
+	"material": "Material / Resource",
+	"currency": "Currency",
+	"quest": "Quest Item",
+	"junk": "Junk / Trash"
+}

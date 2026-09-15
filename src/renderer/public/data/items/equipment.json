@@ -1,93 +1,173 @@
 [
-	{
-		"id": "underpants",
-		"slot": "underpants",
-		"name": "трусы",
-		"characters": ["mc"],
-		"stackable": false,
-		"sprite": "images/sprites/items/equipments/underpants.png",
-		"weight": 0.3
-	},
-	{
-		"id": "tshirt",
-		"slot": "torso-1",
-		"characters": ["mc", "momonga"],
-		"stackable": false,
-		"sprite": "images/sprites/items/equipments/tshirt.png",
-		"weight": 0.5,
-		"stats": {
-			"hp": 5,
-			"mp": -1,
-			"attack": "50%",
-			"defense": "-50%"
-		}
-	},
-	{
-		"id": "jeans",
-		"slot": "legs-2",
-		"characters": ["mc"],
-		"stackable": false,
-		"sprite": "images/sprites/items/equipments/jeans.jpg"
-	},
-	{
-		"id": "gasmask",
-		"slot": "mask",
-		"name": "газовая маска GM-1",
-		"characters": ["mc"],
-		"stackable": false,
-		"sprite": "images/sprites/items/equipments/gasmask.png",
-		"weight": 0.5,
-		"stats": {
-			"hp": 2,
-			"defense": 5
-		}
-	},
-	{
-		"id": "neuro_helmet",
-		"name": "Nervegear 1",
-		"slot": "head",
-		"characters": ["mc"],
-		"stackable": false,
-		"sprite": "images/sprites/items/equipments/neuro_helmet.png",
-		"weight": 1.5
-	},
-	{
-		"id": "medicalmask",
-		"slot": "mask",
-		"name": "медицинская маска",
-		"stackable": false,
-		"sprite": "images/sprites/items/equipments/medicalmask.png",
-		"weight": 0.5,
-		"stats": {
-			"defense": 1
-		}
-	},
-	{
-		"id": "tshirt-red",
-		"slot": "torso-2",
-		"characters": ["momonga"],
-		"stackable": false,
-		"weight": 0.5,
-		"lvl": 3,
-		"stats": {
-			"hp": 1
-		}
-	},
-	{
-		"id": "sword-diamond",
-		"slot": ["weapon-hand-1", "weapon-hand-2"],
-		"class": ["warrior", "rogue", "paladin", "hunter", "overlord"],
-		"stackable": false,
-		"weight": 0.5,
-		"stats": {
-			"attack": 10
-		}
-	},
-	{
-		"id": "pendant-zen",
-		"slot": "neck_1",
-		"races": ["human", "elf", "overlord"],
-		"stackable": false,
-		"weight": 0.5
-	}
+  {
+    "id": "underpants",
+    "slot": "underpants",
+    "name": "трусы",
+    "characters": [
+      "mc"
+    ],
+    "stackable": false,
+    "sprite": "images/sprites/items/equipments/underpants.png",
+    "weight": 0.3
+  },
+  {
+    "id": "tshirt",
+    "slot": "torso-1",
+    "characters": [
+      "mc",
+      "momonga"
+    ],
+    "stackable": false,
+    "sprite": "images/sprites/items/equipments/tshirt.png",
+    "weight": 0.5,
+    "stats": {
+      "hp": 5,
+      "mp": -1,
+      "attack": "50%",
+      "defense": "-50%"
+    }
+  },
+  {
+    "id": "jeans",
+    "slot": "legs-2",
+    "characters": [
+      "mc"
+    ],
+    "stackable": false,
+    "sprite": "images/sprites/items/equipments/jeans.jpg"
+  },
+  {
+    "id": "gasmask",
+    "slot": "mask",
+    "name": "газовая маска GM-1",
+    "characters": [
+      "mc"
+    ],
+    "stackable": false,
+    "sprite": "images/sprites/items/equipments/gasmask.png",
+    "weight": 0.5,
+    "stats": {
+      "hp": 2,
+      "defense": 5
+    }
+  },
+  {
+    "id": "neuro_helmet",
+    "name": "Nervegear 1",
+    "slot": "head",
+    "characters": [
+      "mc"
+    ],
+    "stackable": false,
+    "sprite": "images/sprites/items/equipments/neuro_helmet.png",
+    "weight": 1.5
+  },
+  {
+    "id": "medicalmask",
+    "slot": "mask",
+    "name": "медицинская маска",
+    "stackable": false,
+    "sprite": "images/sprites/items/equipments/medicalmask.png",
+    "weight": 0.5,
+    "stats": {
+      "defense": 1
+    }
+  },
+  {
+    "id": "tshirt-red",
+    "slot": "torso-2",
+    "characters": [
+      "momonga"
+    ],
+    "stackable": false,
+    "weight": 0.5,
+    "lvl": 3,
+    "stats": {
+      "hp": 1
+    }
+  },
+  {
+    "id": "sword-diamond",
+    "slot": [
+      "weapon-hand-1",
+      "weapon-hand-2"
+    ],
+    "class": [
+      "warrior",
+      "rogue",
+      "paladin",
+      "hunter",
+      "overlord"
+    ],
+    "stackable": false,
+    "weight": 0.5,
+    "stats": {
+      "attack": 10
+    }
+  },
+  {
+    "id": "pendant-zen",
+    "slot": "neck_1",
+    "races": [
+      "human",
+      "elf",
+      "overlord"
+    ],
+    "stackable": false,
+    "weight": 0.5
+  },
+  {
+    "id": "stick-wood",
+    "name": "Деревянная палка",
+    "slot": [
+      "weapon-hand-2",
+      "weapon-hand-1"
+    ],
+    "sprite": "",
+    "weight": 0.2,
+    "stackable": false,
+    "lvl": 1,
+    "tags": [],
+    "description": "",
+    "icon": "𓆱"
+  },
+  {
+    "id": "iron_sword",
+    "name": "Железный меч",
+    "slot": [
+      "weapon-hand-1",
+      "weapon-hand-2"
+    ],
+    "categories": [
+      "weapon",
+      "one_handed"
+    ],
+    "rarity": "common",
+    "stackable": false,
+    "weight": 2.0,
+    "stats": {
+      "attack": 14
+    },
+    "description": "Классический железный меч с прямой гардой."
+  },
+  {
+    "id": "adamantite_sword",
+    "name": "Адамантиевый меч",
+    "slot": [
+      "weapon-hand-1",
+      "weapon-hand-2"
+    ],
+    "categories": [
+      "weapon",
+      "one_handed"
+    ],
+    "rarity": "rare",
+    "stackable": false,
+    "weight": 2.2,
+    "stats": {
+      "attack": 34,
+      "defense": 3
+    },
+    "description": "Тяжелый и несокрушимый меч из чистого адамантия."
+  }
 ]

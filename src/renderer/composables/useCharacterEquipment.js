@@ -1,5 +1,5 @@
 import { computed } from 'vue'
-import { calculateEquipmentBySlot } from '../utils/equipment'
+import { calculateEquipmentBySlot, canCharacterEquipItem } from '../utils/equipment'
 import { eventBus } from '../utils/eventBus'
 
 export function useCharacterEquipment(
@@ -32,11 +32,7 @@ export function useCharacterEquipment(
 
 		const invItem = itemIndex !== -1 ? mcCharacter.value.inventory.items[itemIndex] : null
 		const itemDef = itemsData.value?.[itemId]
-		const canEquip =
-			invItem?.can_equip !== false &&
-			invItem?.equippable !== false &&
-			itemDef?.can_equip !== false &&
-			itemDef?.equippable !== false
+		const canEquip = canCharacterEquipItem(mcCharacter.value, itemDef, invItem)
 
 		if (!canEquip) return
 

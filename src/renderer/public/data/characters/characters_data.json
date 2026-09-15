@@ -8,6 +8,7 @@
       "Путник"
     ],
     "icon": "images/sprites/characters/mc/icometric/char.png",
+    "gender": "male",
     "races": [
       "human"
     ],
@@ -30,6 +31,7 @@
       "Высшее Существо"
     ],
     "icon": "images/sprites/characters/momonga/icometric/char.png",
+    "gender": "male",
     "races": [
       "overlord",
       "skeleton"
@@ -58,6 +60,7 @@
       "Белый Демон"
     ],
     "icon": "images/sprites/characters/albedo/avatar.png",
+    "gender": "female",
     "races": [
       "succubus"
     ],
@@ -83,6 +86,7 @@
       "Генерал Энри"
     ],
     "icon": "images/sprites/characters/enri/default.png",
+    "gender": "female",
     "races": [
       "human"
     ],
@@ -106,6 +110,7 @@
       "Глава деревни"
     ],
     "icon": "images/sprites/characters/carne-chief/avatar.png",
+    "gender": "male",
     "races": [
       "human"
     ],

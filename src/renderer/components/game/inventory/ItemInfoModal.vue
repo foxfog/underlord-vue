@@ -7,15 +7,26 @@
 	>
 		<div class="modal-item-info" @click.stop>
 			<div class="modal-header">
-				<h4 class="modal-title">
+				<h4 class="modal-title" :style="{ color: rarityConfig.color }">
 					{{ displayName }}
 					<span v-if="itemId" class="item-id">({{ itemId }})</span>
+					<span
+						v-if="rarityConfig"
+						class="item-rarity-badge"
+						:style="rarityBadgeStyle"
+					>
+						{{ rarityConfig.icon }} {{ rarityConfig.label }}
+					</span>
 				</h4>
 				<button class="btn-close" @click="handleClose">×</button>
 			</div>
 
 			<div class="modal-body">
 				<div v-if="itemDef" class="item-info-grid">
+					<div class="item-info-row" v-if="categoriesDisplay">
+						<span class="label">Категории:</span>
+						<span class="value">{{ categoriesDisplay }}</span>
+					</div>
 					<div class="item-info-row" v-if="itemDef.weight !== undefined">
 						<span class="label">Вес:</span>
 						<span class="value">{{ itemDef.weight }}</span>
@@ -56,6 +67,16 @@
 						</ul>
 					</div>
 
+					<div class="item-info-section" v-if="requirementsEntries.length">
+						<div class="section-title">Требования экипировки</div>
+						<ul class="stats-list">
+							<li v-for="(entry, idx) in requirementsEntries" :key="idx">
+								<span class="stat-key">{{ entry.label }}:</span>
+								<span class="stat-value">{{ entry.value }}</span>
+							</li>
+						</ul>
+					</div>
+
 					<div class="item-info-row" v-if="sourceLabel">
 						<span class="label">Где находится:</span>
 						<span class="value">{{ sourceLabel }}</span>
@@ -74,6 +95,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { getRarity, getRarityBadgeStyle } from '@/constants/rarity.js'
 
 const props = defineProps({
 	isVisible: {
@@ -104,8 +126,17 @@ const props = defineProps({
 
 const emit = defineEmits(['close'])
 
+const rarity = computed(() => props.itemDef?.rarity || 'common')
+const rarityConfig = computed(() => getRarity(rarity.value))
+const rarityBadgeStyle = computed(() => getRarityBadgeStyle(rarity.value))
+
 const displayName = computed(() => {
 	return props.itemDef?.name || props.itemId || 'предмет'
+})
+
+const categoriesDisplay = computed(() => {
+	if (!props.itemDef?.categories || !props.itemDef.categories.length) return null
+	return props.itemDef.categories.join(', ')
 })
 
 const isStackable = computed(() => {
@@ -141,6 +172,39 @@ const effectsEntries = computed(() => {
 		label: mapStatKeyToLabel(key),
 		value
 	}))
+})
+
+const requirementsEntries = computed(() => {
+	if (!props.itemDef) return []
+	const res = []
+	const minLvl = props.itemDef.lvl_min ?? props.itemDef.lvl
+	if (minLvl && minLvl > 1) {
+		res.push({ label: 'Мин. уровень', value: minLvl })
+	}
+	const genders = props.itemDef.genders || (props.itemDef.gender ? [props.itemDef.gender] : null)
+	if (Array.isArray(genders) && genders.length > 0) {
+		const genderLabels = {
+			male: 'Мужской',
+			female: 'Женский',
+			genderless: 'Бесполое',
+			hermaphrodite: 'Гермафродит'
+		}
+		res.push({ label: 'Пол', value: genders.map((g) => genderLabels[g] || g).join(', ') })
+	}
+	const classes =
+		props.itemDef.classs ||
+		props.itemDef.classes ||
+		(props.itemDef.class ? (Array.isArray(props.itemDef.class) ? props.itemDef.class : [props.itemDef.class]) : null)
+	if (Array.isArray(classes) && classes.length > 0) {
+		res.push({ label: 'Классы', value: classes.join(', ') })
+	}
+	if (Array.isArray(props.itemDef.races) && props.itemDef.races.length > 0) {
+		res.push({ label: 'Расы', value: props.itemDef.races.join(', ') })
+	}
+	if (Array.isArray(props.itemDef.characters) && props.itemDef.characters.length > 0) {
+		res.push({ label: 'Персонажи', value: props.itemDef.characters.join(', ') })
+	}
+	return res
 })
 
 const sourceLabel = computed(() => {

@@ -1,6 +1,7 @@
 <template>
 	<div class="tab-content-item inventory-layout">
 		<InventoryContextMenu
+			:character="character"
 			:items-data="itemsData"
 			:equipment-slots="equipmentSlots"
 			:inventory-items="items"
@@ -168,6 +169,7 @@ import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
 import Character from '../characters/Character.vue'
 import InventoryContextMenu from './InventoryContextMenu.vue'
 import interact from 'interactjs'
+import { canCharacterEquipItem } from '@/utils/equipment'
 
 const props = defineProps({
 	character: { type: Object, default: null },
@@ -383,11 +385,7 @@ function highlightCompatibleSlots(itemId) {
 	}
 	const invItem = props.items.find((item) => item && item.itemId === itemId)
 	const itemDef = props.itemsData[itemId]
-	const canEquip =
-		invItem?.can_equip !== false &&
-		invItem?.equippable !== false &&
-		itemDef?.can_equip !== false &&
-		itemDef?.equippable !== false
+	const canEquip = canCharacterEquipItem(props.character, itemDef, invItem)
 
 	if (!canEquip) {
 		clearSlotHighlights()
@@ -450,11 +448,7 @@ function isDropAllowed(targetSlot, targetPanel) {
 			(item) => item && item.itemId === draggedItemId.value
 		)
 		const itemDef = props.itemsData[draggedItemId.value]
-		const canEquip =
-			invItem?.can_equip !== false &&
-			invItem?.equippable !== false &&
-			itemDef?.can_equip !== false &&
-			itemDef?.equippable !== false
+		const canEquip = canCharacterEquipItem(props.character, itemDef, invItem)
 
 		if (!canEquip) return false
 

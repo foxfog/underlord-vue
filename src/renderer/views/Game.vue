@@ -35,6 +35,15 @@
 			/>
 		</div>
 
+		<!-- Isometric Location Overlay -->
+		<IsometricGameOverlay
+			v-if="showIsometricOverlay"
+			ref="isometricOverlayRef"
+			:location-id="activeIsometricLocationId"
+			@exit="onIsometricExit"
+			@quest-completed="onIsometricQuestCompleted"
+		/>
+
 		<!-- Fast-forward / Skip indicator (Ren'Py Ctrl skip style) -->
 		<div
 			v-if="isFastForwarding && !isUiHidden"
@@ -151,16 +160,6 @@
 			</div>
 		</div>
 	</div>
-
-	<!-- Isometric Location Overlay -->
-	<IsometricGameOverlay
-		v-if="showIsometricOverlay"
-		ref="isometricOverlayRef"
-		:location-id="activeIsometricLocationId"
-		@exit="onIsometricExit"
-		@quest-completed="onIsometricQuestCompleted"
-	/>
-
 	<!-- Combat Overlay -->
 	<CombatOverlay
 		v-if="showCombatOverlay"
@@ -495,24 +494,28 @@ function stopFastForward() {
 }
 
 const showInventoryButton = computed(() => {
+	if (showIsometricOverlay.value && !showCombatOverlay.value) return true
 	const v = currentUiVisibility.value
 	if (v.all) return true
 	return !!v['inventory-button']
 })
 
 const showJournalButton = computed(() => {
+	if (showIsometricOverlay.value && !showCombatOverlay.value) return true
 	const v = currentUiVisibility.value
 	if (v.all) return true
 	return !!v['journal-button']
 })
 
 const showMapButton = computed(() => {
+	if (showIsometricOverlay.value && !showCombatOverlay.value) return true
 	const v = currentUiVisibility.value
 	if (v.all) return true
 	return !!v['map-button']
 })
 
 const showNextTimeButton = computed(() => {
+	if (showIsometricOverlay.value && !showCombatOverlay.value) return true
 	const v = currentUiVisibility.value
 	if (v['next-time-button'] !== undefined) return !!v['next-time-button']
 	return !v.hasDialogue
@@ -532,7 +535,8 @@ const showDateBadge = computed(() => {
 })
 
 const showTopbar = computed(() => {
-	if (isUiHidden.value || showIsometricOverlay.value || showCombatOverlay.value) return false
+	if (isUiHidden.value || showCombatOverlay.value) return false
+	if (showIsometricOverlay.value) return true
 	const v = currentUiVisibility.value
 	if (v.all) return true
 	return !!(
@@ -726,11 +730,17 @@ function onCharacterClick({ character, interaction }) {
 	}
 }
 
-function onIsometricExit() {
+function onIsometricExit(exitPayload) {
 	showIsometricOverlay.value = false
+	const prevLoc = activeIsometricLocationId.value
 	activeIsometricLocationId.value = ''
-	// Return to chief house scene
-	if (visualNovel.value?.goto) {
+	if (exitPayload?.target && visualNovel.value?.goto) {
+		visualNovel.value.goto(exitPayload.target)
+		return
+	}
+	if (prevLoc === 'carne_smithy' && visualNovel.value?.goto) {
+		visualNovel.value.goto('carne_village_square')
+	} else if (visualNovel.value?.goto) {
 		visualNovel.value.goto('carne_chief_house')
 	}
 }

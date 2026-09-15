@@ -18,6 +18,31 @@
 			@turn-changed="onTurnChanged"
 			@points-changed="onPointsChanged"
 			@action-failed="onActionFailed"
+			@forge-requested="onForgeRequested"
+			@chest-opened="onChestOpened"
+		/>
+
+		<!-- Уведомление о получении материалов из сундука -->
+		<Transition name="fade-up">
+			<div class="iso-loot-banner" v-if="lootNotification">
+				<span>💎 {{ lootNotification }}</span>
+			</div>
+		</Transition>
+
+		<!-- Smithing Modal -->
+		<SmithingModal
+			:is-visible="showSmithingModal"
+			:character="testerCharacter"
+			@close="showSmithingModal = false"
+			@item-crafted="onItemCrafted"
+		/>
+
+		<!-- Chest Modal -->
+		<ChestModal
+			:is-visible="showChestModal"
+			:chest="activeChest"
+			:character="testerCharacter"
+			@close="showChestModal = false"
 		/>
 
 		<!-- Top Header Bar -->
@@ -292,9 +317,13 @@ import IsoCanvas from '@/components/game/isometric/IsoCanvas.vue'
 import { useIsometricLocations } from '@/composables/useIsometricLocations'
 import { loadCatalogs, normalizeLocationData } from '@/utils/isometric/isoLoader.js'
 import defaultGardenJson from '@data/isometric/tests/carne_chief_garden.json'
+import carneSmithyJson from '@data/isometric/carne_smithy.json'
 import cliffsJson from '@data/isometric/tests/height_cliffs_test.json'
 import arenaJson from '@data/isometric/tests/arena_combat_test.json'
 import mcApartmentJson from '@data/isometric/cybercity/mc_apartment.json'
+import SmithingModal from '@/components/game/modals/SmithingModal.vue'
+import ChestModal from '@/components/game/modals/ChestModal.vue'
+import { parseLootString } from '@/utils/isometric/isoLoader.js'
 
 const router = useRouter()
 const canvasRef = ref(null)
@@ -310,6 +339,7 @@ const {
 // Pre-loaded fallback test maps dictionary for instant switching
 const testMapDictionary = {
 	carne_chief_garden: defaultGardenJson,
+	carne_smithy: carneSmithyJson,
 	height_cliffs_test: cliffsJson,
 	arena_combat_test: arenaJson,
 	mc_apartment: mcApartmentJson
@@ -317,6 +347,7 @@ const testMapDictionary = {
 
 const availableLocations = ref([
 	{ id: 'carne_chief_garden', name: 'Огород старосты (Квест)' },
+	{ id: 'carne_smithy', name: 'Кузница Карна (Наковальня и ковка)' },
 	{ id: 'height_cliffs_test', name: 'Многоуровневые террасы (Z: -1..3)' },
 	{ id: 'arena_combat_test', name: 'Тактическая арена (Укрытия)' },
 	{ id: 'mc_apartment', name: 'Квартира ГГ (Токио 2138)' }
@@ -325,6 +356,24 @@ const availableLocations = ref([
 const selectedLocationId = ref('carne_chief_garden')
 const selectedScenario = ref('weeds')
 const selectedCharacterId = ref('mc')
+
+const showSmithingModal = ref(false)
+const showChestModal = ref(false)
+const activeChest = ref(null)
+const lootNotification = ref(null)
+let lootTimeout = null
+
+const testerCharacter = ref({
+	id: 'mc',
+	name: 'Судзуки Сатору',
+	inventory: {
+		items: [
+			{ itemId: 'wood', quantity: 6 },
+			{ itemId: 'iron_ingot', quantity: 8 },
+			{ itemId: 'adamantite_ingot', quantity: 4 }
+		]
+	}
+})
 
 const characterList = [
 	{ id: 'mc', name: '🧙‍♂️ ГГ (Судзуки Сатору)' },
@@ -404,13 +453,39 @@ async function onLocationChange() {
 	}
 	const cloned = JSON.parse(JSON.stringify(mapData))
 	const normalized = normalizeLocationData(cloned)
-	currentLocationData.value = applyScenarioPreset(normalized, selectedScenario.value)
+
+	if (selectedLocationId.value === 'carne_smithy' && selectedScenario.value === 'weeds') {
+		currentLocationData.value = normalized
+	} else {
+		currentLocationData.value = applyScenarioPreset(normalized, selectedScenario.value)
+	}
 
 	initialWeedsCount.value = currentLocationData.value.objects.filter((o) => o.type === 'weed').length
 	weedsCleared.value = 0
 	isQuestCompleted.value = false
 	showVictoryModal.value = false
 	canvasRef.value?.resetLocation?.()
+}
+
+function onForgeRequested() {
+	showSmithingModal.value = true
+}
+
+function onChestOpened(chestObj) {
+	activeChest.value = chestObj
+	showChestModal.value = true
+}
+
+function onItemCrafted(item) {
+	showLootNotification(`Выкован меч: ${item.customName || item.itemId}!`)
+}
+
+function showLootNotification(msg) {
+	if (lootTimeout) clearTimeout(lootTimeout)
+	lootNotification.value = msg
+	lootTimeout = setTimeout(() => {
+		lootNotification.value = null
+	}, 4000)
 }
 
 function onScenarioChange() {
@@ -1085,5 +1160,22 @@ function goToEditor() {
 		opacity: 1;
 		transform: scale(1);
 	}
+}
+
+.iso-loot-banner {
+	position: absolute;
+	top: 4.8em;
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 220;
+	background: rgba(15, 23, 42, 0.95);
+	color: #93c5fd;
+	border: 1px solid rgba(59, 130, 246, 0.6);
+	border-radius: 0.5em;
+	padding: 0.6em 1.4em;
+	font-size: 1em;
+	text-align: center;
+	box-shadow: 0 0.5em 1.8em rgba(0, 0, 0, 0.8), 0 0 0.8em rgba(59, 130, 246, 0.25);
+	pointer-events: none;
 }
 </style>

@@ -1,58 +1,82 @@
 {
-	"underpants": {
-		"name": "Underpants",
-		"description": "Basic cotton undergarment."
-	},
-	"tshirt": {
-		"name": "T-Shirt",
-		"description": "Simple and comfortable casual shirt."
-	},
-	"jeans": {
-		"name": "Jeans",
-		"description": "Durable blue denim trousers."
-	},
-	"gasmask": {
-		"name": "Gas Mask GM-1",
-		"description": "Protective filtering mask for hazardous environments."
-	},
-	"neuro_helmet": {
-		"name": "Nervegear 1 Neuro-Helmet",
-		"description": "Full-dive virtual reality interface helmet."
-	},
-	"medicalmask": {
-		"name": "Medical Mask",
-		"description": "Cloth mask designed for respiratory protection."
-	},
-	"tshirt-red": {
-		"name": "Red T-Shirt",
-		"description": "Bright red cotton shirt."
-	},
-	"sword-diamond": {
-		"name": "Diamond Sword",
-		"description": "A keen blade crafted from enchanted diamond."
-	},
-	"pendant-zen": {
-		"name": "Zen Pendant",
-		"description": "Meditative talisman bringing calm to the wearer."
-	},
-	"ygdrasil-coin-old": {
-		"name": "Old YGGDRASIL Coin",
-		"description": "Ancient currency unit from the virtual realm of YGGDRASIL."
-	},
-	"ygdrasil-coin-new": {
-		"name": "YGGDRASIL Gold Coin",
-		"description": "Standard gold coin minted in YGGDRASIL."
-	},
-	"reestize-coin-gold": {
-		"name": "Re-Estize Gold Coin",
-		"description": "Official golden coin circulating within the Re-Estize Kingdom."
-	},
-	"bread": {
-		"name": "Fresh Bread",
-		"description": "Nutritious loaf of freshly baked wheat bread."
-	},
-	"potion-health-small": {
-		"name": "Minor Healing Potion",
-		"description": "Small vial of restorative brew that mends physical wounds."
-	}
+  "underpants": {
+    "name": "Underpants",
+    "description": "Basic cotton undergarment."
+  },
+  "tshirt": {
+    "name": "T-Shirt",
+    "description": "Simple and comfortable casual shirt."
+  },
+  "jeans": {
+    "name": "Jeans",
+    "description": "Durable blue denim trousers."
+  },
+  "gasmask": {
+    "name": "Gas Mask GM-1",
+    "description": "Protective filtering mask for hazardous environments."
+  },
+  "neuro_helmet": {
+    "name": "Nervegear 1 Neuro-Helmet",
+    "description": "Full-dive virtual reality interface helmet."
+  },
+  "medicalmask": {
+    "name": "Medical Mask",
+    "description": "Cloth mask designed for respiratory protection."
+  },
+  "tshirt-red": {
+    "name": "Red T-Shirt",
+    "description": "Bright red cotton shirt."
+  },
+  "sword-diamond": {
+    "name": "Diamond Sword",
+    "description": "A keen blade crafted from enchanted diamond."
+  },
+  "pendant-zen": {
+    "name": "Zen Pendant",
+    "description": "Meditative talisman bringing calm to the wearer."
+  },
+  "ygdrasil-coin-old": {
+    "name": "Old YGGDRASIL Coin",
+    "description": "Ancient currency unit from the virtual realm of YGGDRASIL."
+  },
+  "ygdrasil-coin-new": {
+    "name": "YGGDRASIL Gold Coin",
+    "description": "Standard gold coin minted in YGGDRASIL."
+  },
+  "reestize-coin-gold": {
+    "name": "Re-Estize Gold Coin",
+    "description": "Official golden coin circulating within the Re-Estize Kingdom."
+  },
+  "bread": {
+    "name": "Fresh Bread",
+    "description": "Nutritious loaf of freshly baked wheat bread."
+  },
+  "potion-health-small": {
+    "name": "Minor Healing Potion",
+    "description": "Small vial of restorative brew that mends physical wounds."
+  },
+  "stick-wood": {
+    "name": "Wooden Stick",
+    "description": "A sturdy wooden stick."
+  },
+  "wood": {
+    "name": "Wood",
+    "description": "Sturdy hardwood suitable for sword hilts and crafting."
+  },
+  "iron_ingot": {
+    "name": "Iron Ingot",
+    "description": "Refined iron ingot used for forging weapons and armor."
+  },
+  "adamantite_ingot": {
+    "name": "Adamantite Ingot",
+    "description": "Indestructible ingot of mythical metal with a deep blue-black luster."
+  },
+  "iron_sword": {
+    "name": "Iron Sword",
+    "description": "Classic iron sword with a straight crossguard."
+  },
+  "adamantite_sword": {
+    "name": "Adamantite Sword",
+    "description": "Heavy and unbreakable sword forged from pure adamantite."
+  }
 }

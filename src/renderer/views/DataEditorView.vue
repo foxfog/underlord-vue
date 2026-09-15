@@ -420,6 +420,13 @@
 									<!-- Character Relations -->
 									<template v-if="activeTab === 'characters'">
 										<span
+											class="rel-badge __gender"
+											:class="'__' + (item.gender || 'male')"
+											:title="'Пол: ' + getGenderLabel(item.gender)"
+										>
+											{{ getGenderIcon(item.gender) }} {{ getGenderLabel(item.gender) }}
+										</span>
+										<span
 											v-for="rId in (item.races || [])"
 											:key="'r-' + rId"
 											class="rel-badge __race"
@@ -458,11 +465,41 @@
 
 									<!-- Item badges -->
 									<template v-if="activeTab === 'items'">
+										<span
+											v-if="item.rarity"
+											class="rel-badge __rarity"
+											:style="getRarityBadgeStyle(item.rarity)"
+											:title="'Редкость: ' + getRarity(item.rarity).label"
+										>
+											{{ getRarity(item.rarity).icon }} {{ getRarity(item.rarity).label }}
+										</span>
 										<span class="rel-badge" :class="item.type === 'equipment' ? '__equip' : '__other'">
 											{{ item.type === 'equipment' ? 'Экипировка' : 'Расходник' }}
 										</span>
-										<span v-if="item.slot" class="rel-badge __slot">
-											{{ Array.isArray(item.slot) ? item.slot.join(', ') : item.slot }}
+										<span
+											v-if="item.categories && item.categories.length > 0"
+											class="rel-badge __categories"
+											:title="'Категории: ' + item.categories.map((c) => getItemCategoryName(c)).join(', ')"
+										>
+											🏷️ {{ item.categories.length === 1 ? getItemCategoryName(item.categories[0]) : item.categories.length + ' кат.' }}
+										</span>
+										<span v-if="item.slot" class="rel-badge __slot" :title="'Слот: ' + (Array.isArray(item.slot) ? item.slot.map(getSlotDisplayName).join(', ') : getSlotDisplayName(item.slot))">
+											🛡️ {{ Array.isArray(item.slot) ? item.slot.join(', ') : item.slot }}
+										</span>
+										<span v-if="item.lvl && item.lvl > 1" class="rel-badge __lvl" :title="'Требуемый уровень: ' + item.lvl">
+											⭐ Ур. {{ item.lvl }}
+										</span>
+										<span v-if="item.genders && item.genders.length > 0" class="rel-badge __gender-req" :title="'Ограничение по полу: ' + item.genders.map(getGenderLabel).join(', ')">
+											{{ item.genders.map(getGenderIcon).join('') }}
+										</span>
+										<span v-if="item.classs && item.classs.length > 0" class="rel-badge __class" :title="'Классы: ' + item.classs.map(getClassName).join(', ')">
+											⚔️ {{ item.classs.length === 1 ? getClassName(item.classs[0]) : item.classs.length + ' кл.' }}
+										</span>
+										<span v-if="item.races && item.races.length > 0" class="rel-badge __race" :title="'Расы: ' + item.races.map(getRaceName).join(', ')">
+											🧬 {{ item.races.length === 1 ? getRaceName(item.races[0]) : item.races.length + ' рас' }}
+										</span>
+										<span v-if="item.characters && item.characters.length > 0" class="rel-badge __character" :title="'Персонажи: ' + item.characters.map(getCharacterName).join(', ')">
+											👤 {{ item.characters.length === 1 ? getCharacterName(item.characters[0]) : item.characters.length + ' перс.' }}
 										</span>
 									</template>
 
@@ -714,12 +751,62 @@
 								<!-- Items: Category / Type -->
 								<div v-if="activeTab === 'items'" class="form-field">
 									<label class="field-label">
-										Категория предмета (Type)
+										Базовый тип предмета (Type)
 									</label>
 									<select v-model="selectedEntity.type" class="editor-select">
 										<option value="equipment">Экипировка (equipment)</option>
 										<option value="other">Прочее / Расходники (other)</option>
 									</select>
+								</div>
+							</div>
+
+							<!-- ITEMS: RARITY SELECTOR -->
+							<div v-if="activeTab === 'items'" class="field-row">
+								<div class="form-field">
+									<label class="field-label">
+										Редкость предмета (Rarity):
+									</label>
+									<div class="rarity-selector-row">
+										<button
+											v-for="r in ITEM_RARITIES"
+											:key="'item-r-' + r.id"
+											type="button"
+											class="rarity-option-btn"
+											:class="{
+												__selected: (selectedEntity.rarity || 'common') === r.id,
+												['__rarity-' + r.id]: true,
+												'__is-rainbow': r.isRainbow
+											}"
+											:style="getRarityBadgeStyle(r.id)"
+											@click="selectedEntity.rarity = r.id"
+										>
+											<span class="rarity-btn-icon">{{ r.icon }}</span>
+											<span class="rarity-btn-label">{{ r.label }}</span>
+										</button>
+									</div>
+								</div>
+							</div>
+
+							<!-- CHARACTERS: GENDER SELECTOR -->
+							<div v-if="activeTab === 'characters'" class="field-row">
+								<div class="form-field">
+									<label class="field-label">
+										Пол персонажа (Gender) <span class="req-star">*</span>
+									</label>
+									<div class="gender-selector-row">
+										<button
+											v-for="g in GENDER_OPTIONS"
+											:key="'char-g-' + g.id"
+											type="button"
+											class="gender-option-btn"
+											:class="{ __selected: (selectedEntity.gender || 'male') === g.id, ['__' + g.id]: true }"
+											@click="selectedEntity.gender = g.id"
+										>
+											<span class="gender-opt-icon">{{ g.icon }}</span>
+											<span class="gender-opt-label">{{ g.label }}</span>
+											<span v-if="(selectedEntity.gender || 'male') === g.id" class="gender-opt-check">✔</span>
+										</button>
+									</div>
 								</div>
 							</div>
 
@@ -731,70 +818,40 @@
 									</div>
 
 									<!-- Races Multi-Select -->
-									<div class="multi-select-box">
-										<label class="field-label">
-											Расы персонажа (Races):
-											<span class="field-hint">нажмите для выбора нескольких</span>
-										</label>
-										<div class="chips-container">
-											<button
-												v-for="r in entities.races"
-												:key="'sel-r-' + r.id"
-												type="button"
-												class="chip-toggle-btn __race"
-												:class="{ __selected: (selectedEntity.races || []).includes(r.id) }"
-												@click="toggleRelationItem(selectedEntity.races, r.id)"
-											>
-												<span class="chip-check">{{ (selectedEntity.races || []).includes(r.id) ? '☑' : '☐' }}</span>
-												<span class="chip-name">{{ r.name || r.id }}</span>
-												<span class="chip-id">({{ r.id }})</span>
-											</button>
-										</div>
-									</div>
+									<EntityTagPicker
+										v-model="selectedEntity.races"
+										:options="entities.races"
+										type="race"
+										label="Расы персонажа (Races):"
+										empty-hint="Расы не выбраны"
+										placeholder="Поиск и добавление расы..."
+										:get-name="(id) => getRaceName(id)"
+										:get-icon="(r) => r?.icon || '🧬'"
+									/>
 
 									<!-- Classes Multi-Select -->
-									<div class="multi-select-box">
-										<label class="field-label">
-											Классы персонажа (Classes / Classs):
-											<span class="field-hint">нажмите для выбора нескольких</span>
-										</label>
-										<div class="chips-container">
-											<button
-												v-for="c in entities.classes"
-												:key="'sel-c-' + c.id"
-												type="button"
-												class="chip-toggle-btn __class"
-												:class="{ __selected: (selectedEntity.classs || []).includes(c.id) }"
-												@click="toggleRelationItem(selectedEntity.classs, c.id)"
-											>
-												<span class="chip-check">{{ (selectedEntity.classs || []).includes(c.id) ? '☑' : '☐' }}</span>
-												<span class="chip-name">{{ c.name || c.id }}</span>
-												<span class="chip-id">({{ c.id }})</span>
-											</button>
-										</div>
-									</div>
+									<EntityTagPicker
+										v-model="selectedEntity.classs"
+										:options="entities.classes"
+										type="class"
+										label="Классы персонажа (Classes):"
+										empty-hint="Классы не выбраны"
+										placeholder="Поиск и добавление класса..."
+										:get-name="(id) => getClassName(id)"
+										:get-icon="(c) => c?.icon || '⚔️'"
+									/>
 
 									<!-- Fractions Multi-Select -->
-									<div class="multi-select-box">
-										<label class="field-label">
-											Фракции персонажа (Factions / Fractions):
-											<span class="field-hint">нажмите для выбора нескольких</span>
-										</label>
-										<div class="chips-container">
-											<button
-												v-for="f in entities.fractions"
-												:key="'sel-f-' + f.id"
-												type="button"
-												class="chip-toggle-btn __fraction"
-												:class="{ __selected: (selectedEntity.fractions || []).includes(f.id) }"
-												@click="toggleRelationItem(selectedEntity.fractions, f.id)"
-											>
-												<span class="chip-check">{{ (selectedEntity.fractions || []).includes(f.id) ? '☑' : '☐' }}</span>
-												<span class="chip-name">{{ f.name || f.id }}</span>
-												<span class="chip-id">({{ f.id }})</span>
-											</button>
-										</div>
-									</div>
+									<EntityTagPicker
+										v-model="selectedEntity.fractions"
+										:options="entities.fractions"
+										type="fraction"
+										label="Фракции персонажа (Factions):"
+										empty-hint="Фракции не выбраны"
+										placeholder="Поиск и добавление фракции..."
+										:get-name="(id) => getFactionName(id)"
+										:get-icon="(f) => f?.icon || '🏛️'"
+									/>
 								</div>
 							</template>
 
@@ -860,28 +917,9 @@
 								</div>
 							</template>
 
-							<!-- ITEMS: SLOT, WEIGHT, STACKABLE -->
+							<!-- ITEMS: WEIGHT, STACKABLE & SLOTS -->
 							<template v-if="activeTab === 'items'">
 								<div class="field-row __split">
-									<div class="form-field">
-										<label class="field-label">Слот экипировки (Slot)</label>
-										<select v-model="selectedEntity.slot" class="editor-select">
-											<option value="">— Без слота (для расходников) —</option>
-											<option value="head">Голова (head)</option>
-											<option value="mask">Маска / Лицо (mask)</option>
-											<option value="neck_1">Ожерелье / Шея (neck_1)</option>
-											<option value="torso-1">Верхняя одежда / Рубашка (torso-1)</option>
-											<option value="torso-2">Куртка / Броня (torso-2)</option>
-											<option value="torso-3">Плащ / Накидка (torso-3)</option>
-											<option value="legs-2">Штаны / Поножи (legs-2)</option>
-											<option value="feet">Обувь / Сапоги (feet)</option>
-											<option value="weapon-hand-1">Основное оружие (weapon-hand-1)</option>
-											<option value="weapon-hand-2">Вторая рука / Щит (weapon-hand-2)</option>
-											<option value="hands">Перчатки / Руки (hands)</option>
-											<option value="underpants">Бельё (underpants)</option>
-										</select>
-									</div>
-
 									<div class="form-field">
 										<label class="field-label">Вес предмета в кг (Weight)</label>
 										<input
@@ -899,6 +937,143 @@
 											<span>Стакаемый в инвентаре (Stackable)</span>
 										</label>
 									</div>
+								</div>
+
+								<!-- Slot Selector for Equipment -->
+								<div v-if="selectedEntity.type === 'equipment'" class="multi-select-box">
+									<div class="field-label-row">
+										<label class="field-label">
+											Слот экипировки (Slot):
+											<span class="field-hint">нажмите для выбора одного или нескольких</span>
+										</label>
+										<button
+											v-if="selectedEntity.slot"
+											type="button"
+											class="clear-filter-link-btn"
+											@click="selectedEntity.slot = ''"
+										>
+											✕ Сбросить слот
+										</button>
+									</div>
+									<div class="chips-container __slots">
+										<button
+											v-for="s in EQUIPMENT_SLOTS_LIST"
+											:key="'item-slot-' + s.id"
+											type="button"
+											class="chip-toggle-btn __slot"
+											:class="{ __selected: isSlotSelected(s.id) }"
+											@click="toggleItemSlot(s.id)"
+										>
+											<span class="chip-check">{{ isSlotSelected(s.id) ? '☑' : '☐' }}</span>
+											<span class="chip-name">{{ s.label }}</span>
+										</button>
+									</div>
+								</div>
+
+								<!-- EQUIPMENT RESTRICTIONS PANEL -->
+								<div v-if="selectedEntity.type === 'equipment'" class="equip-restrictions-panel">
+									<div class="panel-section-title">
+										<span>⚙️ Ограничения на экипирование (Equip Requirements)</span>
+										<span class="panel-section-hint">Если ограничение не выбрано — предмет доступен всем</span>
+									</div>
+
+									<!-- Min Level -->
+									<div class="field-row __split">
+										<div class="form-field">
+											<label class="field-label">
+												Минимальный уровень (lvl)
+												<span class="field-hint">(для ношения предмета)</span>
+											</label>
+											<input
+												v-model.number="selectedEntity.lvl"
+												type="number"
+												min="1"
+												max="100"
+												class="editor-input"
+												placeholder="1"
+											/>
+										</div>
+									</div>
+
+									<!-- Gender Restrictions -->
+									<div class="multi-select-box">
+										<div class="field-label-row">
+											<label class="field-label">
+												Ограничение по полу (Gender):
+												<span class="field-hint">{{ (selectedEntity.genders || []).length === 0 ? 'Разрешено любому полу (без ограничений)' : 'Только выбранные полы' }}</span>
+											</label>
+											<button
+												v-if="(selectedEntity.genders || []).length > 0"
+												type="button"
+												class="clear-filter-link-btn"
+												@click="selectedEntity.genders = []"
+											>
+												✕ Сбросить (Любой пол)
+											</button>
+										</div>
+										<div class="chips-container">
+											<button
+												v-for="g in GENDER_OPTIONS"
+												:key="'req-g-' + g.id"
+												type="button"
+												class="chip-toggle-btn __gender"
+												:class="{ __selected: (selectedEntity.genders || []).includes(g.id), ['__' + g.id]: true }"
+												@click="toggleRelationItem(selectedEntity.genders, g.id)"
+											>
+												<span class="chip-check">{{ (selectedEntity.genders || []).includes(g.id) ? '☑' : '☐' }}</span>
+												<span class="chip-icon">{{ g.icon }}</span>
+												<span class="chip-name">{{ g.label }}</span>
+											</button>
+										</div>
+									</div>
+
+									<!-- Classes Restrictions -->
+									<EntityTagPicker
+										v-model="selectedEntity.classs"
+										:options="entities.classes"
+										type="class"
+										label="Разрешенные классы (Classes):"
+										empty-hint="Разрешено любому классу (без ограничений)"
+										placeholder="Поиск и добавление класса..."
+										:get-name="(id) => getClassName(id)"
+										:get-icon="(c) => c?.icon || '⚔️'"
+									/>
+
+									<!-- Races Restrictions -->
+									<EntityTagPicker
+										v-model="selectedEntity.races"
+										:options="entities.races"
+										type="race"
+										label="Разрешенные расы (Races):"
+										empty-hint="Разрешено любой расе (без ограничений)"
+										placeholder="Поиск и добавление расы..."
+										:get-name="(id) => getRaceName(id)"
+										:get-icon="(r) => r?.icon || '🧬'"
+									/>
+
+									<!-- Characters Restrictions -->
+									<EntityTagPicker
+										v-model="selectedEntity.characters"
+										:options="entities.characters"
+										type="character"
+										label="Разрешенные персонажи (Characters):"
+										empty-hint="Разрешено любому персонажу (без ограничений)"
+										placeholder="Поиск и добавление персонажа..."
+										:get-name="(id) => getCharacterName(id)"
+										:get-icon="(char) => char?.icon || '👤'"
+									/>
+
+									<!-- Categories Picker -->
+									<EntityTagPicker
+										v-model="selectedEntity.categories"
+										:options="itemCategories"
+										type="category"
+										label="Категории предмета (Categories):"
+										empty-hint="Категории не указаны (предмет общего назначения)"
+										placeholder="Поиск и добавление категории (оружие, броня, зелье, материал...)"
+										:get-name="(id) => getItemCategoryName(id)"
+										:get-icon="(cat) => cat?.icon || '🏷️'"
+									/>
 								</div>
 							</template>
 
@@ -1109,31 +1284,78 @@
 								></textarea>
 							</div>
 
-							<!-- CUSTOM / UNMAPPED JSON FIELDS PRESERVATION SECTION -->
-							<div
-								v-if="currentCustomFields.length > 0"
-								class="custom-fields-badge-box"
-							>
+							<!-- CUSTOM / UNMAPPED JSON FIELDS EDITOR SECTION -->
+							<div class="custom-fields-editor-card">
 								<div class="custom-fields-header">
-									<span class="custom-fields-title">
-										📦 Пользовательские поля из JSON ({{ currentCustomFields.length }})
-									</span>
-									<span class="custom-fields-badge-tag">
-										✔ Сохраняются без изменений
-									</span>
-								</div>
-								<p class="custom-fields-desc">
-									Эти поля заданы напрямую в файле JSON (например, <code>points-per-lvl</code>, <code>baffes</code>, <code>stats</code>). При сохранении через интерфейс они автоматически сохраняются в исходном виде.
-								</p>
-								<div class="custom-fields-list">
-									<div
-										v-for="cf in currentCustomFields"
-										:key="cf.key"
-										class="custom-field-pill"
-									>
-										<span class="cf-key">{{ cf.key }}:</span>
-										<span class="cf-val">{{ formatCustomFieldValue(cf.value) }}</span>
+									<div class="cf-header-left">
+										<span class="custom-fields-title">
+											📦 Пользовательские поля (JSON)
+										</span>
+										<span v-if="!customFieldsError" class="custom-fields-badge-tag __valid">
+											✔ Валидный JSON ({{ customFieldsValidCount }} {{ customFieldsValidCount === 1 ? 'поле' : 'полей' }})
+										</span>
+										<span v-else class="custom-fields-badge-tag __invalid">
+											❌ Ошибка синтаксиса
+										</span>
 									</div>
+									<div class="cf-header-tools">
+										<button
+											type="button"
+											class="cf-tool-btn"
+											title="Выровнять отступы и отформатировать JSON"
+											:disabled="!!customFieldsError"
+											@click="formatCustomFieldsJson"
+										>
+											🪄 Форматировать JSON
+										</button>
+										<button
+											type="button"
+											class="cf-tool-btn"
+											title="Вставить типовой шаблон пользовательских полей"
+											@click="insertCustomFieldsTemplate"
+										>
+											➕ Шаблон
+										</button>
+										<button
+											type="button"
+											class="cf-tool-btn __danger"
+											title="Очистить все пользовательские поля"
+											@click="clearCustomFields"
+										>
+											🗑️ Очистить
+										</button>
+									</div>
+								</div>
+
+								<p class="custom-fields-desc">
+									Произвольные свойства сущности в формате JSON (например, <code>points-per-lvl</code>, <code>baffes</code>, <code>stats</code>).
+									Вы можете редактировать существующие поля, добавлять новые структуры и удалять ненужные.
+								</p>
+
+								<!-- Error Alert if invalid JSON -->
+								<div v-if="customFieldsError" class="custom-fields-alert __error">
+									<span class="alert-icon">⚠️</span>
+									<span class="alert-text">{{ customFieldsError }}</span>
+								</div>
+
+								<!-- Collision Warning if managed keys written in custom fields -->
+								<div v-if="customFieldsWarning" class="custom-fields-alert __warning">
+									<span class="alert-icon">ℹ️</span>
+									<span class="alert-text">{{ customFieldsWarning }}</span>
+								</div>
+
+								<!-- JSON Code Editor Textarea -->
+								<div class="custom-fields-code-wrapper">
+									<textarea
+										v-model="customFieldsJson"
+										class="custom-fields-code-editor"
+										rows="8"
+										spellcheck="false"
+										autocomplete="off"
+										placeholder="{\n  \n}"
+										@input="onCustomFieldsInput"
+										@keydown.tab.prevent="onCodeTabKey"
+									></textarea>
 								</div>
 							</div>
 						</div>
@@ -1151,7 +1373,8 @@
 								</button>
 								<button
 									class="editor-btn editor-btn-primary save-btn"
-									:disabled="isSaving"
+									:disabled="isSaving || !!customFieldsError"
+									:title="customFieldsError ? 'Исправьте ошибку в JSON перед сохранением' : 'Сохранить изменения'"
 									@click="handleSave"
 								>
 									<span class="btn-icon">💾</span>
@@ -1325,9 +1548,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDataEditor } from '@/composables/useDataEditor'
+import EntityTagPicker from '@/components/tests/EntityTagPicker.vue'
 
 const router = useRouter()
 const {
@@ -1376,8 +1600,56 @@ const {
 	moveTagUp,
 	moveTagDown,
 	reorderItems,
-	setStatus
+	setStatus,
+	GENDER_OPTIONS,
+	EQUIPMENT_SLOTS_LIST,
+	getGenderLabel,
+	getGenderIcon,
+	getGenderOption,
+	getSlotDisplayName,
+	getCustomFieldsObject,
+	STANDARD_KEYS,
+	itemCategories,
+	getItemCategoryName,
+	ITEM_RARITIES,
+	getRarity,
+	getRarityColor,
+	getRarityBadgeStyle
 } = useDataEditor()
+
+function isSlotSelected(slotId) {
+	if (!selectedEntity.value?.slot) return false
+	if (Array.isArray(selectedEntity.value.slot)) {
+		return selectedEntity.value.slot.includes(slotId)
+	}
+	return selectedEntity.value.slot === slotId
+}
+
+function toggleItemSlot(slotId) {
+	if (!selectedEntity.value) return
+	let current = selectedEntity.value.slot
+	let slots = []
+	if (Array.isArray(current)) {
+		slots = [...current]
+	} else if (current) {
+		slots = [current]
+	}
+
+	const idx = slots.indexOf(slotId)
+	if (idx >= 0) {
+		slots.splice(idx, 1)
+	} else {
+		slots.push(slotId)
+	}
+
+	if (slots.length === 0) {
+		selectedEntity.value.slot = ''
+	} else if (slots.length === 1) {
+		selectedEntity.value.slot = slots[0]
+	} else {
+		selectedEntity.value.slot = slots
+	}
+}
 
 const isSaving = ref(false)
 const entityToDelete = ref(null)
@@ -1771,17 +2043,109 @@ function onTagInputBlur() {
 	}, 200)
 }
 
-const currentCustomFields = computed(() => {
-	if (!selectedEntity.value) return []
-	return getCustomFields(selectedEntity.value, activeTab.value)
-})
+// Custom Fields JSON Editor State & Logic
+const customFieldsJson = ref('{\n  \n}')
+const customFieldsError = ref('')
+const customFieldsWarning = ref('')
+const customFieldsValidCount = ref(0)
 
-function formatCustomFieldValue(val) {
-	if (typeof val === 'object' && val !== null) {
-		return JSON.stringify(val)
+function validateCustomFields() {
+	customFieldsError.value = ''
+	customFieldsWarning.value = ''
+
+	const trimmed = (customFieldsJson.value || '').trim()
+	if (!trimmed || trimmed === '{}') {
+		customFieldsValidCount.value = 0
+		return {}
 	}
-	return String(val)
+
+	let parsed
+	try {
+		parsed = JSON.parse(trimmed)
+	} catch (err) {
+		customFieldsError.value = `Ошибка синтаксиса JSON: ${err.message}`
+		return null
+	}
+
+	if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+		customFieldsError.value = 'Пользовательские поля должны быть объектом вида { "key": value }'
+		return null
+	}
+
+	customFieldsValidCount.value = Object.keys(parsed).length
+
+	const standard = STANDARD_KEYS[activeTab.value] || []
+	const colliding = Object.keys(parsed).filter(
+		(k) => standard.includes(k) || k === '_locales' || k === '_customFields'
+	)
+	if (colliding.length > 0) {
+		customFieldsWarning.value = `Ключи [${colliding.join(', ')}] управляются стандартной формой и будут проигнорированы в пользовательских полях.`
+	}
+
+	return parsed
 }
+
+function onCustomFieldsInput() {
+	validateCustomFields()
+}
+
+function formatCustomFieldsJson() {
+	const parsed = validateCustomFields()
+	if (parsed !== null) {
+		customFieldsJson.value = Object.keys(parsed).length > 0 ? JSON.stringify(parsed, null, 2) : '{\n  \n}'
+	}
+}
+
+function insertCustomFieldsTemplate() {
+	const sample = {
+		points_bonus: 10,
+		special_effects: ['speed_boost', 'night_vision'],
+		notes: 'Пользовательское примечание'
+	}
+	customFieldsJson.value = JSON.stringify(sample, null, 2)
+	validateCustomFields()
+}
+
+function clearCustomFields() {
+	customFieldsJson.value = '{\n  \n}'
+	validateCustomFields()
+}
+
+function onCodeTabKey(e) {
+	const textarea = e.target
+	const start = textarea.selectionStart
+	const end = textarea.selectionEnd
+	const val = textarea.value
+	textarea.value = val.substring(0, start) + '  ' + val.substring(end)
+	textarea.selectionStart = textarea.selectionEnd = start + 2
+	customFieldsJson.value = textarea.value
+	validateCustomFields()
+}
+
+function initCustomFieldsForSelected() {
+	if (!selectedEntity.value) {
+		customFieldsJson.value = '{\n  \n}'
+		customFieldsError.value = ''
+		customFieldsWarning.value = ''
+		customFieldsValidCount.value = 0
+		return
+	}
+	const obj = getCustomFieldsObject(selectedEntity.value, activeTab.value)
+	if (Object.keys(obj).length > 0) {
+		customFieldsJson.value = JSON.stringify(obj, null, 2)
+	} else {
+		customFieldsJson.value = '{\n  \n}'
+	}
+	validateCustomFields()
+}
+
+watch(
+	() => selectedEntity.value?.id,
+	() => {
+		initCustomFieldsForSelected()
+	},
+	{ immediate: true }
+)
 
 const tabConfigs = [
 	{ id: 'characters', name: 'Персонажи', icon: '👤' },
@@ -1971,9 +2335,21 @@ function getEntitiesWithTag(tag) {
 
 async function handleSave() {
 	if (!selectedEntity.value) return
+
+	const parsedCustom = validateCustomFields()
+	if (parsedCustom === null) {
+		setStatus(`Невозможно сохранить: ${customFieldsError.value}`, 'error')
+		return
+	}
+
 	isSaving.value = true
 	try {
-		await saveEntity(activeTab.value, selectedEntity.value)
+		const payload = {
+			...selectedEntity.value,
+			_customFields: parsedCustom
+		}
+		await saveEntity(activeTab.value, payload)
+		initCustomFieldsForSelected()
 	} catch (err) {
 		console.error('Ошибка сохранения сущности:', err)
 		setStatus(`Ошибка сохранения: ${err.message}`, 'error')
@@ -2581,6 +2957,54 @@ async function confirmDelete() {
 	color: #cbd5e1;
 }
 
+.rel-badge.__gender {
+	background: rgba(148, 163, 184, 0.2);
+	color: #e2e8f0;
+	border-color: rgba(148, 163, 184, 0.3);
+}
+
+.rel-badge.__gender.__male {
+	background: rgba(59, 130, 246, 0.2);
+	color: #93c5fd;
+	border-color: rgba(59, 130, 246, 0.35);
+}
+
+.rel-badge.__gender.__female {
+	background: rgba(236, 72, 153, 0.2);
+	color: #f472b6;
+	border-color: rgba(236, 72, 153, 0.35);
+}
+
+.rel-badge.__gender.__genderless {
+	background: rgba(100, 116, 139, 0.2);
+	color: #cbd5e1;
+	border-color: rgba(100, 116, 139, 0.35);
+}
+
+.rel-badge.__gender.__hermaphrodite {
+	background: rgba(168, 85, 247, 0.2);
+	color: #d8b4fe;
+	border-color: rgba(168, 85, 247, 0.35);
+}
+
+.rel-badge.__gender-req {
+	background: rgba(236, 72, 153, 0.2);
+	color: #f472b6;
+	border-color: rgba(236, 72, 153, 0.35);
+}
+
+.rel-badge.__lvl {
+	background: rgba(245, 158, 11, 0.2);
+	color: #fcd34d;
+	border-color: rgba(245, 158, 11, 0.35);
+}
+
+.rel-badge.__character {
+	background: rgba(99, 102, 241, 0.2);
+	color: #a5b4fc;
+	border-color: rgba(99, 102, 241, 0.35);
+}
+
 .rel-badge.__cat {
 	background: rgba(20, 184, 166, 0.2);
 	color: #5eead4;
@@ -2853,6 +3277,232 @@ async function confirmDelete() {
 	border-color: #10b981;
 	color: #6ee7b7;
 	font-weight: bold;
+}
+
+.chip-toggle-btn.__selected.__character {
+	background: rgba(99, 102, 241, 0.25);
+	border-color: #6366f1;
+	color: #a5b4fc;
+	font-weight: bold;
+}
+
+.chip-toggle-btn.__selected.__slot {
+	background: rgba(246, 196, 69, 0.25);
+	border-color: #f6c445;
+	color: #f6c445;
+	font-weight: bold;
+}
+
+.chip-toggle-btn.__selected.__gender {
+	background: rgba(236, 72, 153, 0.25);
+	border-color: #ec4899;
+	color: #f472b6;
+	font-weight: bold;
+}
+
+.chip-toggle-btn.__selected.__gender.__male {
+	background: rgba(59, 130, 246, 0.25);
+	border-color: #3b82f6;
+	color: #93c5fd;
+}
+
+.chip-toggle-btn.__selected.__gender.__female {
+	background: rgba(236, 72, 153, 0.25);
+	border-color: #ec4899;
+	color: #f472b6;
+}
+
+.chip-toggle-btn.__selected.__gender.__genderless {
+	background: rgba(148, 163, 184, 0.25);
+	border-color: #94a3b8;
+	color: #e2e8f0;
+}
+
+.chip-toggle-btn.__selected.__gender.__hermaphrodite {
+	background: rgba(168, 85, 247, 0.25);
+	border-color: #a855f7;
+	color: #d8b4fe;
+}
+
+.chip-icon {
+	font-size: 1.1em;
+	line-height: 1;
+}
+
+.clear-filter-link-btn {
+	background: none;
+	border: none;
+	color: #ef4444;
+	font-size: 0.8em;
+	cursor: pointer;
+	padding: 0.2em 0.5em;
+	border-radius: 0.3em;
+	transition: background-color 0.2s, color 0.2s;
+	margin-left: auto;
+}
+
+.clear-filter-link-btn:hover {
+	background: rgba(239, 68, 68, 0.15);
+	color: #fca5a5;
+}
+
+.gender-selector-row {
+	display: flex;
+	gap: 0.6em;
+	flex-wrap: wrap;
+}
+
+.gender-option-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5em;
+	padding: 0.45em 0.85em;
+	background: rgba(255, 255, 255, 0.05);
+	border: 1px solid rgba(255, 255, 255, 0.15);
+	border-radius: 0.4em;
+	color: #94a3b8;
+	font-size: 0.9em;
+	font-family: Kurale, sans-serif;
+	cursor: pointer;
+	transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
+}
+
+.gender-option-btn:hover {
+	background: rgba(255, 255, 255, 0.1);
+	color: #ffffff;
+}
+
+.gender-option-btn.__selected {
+	font-weight: bold;
+	transform: translateY(-0.05em);
+}
+
+.gender-option-btn.__selected.__male {
+	background: rgba(59, 130, 246, 0.25);
+	border-color: #3b82f6;
+	color: #93c5fd;
+	box-shadow: 0 0 0.5em rgba(59, 130, 246, 0.3);
+}
+
+.gender-option-btn.__selected.__female {
+	background: rgba(236, 72, 153, 0.25);
+	border-color: #ec4899;
+	color: #f472b6;
+	box-shadow: 0 0 0.5em rgba(236, 72, 153, 0.3);
+}
+
+.gender-option-btn.__selected.__genderless {
+	background: rgba(148, 163, 184, 0.25);
+	border-color: #94a3b8;
+	color: #e2e8f0;
+	box-shadow: 0 0 0.5em rgba(148, 163, 184, 0.3);
+}
+
+.gender-option-btn.__selected.__hermaphrodite {
+	background: rgba(168, 85, 247, 0.25);
+	border-color: #a855f7;
+	color: #d8b4fe;
+	box-shadow: 0 0 0.5em rgba(168, 85, 247, 0.3);
+}
+
+.gender-opt-icon {
+	font-size: 1.15em;
+}
+
+/* Rarity Selector Row & Buttons */
+.rarity-selector-row {
+	display: flex;
+	gap: 0.5em;
+	flex-wrap: wrap;
+}
+
+.rarity-option-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4em;
+	padding: 0.4em 0.75em;
+	border: 1px solid rgba(255, 255, 255, 0.15);
+	border-radius: 0.35em;
+	font-size: 0.85em;
+	font-family: Kurale, sans-serif;
+	cursor: pointer;
+	transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.15s, box-shadow 0.2s;
+	opacity: 0.72;
+}
+
+.rarity-option-btn:hover {
+	opacity: 1;
+	transform: translateY(-0.05em);
+}
+
+.rarity-option-btn.__selected {
+	opacity: 1;
+	font-weight: bold;
+	transform: translateY(-0.08em);
+}
+
+.rarity-option-btn.__is-rainbow.__selected {
+	animation: rainbow-border-glow 3s linear infinite alternate;
+}
+
+.rarity-btn-icon {
+	font-size: 1.1em;
+}
+
+.rel-badge.__rarity {
+	font-weight: bold;
+	border: 1px solid transparent;
+}
+
+.rel-badge.__categories {
+	background: rgba(234, 179, 8, 0.15);
+	border-color: rgba(234, 179, 8, 0.4);
+	color: #fef08a;
+}
+
+@keyframes rainbow-border-glow {
+	0% {
+		box-shadow: 0 0 0.5em rgba(239, 68, 68, 0.6), inset 0 0 0.25em rgba(239, 68, 68, 0.4);
+		border-color: #ef4444;
+	}
+	25% {
+		box-shadow: 0 0 0.5em rgba(234, 179, 8, 0.6), inset 0 0 0.25em rgba(234, 179, 8, 0.4);
+		border-color: #eab308;
+	}
+	50% {
+		box-shadow: 0 0 0.5em rgba(34, 197, 94, 0.6), inset 0 0 0.25em rgba(34, 197, 94, 0.4);
+		border-color: #22c55e;
+	}
+	75% {
+		box-shadow: 0 0 0.5em rgba(59, 130, 246, 0.6), inset 0 0 0.25em rgba(59, 130, 246, 0.4);
+		border-color: #3b82f6;
+	}
+	100% {
+		box-shadow: 0 0 0.5em rgba(168, 85, 247, 0.6), inset 0 0 0.25em rgba(168, 85, 247, 0.4);
+		border-color: #a855f7;
+	}
+}
+
+.gender-opt-check {
+	font-size: 0.85em;
+	color: #10b981;
+}
+
+.equip-restrictions-panel {
+	background: rgba(15, 23, 42, 0.45);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 0.5em;
+	padding: 1.2em;
+	display: flex;
+	flex-direction: column;
+	gap: 1.2em;
+}
+
+.panel-section-hint {
+	font-size: 0.8em;
+	font-weight: normal;
+	color: #94a3b8;
+	margin-left: 0.6em;
 }
 
 .chip-id {
@@ -3421,21 +4071,31 @@ async function confirmDelete() {
 	gap: 0.6em;
 }
 
-/* Custom Fields Preservation Box */
-.custom-fields-badge-box {
-	background: rgba(30, 41, 59, 0.45);
-	border: 1px dashed rgba(246, 196, 69, 0.35);
+/* Custom Fields JSON Editor Box */
+.custom-fields-editor-card {
+	background: rgba(17, 24, 39, 0.65);
+	border: 1px solid rgba(246, 196, 69, 0.3);
 	border-radius: 0.5em;
 	padding: 0.9em 1.2em;
 	display: flex;
 	flex-direction: column;
-	gap: 0.5em;
+	gap: 0.6em;
+	margin-top: 0.5em;
 }
 
 .custom-fields-header {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
+	gap: 0.8em;
+	flex-wrap: wrap;
+}
+
+.cf-header-left {
+	display: flex;
+	align-items: center;
+	gap: 0.6em;
+	flex-wrap: wrap;
 }
 
 .custom-fields-title {
@@ -3446,12 +4106,56 @@ async function confirmDelete() {
 
 .custom-fields-badge-tag {
 	font-size: 0.75em;
-	background: rgba(16, 185, 129, 0.2);
-	color: #34d399;
-	border: 1px solid rgba(16, 185, 129, 0.3);
 	padding: 0.15em 0.5em;
 	border-radius: 0.25em;
 	font-weight: bold;
+}
+
+.custom-fields-badge-tag.__valid {
+	background: rgba(16, 185, 129, 0.2);
+	color: #34d399;
+	border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.custom-fields-badge-tag.__invalid {
+	background: rgba(239, 68, 68, 0.2);
+	color: #fca5a5;
+	border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.cf-header-tools {
+	display: flex;
+	align-items: center;
+	gap: 0.4em;
+}
+
+.cf-tool-btn {
+	background: rgba(255, 255, 255, 0.08);
+	border: 1px solid rgba(255, 255, 255, 0.15);
+	border-radius: 0.3em;
+	color: #cbd5e1;
+	font-size: 0.75em;
+	font-family: Kurale, sans-serif;
+	padding: 0.25em 0.55em;
+	cursor: pointer;
+	transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.cf-tool-btn:hover:not(:disabled) {
+	background: rgba(246, 196, 69, 0.2);
+	color: #ffffff;
+	border-color: rgba(246, 196, 69, 0.5);
+}
+
+.cf-tool-btn:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
+}
+
+.cf-tool-btn.__danger:hover:not(:disabled) {
+	background: rgba(239, 68, 68, 0.25);
+	color: #ffffff;
+	border-color: rgba(239, 68, 68, 0.6);
 }
 
 .custom-fields-desc {
@@ -3461,34 +4165,59 @@ async function confirmDelete() {
 	line-height: 1.4;
 }
 
-.custom-fields-list {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 0.5em;
-	margin-top: 0.2em;
-}
-
-.custom-field-pill {
-	background: rgba(0, 0, 0, 0.4);
-	border: 1px solid rgba(255, 255, 255, 0.1);
-	border-radius: 0.3em;
-	padding: 0.25em 0.6em;
-	font-size: 0.8em;
-	font-family: monospace;
-	max-width: 100%;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-.cf-key {
+.custom-fields-desc code {
 	color: #93c5fd;
-	font-weight: bold;
-	margin-right: 0.3em;
+	background: rgba(0, 0, 0, 0.3);
+	padding: 0.1em 0.35em;
+	border-radius: 0.2em;
 }
 
-.cf-val {
-	color: #fcd34d;
+.custom-fields-alert {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.5em;
+	padding: 0.45em 0.7em;
+	border-radius: 0.35em;
+	font-size: 0.8em;
+	line-height: 1.4;
+}
+
+.custom-fields-alert.__error {
+	background: rgba(239, 68, 68, 0.15);
+	border: 1px solid rgba(239, 68, 68, 0.4);
+	color: #fca5a5;
+}
+
+.custom-fields-alert.__warning {
+	background: rgba(246, 196, 69, 0.12);
+	border: 1px solid rgba(246, 196, 69, 0.35);
+	color: #fde047;
+}
+
+.custom-fields-code-wrapper {
+	width: 100%;
+}
+
+.custom-fields-code-editor {
+	width: 100%;
+	min-height: 7em;
+	padding: 0.6em 0.8em;
+	background: #090d16;
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	border-radius: 0.35em;
+	color: #e2e8f0;
+	font-family: 'Fira Code', Consolas, Monaco, monospace;
+	font-size: 0.82em;
+	line-height: 1.5;
+	tab-size: 2;
+	resize: vertical;
+	outline: none;
+	transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.custom-fields-code-editor:focus {
+	border-color: rgba(246, 196, 69, 0.6);
+	box-shadow: 0 0 0.4em rgba(246, 196, 69, 0.2);
 }
 
 /* Localization Controls & Language Switcher Dropdown */

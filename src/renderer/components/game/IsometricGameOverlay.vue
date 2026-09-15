@@ -14,6 +14,8 @@
 			@weed-cleared="onWeedCleared"
 			@quest-completed="onQuestCompleted"
 			@exit-triggered="onExitTriggered"
+			@forge-requested="onForgeRequested"
+			@chest-opened="onChestOpened"
 		/>
 		<div v-else class="iso-loading">
 			<span>Загрузка локации...</span>
@@ -37,6 +39,30 @@
 			</div>
 		</Transition>
 
+		<!-- Уведомление о получении материалов из сундука -->
+		<Transition name="fade-up">
+			<div class="iso-loot-banner" v-if="lootNotification">
+				<span>💎 {{ lootNotification }}</span>
+			</div>
+		</Transition>
+
+		<!-- Модальное окно кузнечного дела -->
+		<SmithingModal
+			:is-visible="showSmithingModal"
+			:character="playerCharacter"
+			@close="showSmithingModal = false"
+			@item-crafted="onItemCrafted"
+		/>
+
+		<!-- Модальное окно сундука / хранилища -->
+		<ChestModal
+			:is-visible="showChestModal"
+			:chest="activeChest"
+			:character="playerCharacter"
+			:global-data="gameStore.globalData"
+			@close="showChestModal = false"
+		/>
+
 		<!-- Диалог подтверждения выхода -->
 		<Transition name="fade-confirm">
 			<div v-if="showExitConfirm" class="iso-confirm-backdrop" @click="cancelExit">
@@ -50,7 +76,7 @@
 							Огород ещё не очищен от сорняков (осталось: <b>{{ remainingWeeds }}</b> шт.). Вы действительно хотите уйти?
 						</p>
 						<p v-else class="iso-confirm-text">
-							Вернуться в дом старосты?
+							Покинуть текущую локацию?
 						</p>
 					</div>
 					<div class="iso-confirm-actions">
@@ -72,9 +98,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import IsoCanvas from '@/components/game/isometric/IsoCanvas.vue'
+import SmithingModal from '@/components/game/modals/SmithingModal.vue'
+import ChestModal from '@/components/game/modals/ChestModal.vue'
 import { useIsometricLocations } from '@/composables/useIsometricLocations'
+import { useGameStore } from '@/stores/gameStore'
+import { parseLootString } from '@/utils/isometric/isoLoader.js'
 
 const props = defineProps({
 	locationId: {
@@ -85,6 +115,7 @@ const props = defineProps({
 
 const emit = defineEmits(['exit', 'quest-completed'])
 
+const gameStore = useGameStore()
 const isoCanvasRef = ref(null)
 const locationData = ref(null)
 const remainingWeeds = ref(0)
@@ -92,20 +123,50 @@ const totalWeeds = ref(0)
 const questDone = ref(false)
 const showExitConfirm = ref(false)
 const pendingExit = ref(null)
+const showSmithingModal = ref(false)
+const showChestModal = ref(false)
+const activeChest = ref(null)
+const lootNotification = ref(null)
+let lootTimeout = null
+
+const playerCharacter = computed(() => {
+	const chars = gameStore.characterData
+	return chars?.mc || chars || { name: 'Судзуки Сатору', inventory: { items: [] } }
+})
 
 const { loadLocationById, applyScenarioPreset } = useIsometricLocations()
 
 async function loadLocation() {
 	const data = await loadLocationById(props.locationId)
 	if (data) {
-		// Применяем сценарий с сорняками
-		const withWeeds = applyScenarioPreset(data, 'weeds')
-		// Считаем начальное количество сорняков
-		const weedCount = (withWeeds?.objects || []).filter((o) => o.type === 'weed').length
+		const hasWeeds = (data.objects || []).some((o) => o.type === 'weed') || props.locationId.includes('garden')
+		const withPreset = hasWeeds ? applyScenarioPreset(data, 'weeds') : data
+		const weedCount = (withPreset?.objects || []).filter((o) => o.type === 'weed').length
 		totalWeeds.value = weedCount
 		remainingWeeds.value = weedCount
-		locationData.value = withWeeds
+		locationData.value = withPreset
 	}
+}
+
+function onForgeRequested() {
+	showSmithingModal.value = true
+}
+
+function onChestOpened(chestObj) {
+	activeChest.value = chestObj
+	showChestModal.value = true
+}
+
+function onItemCrafted(item) {
+	showLootNotification(`Выкован меч: ${item.customName || item.itemId}!`)
+}
+
+function showLootNotification(msg) {
+	if (lootTimeout) clearTimeout(lootTimeout)
+	lootNotification.value = msg
+	lootTimeout = setTimeout(() => {
+		lootNotification.value = null
+	}, 4000)
 }
 
 function onWeedCleared(data) {
@@ -171,7 +232,7 @@ defineExpose({
 .iso-game-overlay {
 	position: absolute;
 	inset: 0;
-	z-index: 200;
+	z-index: 50;
 	background: #000;
 	display: flex;
 	align-items: stretch;
@@ -190,9 +251,9 @@ defineExpose({
 
 .iso-exit-btn {
 	position: absolute;
-	top: 0.75em;
+	top: 3.2em;
 	left: 0.75em;
-	z-index: 210;
+	z-index: 60;
 	background: rgba(0, 0, 0, 0.7);
 	color: #e2c97e;
 	border: 1px solid rgba(226, 201, 126, 0.4);
@@ -212,9 +273,9 @@ defineExpose({
 
 .iso-progress-hud {
 	position: absolute;
-	top: 0.75em;
+	top: 3.2em;
 	right: 0.75em;
-	z-index: 210;
+	z-index: 60;
 	background: rgba(0, 0, 0, 0.7);
 	color: #c8f0b0;
 	border: 1px solid rgba(80, 200, 60, 0.35);
@@ -243,6 +304,23 @@ defineExpose({
 	padding: 0.6em 1.5em;
 	font-size: 1em;
 	text-align: center;
+}
+
+.iso-loot-banner {
+	position: absolute;
+	top: 4.5em;
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 215;
+	background: rgba(15, 23, 42, 0.95);
+	color: #93c5fd;
+	border: 1px solid rgba(59, 130, 246, 0.6);
+	border-radius: 0.5em;
+	padding: 0.6em 1.4em;
+	font-size: 1em;
+	text-align: center;
+	box-shadow: 0 0.5em 1.8em rgba(0, 0, 0, 0.8), 0 0 0.8em rgba(59, 130, 246, 0.25);
+	pointer-events: none;
 }
 
 /* Transitions */

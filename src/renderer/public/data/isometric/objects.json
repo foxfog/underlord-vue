@@ -281,6 +281,24 @@
       "interactive": true,
       "icon": "💎"
     },
+    "anvil": {
+      "id": "anvil",
+      "name": "Наковальня",
+      "type": "anvil",
+      "tags": ["crafting", "interactive", "metal", "smithing"],
+      "solid": true,
+      "interactive": true,
+      "icon": "⚒️"
+    },
+    "forge-furnace": {
+      "id": "forge-furnace",
+      "name": "Кузнечный горн",
+      "type": "prop",
+      "tags": ["crafting", "fire", "solid"],
+      "solid": true,
+      "interactive": false,
+      "icon": "🔥"
+    },
     "sofa-1": {
       "id": "sofa-1",
       "name": "Диван",

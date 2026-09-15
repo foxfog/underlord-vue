@@ -1,40 +1,96 @@
 [
-	{
-		"id": "ygdrasil-coin-old",
-		"weight": 0.02,
-		"stackable": true,
-		"tags": ["currency", "junk"]
-	},
-	{
-		"id": "ygdrasil-coin-new",
-		"sprite": "images/sprites/items/other/ygdrasil-coin-new.png",
-		"weight": 0.02,
-		"stackable": true,
-		"tags": ["currency"]
-	},
-	{
-		"id": "reestize-coin-gold",
-		"sprite": "images/sprites/items/other/reestize-coin-gold.png",
-		"weight": 0.01,
-		"stackable": true,
-		"tags": ["currency"]
-	},
-	{
-		"id": "bread",
-		"sprite": "images/sprites/items/other/bread.png",
-		"weight": 0.2,
-		"stackable": true,
-		"effects": {
-			"hp": 1
-		}
-	},
-	{
-		"id": "potion-health-small",
-		"sprite": "images/sprites/items/other/potion-health-small.png",
-		"weight": 0.1,
-		"stackable": true,
-		"effects": {
-			"hp": 5
-		}
-	}
+  {
+    "id": "ygdrasil-coin-old",
+    "weight": 0.02,
+    "stackable": true,
+    "tags": [
+      "currency",
+      "junk"
+    ]
+  },
+  {
+    "id": "ygdrasil-coin-new",
+    "sprite": "images/sprites/items/other/ygdrasil-coin-new.png",
+    "weight": 0.02,
+    "stackable": true,
+    "tags": [
+      "currency"
+    ]
+  },
+  {
+    "id": "reestize-coin-gold",
+    "sprite": "images/sprites/items/other/reestize-coin-gold.png",
+    "weight": 0.01,
+    "stackable": true,
+    "tags": [
+      "currency"
+    ]
+  },
+  {
+    "id": "bread",
+    "sprite": "images/sprites/items/other/bread.png",
+    "weight": 0.2,
+    "stackable": true,
+    "effects": {
+      "hp": 1
+    }
+  },
+  {
+    "id": "potion-health-small",
+    "sprite": "images/sprites/items/other/potion-health-small.png",
+    "weight": 0.1,
+    "stackable": true,
+    "effects": {
+      "hp": 5
+    }
+  },
+  {
+    "id": "wood",
+    "name": "Дерево",
+    "weight": 0.5,
+    "stackable": true,
+    "categories": [
+      "material"
+    ],
+    "tags": [
+      "material",
+      "wood",
+      "crafting"
+    ],
+    "description": "Прочная древесина, пригодная для рукоятей и столярных работ."
+  },
+  {
+    "id": "iron_ingot",
+    "name": "Железный слиток",
+    "weight": 1.0,
+    "stackable": true,
+    "categories": [
+      "material"
+    ],
+    "tags": [
+      "material",
+      "metal",
+      "iron",
+      "crafting"
+    ],
+    "description": "Очищенный слиток железа для ковки оружия и доспехов."
+  },
+  {
+    "id": "adamantite_ingot",
+    "name": "Слиток адамантия",
+    "weight": 1.5,
+    "stackable": true,
+    "rarity": "rare",
+    "categories": [
+      "material"
+    ],
+    "tags": [
+      "material",
+      "metal",
+      "adamantite",
+      "crafting",
+      "rare"
+    ],
+    "description": "Сверхпрочный слиток легендарного металла глубокого сине-черного отлива."
+  }
 ]

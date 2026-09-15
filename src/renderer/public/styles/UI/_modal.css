@@ -298,12 +298,23 @@
 			color: var(--color-primary-light);
 			display: flex;
 			align-items: center;
-			gap: 0.4em;
+			gap: 0.5em;
+			flex-wrap: wrap;
 
 			.item-id {
 				font-size: 0.75em;
 				color: #888;
 				font-family: Kurale, sans-serif;
+			}
+
+			.item-rarity-badge {
+				font-size: 0.65em;
+				padding: 0.2em 0.55em;
+				border-radius: 0.3em;
+				border: 1px solid transparent;
+				font-family: Kurale, sans-serif;
+				font-weight: bold;
+				line-height: 1.2;
 			}
 		}
 	}

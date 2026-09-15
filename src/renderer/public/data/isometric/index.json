@@ -37,6 +37,12 @@
 					"name": "Огород старосты деревни",
 					"path": "/data/isometric/carne/chief_garden.json",
 					"description": "Приусадебный участок старосты Карна"
+				},
+				{
+					"id": "carne_smithy",
+					"name": "Кузница деревни Карн",
+					"path": "/data/isometric/carne_smithy.json",
+					"description": "Кузница с наковальней, сундуком ресурсов и горном"
 				}
 			]
 		},

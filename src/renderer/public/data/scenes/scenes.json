@@ -172,6 +172,16 @@
 			"worldMap": "newworld",
 			"localMap": "carne",
 			"locationId": "carne_village_entrance"
+		},
+		{
+			"id": "carne_smithy_iso",
+			"name": "Кузница Карна",
+			"bg": "images/sprites/backgrounds/carne/carne-square.jpg",
+			"clearCharacters": true,
+			"isometric": "carne_smithy",
+			"worldMap": "newworld",
+			"localMap": "carne",
+			"locationId": "carne_smithy"
 		}
 	]
 }

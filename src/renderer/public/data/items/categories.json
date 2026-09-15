@@ -1,0 +1,19 @@
+[
+	{ "id": "weapon", "name": "Оружие", "icon": "⚔️" },
+	{ "id": "one_handed", "name": "Одноручное", "icon": "🗡️" },
+	{ "id": "two_handed", "name": "Двуручное", "icon": "🪓" },
+	{ "id": "shield", "name": "Щит", "icon": "🛡️" },
+	{ "id": "ammunition", "name": "Амуниция", "icon": "🏹" },
+	{ "id": "armor", "name": "Броня", "icon": "🦺" },
+	{ "id": "helmet", "name": "Шлем", "icon": "⛑️" },
+	{ "id": "cloak", "name": "Плащ", "icon": "🧣" },
+	{ "id": "accessory", "name": "Аксессуар", "icon": "💍" },
+	{ "id": "potion", "name": "Зелье", "icon": "🧪" },
+	{ "id": "food", "name": "Еда", "icon": "🍞" },
+	{ "id": "drink", "name": "Напиток", "icon": "🥤" },
+	{ "id": "scroll", "name": "Свиток", "icon": "📜" },
+	{ "id": "material", "name": "Материал", "icon": "🪵" },
+	{ "id": "currency", "name": "Валюта", "icon": "🪙" },
+	{ "id": "quest", "name": "Квестовый", "icon": "⭐" },
+	{ "id": "junk", "name": "Мусор / Хлам", "icon": "🗑️" }
+]

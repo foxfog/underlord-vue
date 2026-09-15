@@ -1,5 +1,6 @@
 // src/renderer/composables/useDataEditor.js
 import { ref, computed } from 'vue'
+import { ITEM_RARITIES, getRarity, getRarityColor, getRarityBadgeStyle } from '../constants/rarity.js'
 
 // Singleton state
 const activeTab = ref('characters') // 'characters' | 'classes' | 'fractions' | 'races' | 'items' | 'tags'
@@ -11,14 +12,15 @@ const entities = ref({
 	items: []
 })
 const globalTags = ref([])
+const itemCategories = ref([])
 const activeLocale = ref('ru')
 const availableLocales = ref([
 	{ code: 'ru', label: 'Русский', flag: '🇷🇺' },
 	{ code: 'en', label: 'English', flag: '🇬🇧' }
 ])
 const localesData = ref({
-	ru: { characters: {}, classes: {}, fractions: {}, races: {}, items: {} },
-	en: { characters: {}, classes: {}, fractions: {}, races: {}, items: {} }
+	ru: { characters: {}, classes: {}, fractions: {}, races: {}, items: {}, item_categories: {} },
+	en: { characters: {}, classes: {}, fractions: {}, races: {}, items: {}, item_categories: {} }
 })
 const isLoading = ref(false)
 const selectedEntity = ref(null)
@@ -27,6 +29,47 @@ const searchQuery = ref('')
 const basePath = ref('src/renderer/public/data/')
 const statusMessage = ref(null)
 let statusTimeout = null
+
+export const GENDER_OPTIONS = [
+	{ id: 'male', label: 'Мужской', shortLabel: 'М', icon: '♂️' },
+	{ id: 'female', label: 'Женский', shortLabel: 'Ж', icon: '♀️' },
+	{ id: 'genderless', label: 'Бесполое', shortLabel: 'Бесполое', icon: '⚪' },
+	{ id: 'hermaphrodite', label: 'Гермафродит', shortLabel: 'Гермафродит', icon: '⚧' }
+]
+
+export const EQUIPMENT_SLOTS_LIST = [
+	{ id: 'head', label: 'Голова (head)' },
+	{ id: 'mask', label: 'Маска / Лицо (mask)' },
+	{ id: 'neck_1', label: 'Ожерелье / Шея (neck_1)' },
+	{ id: 'torso-1', label: 'Верхняя одежда / Рубашка (torso-1)' },
+	{ id: 'torso-2', label: 'Куртка / Броня (torso-2)' },
+	{ id: 'torso-3', label: 'Плащ / Накидка (torso-3)' },
+	{ id: 'hands', label: 'Перчатки / Руки (hands)' },
+	{ id: 'legs-2', label: 'Штаны / Поножи (legs-2)' },
+	{ id: 'feet', label: 'Обувь / Сапоги (feet)' },
+	{ id: 'weapon-hand-1', label: 'Основное оружие (weapon-hand-1)' },
+	{ id: 'weapon-hand-2', label: 'Вторая рука / Щит (weapon-hand-2)' },
+	{ id: 'underpants', label: 'Бельё (underpants)' }
+]
+
+export function getGenderLabel(gender) {
+	const opt = GENDER_OPTIONS.find((g) => g.id === gender)
+	return opt ? opt.label : gender || 'Мужской'
+}
+
+export function getGenderIcon(gender) {
+	const opt = GENDER_OPTIONS.find((g) => g.id === gender)
+	return opt ? opt.icon : '♂️'
+}
+
+export function getGenderOption(gender) {
+	return GENDER_OPTIONS.find((g) => g.id === gender) || GENDER_OPTIONS[0]
+}
+
+export function getSlotDisplayName(slotId) {
+	const opt = EQUIPMENT_SLOTS_LIST.find((s) => s.id === slotId)
+	return opt ? opt.label : slotId
+}
 
 export function useDataEditor() {
 	function setStatus(text, type = 'success', duration = 4000) {
@@ -94,14 +137,15 @@ export function useDataEditor() {
 
 	// Load all collections and global tags
 	async function loadAll() {
-		const [chars, classes, fractions, races, equipItems, otherItems, tagsList] = await Promise.all([
+		const [chars, classes, fractions, races, equipItems, otherItems, tagsList, categoriesList] = await Promise.all([
 			readDataFile('characters/characters_data.json'),
 			readDataFile('classes/classes.json'),
 			readDataFile('fractions/fractions.json'),
 			readDataFile('races/races.json'),
 			readDataFile('items/equipment.json'),
 			readDataFile('items/other.json'),
-			readDataFile('tags/tags.json')
+			readDataFile('tags/tags.json'),
+			readDataFile('items/categories.json')
 		])
 
 		// Classes
@@ -115,6 +159,9 @@ export function useDataEditor() {
 
 		// Characters
 		entities.value.characters = Array.isArray(chars) ? chars : []
+
+		// Categories
+		itemCategories.value = Array.isArray(categoriesList) ? categoriesList : []
 
 		// Items (merge equipment + other, tag with type)
 		const mergedItems = []
@@ -136,7 +183,7 @@ export function useDataEditor() {
 		}
 
 		// Load Locales (RU, EN, etc.)
-		const localeTypes = ['characters', 'classes', 'fractions', 'races', 'items']
+		const localeTypes = ['characters', 'classes', 'fractions', 'races', 'items', 'item_categories']
 		const localeLoads = []
 		for (const l of availableLocales.value) {
 			for (const t of localeTypes) {
@@ -180,6 +227,7 @@ export function useDataEditor() {
 					name: '',
 					names: [],
 					icon: '',
+					gender: 'male',
 					races: [],
 					classs: [],
 					fractions: [],
@@ -222,6 +270,8 @@ export function useDataEditor() {
 					id: '',
 					name: '',
 					type: 'equipment',
+					rarity: 'common',
+					categories: [],
 					slot: 'torso-1',
 					sprite: '',
 					weight: 0.5,
@@ -230,6 +280,7 @@ export function useDataEditor() {
 					characters: [],
 					races: [],
 					classs: [],
+					genders: [],
 					tags: [],
 					description: ''
 				}
@@ -258,6 +309,28 @@ export function useDataEditor() {
 	function startEdit(entity) {
 		// Deep clone entity for isolated editing
 		const cloned = JSON.parse(JSON.stringify(entity))
+
+		if (activeTab.value === 'characters') {
+			if (!cloned.gender) cloned.gender = 'male'
+			if (!Array.isArray(cloned.races)) cloned.races = []
+			if (!Array.isArray(cloned.classs)) cloned.classs = []
+			if (!Array.isArray(cloned.fractions)) cloned.fractions = []
+		}
+
+		if (activeTab.value === 'items') {
+			if (!Array.isArray(cloned.characters)) cloned.characters = []
+			if (!Array.isArray(cloned.races)) cloned.races = []
+			if (!Array.isArray(cloned.classs)) {
+				cloned.classs = Array.isArray(cloned.class)
+					? cloned.class
+					: Array.isArray(cloned.classes)
+					? cloned.classes
+					: []
+			}
+			if (!Array.isArray(cloned.genders)) cloned.genders = []
+			if (cloned.lvl === undefined) cloned.lvl = 1
+		}
+
 		const _loc = {}
 		for (const l of availableLocales.value) {
 			const locObj = localesData.value[l.code]?.[activeTab.value]?.[entity.id] || {}
@@ -303,6 +376,23 @@ export function useDataEditor() {
 		// Preserve any arbitrary extra fields manually written in the JSON file
 		const baseItem = existingIndex >= 0 ? list[existingIndex] : {}
 		const mergedData = { ...baseItem, ...data }
+
+		// If explicit custom fields are provided, apply custom fields changes (additions, modifications, deletions)
+		if (data._customFields !== undefined && typeof data._customFields === 'object' && data._customFields !== null) {
+			// Remove any previous custom fields on baseItem that were deleted in _customFields
+			const prevCustom = getCustomFieldsObject(baseItem, targetType)
+			for (const key of Object.keys(prevCustom)) {
+				delete mergedData[key]
+			}
+			// Apply new custom fields (ignoring collisions with standard keys and internal _locales)
+			const standard = STANDARD_KEYS[targetType] || []
+			for (const [k, v] of Object.entries(data._customFields)) {
+				if (!standard.includes(k) && k !== '_locales' && k !== '_customFields') {
+					mergedData[k] = v
+				}
+			}
+			delete mergedData._customFields
+		}
 
 		// Sync localized texts if provided via _locales
 		if (mergedData._locales) {
@@ -389,6 +479,22 @@ export function useDataEditor() {
 
 		// Re-prepare selectedEntity with _locales if still selected
 		const freshCloned = JSON.parse(JSON.stringify(cleanData))
+
+		if (targetType === 'characters') {
+			if (!freshCloned.gender) freshCloned.gender = 'male'
+			if (!Array.isArray(freshCloned.races)) freshCloned.races = []
+			if (!Array.isArray(freshCloned.classs)) freshCloned.classs = []
+			if (!Array.isArray(freshCloned.fractions)) freshCloned.fractions = []
+		}
+
+		if (targetType === 'items') {
+			if (!Array.isArray(freshCloned.characters)) freshCloned.characters = []
+			if (!Array.isArray(freshCloned.races)) freshCloned.races = []
+			if (!Array.isArray(freshCloned.classs)) freshCloned.classs = []
+			if (!Array.isArray(freshCloned.genders)) freshCloned.genders = []
+			if (freshCloned.lvl === undefined) freshCloned.lvl = 1
+		}
+
 		const _freshLoc = {}
 		for (const l of availableLocales.value) {
 			const locObj = localesData.value[l.code]?.[targetType]?.[id] || {}
@@ -541,6 +647,9 @@ export function useDataEditor() {
 			} else if (!Array.isArray(copy.names)) {
 				copy.names = []
 			}
+			copy.gender = ['male', 'female', 'genderless', 'hermaphrodite'].includes(copy.gender)
+				? copy.gender
+				: 'male'
 			copy.races = Array.isArray(copy.races) ? copy.races : []
 			copy.classs = Array.isArray(copy.classs) ? copy.classs : []
 			copy.fractions = Array.isArray(copy.fractions) ? copy.fractions : []
@@ -559,11 +668,38 @@ export function useDataEditor() {
 			if (copy.weight !== undefined) copy.weight = parseFloat(copy.weight) || 0
 			if (copy.lvl !== undefined) copy.lvl = parseInt(copy.lvl, 10) || 1
 			copy.stackable = !!copy.stackable
-			copy.characters = Array.isArray(copy.characters) ? copy.characters : []
-			copy.races = Array.isArray(copy.races) ? copy.races : []
-			copy.classs = Array.isArray(copy.classs) ? copy.classs : []
+
+			// Support legacy "class" or "classes" -> normalize to "classs"
+			const rawClass = copy.classs || copy.classes || copy.class
+			copy.classs = Array.isArray(rawClass) ? rawClass.filter(Boolean) : []
+			delete copy.class
+			delete copy.classes
+
+			copy.characters = Array.isArray(copy.characters) ? copy.characters.filter(Boolean) : []
+			copy.races = Array.isArray(copy.races) ? copy.races.filter(Boolean) : []
+			copy.genders = Array.isArray(copy.genders)
+				? copy.genders.filter((g) => ['male', 'female', 'genderless', 'hermaphrodite'].includes(g))
+				: []
+
+			// Categories
+			copy.categories = Array.isArray(copy.categories)
+				? copy.categories.map((c) => String(c).trim()).filter(Boolean)
+				: []
+
+			// Rarity
+			if (copy.rarity) {
+				copy.rarity = String(copy.rarity).trim().toLowerCase()
+			}
+
+			// Omit empty arrays to avoid cluttering JSON as requested
+			if (copy.characters.length === 0) delete copy.characters
+			if (copy.races.length === 0) delete copy.races
+			if (copy.classs.length === 0) delete copy.classs
+			if (copy.genders.length === 0) delete copy.genders
+			if (copy.categories.length === 0) delete copy.categories
 		}
 
+		delete copy._customFields
 		return copy
 	}
 
@@ -687,6 +823,17 @@ export function useDataEditor() {
 
 	function getCharacterName(charId, lang = activeLocale.value) {
 		return getEntityText('characters', charId, 'name', lang)
+	}
+
+	function getItemCategoryName(catId, lang = activeLocale.value) {
+		if (!catId) return ''
+		const targetVal = localesData.value[lang]?.item_categories?.[catId]
+		if (targetVal) return targetVal
+		if (lang !== 'ru' && localesData.value.ru?.item_categories?.[catId]) {
+			return localesData.value.ru.item_categories[catId]
+		}
+		const cat = itemCategories.value.find((c) => c.id === catId)
+		return cat ? (cat.icon ? `${cat.icon} ${cat.name}` : cat.name) : catId
 	}
 
 	// -------------------------------------------------------------------
@@ -851,7 +998,7 @@ export function useDataEditor() {
 
 	// Known standard keys per type to identify custom/manual JSON fields
 	const STANDARD_KEYS = {
-		characters: ['id', 'name', 'names', 'icon', 'races', 'classs', 'fractions', 'tags', 'description'],
+		characters: ['id', 'name', 'names', 'icon', 'gender', 'races', 'classs', 'fractions', 'tags', 'description'],
 		classes: ['id', 'name', 'icon', 'parent_id', 'tags', 'lvl_min', 'description'],
 		fractions: ['id', 'name', 'icon', 'type', 'parent_id', 'tags', 'description'],
 		races: ['id', 'name', 'icon', 'parent_id', 'category', 'tags', 'lvl_min', 'description'],
@@ -859,32 +1006,43 @@ export function useDataEditor() {
 			'id',
 			'name',
 			'type',
+			'rarity',
+			'categories',
 			'slot',
 			'sprite',
 			'icon',
 			'weight',
 			'stackable',
 			'lvl',
+			'lvl_min',
 			'characters',
 			'races',
 			'classs',
+			'class',
+			'classes',
+			'genders',
 			'tags',
 			'description'
 		],
 		tags: []
 	}
 
-	function getCustomFields(entity, type = activeTab.value) {
-		if (!entity || typeof entity !== 'object') return []
+	function getCustomFieldsObject(entity, type = activeTab.value) {
+		if (!entity || typeof entity !== 'object') return {}
 		const standard = STANDARD_KEYS[type] || []
-		const ignored = [...standard, '_locales']
-		const custom = []
+		const ignored = [...standard, '_locales', '_customFields']
+		const custom = {}
 		for (const key of Object.keys(entity)) {
 			if (!ignored.includes(key)) {
-				custom.push({ key, value: entity[key] })
+				custom[key] = entity[key]
 			}
 		}
 		return custom
+	}
+
+	function getCustomFields(entity, type = activeTab.value) {
+		const obj = getCustomFieldsObject(entity, type)
+		return Object.entries(obj).map(([key, value]) => ({ key, value }))
 	}
 
 	// -------------------------------------------------------------------
@@ -1256,6 +1414,20 @@ export function useDataEditor() {
 		moveTagUp,
 		moveTagDown,
 		reorderItems,
-		setStatus
+		setStatus,
+		GENDER_OPTIONS,
+		EQUIPMENT_SLOTS_LIST,
+		getGenderLabel,
+		getGenderIcon,
+		getGenderOption,
+		getSlotDisplayName,
+		getCustomFieldsObject,
+		STANDARD_KEYS,
+		itemCategories,
+		getItemCategoryName,
+		ITEM_RARITIES,
+		getRarity,
+		getRarityColor,
+		getRarityBadgeStyle
 	}
 }

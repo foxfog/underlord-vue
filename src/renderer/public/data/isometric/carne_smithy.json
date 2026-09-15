@@ -1,0 +1,167 @@
+{
+  "id": "carne_smithy",
+  "name": "Кузница деревни Карн",
+  "description": "Мастерская деревенского кузнеца. Посередине высится массивная наковальня, в углу гудит горн, а рядом в сундуке хранятся запасы железа, адамантия и древесины.",
+  "tileWidth": 64,
+  "tileHeight": 32,
+  "heightStep": 16,
+  "gridWidth": 7,
+  "gridHeight": 7,
+  "bounds": {
+    "minX": -3,
+    "maxX": 3,
+    "minY": -3,
+    "maxY": 3
+  },
+  "defaultSpawn": {
+    "x": 0,
+    "y": 2,
+    "z": 0,
+    "facing": "NW"
+  },
+  "terrain": {
+    "palette": [
+      "empty",
+      "slab",
+      "slab-dark"
+    ],
+    "rle": "2:7, 1:7, 2:7, 1:7, 2:7, 1:7, 2:7"
+  },
+  "overrides": {
+    "-3,-3": {
+      "walls": {
+        "NW": { "type": "wall-dark", "solid": true },
+        "NE": { "type": "wall-dark-e", "solid": true }
+      }
+    },
+    "-2,-3": {
+      "walls": {
+        "NW": { "type": "wall-dark", "solid": true }
+      }
+    },
+    "-1,-3": {
+      "walls": {
+        "NW": { "type": "wall-dark", "solid": true }
+      }
+    },
+    "0,-3": {
+      "walls": {
+        "NW": { "type": "wall-dark", "solid": true }
+      }
+    },
+    "1,-3": {
+      "walls": {
+        "NW": { "type": "wall-dark", "solid": true }
+      }
+    },
+    "2,-3": {
+      "walls": {
+        "NW": { "type": "wall-dark", "solid": true }
+      }
+    },
+    "3,-3": {
+      "walls": {
+        "NW": { "type": "wall-dark", "solid": true },
+        "NE": { "type": "wall-dark-e", "solid": true }
+      }
+    },
+    "3,-2": {
+      "walls": {
+        "NE": { "type": "wall-dark-e", "solid": true }
+      }
+    },
+    "3,-1": {
+      "walls": {
+        "NE": { "type": "wall-dark-e", "solid": true }
+      }
+    },
+    "3,0": {
+      "walls": {
+        "NE": { "type": "wall-dark-e", "solid": true }
+      }
+    },
+    "3,1": {
+      "walls": {
+        "NE": { "type": "wall-dark-e", "solid": true }
+      }
+    },
+    "3,2": {
+      "walls": {
+        "NE": { "type": "wall-dark-e", "solid": true }
+      }
+    },
+    "3,3": {
+      "walls": {
+        "NE": { "type": "wall-dark-e", "solid": true }
+      }
+    }
+  },
+  "objects": [
+    {
+      "id": "carne_smithy_anvil",
+      "type": "anvil",
+      "name": "Наковальня",
+      "icon": "⚒️",
+      "pos": [0, 0, 0],
+      "solid": true,
+      "interactive": true,
+      "action": "forge",
+      "description": "Тяжелая наковальня из закаленной стали. Подходит для ковки первоклассного оружия."
+    },
+    {
+      "id": "carne_smithy_chest",
+      "type": "chest",
+      "name": "Сундук с металлом и деревом",
+      "icon": "💎",
+      "pos": [-2, -2, 0],
+      "solid": true,
+      "interactive": true,
+      "action": "open_chest",
+      "loot": "wood:4, iron_ingot:6, adamantite_ingot:4",
+      "description": "Кованый сундук кузнеца с материалами для ковки клинков."
+    },
+    {
+      "id": "carne_smithy_forge",
+      "type": "forge-furnace",
+      "name": "Кузнечный горн",
+      "icon": "🔥",
+      "pos": [2, -2, 0],
+      "solid": true,
+      "interactive": false,
+      "description": "Жаркий горн на углях для разогрева металла."
+    },
+    {
+      "id": "carne_smithy_barrel_1",
+      "type": "barrel",
+      "name": "Бочка с водой",
+      "icon": "🛢️",
+      "pos": [2, 0, 0],
+      "solid": true,
+      "interactive": false,
+      "description": "Деревянная бочка с водой для закалки раскаленной стали."
+    },
+    {
+      "id": "carne_smithy_table",
+      "type": "table",
+      "name": "Верстак оружейника",
+      "icon": "🪵",
+      "pos": [-2, 1, 0],
+      "solid": true,
+      "interactive": false,
+      "description": "Рабочий стол с клещами, молотками и чертежами эфесов."
+    }
+  ],
+  "exits": [
+    {
+      "id": "exit_to_square",
+      "label": "Выйти на площадь деревни Карн",
+      "trigger": {
+        "x": 0,
+        "y": 3,
+        "z": 0
+      },
+      "targetType": "scene",
+      "target": "carne_village_square"
+    }
+  ]
+}

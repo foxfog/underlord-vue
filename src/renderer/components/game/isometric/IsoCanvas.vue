@@ -43,12 +43,12 @@
 			@click.stop
 		>
 			<div class="iso-menu-header">
-				<span class="iso-menu-icon">{{ (activeContextMenu.object.action === 'weed' || activeContextMenu.object.type === 'weed') ? '🌿' : '📦' }}</span>
-				<span class="iso-menu-title">{{ activeContextMenu.object.name || (activeContextMenu.object.type === 'weed' ? 'Сорняк' : 'Объект') }}</span>
+				<span class="iso-menu-icon">{{ getContextMenuIcon(activeContextMenu.object) }}</span>
+				<span class="iso-menu-title">{{ activeContextMenu.object.name || getContextMenuDefaultTitle(activeContextMenu.object) }}</span>
 			</div>
 			<div class="iso-menu-actions">
 				<button class="iso-menu-btn iso-menu-btn-primary" @click="handleContextMenuAction(activeContextMenu.object)">
-					{{ (activeContextMenu.object.action === 'weed' || activeContextMenu.object.type === 'weed') ? 'Собрать' : 'Взаимодействовать' }}
+					{{ getContextMenuActionLabel(activeContextMenu.object) }}
 				</button>
 				<button class="iso-menu-btn iso-menu-btn-cancel" @click="closeContextMenu">
 					Отмена
@@ -121,7 +121,9 @@ const emit = defineEmits([
 	'turn-changed',
 	'points-changed',
 	'action-failed',
-	'exit-triggered'
+	'exit-triggered',
+	'forge-requested',
+	'chest-opened'
 ])
 
 const containerRef = ref(null)
@@ -974,6 +976,30 @@ function closeContextMenu() {
 	activeContextMenu.value = null
 }
 
+function getContextMenuIcon(obj) {
+	if (!obj) return '📦'
+	if (obj.action === 'weed' || obj.type === 'weed') return '🌿'
+	if (obj.action === 'forge' || obj.type === 'anvil') return '⚒️'
+	if (obj.action === 'open_chest' || obj.type === 'chest') return '💎'
+	return obj.icon || '📦'
+}
+
+function getContextMenuDefaultTitle(obj) {
+	if (!obj) return 'Объект'
+	if (obj.action === 'weed' || obj.type === 'weed') return 'Сорняк'
+	if (obj.action === 'forge' || obj.type === 'anvil') return 'Наковальня'
+	if (obj.action === 'open_chest' || obj.type === 'chest') return 'Сундук'
+	return 'Объект'
+}
+
+function getContextMenuActionLabel(obj) {
+	if (!obj) return 'Взаимодействовать'
+	if (obj.action === 'weed' || obj.type === 'weed') return 'Собрать'
+	if (obj.action === 'forge' || obj.type === 'anvil') return 'Ковать (Мечи)'
+	if (obj.action === 'open_chest' || obj.type === 'chest') return 'Открыть сундук'
+	return 'Взаимодействовать'
+}
+
 function handleContextMenuAction(obj) {
 	closeContextMenu()
 	executeObjectAction(obj)
@@ -1293,6 +1319,12 @@ function executeObjectAction(obj) {
 			emit('quest-completed')
 		}
 		requestRender()
+	} else if (obj.action === 'forge' || obj.type === 'anvil') {
+		emit('forge-requested', obj)
+		emit('object-interacted', obj)
+	} else if (obj.action === 'open_chest' || obj.type === 'chest') {
+		emit('chest-opened', obj)
+		emit('object-interacted', obj)
 	} else {
 		emit('object-interacted', obj)
 	}

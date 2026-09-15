@@ -36,8 +36,10 @@ import ContextMenu from '../../UI/ContextMenu.vue'
 import ConfirmModal from '@/components/ConfirmModal.vue'
 import DropQuantityModal from './DropQuantityModal.vue'
 import ItemInfoModal from './ItemInfoModal.vue'
+import { canCharacterEquipItem } from '@/utils/equipment'
 
 const props = defineProps({
+	character: { type: Object, default: null },
 	itemsData: { type: Object, default: () => ({}) },
 	equipmentSlots: { type: Object, default: () => ({}) },
 	inventoryItems: { type: Array, default: () => [] }
@@ -118,11 +120,7 @@ const currentActions = computed(() => {
 		itemDef?.can_drop !== false &&
 		itemDef?.droppable !== false
 
-	const canEquip =
-		invItem?.can_equip !== false &&
-		invItem?.equippable !== false &&
-		itemDef?.can_equip !== false &&
-		itemDef?.equippable !== false
+	const canEquip = canCharacterEquipItem(props.character, itemDef, invItem)
 
 	const canUnequip =
 		itemDef?.can_equip !== false &&
