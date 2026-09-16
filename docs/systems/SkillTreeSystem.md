@@ -46,7 +46,7 @@
 Для предотвращения разрастания основных реестров классов и рас (`classes.json` и `races.json`), навыки полностью вынесены в отдельные файлы:
 
 1. **Базовые реестры (`classes/classes.json`, `races/races.json`)**:
-   - Содержат только метаданные сущностей: `id`, `name`, `parent_id`, `category`, `tags`, `lvl_min`, `description`.
+   - Содержат только метаданные сущностей: `id`, `name`, `parent_id`, `family` (для рас), `category`, `tier`, `tags`, `lvl_min`, `description`.
    - В них **нет** полей `skills` и `skill_branches`.
 2. **Файлы навыков сущностей**:
    - Навыки классов: `src/renderer/public/data/skills/classes/<id>.json` (например, `warrior.json`, `wizard.json`).

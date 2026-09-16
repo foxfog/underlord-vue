@@ -4,522 +4,651 @@
     "name": "Человек",
     "icon": "👤",
     "parent_id": null,
+    "family": "human",
     "category": "humanoid",
+    "tier": "basic",
     "tags": [
-      "human",
-      "mortal"
+      "human"
     ],
     "lvl_min": 1,
-    "description": "Базовая раса Иггдрасиля и Нового Мира. Не имеет расовых уровней, только классовые (Job).",
-    "baffes": {
-      "attack": "2%",
-      "defense": "2%"
-    },
-    "points-per-lvl": {
-      "hp": 1,
-      "mp": 1,
-      "attack": 1,
-      "defense": 1
-    },
-    "tier": "basic",
     "skill_points_per_level": 1,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "description": "Самая многочисленная и гибкая раса. Не обладая врождённой магией или сверхчеловеческой силой, люди достигают вершин мастерства благодаря упорству и разнообразию ремёсел."
   },
   {
     "id": "half-elf",
     "name": "Полуэльф",
-    "icon": "🧝",
+    "icon": "🧝👤",
     "parent_id": null,
+    "family": "elf",
     "category": "humanoid",
+    "tier": "basic",
     "tags": [
       "half-elf"
     ],
     "lvl_min": 1,
-    "description": "Потомки союза человека и эльфа, сочетающие черты обеих рас.",
-    "tier": "basic",
     "skill_points_per_level": 1,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "description": "Потомки союза людей и эльфов, сочетающие адаптивность человеческого рода с острыми чувствами и предрасположенностью к магии своих лесных предков."
   },
   {
     "id": "elf",
     "name": "Эльф",
     "icon": "🧝",
     "parent_id": null,
+    "family": "elf",
     "category": "humanoid",
+    "tier": "basic",
     "tags": [
       "elf"
     ],
     "lvl_min": 1,
-    "description": "Живут в лесах (например, Великий Лес Тов). Враждуют с Теократией Слейн.",
-    "tier": "basic",
     "skill_points_per_level": 1,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "description": "Древний лесной народ с длинными ушами и врождённым сродством к стихиям природы. Обладают долголетием, острым зрением и мастерством владения луком."
   },
   {
     "id": "dark-elf",
     "name": "Тёмный эльф",
-    "icon": "🧝",
+    "icon": "🧝🌑",
     "parent_id": null,
+    "family": "elf",
     "category": "humanoid",
+    "tier": "basic",
     "tags": [
-      "elf",
-      "dark-elf"
+      "elf"
     ],
     "lvl_min": 1,
-    "description": "Разновидность эльфов с тёмной кожей. Близнецы Аура и Маре принадлежат к этой расе.",
-    "tier": "basic",
     "skill_points_per_level": 1,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "description": "Родственные эльфам жители сумрачных чащ и подземных глубин. Отличаются тёмным оттенком кожи, великолепным ночным зрением и талантом к тайной магии."
   },
   {
     "id": "dwarf",
     "name": "Дварф",
     "icon": "🧔",
     "parent_id": null,
+    "family": "dwarf",
     "category": "humanoid",
+    "tier": "basic",
     "tags": [
       "dwarf"
     ],
     "lvl_min": 1,
-    "description": "Живут под землёй (Горы Азерлисия). Известны кузнечным делом и рунной магией.",
-    "tier": "basic",
     "skill_points_per_level": 1,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "description": "Коренастый и выносливый подземный народ. Непревзойдённые мастера горного дела, кузнечного ремесла и древней рунной магии."
   },
   {
     "id": "dark-dwarf",
     "name": "Темный дварф",
-    "icon": "🧔",
+    "icon": "⛏🌑",
     "parent_id": null,
+    "family": "dwarf",
     "category": "humanoid",
+    "tier": "basic",
     "tags": [
-      "dwarf",
-      "dark-dwarf"
+      "dwarf"
     ],
     "lvl_min": 1,
-    "description": "Подземные сородичи дварфов, живущие в глубоких шахтах и пещерах.",
-    "tier": "basic",
     "skill_points_per_level": 1,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "description": "Обитатели самых глубоких и опасных недр. Мастера закалки редких темных руд и создания смертоносного зачарованного оружия."
   },
   {
     "id": "goblin",
     "name": "Гоблин",
     "icon": "👺",
     "parent_id": null,
+    "family": "goblin",
     "category": "demi-human",
+    "tier": "basic",
     "tags": [
       "goblin"
     ],
     "lvl_min": 1,
-    "description": "Слабые полулюди, часто объединяются в стаи. Армия Энри состоит из них.",
-    "tier": "basic",
     "skill_points_per_level": 1,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "description": "Низкорослые полулюди, берущие числом, хитростью и сплочённостью. Обитают племенами в лесах и пещерах, мастерски устраивая засады и ловушки."
   },
   {
     "id": "hobgoblin",
     "name": "Хобгоблин",
-    "icon": "👺",
+    "icon": "👺👑",
     "parent_id": "goblin",
+    "family": "goblin",
     "category": "demi-human",
-    "tags": [
-      "goblin",
-      "hobgoblin"
-    ],
-    "lvl_min": 5,
-    "description": "Усиленная эволюция гоблинов. Крупнее, сильнее и дисциплинированнее.",
     "tier": "advanced",
+    "tags": [
+      "goblin"
+    ],
+    "lvl_min": 10,
     "skill_points_per_level": 1,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "description": "Закалённые в боях вожаки гоблинских племён. Значительно превосходят сородичей в росте, физической силе и владении тактикой военного строя."
   },
   {
     "id": "orc",
     "name": "Орк",
-    "icon": "🐗",
+    "icon": "🧌🪓",
     "parent_id": null,
+    "family": "orc",
     "category": "demi-human",
+    "tier": "basic",
     "tags": [
       "orc"
     ],
     "lvl_min": 1,
-    "description": "Воинственные полулюди, известные своей прожорливостью.",
-    "tier": "basic",
     "skill_points_per_level": 1,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "description": "Мускулистые и свирепые полулюди с развитой клановой культурой. Ценят силу, воинскую доблесть и боевую ярость превыше всего."
   },
   {
     "id": "ogre",
     "name": "Огр",
     "icon": "👹",
     "parent_id": null,
+    "family": "ogre",
     "category": "demi-human",
+    "tier": "basic",
     "tags": [
-      "ogre_kin"
+      "ogre"
     ],
     "lvl_min": 1,
-    "description": "Крупные и физически сильные полулюди с низким интеллектом.",
-    "tier": "basic",
     "skill_points_per_level": 1,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "description": "Массивные великаноподобные существа колоссальной физической силы, способные крушить врагов тяжелыми дубинами и голыми руками."
   },
   {
     "id": "merrow",
     "name": "Мэрроу",
-    "icon": "👹",
-    "parent_id": null,
+    "icon": "👹💧",
+    "parent_id": "ogre",
+    "family": "ogre",
     "category": "demi-human",
-    "tags": [
-      "ogre_kin"
-    ],
-    "lvl_min": 1,
-    "description": "Разновидность огров, обитающая вблизи водоёмов.",
     "tier": "basic",
+    "tags": [
+      "ogre"
+    ],
+    "lvl_min": 5,
     "skill_points_per_level": 1,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "description": "Водная разновидность огров, приспособившаяся к жизни в глубоких реках и озёрах. Опасные засадные охотники водной стихии."
   },
   {
     "id": "troll",
     "name": "Тролль",
     "icon": "🧌",
     "parent_id": null,
+    "family": "troll",
     "category": "demi-human",
+    "tier": "basic",
     "tags": [
       "troll"
     ],
     "lvl_min": 1,
-    "description": "Обладают мощной регенерацией. Слабы к огню и кислоте.",
-    "tier": "basic",
     "skill_points_per_level": 1,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "description": "Грозные великаны, обладающие невероятной способностью к мгновенному заживлению ран. Единственное, чего они страшатся — это огонь и едкая кислота."
   },
   {
     "id": "scrag",
     "name": "Скраг",
-    "icon": "🧌",
+    "icon": "🧌💧",
     "parent_id": "troll",
+    "family": "troll",
     "category": "demi-human",
+    "tier": "advanced",
     "tags": [
       "troll"
     ],
-    "lvl_min": 1,
-    "description": "Водные тролли с повышенной живучестью в сырой среде.",
-    "tier": "advanced",
+    "lvl_min": 5,
     "skill_points_per_level": 1,
-    "spell_points_per_level": 0
-  },
-  {
-    "id": "beastman",
-    "name": "Зверолюд",
-    "icon": "🐺",
-    "parent_id": null,
-    "category": "demi-human",
-    "tags": [
-      "beastman"
-    ],
-    "lvl_min": 1,
-    "description": "Зверолюди. В Новом Мире создали мощные государства, враждующие с людьми.",
-    "tier": "basic",
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "description": "Водные тролли, обитающие на дне водоёмов и в топях. Их регенерация многократно усиливается при погружении в воду."
   },
   {
     "id": "lizardman",
     "name": "Людоящер",
     "icon": "🦎",
     "parent_id": null,
+    "family": "beastman",
     "category": "demi-human",
+    "tier": "basic",
     "tags": [
       "reptilian",
-      "lizardman",
       "beastman"
     ],
     "lvl_min": 1,
-    "description": "Гордые воины-рептилии из болот. Объединены Коцитом под властью Назарика.",
-    "tier": "basic",
     "skill_points_per_level": 1,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "description": "Гордый народ рептилий, обитающий в болотах и на озёрных побережьях. Мастера выживания в дикой природе, следопыты и искусные охотники."
   },
   {
     "id": "quagoa",
     "name": "Квагоа",
-    "icon": "🦔",
+    "icon": "🐀⛏",
     "parent_id": null,
+    "family": "beastman",
     "category": "demi-human",
+    "tier": "basic",
     "tags": [
-      "quagoa",
       "beastman"
     ],
     "lvl_min": 1,
-    "description": "Кротоподобные полулюди из гор Азерлисия. Едят руду, чтобы укреплять шкуру.",
-    "tier": "basic",
     "skill_points_per_level": 1,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "description": "Подземные кротоподобные гуманоиды, питающиеся минералами и рудами. Их густой мех и кожа приобретают прочность поглощенного ими металла."
   },
   {
     "id": "minotaur",
     "name": "Минотавр",
     "icon": "🐂",
     "parent_id": null,
+    "family": "beastman",
     "category": "demi-human",
+    "tier": "basic",
     "tags": [
       "beastman",
       "minotaur"
     ],
     "lvl_min": 1,
-    "description": "Быкоподобные полулюди. В Новом Мире создали нацию благодаря Минотавру-Мудрецу.",
-    "tier": "basic",
     "skill_points_per_level": 1,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "description": "Могучие быкоголовые гуманоиды, славящиеся неукротимой яростью в ближнем бою, крепким телосложением и природным чувством направления."
   },
   {
     "id": "centaur",
     "name": "Кентавр",
-    "icon": "🐎",
+    "icon": "🐴🏹",
     "parent_id": null,
+    "family": "beastman",
     "category": "demi-human",
+    "tier": "basic",
     "tags": [
-      "beastman",
-      "centaur"
+      "beastman"
     ],
     "lvl_min": 1,
-    "description": "Полулюди с телом лошади и торсом человека.",
-    "tier": "basic",
     "skill_points_per_level": 1,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "description": "Степные воители с телом коня и торсом человека, сочетающие грацию и скорость скакуна с меткостью стрелка и выносливостью воина."
   },
   {
     "id": "naga",
     "name": "Нага",
     "icon": "🐍",
     "parent_id": null,
+    "family": "beastman",
     "category": "demi-human",
+    "tier": "basic",
     "tags": [
       "reptilian",
-      "naga"
+      "beastman"
     ],
     "lvl_min": 1,
-    "description": "Змеелюди. Часто обладают магическими способностями.",
-    "tier": "basic",
     "skill_points_per_level": 1,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "description": "Хладнокровные змееподобные существа с развитым интеллектом. От природы одарены способностями к магии и гипнотическому воздействию."
   },
   {
     "id": "armot",
     "name": "Армот",
-    "icon": "🐀",
+    "icon": "🐭🪓",
     "parent_id": null,
+    "family": "beastman",
     "category": "demi-human",
+    "tier": "basic",
     "tags": [
       "beastman"
     ],
     "lvl_min": 1,
-    "description": "Армоты описаны как двуногие крысоподобные существа с прочной, как железо, шерстью.",
-    "tier": "basic",
     "skill_points_per_level": 1,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "description": "Двуногие крысоподобные охотники с исключительно прочной, словно железная проволока, шерстью и острым обонянием."
   },
   {
     "id": "skeleton",
     "name": "Скелет",
-    "icon": "🦴",
+    "icon": "💀",
     "parent_id": null,
+    "family": "skeleton",
     "category": "heteromorphic",
+    "tier": "basic",
     "tags": [
       "undead",
       "skeleton"
     ],
     "lvl_min": 1,
-    "description": "Базовая скелетная нежить, невосприимчивая к ядам и колющему урону.",
-    "tier": "basic",
     "skill_points_per_level": 1,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "description": "Останки павших воинов, поднятые тёмной некромантией. Не ведают страха, боли и усталости, неуязвимы к холоду и ядам."
   },
   {
     "id": "skeleton-archer",
     "name": "Скелет-лучник",
-    "icon": "🏹",
+    "icon": "💀🏹",
     "parent_id": "skeleton",
+    "family": "skeleton",
     "category": "heteromorphic",
+    "tier": "advanced",
     "tags": [
       "undead",
       "skeleton"
     ],
     "lvl_min": 1,
-    "description": "Скелет, специализированный на стрельбе из лука.",
-    "tier": "advanced",
     "skill_points_per_level": 1,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "description": "Поднятые скелеты стрелков, механически посылающие стрелы в цель с неослабевающей точностью даже сквозь непроглядную тьму."
   },
   {
     "id": "skeleton-warrior",
     "name": "Скелет-воин",
-    "icon": "⚔️",
+    "icon": "💀⚔",
     "parent_id": "skeleton",
+    "family": "skeleton",
     "category": "heteromorphic",
+    "tier": "advanced",
     "tags": [
       "undead",
       "skeleton"
     ],
     "lvl_min": 1,
-    "description": "Скелет, владеющий оружием ближнего боя и щитом.",
-    "tier": "advanced",
     "skill_points_per_level": 1,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "description": "Воскрешенные воины, облачённые в истлевшие доспехи и сжимающие ржавые клинки. Их кости укреплены тёмными чарами."
   },
   {
     "id": "skeleton-mage",
     "name": "Скелет-маг",
-    "icon": "🔮",
+    "icon": "💀🪄",
     "parent_id": "skeleton",
+    "family": "skeleton",
     "category": "heteromorphic",
+    "tier": "advanced",
     "tags": [
       "undead",
       "skeleton"
     ],
     "lvl_min": 1,
-    "description": "Базовая нежить-заклинатель (15 уровней).",
-    "tier": "advanced",
     "skill_points_per_level": 1,
-    "spell_points_per_level": 1
+    "spell_points_per_level": 0,
+    "description": "Одарённые магией костяные заклинатели, сохранившие искру чародейского дарования и способные повелевать разрушительными заклинаниями."
   },
   {
     "id": "lich",
     "name": "Лич",
-    "icon": "💀",
+    "icon": "💀🔮",
     "parent_id": "skeleton-mage",
+    "family": "skeleton",
     "category": "heteromorphic",
+    "tier": "advanced",
     "tags": [
       "undead",
-      "skeleton",
-      "lich"
+      "skeleton"
     ],
-    "lvl_min": 1,
-    "description": "Продвинутая нежить-заклинатель.",
-    "tier": "advanced",
+    "lvl_min": 10,
     "skill_points_per_level": 1,
-    "spell_points_per_level": 1
+    "spell_points_per_level": 0,
+    "description": "Могущественный чародей, добровольно или силой тёмных ритуалов отринувший смертную плоть ради вечной жизни и постижения некромантии."
   },
   {
     "id": "elder-lich",
     "name": "Старший лич",
-    "icon": "☠️",
+    "icon": "💀✨",
     "parent_id": "lich",
+    "family": "skeleton",
     "category": "heteromorphic",
-    "tags": [
-      "undead",
-      "skeleton",
-      "lich"
-    ],
-    "lvl_min": 10,
-    "description": "Старший лич. Высшая нежить, специализирующаяся на магии (10 уровней).",
     "tier": "advanced",
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 1
-  },
-  {
-    "id": "night-lich",
-    "name": "Ночной лич",
-    "icon": "🌌",
-    "parent_id": "elder-lich",
-    "category": "heteromorphic",
     "tags": [
       "undead",
       "skeleton",
       "lich"
     ],
-    "lvl_min": 1,
-    "description": "Уникальная эволюция в Новом Мире (организация «Тело Бездны»). Могут использовать магию 6+ тира.",
-    "tier": "rare",
+    "lvl_min": 15,
     "skill_points_per_level": 1,
-    "spell_points_per_level": 1
+    "spell_points_per_level": 0,
+    "description": "Древний и мудрый неживой заклинатель, чьи магические познания простираются далеко за пределы возможностей смертных магов."
   },
   {
     "id": "overlord",
     "name": "Повелитель",
-    "icon": "👑",
+    "icon": "💀👑",
     "parent_id": "elder-lich",
+    "family": "skeleton",
     "category": "heteromorphic",
+    "tier": "rare",
     "tags": [
       "undead",
       "skeleton",
       "lich"
     ],
-    "lvl_min": 10,
-    "description": "Высшая форма нежити. Мощнейшие заклинатели, правители смерти (5 уровней). Раса Аинза.",
-    "tier": "rare",
+    "lvl_min": 80,
     "skill_points_per_level": 1,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "description": "Владыка смерти и абсолютная вершина неживой эволюции. Обладает непререкаемой властью над загробным миром и непостижимой магической мощью."
+  },
+  {
+    "id": "night-lich",
+    "name": "Ночной лич",
+    "icon": "💀🌌",
+    "parent_id": "elder-lich",
+    "family": "skeleton",
+    "category": "heteromorphic",
+    "tier": "rare",
+    "tags": [
+      "undead",
+      "skeleton",
+      "lich"
+    ],
+    "lvl_min": 50,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Легендарная нежить ночи, достигшая глубин запретного чародейства и способная манипулировать тканью пространства и разумом живых.",
+    "tierNum": 0,
+    "colStart": 0,
+    "colEnd": 0,
+    "colWidth": 1,
+    "gridRow": 1,
+    "gridColumn": "1 / 2"
+  },
+  {
+    "id": "ghost",
+    "name": "Призрак",
+    "icon": "👻",
+    "parent_id": null,
+    "family": "ghost",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "undead",
+      "ghost",
+      "incorporeal"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Бестелесный дух неприкаянной души, блуждающий среди живых. Неуязвим для обычного немагического оружия и способен проходить сквозь стены."
+  },
+  {
+    "id": "wraith",
+    "name": "Рейф",
+    "icon": "👻🌫",
+    "parent_id": "ghost",
+    "family": "ghost",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "undead",
+      "ghost",
+      "incorporeal",
+      "wraith"
+    ],
+    "lvl_min": 10,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Зловещий призрак тьмы, сотканный из теней и могильного холода, способный вытягивать жизненное тепло из любого живого существа."
+  },
+  {
+    "id": "spectre",
+    "name": "Спектр",
+    "icon": "👻✨",
+    "parent_id": "wraith",
+    "family": "ghost",
+    "category": "heteromorphic",
+    "tier": "rare",
+    "tags": [
+      "undead",
+      "ghost",
+      "incorporeal",
+      "spectre"
+    ],
+    "lvl_min": 30,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Высший фантом, несущий ауру леденящего потустороннего ужаса и подчиняющий волю тех, кто осмелился взглянуть ему в глаза."
   },
   {
     "id": "zombie",
     "name": "Зомби",
     "icon": "🧟",
     "parent_id": null,
+    "family": "zombie",
     "category": "heteromorphic",
+    "tier": "basic",
     "tags": [
       "undead"
     ],
     "lvl_min": 1,
-    "description": "Оживший мертвец с медлительными движениями и выносливым телом.",
-    "tier": "basic",
     "skill_points_per_level": 1,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "description": "Оживший мертвец, движимый слепой жаждой плоти. Невосприимчив к боли и способен выдерживать тяжелые удары, пока его тело цельно."
   },
   {
     "id": "ghoul",
     "name": "Упырь",
-    "icon": "🧟‍♂️",
+    "icon": "🧟😡",
     "parent_id": "zombie",
+    "family": "zombie",
     "category": "heteromorphic",
+    "tier": "advanced",
     "tags": [
       "undead"
     ],
-    "lvl_min": 1,
-    "description": "Быстрая плотоядная нежить с парализующими когтями.",
-    "tier": "advanced",
+    "lvl_min": 5,
     "skill_points_per_level": 1,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "description": "Быстрая и хищная трупоядная нежить, чьи когти несут парализующий трупный яд."
   },
   {
     "id": "vampire",
     "name": "Вампир",
-    "icon": "🧛",
+    "icon": "🩸🧛",
     "parent_id": null,
+    "family": "vampire",
     "category": "heteromorphic",
+    "tier": "basic",
     "tags": [
       "undead",
       "vampire"
     ],
     "lvl_min": 1,
-    "description": "Нежить, питающаяся кровью. Имеют множество иммунитетов, но уязвимы к свету/серебру.",
-    "tier": "basic",
     "skill_points_per_level": 1,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "description": "Аристократичные хищники ночи, питающиеся жизненной силой крови. Обладают сверхчеловеческой грацией и гипнозом, но уязвимы к солнцу и святыням."
   },
   {
-    "id": "true-vampire",
-    "name": "Истинный вампир",
-    "icon": "🩸",
+    "id": "blood-guard",
+    "name": "Гвардеец крови",
+    "icon": "🩸🧛",
     "parent_id": "vampire",
+    "family": "vampire",
     "category": "heteromorphic",
+    "tier": "advanced",
     "tags": [
       "undead",
-      "vampire",
-      "true_vampire"
+      "vampire"
+    ],
+    "lvl_min": 10,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Элитный воин вампирского рода, черпающий стойкость и свирепость из пролитой вражеской крови."
+  },
+  {
+    "id": "vampire-bride",
+    "name": "Вампирская невеста",
+    "icon": "🩸💍",
+    "parent_id": "vampire",
+    "family": "vampire",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "undead",
+      "vampire"
+    ],
+    "lvl_min": 10,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Пленительная и опасная вампирша благородных кровей, сочетающая гипнотическое очарование с молниеносной смертоносностью в бою."
+  },
+  {
+    "id": "werewolf",
+    "name": "Оборотень",
+    "icon": "👤🐺",
+    "parent_id": null,
+    "family": "werewolf",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "werewolf",
+      "lycanthrope"
     ],
     "lvl_min": 1,
-    "description": "Истинный вампир. Высшая ступень эволюции. Раса Шалтир Бладфоллен.",
-    "tier": "rare",
     "skill_points_per_level": 1,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "description": "Оборотень, объединяющий хитрость охотника и дикую ярость волка. В полнолуние и в битве его сила и скорость возрастают многократно."
+  },
+  {
+    "id": "alpha-werewolf",
+    "name": "Альфа-оборотень",
+    "icon": "👤🐺🌕",
+    "parent_id": "werewolf",
+    "family": "werewolf",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "werewolf",
+      "lycanthrope"
+    ],
+    "lvl_min": 10,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Прирождённый вожак ликантропов, чей боевой вой вдохновляет союзников и повергает врагов в паническое бегство."
+  },
+  {
+    "id": "true-werewolf",
+    "name": "Истинный вервольф",
+    "icon": "👤🐺👑",
+    "parent_id": "alpha-werewolf",
+    "family": "werewolf",
+    "category": "heteromorphic",
+    "tier": "rare",
+    "tags": [
+      "werewolf",
+      "lycanthrope"
+    ],
+    "lvl_min": 15,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Древний прародитель оборотней, способный мгновенно исцелять смертельные раны и рассекать сталь голыми когтями."
   },
   {
     "id": "imp",
     "name": "Бес",
     "icon": "😈",
     "parent_id": null,
+    "family": "infernal",
     "category": "heteromorphic",
+    "tier": "basic",
     "tags": [
       "planarextra",
       "fiend",
@@ -527,17 +656,1256 @@
       "imp"
     ],
     "lvl_min": 1,
-    "description": "Низший демон. Базовая раса для большинства обитателей Пылающего Ада.",
-    "tier": "basic",
     "skill_points_per_level": 1,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "description": "Мелкий коварный обитатель нижних планов, сеющий хаос, искушение и порчу своими кознями и мелким огненным чародейством."
+  },
+  {
+    "id": "incubus",
+    "name": "Инкуб",
+    "icon": "♂",
+    "parent_id": "imp",
+    "family": "infernal",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "planarextra",
+      "fiend",
+      "infernal",
+      "imp"
+    ],
+    "lvl_min": 10,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Демонический соблазнитель, питающийся чужими страстями, снами и жизненной силой, подчиняя разум смертных сладким мороком."
+  },
+  {
+    "id": "succubus",
+    "name": "Суккуб",
+    "icon": "♀",
+    "parent_id": "imp",
+    "family": "infernal",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "planarextra",
+      "fiend",
+      "infernal",
+      "imp"
+    ],
+    "lvl_min": 10,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Обольстительная демоница бездны, способная подчинить своей воле даже самого стойкого воина при помощи искушения и магии разума."
+  },
+  {
+    "id": "demon",
+    "name": "Демон",
+    "icon": "😈",
+    "parent_id": "imp",
+    "family": "infernal",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "planarextra",
+      "fiend",
+      "infernal",
+      "imp",
+      "devil"
+    ],
+    "lvl_min": 10,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Порождение преисподней, воплощающее чистую разрушительную стихию адского огня, жестокости и хаоса."
+  },
+  {
+    "id": "angel",
+    "name": "Ангел",
+    "icon": "🪽",
+    "parent_id": null,
+    "family": "celestial",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "planarextra",
+      "celestial",
+      "third_sphere"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Безупречные крылатые вестники высших небес, воплощающие священный закон, божественный свет и очищающее правосудие."
+  },
+  {
+    "id": "angel-guardian",
+    "name": "Ангел-хранитель",
+    "icon": "🪽🛡",
+    "parent_id": "angel",
+    "family": "celestial",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "planarextra",
+      "celestial",
+      "third_sphere"
+    ],
+    "lvl_min": 10,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Небесный страж, защищающий праведников священным щитом и карающий нечестивых освященным клинком."
+  },
+  {
+    "id": "archangel-flame",
+    "name": "Архангел Огня",
+    "icon": "🪽🔥",
+    "parent_id": "angel-guardian",
+    "family": "celestial",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "planarextra",
+      "celestial",
+      "third_sphere",
+      "archangel"
+    ],
+    "lvl_min": 15,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Огненный воитель небес, чье пылающее лезвие испепеляет нечисть и обращает во тьму полчища демонов."
+  },
+  {
+    "id": "principality-observation",
+    "name": "Князь Наблюдения",
+    "icon": "🪽👁",
+    "parent_id": "archangel-flame",
+    "family": "celestial",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "planarextra",
+      "celestial",
+      "third_sphere",
+      "principality"
+    ],
+    "lvl_min": 25,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Всевидящий ангельский вестник, способный обнаружить любую скрытую угрозу и укрыть союзников куполом священного дозора."
+  },
+  {
+    "id": "principality-peace",
+    "name": "Князь Мира",
+    "icon": "🪽🕊",
+    "parent_id": "archangel-flame",
+    "family": "celestial",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "planarextra",
+      "celestial",
+      "third_sphere",
+      "principality"
+    ],
+    "lvl_min": 25,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Небесный благодетель, чье присутствие приносит умиротворение, исцеляет смертельные недуги и восстанавливает душевные силы."
+  },
+  {
+    "id": "dominion-authority",
+    "name": "Доминион Власти",
+    "icon": "🪽📜",
+    "parent_id": "angel-guardian",
+    "family": "celestial",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "planarextra",
+      "celestial",
+      "second_sphere",
+      "dominion"
+    ],
+    "lvl_min": 50,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Высшая сущность небесного порядка в виде парящих крыльев со скрижалями завета, вершащая непоколебимый суд божественной воли."
+  },
+  {
+    "id": "cherubim-gatekeeper",
+    "name": "Херувимский Привратник",
+    "icon": "🪽⚔",
+    "parent_id": "dominion-authority",
+    "family": "celestial",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "planarextra",
+      "celestial",
+      "first_sphere",
+      "cherubim"
+    ],
+    "lvl_min": 80,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Могучий хранитель небесных врат, вооруженный титаническим щитом и копьем света, сквозь строй которого не пройдет ни одно зло."
+  },
+  {
+    "id": "seraph",
+    "name": "Серафим",
+    "icon": "🪽⭐",
+    "parent_id": "cherubim-gatekeeper",
+    "family": "celestial",
+    "category": "heteromorphic",
+    "tier": "rare",
+    "tags": [
+      "planarextra",
+      "celestial",
+      "first_sphere",
+      "seraph"
+    ],
+    "lvl_min": 90,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Шестикрылый владыка небесного пламени, излучающий свет первозданного творения и наделенный безграничной святой мощью."
+  },
+  {
+    "id": "seraph-empyrean",
+    "name": "Серафим неземной",
+    "icon": "🪽🌟",
+    "parent_id": "seraph",
+    "family": "celestial",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "planarextra",
+      "celestial",
+      "first_sphere",
+      "seraph"
+    ],
+    "lvl_min": 90,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Эмпирейский владыка высших сфер, несущий ауру абсолютной святости, перед величием которой меркнут любые проклятия."
+  },
+  {
+    "id": "seraph-aerosphere",
+    "name": "Серафим Эсфера",
+    "icon": "🪽⚡",
+    "parent_id": "seraph",
+    "family": "celestial",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "planarextra",
+      "celestial",
+      "first_sphere",
+      "seraph"
+    ],
+    "lvl_min": 90,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Небесный полководец в сияющих доспехах, повелевающий бурями священного света и карающий врагов с небесной выси."
+  },
+  {
+    "id": "slime",
+    "name": "Слайм",
+    "icon": "🫧",
+    "parent_id": null,
+    "family": "slime",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "slime",
+      "amorphous"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Аморфное текучее существо без постоянной формы и уязвимых внутренних органов. Крайне устойчиво к рубящим и колющим ударам."
+  },
+  {
+    "id": "black-ooze",
+    "name": "Чёрная тина",
+    "icon": "🫧⚫",
+    "parent_id": "slime",
+    "family": "slime",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "slime",
+      "amorphous"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Смертоносная темная слизь, вырабатывающая концентрированную едкую кислоту, способную прожигать плоть и камень за считанные секунды."
+  },
+  {
+    "id": "elder-black-ooze",
+    "name": "Старшая чёрная тина",
+    "icon": "🫧⚫👑",
+    "parent_id": "black-ooze",
+    "family": "slime",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "slime",
+      "amorphous"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Древняя хищная масса, чьи кислотные ферменты мгновенно разъедают прочнейшие доспехи, щиты и оружие воинов."
+  },
+  {
+    "id": "shoggoth",
+    "name": "Шоггот",
+    "icon": "🫧🐙",
+    "parent_id": "slime",
+    "family": "slime",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "slime",
+      "amorphous",
+      "shoggoth"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Ужасающая хтоническая протоплазма с десятками открывающихся глаз и пастей, сокрушающая все на своем пути неумолимой массой."
+  },
+  {
+    "id": "ubbo-sathla",
+    "name": "Уббо-Сатла",
+    "icon": "🫧🌌",
+    "parent_id": "shoggoth",
+    "family": "slime",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "slime",
+      "amorphous",
+      "ubbo_sathla"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Изначальный аморфный прародитель, вечно порождающий новые формы протоплазмы и обладающий абсолютной растворяющей силой."
+  },
+  {
+    "id": "insectoid",
+    "name": "Инсектоид",
+    "icon": "🦗",
+    "parent_id": null,
+    "family": "insectoid",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "insectoid"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Хитиновые воители и охотники, обладающие сверхъестественной реакцией, фасеточным зрением и несокрушимым экзоскелетом."
+  },
+  {
+    "id": "dragon",
+    "name": "Дракон",
+    "icon": "🐉",
+    "parent_id": null,
+    "family": "dragon_kin",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "dragon_kin",
+      "dragon",
+      "beast"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Величественные древние ящеры, венчающие вершину природной пищевой цепи. Обладают крепчайшей чешуей, острым умом и разрушительным дыханием."
+  },
+  {
+    "id": "frost-dragon",
+    "name": "Морозный дракон",
+    "icon": "🐉❄",
+    "parent_id": "dragon",
+    "family": "dragon_kin",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "dragon_kin",
+      "dragon",
+      "beast"
+    ],
+    "lvl_min": 10,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Владыки ледяных вершин и вечной мерзлоты, выдыхающие смертоносную ледяную метель и закованные в панцирь из вечного льда."
+  },
+  {
+    "id": "fire-dragon",
+    "name": "Огненный дракон",
+    "icon": "🐉🔥",
+    "parent_id": "dragon",
+    "family": "dragon_kin",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "dragon_kin",
+      "dragon",
+      "beast"
+    ],
+    "lvl_min": 10,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Грозные владыки вулканов и пламени, способные одним выдохом огненного шквала превратить в пепелище целые поселения."
+  },
+  {
+    "id": "true-dragon-lord",
+    "name": "Истинный Лорд Драконов",
+    "icon": "🐉👑",
+    "parent_id": "dragon",
+    "family": "dragon_kin",
+    "category": "heteromorphic",
+    "tier": "rare",
+    "tags": [
+      "dragon_kin",
+      "dragon",
+      "beast"
+    ],
+    "lvl_min": 45,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Древнейшие правители мира, повелевающие первозданной магией, чья воля способна изменять сами законы мироздания."
+  },
+  {
+    "id": "dragonoid",
+    "name": "Драконид",
+    "icon": "🐉👤",
+    "parent_id": null,
+    "family": "dragon_kin",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "dragon_kin"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Благородные гуманоиды, несущие в себе драконью кровь. Сочетают физическое совершенство драконов с разумом и дисциплиной воина."
+  },
+  {
+    "id": "doppelganger",
+    "name": "Доппельгангер",
+    "icon": "🎭",
+    "parent_id": null,
+    "family": "other",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "shapeshifter"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Таинственные метаморфы, способные безупречно копировать чужой облик, голос, воспоминания и повадки жертвы."
+  },
+  {
+    "id": "automaton",
+    "name": "Автоматон",
+    "icon": "🤖",
+    "parent_id": null,
+    "family": "other",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "construct",
+      "artificial"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Механические творения высокого мастерства. Лишены усталости, потребности в пище и сне, подчиняясь заложенным в них механизмам и долгу."
+  },
+  {
+    "id": "homunculus",
+    "name": "Гомункул",
+    "icon": "🧪",
+    "parent_id": null,
+    "family": "other",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "construct",
+      "artificial",
+      "homunculus"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Искусственные создания, рождённые в алхимических ретортах из тайных эссенций. Преданы своим создателям и наделены безупречной исполнительностью."
+  },
+  {
+    "id": "wolf",
+    "name": "Волк",
+    "icon": "🐺",
+    "parent_id": null,
+    "family": "beast",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "beast",
+      "wolf"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Выносливые и опасные стайные хищники с острым обонянием, чутким слухом и безупречной слаженностью на охоте."
+  },
+  {
+    "id": "pack-leader",
+    "name": "Вожак стаи",
+    "icon": "🐺🐾",
+    "parent_id": "wolf",
+    "family": "beast",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "beast",
+      "wolf"
+    ],
+    "lvl_min": 10,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Опытный матерый хищник во главе стаи, чей свирепый натиск и боевой вой ведут сородичей за собой в любую атаку."
+  },
+  {
+    "id": "legendary-wolf",
+    "name": "Легендарный волк",
+    "icon": "🐺✨",
+    "parent_id": "pack-leader",
+    "family": "beast",
+    "category": "heteromorphic",
+    "tier": "rare",
+    "tags": [
+      "beast",
+      "wolf"
+    ],
+    "lvl_min": 40,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Мифический зверь колоссальных размеров, хранящий первобытную силу древних лесов и внушающий трепет одним своим присутствием."
+  },
+  {
+    "id": "wolf-god",
+    "name": "Бог-волк",
+    "icon": "🐺👑",
+    "parent_id": "legendary-wolf",
+    "family": "beast",
+    "category": "heteromorphic",
+    "tier": "rare",
+    "tags": [
+      "beast",
+      "wolf"
+    ],
+    "lvl_min": 70,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Бессмертное божественное воплощение хищной природы, почитаемое как прародитель и покровитель всех волчьих стай."
+  },
+  {
+    "id": "horse",
+    "name": "Лошадь",
+    "icon": "🐴",
+    "parent_id": null,
+    "family": "beast",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "beast",
+      "horse"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Выносливые и быстроногие травоядные скакуны, служащие верными спутниками в странствиях и надёжной опорой всадника на поле боя."
+  },
+  {
+    "id": "pegasus",
+    "name": "Пегас",
+    "icon": "🪽🐴",
+    "parent_id": "horse",
+    "family": "beast",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "beast",
+      "horse",
+      "pegasus",
+      "aerial"
+    ],
+    "lvl_min": 10,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Благородные крылатые скакуны, парящие в небесных высях. Способны стремительно преодолевать огромные расстояния и атаковать с воздуха."
+  },
+  {
+    "id": "unicorn",
+    "name": "Единорог",
+    "icon": "🦄",
+    "parent_id": "horse",
+    "family": "beast",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "beast",
+      "horse",
+      "unicorn",
+      "holy"
+    ],
+    "lvl_min": 10,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Священные скакуны с сияющим спиральным рогом, воплощающие чистоту. Обладают даром исцеления и рассеивания злых чар."
+  },
+  {
+    "id": "bicorn",
+    "name": "Двурог",
+    "icon": "🦄😈",
+    "parent_id": "horse",
+    "family": "beast",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "fiend",
+      "beast",
+      "horse",
+      "bicorn"
+    ],
+    "lvl_min": 10,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Демонический антипод единорога с парой закрученных рогов. Свирепое и своенравное создание, подпускающее к себе лишь осквернённых всадников."
+  },
+  {
+    "id": "nightmare",
+    "name": "Кошмар",
+    "icon": "🐴🔥",
+    "parent_id": "bicorn",
+    "family": "beast",
+    "category": "heteromorphic",
+    "tier": "rare",
+    "tags": [
+      "undead",
+      "fiend",
+      "horse",
+      "nightmare"
+    ],
+    "lvl_min": 30,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Инфернальный скакун с горящими адским огнём копытами и глазами. Сеет первобытный ужас, оставляя за собой дорожку из тлеющего пепла."
+  },
+  {
+    "id": "chicken",
+    "name": "Курица",
+    "icon": "🐔",
+    "parent_id": null,
+    "family": "beast",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "beast",
+      "bird",
+      "domestic"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Домашняя птица, разводимая ради яиц и мяса. Обладает пугливым нравом и громким голосом."
+  },
+  {
+    "id": "cow",
+    "name": "Корова",
+    "icon": "🐮",
+    "parent_id": null,
+    "family": "beast",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "beast",
+      "domestic",
+      "livestock"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Миролюбивое жвачное животное, ценный источник молока и кожи. Отличается спокойным и кротким характером."
+  },
+  {
+    "id": "cat",
+    "name": "Кошка",
+    "icon": "🐱",
+    "parent_id": null,
+    "family": "beast",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "beast",
+      "domestic",
+      "feline"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Ловкий и независимый домашний охотник на грызунов, обладающий острыми когтями и великолепным ночным зрением."
+  },
+  {
+    "id": "dog",
+    "name": "Собака",
+    "icon": "🐶",
+    "parent_id": null,
+    "family": "beast",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "beast",
+      "domestic",
+      "canine"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Преданный спутник и охранник человека, наделенный чутким обонянием, выносливостью и готовностью защищать хозяина."
+  },
+  {
+    "id": "goat",
+    "name": "Коза",
+    "icon": "🐐",
+    "parent_id": null,
+    "family": "beast",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "beast",
+      "domestic",
+      "livestock"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Неприхотливое и выносливое горное домашнее животное, способное легко карабкаться по крутым скалистым склонам."
+  },
+  {
+    "id": "sheep",
+    "name": "Овца",
+    "icon": "🐑",
+    "parent_id": null,
+    "family": "beast",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "beast",
+      "domestic",
+      "livestock"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Стадное домашнее животное с густым шерстяным руном, разводимое ради шерсти, молока и мяса."
+  },
+  {
+    "id": "fire-elemental",
+    "name": "Элементаль огня",
+    "icon": "🔥",
+    "parent_id": null,
+    "family": "elemental",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "elemental",
+      "fire"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Сгусток живого пламени, непрерывно сжигающий воздух вокруг себя и атакующий обжигающими языками огня."
+  },
+  {
+    "id": "elder-fire-elemental",
+    "name": "Старший элементаль огня",
+    "icon": "🔥⚔",
+    "parent_id": "fire-elemental",
+    "family": "elemental",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "elemental",
+      "fire"
+    ],
+    "lvl_min": 15,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Могущественное огненное воплощение, пылающее яростным белым жаром и способное обрушивать огненные бури."
+  },
+  {
+    "id": "magma-elemental",
+    "name": "Магматический элементаль",
+    "icon": "🔥🌋",
+    "parent_id": "elder-fire-elemental",
+    "family": "elemental",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "elemental",
+      "fire",
+      "earth"
+    ],
+    "lvl_min": 30,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Гибрид огненной и земной первозданной стихии, состоящий из кипящей вулканической лавы и базальтовой корки."
+  },
+  {
+    "id": "water-elemental",
+    "name": "Элементаль воды",
+    "icon": "💧",
+    "parent_id": null,
+    "family": "elemental",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "elemental",
+      "water"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Текучий дух водной стихии, способный принимать любую форму, гасить пламя и наносить сокрушительные гидроудары."
+  },
+  {
+    "id": "elder-water-elemental",
+    "name": "Старший элементаль воды",
+    "icon": "💧⚔",
+    "parent_id": "water-elemental",
+    "family": "elemental",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "elemental",
+      "water"
+    ],
+    "lvl_min": 15,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Воплощение бушующего водоворота, легко сокрушающее броню давлением водных потоков и поглощающее кинетический урон."
+  },
+  {
+    "id": "ice-elemental",
+    "name": "Ледяной элементаль",
+    "icon": "❄💧",
+    "parent_id": "elder-water-elemental",
+    "family": "elemental",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "elemental",
+      "water",
+      "ice"
+    ],
+    "lvl_min": 30,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Кристаллизованная форма водной стихии, замораживающая пространство вокруг себя и разящая ледяными иглами."
+  },
+  {
+    "id": "earth-elemental",
+    "name": "Элементаль земли",
+    "icon": "🪨",
+    "parent_id": null,
+    "family": "elemental",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "elemental",
+      "earth"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Монолитное создание из камня и почвы, наделенное колоссальной физической стойкостью и сокрушительным весом."
+  },
+  {
+    "id": "elder-earth-elemental",
+    "name": "Старший элементаль земли",
+    "icon": "🪨⚔",
+    "parent_id": "earth-elemental",
+    "family": "elemental",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "elemental",
+      "earth"
+    ],
+    "lvl_min": 15,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Древний каменный титан, способный вызывать локальные землетрясения и проходить сквозь твердые горные породы."
+  },
+  {
+    "id": "crystal-elemental",
+    "name": "Кристаллический элементаль",
+    "icon": "💎🪨",
+    "parent_id": "elder-earth-elemental",
+    "family": "elemental",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "elemental",
+      "earth",
+      "crystal"
+    ],
+    "lvl_min": 30,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Земляная сущность высокой плотности, тело которой состоит из прочнейших самоцветов, преломляющих магические лучи."
+  },
+  {
+    "id": "air-elemental",
+    "name": "Элементаль воздуха",
+    "icon": "🌪",
+    "parent_id": null,
+    "family": "elemental",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "elemental",
+      "air"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Стремительный вихрь первородного ветра, перемещающийся с головокружительной скоростью и рассекающий воздух."
+  },
+  {
+    "id": "elder-air-elemental",
+    "name": "Старший элементаль воздуха",
+    "icon": "🌪⚔",
+    "parent_id": "air-elemental",
+    "family": "elemental",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "elemental",
+      "air"
+    ],
+    "lvl_min": 15,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Разрушительный ураганный вихрь, подбрасывающий врагов в воздух и наносящий шквал ударов сжатыми воздушными лезвиями."
+  },
+  {
+    "id": "storm-elemental",
+    "name": "Грозовой элементаль",
+    "icon": "⚡🌪",
+    "parent_id": "elder-air-elemental",
+    "family": "elemental",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "elemental",
+      "air",
+      "lightning"
+    ],
+    "lvl_min": 30,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Бушующее грозовое облако, генерирующее электрические разряды колоссальной мощности и оглушительный гром."
+  },
+  {
+    "id": "clay-golem",
+    "name": "Глиняный голем",
+    "icon": "🏺🤖",
+    "parent_id": null,
+    "family": "golem",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "construct",
+      "artificial",
+      "golem"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Базовый конструкт из обожжённой глины, оживлённый магическим ядром. Обладает вязким телом, амортизирующим тупые удары."
+  },
+  {
+    "id": "stone-golem",
+    "name": "Каменный голем",
+    "icon": "🪨🤖",
+    "parent_id": "clay-golem",
+    "family": "golem",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "construct",
+      "artificial",
+      "golem"
+    ],
+    "lvl_min": 10,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Массивный страж, высеченный из цельного гранита. Отличается высокой прочностью и полным иммунитетом к ядам и кровотечению."
+  },
+  {
+    "id": "iron-golem",
+    "name": "Железный голем",
+    "icon": "⚙🤖",
+    "parent_id": "stone-golem",
+    "family": "golem",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "construct",
+      "artificial",
+      "golem"
+    ],
+    "lvl_min": 25,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Тяжелый боевой автомат из кованого железа, устойчивый к обычному оружию и наделенный огромной сокрушающей силой."
+  },
+  {
+    "id": "crystal-golem",
+    "name": "Кристаллический голем",
+    "icon": "💎🤖",
+    "parent_id": "iron-golem",
+    "family": "golem",
+    "category": "heteromorphic",
+    "tier": "rare",
+    "tags": [
+      "construct",
+      "artificial",
+      "golem"
+    ],
+    "lvl_min": 45,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Редкий конструкт из зачарованных минералов и кристаллов, способный отражать враждебную магию обратно во врагов."
+  },
+  {
+    "id": "adamantine-golem",
+    "name": "Адамантитовый голем",
+    "icon": "🛡🤖",
+    "parent_id": "crystal-golem",
+    "family": "golem",
+    "category": "heteromorphic",
+    "tier": "rare",
+    "tags": [
+      "construct",
+      "artificial",
+      "golem"
+    ],
+    "lvl_min": 70,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Шедевр магической инженерии из легендарного адамантита. Практически неуязвим для физических и магических атак."
+  },
+  {
+    "id": "raven",
+    "name": "Ворон",
+    "icon": "🦅",
+    "parent_id": null,
+    "family": "avian",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "beast",
+      "bird",
+      "aerial"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Умная и осторожная птица с чёрным оперением, служащая разведчиком и вестником тайн в темной магии."
+  },
+  {
+    "id": "falcon",
+    "name": "Сокол",
+    "icon": "🦅",
+    "parent_id": null,
+    "family": "avian",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "beast",
+      "bird",
+      "aerial"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Стремительный пернатый хищник с феноменальным зрением, атакующий добычу в молниеносном пикирующем полёте."
+  },
+  {
+    "id": "shark",
+    "name": "Акула",
+    "icon": "🦈",
+    "parent_id": null,
+    "family": "aquatic",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "beast",
+      "aquatic",
+      "predator"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Опасный морской хищник с острыми, как бритва, зубами и непревзойдённым чутьем на запах крови в воде."
+  },
+  {
+    "id": "megalodon",
+    "name": "Мегалодон",
+    "icon": "🦈👑",
+    "parent_id": "shark",
+    "family": "aquatic",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "beast",
+      "aquatic",
+      "predator",
+      "giant"
+    ],
+    "lvl_min": 25,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Доисторический исполинский хищник глубин, способный перекусывать надвое корабли и морских чудовищ."
+  },
+  {
+    "id": "octopus",
+    "name": "Осьминог",
+    "icon": "🐙",
+    "parent_id": null,
+    "family": "aquatic",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "beast",
+      "aquatic",
+      "cephalopod"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Разумный головоногий моллюск, обладающий восемью щупальцами с присосками, чернильной защитой и природной маскировкой."
+  },
+  {
+    "id": "giant-octopus",
+    "name": "Гигантский осьминог",
+    "icon": "🐙🌊",
+    "parent_id": "octopus",
+    "family": "aquatic",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "beast",
+      "aquatic",
+      "cephalopod",
+      "giant"
+    ],
+    "lvl_min": 20,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Колоссальный глубоководный моллюск, чьи мощные щупальца способны сминать корпуса кораблей и утаскивать их на дно."
+  },
+  {
+    "id": "kraken",
+    "name": "Кракен",
+    "icon": "🐙👑",
+    "parent_id": "giant-octopus",
+    "family": "aquatic",
+    "category": "heteromorphic",
+    "tier": "rare",
+    "tags": [
+      "beast",
+      "aquatic",
+      "cephalopod",
+      "mythical"
+    ],
+    "lvl_min": 65,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Легендарное чудовище бездны, властвующее над морскими пучинами и способное вызывать чудовищные водовороты."
+  },
+  {
+    "id": "vampire-lord",
+    "name": "Вампир-лорд",
+    "icon": "🩸👑",
+    "parent_id": "blood-guard, vampire-bride",
+    "family": "vampire",
+    "category": "heteromorphic",
+    "tier": "rare",
+    "tags": [
+      "undead",
+      "vampire"
+    ],
+    "lvl_min": 30,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Повелитель клана кровопийц, обладающий вековой мудростью, искусством превращения в туман и подчинением низшей нежити."
+  },
+  {
+    "id": "true-vampire",
+    "name": "Истинный вампир",
+    "icon": "🩸✨",
+    "parent_id": "vampire-lord",
+    "family": "vampire",
+    "category": "heteromorphic",
+    "tier": "rare",
+    "tags": [
+      "undead",
+      "vampire"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Первородный владыка крови, сочетающий совершенную внешность с чудовищным боевым обличием и абсолютной регенерацией плоти."
+  },
+  {
+    "id": "devil",
+    "name": "Дьявол",
+    "icon": "😈👑",
+    "parent_id": "succubus, incubus, demon",
+    "family": "infernal",
+    "category": "heteromorphic",
+    "tier": "rare",
+    "tags": [
+      "planarextra",
+      "fiend",
+      "infernal",
+      "imp",
+      "devil"
+    ],
+    "lvl_min": 50,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Коварный архидемон преисподней, искусный в составлении нерушимых темных сделок и повелевании легионами низших бесов."
   },
   {
     "id": "archdevil",
     "name": "Высший демон",
-    "icon": "👿",
-    "parent_id": "imp",
+    "icon": "😈✨",
+    "parent_id": "devil",
+    "family": "infernal",
     "category": "heteromorphic",
+    "tier": "rare",
     "tags": [
       "planarextra",
       "fiend",
@@ -546,414 +1914,100 @@
       "devil",
       "archdevil"
     ],
-    "lvl_min": 1,
-    "description": "Высший дьявол. Командиры демонических легионов.",
-    "tier": "rare",
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0
-  },
-  {
-    "id": "succubus",
-    "name": "Суккуб",
-    "icon": "🖤",
-    "parent_id": "imp",
-    "category": "heteromorphic",
-    "tags": [
-      "planarextra",
-      "fiend",
-      "infernal",
-      "imp"
-    ],
-    "lvl_min": 1,
-    "description": "Демоны искушения. Альбедо принадлежит к этой расе.",
-    "tier": "advanced",
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0
-  },
-  {
-    "id": "angel",
-    "name": "Ангел",
-    "icon": "🪽",
-    "parent_id": null,
-    "category": "heteromorphic",
-    "tags": [
-      "planarextra",
-      "celestial",
-      "third_sphere"
-    ],
-    "lvl_min": 1,
-    "description": "Небесные создания. Часто призываются Слейнской Теократией.",
-    "tier": "basic",
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0
-  },
-  {
-    "id": "angel-guardian",
-    "name": "Ангел-хранитель",
-    "icon": "🛡️",
-    "parent_id": "angel",
-    "category": "heteromorphic",
-    "tags": [
-      "planarextra",
-      "celestial",
-      "third_sphere"
-    ],
-    "lvl_min": 10,
-    "description": "Ангел Третьей Сферы. Базовый страж с щитом и мечом, обеспечивающий прикрытие. Призыв 2-го тира.",
-    "tier": "advanced",
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0
-  },
-  {
-    "id": "archangel-flame",
-    "name": "Архангел Огня",
-    "icon": "🔥",
-    "parent_id": "angel-guardian",
-    "category": "heteromorphic",
-    "tags": [
-      "planarextra",
-      "celestial",
-      "third_sphere",
-      "archangel"
-    ],
-    "lvl_min": 15,
-    "description": "Ангел Третьей Сферы. Боевой ангел с пылающим мечом. Основная сила Писания Солнечного Света. Призыв 3-го тира.",
-    "tier": "advanced",
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0
-  },
-  {
-    "id": "principality-observation",
-    "name": "Князь Наблюдения",
-    "icon": "👁️",
-    "parent_id": "archangel-flame",
-    "category": "heteromorphic",
-    "tags": [
-      "planarextra",
-      "celestial",
-      "third_sphere",
-      "principality"
-    ],
-    "lvl_min": 25,
-    "description": "Ангел Третьей Сферы (Начала). Оснащен щитом, специализируется на разведке и защите. Призыв среднего ранга (4-й тир).",
-    "tier": "advanced",
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0
-  },
-  {
-    "id": "principality-peace",
-    "name": "Князь Мира",
-    "icon": "🕊️",
-    "parent_id": "archangel-flame",
-    "category": "heteromorphic",
-    "tags": [
-      "planarextra",
-      "celestial",
-      "third_sphere",
-      "principality"
-    ],
-    "lvl_min": 25,
-    "description": "Ангел Третьей Сферы (Начала). Поддерживающий ангел с исцеляющими аурами и баффами. Призыв среднего ранга (4-й тир).",
-    "tier": "advanced",
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0
-  },
-  {
-    "id": "dominion-authority",
-    "name": "Доминион Власти",
-    "icon": "📜",
-    "parent_id": null,
-    "category": "heteromorphic",
-    "tags": [
-      "planarextra",
-      "celestial",
-      "second_sphere",
-      "dominion"
-    ],
-    "lvl_min": 45,
-    "description": "Ангел Второй Сферы (Господства). Бестелесный лик из крыльев со скрижалью. Призыв 7-го тира (козырь Слейнской Теократии).",
-    "tier": "basic",
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0
-  },
-  {
-    "id": "cherubim-gatekeeper",
-    "name": "Херувимский Привратник",
-    "icon": "⚔️",
-    "parent_id": "dominion-authority",
-    "category": "heteromorphic",
-    "tags": [
-      "planarextra",
-      "celestial",
-      "first_sphere",
-      "cherubim"
-    ],
     "lvl_min": 80,
-    "description": "Ангел Первой Сферы. Элитный страж Назарика с огромным щитом и копьем. Призыв 10-го тира (80 ур.).",
-    "tier": "advanced",
     "skill_points_per_level": 1,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "description": "Великий князь преисподней, чей взгляд обращает смертных в пепел, а стратегический гений ведет адские орды к триумфу."
   },
   {
-    "id": "seraph",
-    "name": "Серафим",
-    "icon": "🌟",
-    "parent_id": "cherubim-gatekeeper",
+    "id": "alicorn",
+    "name": "Аликорн",
+    "icon": "🦄🪽",
+    "parent_id": "pegasus, unicorn",
+    "family": "beast",
     "category": "heteromorphic",
-    "tags": [
-      "planarextra",
-      "celestial",
-      "first_sphere",
-      "seraph"
-    ],
-    "lvl_min": 90,
-    "description": "Серафим — высший ангел. В Иггдрасиле существовали высокоуровневые серафимы-боссы.",
     "tier": "rare",
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0
-  },
-  {
-    "id": "seraph-empyrean",
-    "name": "Серафим неземной",
-    "icon": "✨",
-    "parent_id": "seraph",
-    "category": "heteromorphic",
     "tags": [
-      "planarextra",
       "celestial",
-      "first_sphere",
-      "seraph"
+      "beast",
+      "horse",
+      "alicorn"
     ],
-    "lvl_min": 90,
-    "description": "Ангел Первой Сферы. Высший чин, обладающий колоссальной святой защитой и магией. Сверхтировый ранг призыва (100 ур.).",
-    "tier": "advanced",
+    "lvl_min": 50,
     "skill_points_per_level": 1,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "description": "Легендарное создание, соединяющее крылья пегаса и рог единорога. Повелевает небесными бурями и владеет высшей созидательной магией."
   },
   {
-    "id": "seraph-aerosphere",
-    "name": "Серафим Эсфера",
-    "icon": "💫",
-    "parent_id": "seraph",
+    "id": "fire-lord",
+    "name": "Лорд пламени",
+    "icon": "🔥👑",
+    "parent_id": "elder-fire-elemental, magma-elemental",
+    "family": "elemental",
     "category": "heteromorphic",
-    "tags": [
-      "planarextra",
-      "celestial",
-      "first_sphere",
-      "seraph"
-    ],
-    "lvl_min": 90,
-    "description": "Ангел Первой Сферы. Высокоуровневый боевой серафим в сияющих доспехах. Призыв высшего ранга (10-й тир / 90+ ур.).",
-    "tier": "advanced",
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0
-  },
-  {
-    "id": "slime",
-    "name": "Слайм",
-    "icon": "🧪",
-    "parent_id": null,
-    "category": "heteromorphic",
-    "tags": [
-      "slime",
-      "amorphous"
-    ],
-    "lvl_min": 1,
-    "description": "Базовая аморфная раса (15 уровней). Неуязвимы к критическим ударам.",
-    "tier": "basic",
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0
-  },
-  {
-    "id": "black-ooze",
-    "name": "Чёрная тина",
-    "icon": "🖤",
-    "parent_id": "slime",
-    "category": "heteromorphic",
-    "tags": [
-      "slime",
-      "amorphous"
-    ],
-    "lvl_min": 1,
-    "description": "Продвинутая слизь с высокой кислотностью.",
-    "tier": "advanced",
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0
-  },
-  {
-    "id": "elder-black-ooze",
-    "name": "Старшая чёрная тина",
-    "icon": "☣️",
-    "parent_id": "black-ooze",
-    "category": "heteromorphic",
-    "tags": [
-      "slime",
-      "amorphous"
-    ],
-    "lvl_min": 1,
-    "description": "Мощнейшая кислотная слизь (10 уровней). Способна растворять эквипировку.",
-    "tier": "advanced",
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0
-  },
-  {
-    "id": "shoggoth",
-    "name": "Шоггот",
-    "icon": "👁️",
-    "parent_id": "slime",
-    "category": "heteromorphic",
-    "tags": [
-      "slime",
-      "amorphous",
-      "shoggoth"
-    ],
-    "lvl_min": 1,
-    "description": "Ужасающая аморфная масса из лавкрафтианских мифов (10 уровней).",
-    "tier": "advanced",
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0
-  },
-  {
-    "id": "ubbo-sathla",
-    "name": "Уббо-Сатла",
-    "icon": "🌌",
-    "parent_id": "shoggoth",
-    "category": "heteromorphic",
-    "tags": [
-      "slime",
-      "amorphous",
-      "ubbo_sathla"
-    ],
-    "lvl_min": 1,
-    "description": "Божественный аморфный прародитель (5 уровней). Высшая форма расы Хэрохэро.",
-    "tier": "advanced",
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0
-  },
-  {
-    "id": "insectoid",
-    "name": "Инсектоид",
-    "icon": "🦗",
-    "parent_id": null,
-    "category": "heteromorphic",
-    "tags": [
-      "insectoid"
-    ],
-    "lvl_min": 1,
-    "description": "Насекомоподобные гетероморфы. Раса Коцита и Энтомы.",
-    "tier": "basic",
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0
-  },
-  {
-    "id": "doppelganger",
-    "name": "Доппельгангер",
-    "icon": "🎭",
-    "parent_id": null,
-    "category": "heteromorphic",
-    "tags": [
-      "shapeshifter"
-    ],
-    "lvl_min": 1,
-    "description": "Меняющие форму. Могут копировать внешность и навыки. Раса Актёра Пандоры и Нарберал.",
-    "tier": "basic",
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0
-  },
-  {
-    "id": "dragonoid",
-    "name": "Драконид",
-    "icon": "🐉👤",
-    "parent_id": null,
-    "category": "heteromorphic",
-    "tags": [
-      "dragon_kin"
-    ],
-    "lvl_min": 1,
-    "description": "Дракониды. Гуманоиды с чертами дракона. Раса Себаса Тиана.",
-    "tier": "basic",
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0
-  },
-  {
-    "id": "frost-dragon",
-    "name": "Морозный дракон",
-    "icon": "🐉❄️",
-    "parent_id": null,
-    "category": "heteromorphic",
-    "tags": [
-      "dragon_kin",
-      "dragon"
-    ],
-    "lvl_min": 1,
-    "description": "Вид драконов, обитающих в холодном климате гор Азерлисия. К этому виду относится Хеджинмал.",
-    "tier": "basic",
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0
-  },
-  {
-    "id": "fire-dragon",
-    "name": "Огненный дракон",
-    "icon": "🐉🔥",
-    "parent_id": null,
-    "category": "heteromorphic",
-    "tags": [
-      "dragon_kin",
-      "dragon"
-    ],
-    "lvl_min": 1,
-    "description": "Классические свирепые драконы, управляющие стихией огня.",
-    "tier": "basic",
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0
-  },
-  {
-    "id": "true-dragon-lord",
-    "name": "Истинный Лорд Драконов",
-    "icon": "🐉✨",
-    "parent_id": null,
-    "category": "heteromorphic",
-    "tags": [
-      "dragon_kin",
-      "dragon"
-    ],
-    "lvl_min": 1,
-    "description": "Высшие сущности Нового Мира. Единственные, кто может использовать первозданную Дикую Магию, как Платиновый Лорд Драконов.",
     "tier": "rare",
+    "tags": [
+      "elemental",
+      "fire",
+      "lord"
+    ],
+    "lvl_min": 60,
     "skill_points_per_level": 1,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "description": "Владыка стихийного огня колоссальной мощи, чье присутствие плавит металл и обращает окружение в пепел."
   },
   {
-    "id": "automaton",
-    "name": "Автоматон",
-    "icon": "🤖",
-    "parent_id": null,
+    "id": "tidal-lord",
+    "name": "Лорд приливов",
+    "icon": "💧👑",
+    "parent_id": "elder-water-elemental, ice-elemental",
+    "family": "elemental",
     "category": "heteromorphic",
+    "tier": "rare",
     "tags": [
-      "construct",
-      "artificial"
+      "elemental",
+      "water",
+      "lord"
     ],
-    "lvl_min": 1,
-    "description": "Искусственные конструкты. Не нуждаются в еде и сне. Раса Сизу Дельты (CZ2128).",
-    "tier": "basic",
+    "lvl_min": 60,
     "skill_points_per_level": 1,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "description": "Древний владыка океанических глубин, способный призывать сокрушительные цунами и повелевать океанскими течениями."
   },
   {
-    "id": "homunculus",
-    "name": "Гомункул",
-    "icon": "🧪",
-    "parent_id": null,
+    "id": "earth-lord",
+    "name": "Владыка недр",
+    "icon": "🪨👑",
+    "parent_id": "elder-earth-elemental, crystal-elemental",
+    "family": "elemental",
     "category": "heteromorphic",
+    "tier": "rare",
     "tags": [
-      "construct",
-      "artificial",
-      "homunculus"
+      "elemental",
+      "earth",
+      "lord"
     ],
-    "lvl_min": 1,
-    "description": "Искусственные создания, сотворённые с помощью алхимии. Относятся к гетероморфам. Раса большинства обычных горничных Назарика.",
-    "tier": "basic",
+    "lvl_min": 60,
     "skill_points_per_level": 1,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "description": "Первородный повелитель литосферы, чья нерушимая плоть выдерживает удары божественного масштаба."
+  },
+  {
+    "id": "storm-lord",
+    "name": "Владыка бурь",
+    "icon": "🌪👑",
+    "parent_id": "elder-air-elemental, storm-elemental",
+    "family": "elemental",
+    "category": "heteromorphic",
+    "tier": "rare",
+    "tags": [
+      "elemental",
+      "air",
+      "lord"
+    ],
+    "lvl_min": 60,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Легендарный правитель небесных штормов, одним взмахом порождающий опустошительные смерчи и грозы."
   }
 ]

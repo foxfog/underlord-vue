@@ -12,7 +12,7 @@
 						v-model="searchQuery"
 						type="text"
 						class="tree-search-input"
-						:placeholder="type === 'classes' ? 'Поиск классов...' : 'Поиск рас...'"
+						:placeholder="type === 'classes' ? 'Поиск классов...' : (type === 'races' ? 'Поиск рас...' : 'Поиск фракций...')"
 					/>
 					<button
 						v-if="searchQuery"
@@ -24,7 +24,7 @@
 				</div>
 
 				<div class="active-count-badge">
-					{{ displayedTreesCount }} веток • {{ filteredEntitiesCount }} сущностей
+					{{ displayedTreesCount }} {{ type === 'races' ? 'семейств' : (type === 'fractions' ? 'союзов / фракций' : 'веток') }} • {{ filteredEntitiesCount }} сущностей
 				</div>
 			</div>
 
@@ -76,7 +76,7 @@
 			@mousemove="onPanMove"
 			@mouseup="onPanEnd"
 			@mouseleave="onPanEnd"
-			@wheel="onWheel"
+			@wheel.passive="onWheel"
 		>
 			<div
 				ref="zoomContentRef"
@@ -98,7 +98,7 @@
 							refY="3"
 							orient="auto"
 						>
-							<polygon points="0 0.5, 5 3, 0 5.5" fill="#4a5568" />
+							<polygon points="0 0.8, 5 3, 0 5.2" fill="#94a3b8" />
 						</marker>
 						<marker
 							id="tree-arrow-active"
@@ -108,7 +108,7 @@
 							refY="3"
 							orient="auto"
 						>
-							<polygon points="0 0.5, 5 3, 0 5.5" fill="#e2b714" />
+							<polygon points="0 0.8, 5 3, 0 5.2" fill="#fbbf24" />
 						</marker>
 					</defs>
 
@@ -140,89 +140,124 @@
 							<span class="cluster-badge-count">{{ cluster.totalMembers }}</span>
 						</div>
 
-						<!-- Bottom-to-Top Tiers inside Cluster: levels ordered ascending from bottom -->
-						<div class="cluster-tiers-column">
+						<!-- Horizontal Trees Row inside Family Cluster -->
+						<div class="cluster-branches-row">
 							<div
-								v-for="level in cluster.levels"
-								:key="'tier-' + cluster.rootId + '-' + level.depth"
-								class="cluster-tier-row"
+								v-for="tree in cluster.trees"
+								:key="tree.treeId"
+								class="cluster-branch-lane"
+								:class="{ '__has-sibling-branches': cluster.trees.length > 1 }"
 							>
-								<div class="tier-depth-label">
-									Ранг {{ level.depth + 1 }}
+								<!-- Sub-tree Header if cluster has multiple trees -->
+								<div
+									v-if="cluster.trees.length > 1"
+									class="branch-lane-header"
+									:title="tree.rootName"
+								>
+									<span class="branch-lane-icon">{{ tree.rootIcon }}</span>
+									<span class="branch-lane-title">{{ tree.rootName }}</span>
 								</div>
 
-								<div class="tier-nodes-group">
+								<!-- 2D Column-Slot Grid Canvas for Tree -->
+								<div
+									class="tree-grid-canvas"
+									:style="{
+										gridTemplateColumns: `repeat(${tree.totalCols}, minmax(6.8em, 1fr))`,
+										gridTemplateRows: `repeat(${tree.totalRows}, auto)`
+									}"
+								>
 									<div
-										v-for="node in level.nodes"
+										v-for="node in tree.nodes"
 										:key="node.id"
-										:ref="(el) => registerNodeRef(node.id, el)"
-										class="tree-node-card"
-										:class="[
-											`__tier-${node.tier || 'basic'}`,
-											{
-												__selected: selectedId === node.id,
-												__hovered: hoveredNodeId === node.id,
-												__related: relatedNodeIds.has(node.id),
-												__highlighted: isSearchMatched(node)
-											}
-										]"
-										@click.stop="onNodeClick(node)"
-										@mouseenter="onNodeMouseEnter(node)"
-										@mouseleave="onNodeMouseLeave"
+										class="tree-grid-cell"
+										:style="{
+											gridColumn: node.gridColumn,
+											gridRow: node.gridRow
+										}"
 									>
-										<!-- Top line: Icon and Tier -->
-										<div class="node-top-row">
-											<span class="node-icon">
-												{{ node.icon || defaultIcon }}
-											</span>
-											<span class="node-tier-badge" :title="getTierLabel(node.tier)">
-												{{ formatTierShort(node.tier) }}
-											</span>
-										</div>
+										<div
+											:ref="(el) => registerNodeRef(node.id, el)"
+											class="tree-node-wrapper"
+											:class="[
+												`__tier-${node.tier || 'basic'}`,
+												{
+													__selected: selectedId === node.id,
+													__hovered: hoveredNodeId === node.id,
+													__related: relatedNodeIds.has(node.id),
+													__highlighted: isSearchMatched(node)
+												}
+											]"
+											@click.stop="onNodeClick(node)"
+											@mouseenter="onNodeMouseEnter(node)"
+											@mouseleave="onNodeMouseLeave"
+										>
+											<!-- Square Box (Skill Tree Aesthetic) -->
+											<div
+												class="tree-node-square"
+												:class="`__tier-${node.tier || 'basic'}`"
+											>
+												<!-- Tier badge in corner: I, II, III -->
+												<span class="node-tier-badge" :title="getTierLabel(node)">
+													{{ formatTierShort(node) }}
+												</span>
 
-										<!-- Node Name -->
-										<div class="node-name-text" :title="getNodeName(node)">
-											{{ getNodeName(node) }}
-										</div>
+												<!-- Main Icon in center (large, 1.85em) -->
+												<span class="node-main-icon">
+													{{ node.icon || defaultIcon }}
+												</span>
 
-										<!-- Bottom meta line -->
-										<div class="node-bottom-row">
-											<span class="node-id-tag">{{ node.id }}</span>
-											<span
-												v-if="getChildCount(node.id) > 0"
-												class="node-sub-count"
-												:title="`Подклассов/эволюций: ${getChildCount(node.id)}`"
-											>
-												↳ {{ getChildCount(node.id) }}
-											</span>
-										</div>
+												<!-- Subclasses counter badge in bottom-right corner -->
+												<span
+													v-if="getChildCount(node.id) > 0"
+													class="node-child-badge"
+													:title="type === 'fractions' ? (`Подразделений/филиалов: ${getChildCount(node.id)}`) : (`Подклассов/эволюций: ${getChildCount(node.id)}`)"
+												>
+													↳{{ getChildCount(node.id) }}
+												</span>
 
-										<!-- Hover Action Buttons -->
-										<div class="node-hover-actions" @click.stop>
-											<button
-												type="button"
-												class="node-action-btn __edit"
-												title="Редактировать сущность"
-												@click.stop="onNodeClick(node)"
-											>
-												✏️
-											</button>
-											<button
-												type="button"
-												class="node-action-btn __add"
-												:title="type === 'classes' ? 'Создать дочерний подкласс' : 'Создать дочернюю подрасу'"
-												@click.stop="$emit('createChild', node)"
-											>
-												➕
-											</button>
-											<button
-												type="button"
-												class="node-action-btn __delete"
-												title="Удалить сущность"
-												@click.stop="$emit('delete', node)"
-											>
-												🗑️
-											</button>
+												<!-- Hover Action Buttons overlay -->
+												<div class="node-hover-actions" @click.stop>
+													<button
+														type="button"
+														class="node-action-btn __edit"
+														:title="type === 'fractions' ? 'Редактировать фракцию' : 'Редактировать сущность'"
+														@click.stop="onNodeClick(node)"
+													>
+														✏️
+													</button>
+													<button
+														type="button"
+														class="node-action-btn __add"
+														:title="type === 'classes' ? 'Создать дочерний подкласс' : (type === 'races' ? 'Создать дочернюю подрасу' : 'Создать дочернюю организацию / подразделение')"
+														@click.stop="$emit('createChild', node)"
+													>
+														➕
+													</button>
+													<button
+														type="button"
+														class="node-action-btn __delete"
+														:title="type === 'fractions' ? 'Удалить фракцию' : 'Удалить сущность'"
+														@click.stop="$emit('delete', node)"
+													>
+														🗑️
+													</button>
+												</div>
+											</div>
+
+											<!-- Node Name Under the Square -->
+											<div class="node-name-under" :title="getNodeName(node)">
+												{{ getNodeName(node) }}
+											</div>
+
+											<!-- Type tag under name for fractions -->
+											<div v-if="type === 'fractions' && node.type" class="node-type-pill">
+												{{ getFactionTypeLabel(node.type) }}
+											</div>
+
+											<!-- Node ID tag under name -->
+											<div class="node-id-under">
+												{{ node.id }}
+											</div>
 										</div>
 									</div>
 								</div>
@@ -257,9 +292,16 @@
 			</div>
 
 			<div class="bottom-legend">
-				<span class="legend-item __basic">● Базовый (I)</span>
-				<span class="legend-item __adv">● Продвинутый (II)</span>
-				<span class="legend-item __rare">● Редкий (III)</span>
+				<template v-if="type === 'fractions'">
+					<span class="legend-item __basic">● Верховная фракция (I)</span>
+					<span class="legend-item __adv">● Подразделение / База (II)</span>
+					<span class="legend-item __rare">● Отряд / Внутренняя фракция (III+)</span>
+				</template>
+				<template v-else>
+					<span class="legend-item __basic">● Базовый (I)</span>
+					<span class="legend-item __adv">● Продвинутый (II)</span>
+					<span class="legend-item __rare">● Редкий (III)</span>
+				</template>
 			</div>
 		</footer>
 	</div>
@@ -325,15 +367,31 @@ const raceCategories = [
 	{ id: 'all', label: 'Все расы', icon: '🌐' }
 ]
 
+const fractionCategories = [
+	{ id: 'all', label: 'Все фракции', icon: '🌐' },
+	{ id: 'nation', label: 'Государства', icon: '👑' },
+	{ id: 'guild', label: 'Гильдии и ордена', icon: '⚔️' },
+	{ id: 'clan', label: 'Кланы и синдикаты', icon: '🖐️' },
+	{ id: 'religious', label: 'Религии и культы', icon: '☀️' }
+]
+
 const availableCategories = computed(() => {
-	return props.type === 'classes' ? classCategories : raceCategories
+	if (props.type === 'classes') return classCategories
+	if (props.type === 'races') return raceCategories
+	return fractionCategories
 })
 
 // Initialize active category when type changes
 watch(
 	() => props.type,
 	(newType) => {
-		activeCategory.value = newType === 'classes' ? 'combat' : 'humanoid'
+		if (newType === 'classes') {
+			activeCategory.value = 'combat'
+		} else if (newType === 'races') {
+			activeCategory.value = 'humanoid'
+		} else {
+			activeCategory.value = 'all'
+		}
 		nextTick(() => {
 			recalculateConnectors()
 		})
@@ -341,7 +399,11 @@ watch(
 	{ immediate: true }
 )
 
-const defaultIcon = computed(() => (props.type === 'classes' ? '⚔️' : '👤'))
+const defaultIcon = computed(() => {
+	if (props.type === 'classes') return '⚔️'
+	if (props.type === 'races') return '👤'
+	return '🏛️'
+})
 
 // Theme class for dynamic background
 const currentThemeClass = computed(() => {
@@ -355,19 +417,6 @@ function selectCategory(catId) {
 	})
 }
 
-function getCategoryCount(catId) {
-	if (catId === 'all') return props.items.length
-	return props.items.filter((item) => item.category === catId).length
-}
-
-// Filtered entities by category
-const categoryFilteredEntities = computed(() => {
-	if (activeCategory.value === 'all') {
-		return props.items
-	}
-	return props.items.filter((item) => item.category === activeCategory.value)
-})
-
 // Quick lookup map
 const entityMap = computed(() => {
 	const map = new Map()
@@ -377,13 +426,29 @@ const entityMap = computed(() => {
 	return map
 })
 
+// Helper to parse parent ID(s) which can be null, string (single or comma-separated), or array
+function getParentIds(item) {
+	if (!item || !item.parent_id) return []
+	if (Array.isArray(item.parent_id)) {
+		return item.parent_id.map((id) => String(id).trim()).filter(Boolean)
+	}
+	if (typeof item.parent_id === 'string') {
+		return item.parent_id.split(',').map((id) => id.trim()).filter(Boolean)
+	}
+	return []
+}
+
 // Find root ancestor for an entity
 function getRootAncestor(item) {
 	let current = item
 	const visited = new Set()
-	while (current && current.parent_id && !visited.has(current.id)) {
+	while (current) {
+		const pids = getParentIds(current)
+		if (pids.length === 0 || visited.has(current.id)) {
+			break
+		}
 		visited.add(current.id)
-		const parent = entityMap.value.get(current.parent_id)
+		const parent = entityMap.value.get(pids[0])
 		if (parent) {
 			current = parent
 		} else {
@@ -393,22 +458,91 @@ function getRootAncestor(item) {
 	return current
 }
 
-// Calculate depth of a node from its root
-function calculateDepth(item) {
-	let depth = 0
-	let current = item
-	const visited = new Set()
-	while (current && current.parent_id && !visited.has(current.id)) {
-		visited.add(current.id)
-		const parent = entityMap.value.get(current.parent_id)
+function getFactionCategoryKey(item) {
+	const root = getRootAncestor(item)
+	const valid = ['nation', 'guild', 'clan', 'religious']
+	if (root?.type && valid.includes(root.type)) {
+		return root.type
+	}
+	if (item.type && valid.includes(item.type)) {
+		return item.type
+	}
+	return 'guild'
+}
+
+function getCategoryCount(catId) {
+	if (catId === 'all') return props.items.length
+	if (props.type === 'fractions') {
+		return props.items.filter((item) => getFactionCategoryKey(item) === catId).length
+	}
+	return props.items.filter((item) => item.category === catId).length
+}
+
+// Filtered entities by category
+const categoryFilteredEntities = computed(() => {
+	if (activeCategory.value === 'all') {
+		return props.items
+	}
+	if (props.type === 'fractions') {
+		return props.items.filter((item) => getFactionCategoryKey(item) === activeCategory.value)
+	}
+	return props.items.filter((item) => item.category === activeCategory.value)
+})
+
+// Calculate depth of a node from its root(s) with multi-parent support
+function calculateDepth(item, visited = new Set()) {
+	if (!item || visited.has(item.id)) return 0
+	visited.add(item.id)
+	const pids = getParentIds(item)
+	if (pids.length === 0) return 0
+
+	let maxParentDepth = 0
+	for (const pid of pids) {
+		const parent = entityMap.value.get(pid)
 		if (parent) {
-			depth++
-			current = parent
-		} else {
-			break
+			const d = calculateDepth(parent, new Set(visited))
+			if (d > maxParentDepth) maxParentDepth = d
 		}
 	}
-	return depth
+	return maxParentDepth + 1
+}
+
+// Localized family definitions for metadata (name & icon)
+const RACE_FAMILY_META = {
+	human: { name_ru: 'Люди', name_en: 'Humans', icon: '👤' },
+	elf: { name_ru: 'Эльфы', name_en: 'Elves', icon: '🧝' },
+	dwarf: { name_ru: 'Дварфы', name_en: 'Dwarves', icon: '🧔' },
+	goblin: { name_ru: 'Гоблины', name_en: 'Goblins', icon: '👺' },
+	orc: { name_ru: 'Орки', name_en: 'Orcs', icon: '🧌' },
+	ogre: { name_ru: 'Огры', name_en: 'Ogres', icon: '👹' },
+	troll: { name_ru: 'Тролли', name_en: 'Trolls', icon: '🧌' },
+	beastman: { name_ru: 'Зверолюди', name_en: 'Beastmen', icon: '🦎' },
+	skeleton: { name_ru: 'Скелеты', name_en: 'Skeletons', icon: '💀' },
+	ghost: { name_ru: 'Призраки', name_en: 'Ghosts', icon: '👻' },
+	zombie: { name_ru: 'Зомби', name_en: 'Zombies', icon: '🧟' },
+	vampire: { name_ru: 'Вампиры', name_en: 'Vampires', icon: '🩸' },
+	werewolf: { name_ru: 'Оборотни', name_en: 'Werewolves', icon: '🐺' },
+	infernal: { name_ru: 'Демоны', name_en: 'Infernals', icon: '😈' },
+	celestial: { name_ru: 'Ангелы', name_en: 'Celestials', icon: '🪽' },
+	slime: { name_ru: 'Слаймы', name_en: 'Slimes', icon: '🫧' },
+	insectoid: { name_ru: 'Инсектоиды', name_en: 'Insectoids', icon: '🦗' },
+	dragon_kin: { name_ru: 'Дракониды', name_en: 'Dragon-kin', icon: '🐉' },
+	other: { name_ru: 'Прочие', name_en: 'Other', icon: '🎭' },
+	beast: { name_ru: 'Звери', name_en: 'Beasts', icon: '🐾' },
+	elemental: { name_ru: 'Элементали', name_en: 'Elementals', icon: '✨' },
+	golem: { name_ru: 'Големы', name_en: 'Golems', icon: '🤖' },
+	avian: { name_ru: 'Птицы', name_en: 'Avians', icon: '🦅' },
+	aquatic: { name_ru: 'Водные', name_en: 'Aquatics', icon: '🦈' }
+}
+
+// Helper to calculate tier of a node (manual grid_tier takes priority over calculated depth)
+function getNodeTier(item) {
+	if (!item) return 0
+	if (item.grid_tier !== undefined && item.grid_tier !== null && item.grid_tier !== '') {
+		const parsed = parseInt(item.grid_tier, 10)
+		if (!isNaN(parsed) && parsed >= 0) return parsed
+	}
+	return calculateDepth(item)
 }
 
 // Build hierarchical clusters (family trees) for bottom-to-top layout
@@ -416,58 +550,225 @@ const treeClusters = computed(() => {
 	const activeList = categoryFilteredEntities.value
 	if (activeList.length === 0) return []
 
-	const activeIds = new Set(activeList.map((i) => i.id))
-
-	// Group entities into clusters by root ancestor
+	// Group entities into clusters by family (if present) or root ancestor
 	const clusterMap = new Map()
 
 	for (const item of activeList) {
 		const root = getRootAncestor(item)
-		const rootId = root.id
-		if (!clusterMap.has(rootId)) {
-			clusterMap.set(rootId, {
-				rootId,
-				rootName: getNodeName(root),
-				rootIcon: root.icon,
+		const familyKey = item.family || (props.type === 'races' && root?.family) || root.id
+
+		if (!clusterMap.has(familyKey)) {
+			let clusterName = ''
+			let clusterIcon = ''
+
+			if (item.family && RACE_FAMILY_META[item.family]) {
+				const meta = RACE_FAMILY_META[item.family]
+				clusterName = props.activeLocale === 'en' ? meta.name_en : meta.name_ru
+				clusterIcon = meta.icon
+			} else if (item.family) {
+				clusterName = item.family.charAt(0).toUpperCase() + item.family.slice(1)
+				clusterIcon = root?.icon || '🌳'
+			} else {
+				clusterName = getNodeName(root)
+				clusterIcon = root?.icon || (props.type === 'fractions' ? '🏛️' : '🌳')
+			}
+
+			clusterMap.set(familyKey, {
+				rootId: familyKey,
+				rootName: clusterName,
+				rootIcon: clusterIcon,
 				nodes: []
 			})
 		}
-		clusterMap.get(rootId).nodes.push(item)
+		clusterMap.get(familyKey).nodes.push(item)
 	}
 
 	const clusters = []
 
-	for (const [rootId, cData] of clusterMap.entries()) {
-		// Group nodes in this cluster by depth
-		const depthMap = new Map()
-		let maxDepth = 0
+	for (const [clusterId, cData] of clusterMap.entries()) {
+		const clusterNodes = cData.nodes
+		const clusterNodeIds = new Set(clusterNodes.map((n) => n.id))
 
-		for (const node of cData.nodes) {
-			const depth = calculateDepth(node)
-			if (depth > maxDepth) maxDepth = depth
-			if (!depthMap.has(depth)) {
-				depthMap.set(depth, [])
-			}
-			depthMap.get(depth).push(node)
+		// Identify branch roots within this cluster
+		// A node is a branch root if it has no parents or none of its parents are in this cluster
+		const branchRoots = clusterNodes.filter((node) => {
+			const pids = getParentIds(node)
+			return pids.length === 0 || !pids.some((pid) => clusterNodeIds.has(pid))
+		})
+
+		// If no root found (e.g. cycle), fallback to first node
+		if (branchRoots.length === 0 && clusterNodes.length > 0) {
+			branchRoots.push(clusterNodes[0])
 		}
 
-		// Sort levels descending so that highest tier is on top and level 0 (root) is at the BOTTOM!
-		const levels = []
-		for (let d = maxDepth; d >= 0; d--) {
-			if (depthMap.has(d)) {
-				levels.push({
-					depth: d,
-					nodes: depthMap.get(d)
+		// Sort branch roots: by lvl_min, tier, then name
+		branchRoots.sort((a, b) => (a.lvl_min || 0) - (b.lvl_min || 0) || getNodeName(a).localeCompare(getNodeName(b)))
+
+		// Map each branch root to its members
+		const branchMap = new Map()
+		for (const r of branchRoots) {
+			branchMap.set(r.id, {
+				root: r,
+				nodes: [r]
+			})
+		}
+
+		const assignedNodeIds = new Set(branchRoots.map((r) => r.id))
+
+		// BFS to assign descendants to their branch
+		const queue = branchRoots.map((r) => ({ node: r, branchRootId: r.id }))
+		while (queue.length > 0) {
+			const { node, branchRootId } = queue.shift()
+			for (const item of clusterNodes) {
+				if (!assignedNodeIds.has(item.id)) {
+					const pids = getParentIds(item)
+					if (pids.includes(node.id)) {
+						assignedNodeIds.add(item.id)
+						branchMap.get(branchRootId).nodes.push(item)
+						queue.push({ node: item, branchRootId })
+					}
+				}
+			}
+		}
+
+		// Any unassigned nodes form their own branch
+		for (const item of clusterNodes) {
+			if (!assignedNodeIds.has(item.id)) {
+				assignedNodeIds.add(item.id)
+				branchMap.set(item.id, {
+					root: item,
+					nodes: [item]
 				})
 			}
 		}
 
+		// Build tree structures with 2D Column-Slot Grid layout
+		const trees = []
+		for (const [bRootId, bData] of branchMap.entries()) {
+			const bNodes = bData.nodes
+			const bRoot = bData.root
+			const bNodeIds = new Set(bNodes.map((n) => n.id))
+
+			// Helper to get children of a node within this tree
+			function getTreeChildren(nodeId) {
+				const children = bNodes.filter((n) => {
+					const pids = getParentIds(n)
+					// Match primary parent in this tree
+					const firstTreeParent = pids.find((p) => bNodeIds.has(p))
+					return firstTreeParent === nodeId
+				})
+				children.sort(
+					(a, b) =>
+						(a.lvl_min || 0) - (b.lvl_min || 0) ||
+						getNodeName(a).localeCompare(getNodeName(b))
+				)
+				return children
+			}
+
+			// 1. Calculate subtree width recursively
+			const subtreeWidthMap = new Map()
+			function calcSubtreeWidth(nodeId, visited = new Set()) {
+				if (visited.has(nodeId)) return 1
+				visited.add(nodeId)
+				const children = getTreeChildren(nodeId)
+				if (children.length === 0) {
+					subtreeWidthMap.set(nodeId, 1)
+					return 1
+				}
+				let sum = 0
+				for (const ch of children) {
+					sum += calcSubtreeWidth(ch.id, new Set(visited))
+				}
+				const w = Math.max(sum, 1)
+				subtreeWidthMap.set(nodeId, w)
+				return w
+			}
+			calcSubtreeWidth(bRoot.id)
+
+			// 2. Assign column slot ranges [colStart, colEnd] recursively
+			const layoutMap = new Map()
+			function assignColumnSlots(nodeId, startCol, visited = new Set()) {
+				if (visited.has(nodeId)) return
+				visited.add(nodeId)
+				const children = getTreeChildren(nodeId)
+				if (children.length === 0) {
+					layoutMap.set(nodeId, {
+						colStart: startCol,
+						colEnd: startCol,
+						width: 1
+					})
+					return
+				}
+				let curr = startCol
+				for (const ch of children) {
+					const w = subtreeWidthMap.get(ch.id) || 1
+					assignColumnSlots(ch.id, curr, new Set(visited))
+					curr += w
+				}
+				layoutMap.set(nodeId, {
+					colStart: startCol,
+					colEnd: curr - 1,
+					width: curr - startCol
+				})
+			}
+			assignColumnSlots(bRoot.id, 0)
+
+			// Assign any unconnected nodes
+			let nextFreeCol = (layoutMap.get(bRoot.id)?.colEnd ?? -1) + 1
+			for (const n of bNodes) {
+				if (!layoutMap.has(n.id)) {
+					layoutMap.set(n.id, {
+						colStart: nextFreeCol,
+						colEnd: nextFreeCol,
+						width: 1
+					})
+					nextFreeCol++
+				}
+			}
+
+			// Total columns for this tree
+			const totalCols = Math.max(
+				...Array.from(layoutMap.values()).map((v) => v.colEnd + 1),
+				1
+			)
+
+			// Max tier in this tree
+			const maxTier = Math.max(...bNodes.map(getNodeTier), 0)
+			const totalRows = maxTier + 1
+
+			// Enrich nodes with layout coordinates
+			const enrichedNodes = bNodes.map((node) => {
+				const slot = layoutMap.get(node.id) || { colStart: 0, colEnd: 0, width: 1 }
+				const tierNum = getNodeTier(node)
+				const gridRow = maxTier - tierNum + 1
+				return {
+					...node,
+					tierNum,
+					colStart: slot.colStart,
+					colEnd: slot.colEnd,
+					colWidth: slot.width,
+					gridRow,
+					gridColumn: `${slot.colStart + 1} / ${slot.colEnd + 2}`
+				}
+			})
+
+			trees.push({
+				treeId: bRootId,
+				rootName: getNodeName(bRoot),
+				rootIcon: bRoot.icon || defaultIcon.value,
+				totalMembers: bNodes.length,
+				totalCols,
+				totalRows,
+				nodes: enrichedNodes
+			})
+		}
+
 		clusters.push({
-			rootId,
+			rootId: clusterId,
 			rootName: cData.rootName,
 			rootIcon: cData.rootIcon,
 			totalMembers: cData.nodes.length,
-			levels
+			trees
 		})
 	}
 
@@ -480,9 +781,9 @@ const treeClusters = computed(() => {
 const displayedTreesCount = computed(() => treeClusters.value.length)
 const filteredEntitiesCount = computed(() => categoryFilteredEntities.value.length)
 
-// Child counter
+// Child counter with multi-parent support
 function getChildCount(parentId) {
-	return props.items.filter((item) => item.parent_id === parentId).length
+	return props.items.filter((item) => getParentIds(item).includes(parentId)).length
 }
 
 // Localized name helper
@@ -494,7 +795,34 @@ function getNodeName(node) {
 	return node.name || node.id
 }
 
-function formatTierShort(tier) {
+const ROMAN_NUMERALS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII']
+
+const FACTION_TYPE_LABELS = {
+	nation: 'Государство',
+	guild: 'Гильдия',
+	clan: 'Клан',
+	religious: 'Религия',
+	faction: 'Фракция',
+	stronghold: 'Оплот',
+	settlement: 'Поселение',
+	syndicate: 'Синдикат',
+	tribe: 'Племя'
+}
+
+function getFactionTypeLabel(type) {
+	if (!type) return ''
+	return FACTION_TYPE_LABELS[type] || type
+}
+
+function formatTierShort(nodeOrTier) {
+	if (props.type === 'fractions') {
+		const node = typeof nodeOrTier === 'object' ? nodeOrTier : entityMap.value.get(nodeOrTier)
+		const tierVal = node?.grid_tier !== undefined && node?.grid_tier !== null && node?.grid_tier !== ''
+			? Number(node.grid_tier)
+			: (node ? calculateDepth(node) : 0)
+		return ROMAN_NUMERALS[tierVal] || `${tierVal + 1}`
+	}
+	const tier = typeof nodeOrTier === 'string' ? nodeOrTier : nodeOrTier?.tier
 	switch (tier) {
 		case 'rare':
 			return 'III'
@@ -506,7 +834,24 @@ function formatTierShort(tier) {
 	}
 }
 
-function getTierLabel(tier) {
+function getTierLabel(nodeOrTier) {
+	if (props.type === 'fractions') {
+		const node = typeof nodeOrTier === 'object' ? nodeOrTier : entityMap.value.get(nodeOrTier)
+		const tierVal = node?.grid_tier !== undefined && node?.grid_tier !== null && node?.grid_tier !== ''
+			? Number(node.grid_tier)
+			: (node ? calculateDepth(node) : 0)
+		switch (tierVal) {
+			case 0:
+				return 'Уровень I (Верховная организация / Государство)'
+			case 1:
+				return 'Уровень II (Подразделение / База)'
+			case 2:
+				return 'Уровень III (Отряд / Внутренняя фракция)'
+			default:
+				return `Уровень ${tierVal + 1} (Спецгруппа / Секция)`
+		}
+	}
+	const tier = typeof nodeOrTier === 'string' ? nodeOrTier : nodeOrTier?.tier
 	switch (tier) {
 		case 'rare':
 			return 'Редкий / Высший (Ранг III)'
@@ -526,7 +871,7 @@ function isSearchMatched(node) {
 	return name.includes(q) || id.includes(q)
 }
 
-// Related nodes highlighting (ancestors + children)
+// Related nodes highlighting (ancestors + children) with multi-parent support
 const relatedNodeIds = computed(() => {
 	const set = new Set()
 	if (!hoveredNodeId.value) return set
@@ -534,16 +879,26 @@ const relatedNodeIds = computed(() => {
 	const hovered = entityMap.value.get(hoveredNodeId.value)
 	if (!hovered) return set
 
-	// Add ancestors
-	let current = hovered
-	while (current && current.parent_id) {
-		set.add(current.parent_id)
-		current = entityMap.value.get(current.parent_id)
+	// Add ancestors (queue-based BFS to traverse all parents)
+	const queue = [hovered]
+	const visitedAncestors = new Set([hovered.id])
+	while (queue.length > 0) {
+		const curr = queue.shift()
+		const pids = getParentIds(curr)
+		for (const pid of pids) {
+			if (!visitedAncestors.has(pid)) {
+				visitedAncestors.add(pid)
+				set.add(pid)
+				const p = entityMap.value.get(pid)
+				if (p) queue.push(p)
+			}
+		}
 	}
 
 	// Add direct children
 	for (const item of props.items) {
-		if (item.parent_id === hovered.id) {
+		const pids = getParentIds(item)
+		if (pids.includes(hovered.id)) {
 			set.add(item.id)
 		}
 	}
@@ -589,36 +944,46 @@ function recalculateConnectors() {
 	const lines = []
 
 	for (const item of categoryFilteredEntities.value) {
-		if (!item.parent_id) continue
+		const parentIds = getParentIds(item)
+		if (parentIds.length === 0) continue
 
 		const childEl = nodeElementsMap.get(item.id)
-		const parentEl = nodeElementsMap.get(item.parent_id)
+		if (!childEl) continue
 
-		if (!childEl || !parentEl) continue
+		for (const pid of parentIds) {
+			const parentEl = nodeElementsMap.get(pid)
+			if (!parentEl) continue
 
-		const childRect = childEl.getBoundingClientRect()
-		const parentRect = parentEl.getBoundingClientRect()
+			const childRect = childEl.getBoundingClientRect()
+			const parentRect = parentEl.getBoundingClientRect()
 
-		// Coordinates unscaled relative to zoom content container
-		const pX = (parentRect.left + parentRect.width / 2 - containerRect.left) / currentZoom
-		const pY = (parentRect.top - containerRect.top) / currentZoom // Top center of parent
+			// Coordinates unscaled relative to zoom content container
+			const pX = (parentRect.left + parentRect.width / 2 - containerRect.left) / currentZoom
+			const pY = (parentRect.top - containerRect.top) / currentZoom // Top center of parent
 
-		const cX = (childRect.left + childRect.width / 2 - containerRect.left) / currentZoom
-		const cY = (childRect.bottom - containerRect.top) / currentZoom // Bottom center of child
+			const cX = (childRect.left + childRect.width / 2 - containerRect.left) / currentZoom
+			const cY = (childRect.bottom - containerRect.top) / currentZoom // Bottom center of child
 
-		// Cubic Bézier curve from parent (bottom) to child (top)
-		const deltaY = Math.abs(pY - cY)
-		const curveOffset = Math.max(deltaY * 0.5, 20)
+			// Connection curve from parent (bottom) to child (top)
+			const deltaY = Math.abs(pY - cY)
+			const curveOffset = Math.max(deltaY * 0.45, 25)
 
-		const d = `M ${pX} ${pY} C ${pX} ${pY - curveOffset}, ${cX} ${cY + curveOffset}, ${cX} ${cY}`
+			let d = ''
+			if (Math.abs(pX - cX) < 2) {
+				// Pure vertical line when parent and child are aligned in same column
+				d = `M ${pX} ${pY} L ${cX} ${cY}`
+			} else {
+				d = `M ${pX} ${pY} C ${pX} ${pY - curveOffset}, ${cX} ${cY + curveOffset}, ${cX} ${cY}`
+			}
 
-		lines.push({
-			key: `${item.parent_id}->${item.id}`,
-			parentId: item.parent_id,
-			childId: item.id,
-			d,
-			isActive: false
-		})
+			lines.push({
+				key: `${pid}->${item.id}`,
+				parentId: pid,
+				childId: item.id,
+				d,
+				isActive: false
+			})
+		}
 	}
 
 	connectorLines.value = lines
@@ -676,23 +1041,33 @@ function centerView() {
 
 function onWheel(e) {
 	if (e.ctrlKey) {
-		e.preventDefault()
 		const delta = e.deltaY < 0 ? 0.08 : -0.08
 		zoomScale.value = Math.min(Math.max(zoomScale.value + delta, 0.45), 2.0)
 		nextTick(() => recalculateConnectors())
+	} else if (e.shiftKey && scrollContainerRef.value && e.deltaY) {
+		scrollContainerRef.value.scrollLeft += e.deltaY
 	}
 }
 
 function onPanStart(e) {
-	// Only trigger pan if left clicked directly on canvas background or middle button
-	if (e.button === 1 || (e.button === 0 && e.target === scrollContainerRef.value)) {
-		isPanning.value = true
-		panStart.x = e.clientX
-		panStart.y = e.clientY
+	if (e.button !== 0 && e.button !== 1) return
+	// Ignore if clicked directly on an interactive element (cards, buttons, inputs)
+	const isInteractive = e.target && e.target.closest && e.target.closest(
+		'.tree-node-card, button, input, textarea, select, a, .node-hover-actions'
+	)
+	if (isInteractive) return
+
+	isPanning.value = true
+	panStart.x = e.clientX
+	panStart.y = e.clientY
+	if (scrollContainerRef.value) {
 		scrollStart.left = scrollContainerRef.value.scrollLeft
 		scrollStart.top = scrollContainerRef.value.scrollTop
-		e.preventDefault()
 	}
+
+	window.addEventListener('mousemove', onPanMove)
+	window.addEventListener('mouseup', onPanEnd)
+	e.preventDefault()
 }
 
 function onPanMove(e) {
@@ -704,7 +1079,11 @@ function onPanMove(e) {
 }
 
 function onPanEnd() {
-	isPanning.value = false
+	if (isPanning.value) {
+		isPanning.value = false
+		window.removeEventListener('mousemove', onPanMove)
+		window.removeEventListener('mouseup', onPanEnd)
+	}
 }
 
 // Recalculate on items / selection / search changes
@@ -741,6 +1120,8 @@ onBeforeUnmount(() => {
 	if (resizeObserver) {
 		resizeObserver.disconnect()
 	}
+	window.removeEventListener('mousemove', onPanMove)
+	window.removeEventListener('mouseup', onPanEnd)
 })
 </script>
 
@@ -789,6 +1170,26 @@ onBeforeUnmount(() => {
 
 .__theme-races-all {
 	background: radial-gradient(circle at 50% 100%, #121420 0%, #090b12 60%, #040509 100%);
+}
+
+.__theme-fractions-nation {
+	background: radial-gradient(circle at 50% 100%, #1c1808 0%, #100e05 60%, #080702 100%);
+}
+
+.__theme-fractions-guild {
+	background: radial-gradient(circle at 50% 100%, #1e0d16 0%, #12070d 60%, #090306 100%);
+}
+
+.__theme-fractions-clan {
+	background: radial-gradient(circle at 50% 100%, #140d24 0%, #0b0716 60%, #05030c 100%);
+}
+
+.__theme-fractions-religious {
+	background: radial-gradient(circle at 50% 100%, #201a0a 0%, #130f06 60%, #090702 100%);
+}
+
+.__theme-fractions-all {
+	background: radial-gradient(circle at 50% 100%, #111622 0%, #090d14 60%, #04060a 100%);
 }
 
 /* ==========================================================================
@@ -935,25 +1336,26 @@ onBeforeUnmount(() => {
 	top: 0;
 	left: 0;
 	pointer-events: none;
-	z-index: 1;
+	z-index: 3;
 }
 
 .tree-connector-path {
 	fill: none;
-	stroke: #4a5568;
-	stroke-width: 0.15em;
+	stroke: #64748b;
+	stroke-width: 0.18em;
 	stroke-linecap: round;
+	shape-rendering: geometricPrecision;
 	transition: stroke 0.2s, stroke-width 0.2s, opacity 0.2s;
 }
 
 .tree-connector-path.__active {
-	stroke: #e2b714;
-	stroke-width: 0.22em;
-	filter: drop-shadow(0 0 0.3em rgba(226, 183, 20, 0.6));
+	stroke: #fbbf24;
+	stroke-width: 0.25em;
+	filter: drop-shadow(0 0 0.25em rgba(251, 191, 36, 0.7));
 }
 
 .tree-connector-path.__dimmed {
-	opacity: 0.25;
+	opacity: 0.2;
 }
 
 /* Clusters Row */
@@ -967,6 +1369,8 @@ onBeforeUnmount(() => {
 }
 
 .tree-cluster-box {
+	position: relative;
+	z-index: 1;
 	display: flex;
 	flex-direction: column;
 	background: rgba(15, 20, 30, 0.55);
@@ -1005,132 +1409,183 @@ onBeforeUnmount(() => {
 	margin-left: auto;
 }
 
-/* Cluster Tiers Column (Descending from top tier to level 0 root at bottom) */
-.cluster-tiers-column {
+/* Horizontal Trees Row inside Family Cluster */
+.cluster-branches-row {
 	display: flex;
-	flex-direction: column;
-	gap: 2.2em;
+	align-items: flex-end;
+	gap: 2.5em;
 }
 
-.cluster-tier-row {
+.cluster-branch-lane {
 	display: flex;
 	flex-direction: column;
-	gap: 0.5em;
-	position: relative;
+	align-items: center;
 }
 
-.tier-depth-label {
-	font-size: 0.7em;
-	text-transform: uppercase;
-	letter-spacing: 0.08em;
-	color: #64748b;
+.cluster-branch-lane.__has-sibling-branches:not(:last-child) {
+	border-right: 1px dashed rgba(255, 255, 255, 0.1);
+	padding-right: 2em;
+}
+
+.branch-lane-header {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35em;
+	background: rgba(255, 255, 255, 0.05);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: 0.4em;
+	padding: 0.25em 0.6em;
+	margin-bottom: 1.25em;
+	font-size: 0.8em;
 	font-weight: 600;
+	color: #94a3b8;
+	max-width: 14em;
 }
 
-.tier-nodes-group {
+.branch-lane-icon {
+	font-size: 1.15em;
+}
+
+.branch-lane-title {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* 2D CSS Grid for Tree (Generous 4.5em row gap for beautiful arcs) */
+.tree-grid-canvas {
+	display: grid;
+	row-gap: 4.5em;
+	column-gap: 1.25em;
+	align-items: center;
+	justify-items: center;
+}
+
+.tree-grid-cell {
 	display: flex;
-	gap: 1.5em;
+	justify-content: center;
+	align-items: center;
+	width: 100%;
+}
+
+/* Skill-like Square Node */
+.tree-node-wrapper {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	cursor: pointer;
+	position: relative;
+	z-index: 4;
+	user-select: none;
+	width: 6.8em;
+	transition: transform 0.15s ease;
+}
+
+.tree-node-wrapper:hover {
+	transform: translateY(-0.2em);
+}
+
+.tree-node-square {
+	width: 4.8em;
+	height: 4.8em;
+	background: rgba(20, 26, 38, 0.95);
+	border: 2px solid rgba(255, 255, 255, 0.12);
+	border-radius: 0.65em;
+	position: relative;
+	display: flex;
 	align-items: center;
 	justify-content: center;
+	box-shadow: 0 0.35em 1.2em rgba(0, 0, 0, 0.4);
+	transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
 }
 
-/* ==========================================================================
-   Minimalist Node Card
-   ========================================================================== */
-.tree-node-card {
-	position: relative;
-	width: 9em;
-	min-height: 4.8em;
-	background: rgba(20, 26, 38, 0.95);
-	border: 1px solid rgba(255, 255, 255, 0.12);
-	border-radius: 0.6em;
-	padding: 0.5em 0.65em;
-	cursor: pointer;
-	display: flex;
-	flex-direction: column;
-	justify-content: space-between;
-	transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s, background 0.2s;
-	box-shadow: 0 0.3em 1em rgba(0, 0, 0, 0.35);
+/* Tier border and glow accents */
+.tree-node-square.__tier-basic {
+	border-color: rgba(148, 163, 184, 0.4);
 }
 
-.tree-node-card:hover {
-	transform: translateY(-0.2em);
-	border-color: rgba(255, 255, 255, 0.3);
-	box-shadow: 0 0.5em 1.5em rgba(0, 0, 0, 0.5);
+.tree-node-square.__tier-advanced {
+	border-color: rgba(56, 189, 248, 0.6);
+	box-shadow: 0 0 0.8em rgba(56, 189, 248, 0.2);
 }
 
-/* Tier Glow Accents */
-.__tier-basic {
-	border-color: rgba(148, 163, 184, 0.25);
+.tree-node-square.__tier-rare {
+	border-color: rgba(245, 158, 11, 0.7);
+	box-shadow: 0 0 1em rgba(245, 158, 11, 0.25);
 }
 
-.__tier-advanced {
-	border-color: rgba(56, 189, 248, 0.4);
-	box-shadow: 0 0 0.8em rgba(56, 189, 248, 0.15);
-}
-
-.__tier-rare {
-	border-color: rgba(234, 179, 8, 0.5);
-	box-shadow: 0 0 1em rgba(234, 179, 8, 0.2);
-}
-
-.__tier-rare .node-top-row .node-tier-badge {
-	background: rgba(234, 179, 8, 0.2);
-	color: #facc15;
-	border-color: rgba(234, 179, 8, 0.4);
-}
-
-.__tier-advanced .node-top-row .node-tier-badge {
-	background: rgba(56, 189, 248, 0.2);
-	color: #7dd3fc;
-	border-color: rgba(56, 189, 248, 0.4);
-}
-
-/* Selected State */
-.tree-node-card.__selected {
+/* Selected state */
+.tree-node-wrapper.__selected .tree-node-square {
 	border-color: #f59e0b;
-	background: rgba(30, 36, 52, 0.98);
-	box-shadow: 0 0 1.2em rgba(245, 158, 11, 0.4), inset 0 0 0.5em rgba(245, 158, 11, 0.2);
+	box-shadow: 0 0 1.2em rgba(245, 158, 11, 0.6), inset 0 0 0.5em rgba(245, 158, 11, 0.25);
+	outline: 2px solid #f8fafc;
+	outline-offset: 0.15em;
 }
 
-/* Related Highlight */
-.tree-node-card.__related {
-	border-color: rgba(245, 158, 11, 0.6);
+/* Related highlight */
+.tree-node-wrapper.__related .tree-node-square {
+	border-color: rgba(245, 158, 11, 0.8);
+	box-shadow: 0 0 0.8em rgba(245, 158, 11, 0.4);
 }
 
-/* Search match */
-.tree-node-card.__highlighted {
+/* Search highlight */
+.tree-node-wrapper.__highlighted .tree-node-square {
 	outline: 2px solid #10b981;
 	outline-offset: 0.15em;
 }
 
-/* Node Internal Layout */
-.node-top-row {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-}
-
-.node-icon {
-	font-size: 1.15em;
+.node-main-icon {
+	font-size: 1.85em;
+	line-height: 1;
+	user-select: none;
 }
 
 .node-tier-badge {
+	position: absolute;
+	top: 0.25em;
+	left: 0.25em;
 	font-size: 0.65em;
 	font-weight: 700;
-	padding: 0.1em 0.45em;
-	border-radius: 0.35em;
-	background: rgba(255, 255, 255, 0.1);
-	color: #cbd5e1;
-	border: 1px solid rgba(255, 255, 255, 0.12);
+	padding: 0.05em 0.35em;
+	border-radius: 0.25em;
+	background: rgba(0, 0, 0, 0.5);
+	color: #94a3b8;
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	line-height: 1.2;
 }
 
-.node-name-text {
-	font-weight: 600;
-	font-size: 0.85em;
-	color: #f1f5f9;
-	margin: 0.35em 0;
+.tree-node-square.__tier-advanced .node-tier-badge {
+	color: #7dd3fc;
+	border-color: rgba(56, 189, 248, 0.3);
+}
+
+.tree-node-square.__tier-rare .node-tier-badge {
+	color: #facc15;
+	border-color: rgba(234, 179, 8, 0.3);
+}
+
+.node-child-badge {
+	position: absolute;
+	bottom: 0.25em;
+	right: 0.25em;
+	font-size: 0.65em;
+	font-weight: 700;
+	color: #38bdf8;
+	background: rgba(15, 23, 42, 0.7);
+	padding: 0.05em 0.3em;
+	border-radius: 0.25em;
+	border: 1px solid rgba(56, 189, 248, 0.3);
 	line-height: 1.2;
+}
+
+.node-name-under {
+	margin-top: 0.45em;
+	font-size: 0.82em;
+	font-weight: 700;
+	color: #f1f5f9;
+	text-align: center;
+	line-height: 1.2;
+	max-width: 7.2em;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	display: -webkit-box;
@@ -1138,33 +1593,39 @@ onBeforeUnmount(() => {
 	-webkit-box-orient: vertical;
 }
 
-.node-bottom-row {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	font-size: 0.7em;
-	color: #94a3b8;
-}
-
-.node-id-tag {
+.node-id-under {
+	margin-top: 0.15em;
+	font-size: 0.65em;
 	font-family: monospace;
-	opacity: 0.7;
+	color: #64748b;
+	text-align: center;
+	max-width: 7.5em;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
-	max-width: 5.5em;
 }
 
-.node-sub-count {
+.node-type-pill {
+	display: inline-block;
+	font-size: 0.62em;
 	font-weight: 600;
 	color: #38bdf8;
+	background: rgba(56, 189, 248, 0.12);
+	border: 1px solid rgba(56, 189, 248, 0.25);
+	padding: 0.05em 0.4em;
+	border-radius: 0.6em;
+	margin-top: 0.2em;
+	white-space: nowrap;
+	max-width: 8em;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 /* Hover Actions Bar */
 .node-hover-actions {
 	position: absolute;
-	top: -0.85em;
-	right: -0.35em;
+	top: -0.75em;
+	right: -0.5em;
 	display: none;
 	gap: 0.25em;
 	background: rgba(15, 20, 30, 0.95);
@@ -1173,10 +1634,10 @@ onBeforeUnmount(() => {
 	border-radius: 0.4em;
 	padding: 0.15em;
 	box-shadow: 0 0.3em 1em rgba(0, 0, 0, 0.5);
-	z-index: 5;
+	z-index: 10;
 }
 
-.tree-node-card:hover .node-hover-actions {
+.tree-node-wrapper:hover .node-hover-actions {
 	display: flex;
 }
 

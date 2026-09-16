@@ -1,55 +1,55 @@
 {
   "human": {
     "name": "Human",
-    "description": "Basic race of Yggdrasil and the New World. Possesses no racial levels, only job levels."
+    "description": "The most numerous and adaptable race. Lacking innate magic or superhuman strength, humans reach mastery through sheer persistence and craftsmanship."
   },
   "half-elf": {
     "name": "Half-Elf",
-    "description": "Descendants of humans and elves, blending characteristics of both lineages."
+    "description": "Offspring of humans and elves, combining human adaptability with acute senses and innate magical talent of their woodland ancestors."
   },
   "elf": {
     "name": "Elf",
-    "description": "Dwellers of deep woodlands such as the Great Forest of Tob. In conflict with the Slane Theocracy."
+    "description": "An ancient woodland people with long ears and an innate affinity for elemental nature. Blessed with longevity, keen eyesight, and archery mastery."
   },
   "dark-elf": {
     "name": "Dark Elf",
-    "description": "Dark-skinned variant of elves. Aura and Mare Bella Fiora belong to this race."
+    "description": "Kin of elves dwelling in twilight groves and subterranean deeps. Distinguished by dark skin, superior night vision, and arcane magic mastery."
   },
   "dwarf": {
     "name": "Dwarf",
-    "description": "Subterranean folk inhabiting the Azerlisia Mountains. Renowned for smithing and rune crafting."
+    "description": "A stocky, hardy subterranean folk. Unrivaled masters of mining, smithing, and ancient rune magic."
   },
   "dark-dwarf": {
     "name": "Dark Dwarf",
-    "description": "Subterranean kin of dwarves dwelling in the deepest cavernous shafts."
+    "description": "Inhabitants of the deepest, perilous chasms. Master artisans tempering rare dark ores into deadly enchanted weaponry."
   },
   "goblin": {
     "name": "Goblin",
-    "description": "Frail demi-humans prone to swarming. Enri Emmot commands an army of them."
+    "description": "Diminutive demi-humans relying on sheer numbers, cunning, and cohesion. Dwelling in tribal packs, adept at setting ambushes and traps."
   },
   "hobgoblin": {
     "name": "Hobgoblin",
-    "description": "Enhanced goblin evolution: physically larger, stronger, and more disciplined."
+    "description": "Battle-hardened chieftains of goblin tribes. Vastly superior in stature, physical might, and disciplined battlefield tactics."
   },
   "orc": {
     "name": "Orc",
-    "description": "Warlike demi-humans renowned for their ferocious gluttony and combat pride."
+    "description": "Muscular, ferocious demi-humans bound by clan honour. Valuing brute strength, warrior courage, and berserk battle fury above all else."
   },
   "ogre": {
     "name": "Ogre",
-    "description": "Bulky, physically imposing demi-humans with limited intellect."
+    "description": "Massive giant-kin of colossal physical might, crushing adversaries with colossal clubs and bare hands."
   },
   "merrow": {
     "name": "Merrow",
-    "description": "Ogre-kin variant dwelling along aquatic wetlands and coastal margins."
+    "description": "An aquatic breed of ogres adapted to deep rivers and murky lakes. Deadly ambush predators of the watery depths."
   },
   "troll": {
     "name": "Troll",
-    "description": "Creatures endowed with rapid flesh regeneration, vulnerable to flame and acid."
+    "description": "Formidable giants gifted with swift cellular regeneration. Fearing only scorching fire and corrosive acid."
   },
   "scrag": {
     "name": "Scrag",
-    "description": "Aquatic troll variant boasting superior resilience in moist environments."
+    "description": "Aquatic trolls inhabiting lakebeds and murky marshes. Their healing regeneration accelerates drastically when submerged in water."
   },
   "beastman": {
     "name": "Beastman",
@@ -57,182 +57,410 @@
   },
   "lizardman": {
     "name": "Lizardman",
-    "description": "Proud reptilian marshland warriors unified under Cocytus and the rule of Nazarick."
+    "description": "A proud reptilian folk inhabiting wetlands and lakeshores. Unmatched survivalists, scouts, and skilled hunters."
   },
   "quagoa": {
     "name": "Quagoa",
-    "description": "Mole-like demi-humans from the Azerlisia range that consume ore to temper their hides."
+    "description": "Subterranean mole-like humanoids consuming minerals and ores. Their hides and thick pelts absorb the hardness of the ingested metals."
   },
   "minotaur": {
     "name": "Minotaur",
-    "description": "Bovine demi-humans who advanced civilization under the guidance of the Minotaur Sage."
+    "description": "Mighty bull-headed humanoids renowned for unbridled melee fury, imposing physiques, and an innate sense of labyrinth navigation."
   },
   "centaur": {
     "name": "Centaur",
-    "description": "Noble half-human, half-equine wanderers possessing swift overland speed."
+    "description": "Steppe nomads bearing a horse body and human torso, uniting equestrian speed and grace with archer precision and martial endurance."
   },
   "naga": {
     "name": "Naga",
-    "description": "Serpentine demi-humans frequently displaying innate magical talents."
+    "description": "Cold-blooded serpentine beings endowed with keen intelligence, natural spellcasting aptitudes, and hypnotic charms."
   },
   "armot": {
     "name": "Armot",
-    "description": "Bipedal rodent-like creatures coated with iron-hard bristle coats."
+    "description": "Bipedal rat-like hunters possessing wiry, wire-hard fur and razor-sharp olfactory senses."
   },
   "skeleton": {
     "name": "Skeleton",
-    "description": "Animated skeletal frame immune to poison, biological afflictions, and piercing blows."
+    "description": "Bones of fallen warriors reanimated by necromantic sorcery. Void of fear, exhaustion, and pain; immune to cold and toxins."
   },
   "skeleton-archer": {
     "name": "Skeleton Archer",
-    "description": "Skeletal combatant specialized in long-range bowmanship."
+    "description": "Reanimated skeletal marksmen firing shafts with mechanical consistency even across pitch-black depths."
   },
   "skeleton-warrior": {
     "name": "Skeleton Warrior",
-    "description": "Armed skeletal soldier proficient with sword, axe, and shield in frontline melee."
+    "description": "Risen warriors garbed in decayed armaments wielding rusted blades. Their bones are reinforced by dark incantations."
   },
   "skeleton-mage": {
     "name": "Skeleton Mage",
-    "description": "Basic skeletal spellcaster race (up to 15 levels)."
+    "description": "Arcane bone casters retaining embers of mystic intellect, unleashing destructive offensive spells."
   },
   "lich": {
     "name": "Lich",
-    "description": "Advanced undead spellcaster wielding potent necromantic arcana."
+    "description": "A potent sorcerer who severed mortal ties through forbidden rituals to attain eternity and supreme necromantic knowledge."
   },
   "elder-lich": {
     "name": "Elder Lich",
-    "description": "High-tier undead scholar specializing in deeper spellcraft (up to 10 levels)."
+    "description": "Ancient and sagacious undead spellcaster whose arcane insight transcends the limitations of mortal mages."
   },
   "night-lich": {
     "name": "Night Lich",
-    "description": "Unique New World evolution (Corpus of the Abyss). Capable of casting 6th-tier+ magic."
+    "description": "A legendary creature of the night, plumbing the abyssal depths of forbidden arts to bend space and mortal minds."
   },
   "overlord": {
     "name": "Overlord",
-    "description": "Apex of undead skeletal evolution. Supreme masters of death and magic (5 levels). Race of Ainz."
+    "description": "Sovereign of death and pinnacle of undead ascension, holding supreme dominion over the underworld with unfathomable arcane majesty."
   },
   "zombie": {
     "name": "Zombie",
-    "description": "Reanimated cadaver characterized by shambling tenacity and blunt resilience."
+    "description": "A reanimated corpse driven by instinctual ravenous hunger. Oblivious to pain and enduring shattering blows while intact."
   },
   "ghoul": {
     "name": "Ghoul",
-    "description": "Swift carnivorous undead equipped with paralyzing claws."
+    "description": "A swift, ravenous necrophage whose talons carry paralyzing cadaverous toxins."
   },
   "vampire": {
     "name": "Vampire",
-    "description": "Blood-drinking undead with multifaceted immunities, weak to sunlight and silver."
+    "description": "Aristocratic nightstalkers feeding on vital blood essence. Endowed with supernatural grace and hypnosis, yet vulnerable to sunlight and holy shrines."
   },
   "true-vampire": {
     "name": "True Vampire",
-    "description": "True Vampire. The zenith of vampiric evolution. Race of Shalltear Bloodfallen."
+    "description": "A primordial blood sovereign fusing refined elegance with a monstrous war form and peerless regenerative flesh."
   },
   "imp": {
     "name": "Imp",
-    "description": "Lesser demon representing the foundational race of the Burning Hells."
+    "description": "A mischievous minion of the lower planes sowing trickery, corruption, and minor pyromancies."
   },
   "archdevil": {
     "name": "Archdevil",
-    "description": "High archfiend commanding demonic legions and abyssal forces."
+    "description": "A supreme prince of hell whose gaze incinerates mortals, leading demonic hordes to absolute conquest."
   },
   "succubus": {
     "name": "Succubus",
-    "description": "Demonic temptress skilled in charm, mental barriers, and unarmed combat. Race of Albedo."
+    "description": "An alluring abyssal enchantress bending even steadfast champions to her bidding via seduction and psychic glamour."
   },
   "angel": {
     "name": "Angel",
-    "description": "Celestial entities frequently summoned through the holy rituals of the Slane Theocracy."
+    "description": "Flawless winged heralds of the high heavens embodying sacred law, divine radiance, and purifying retribution."
   },
   "angel-guardian": {
     "name": "Angel Guardian",
-    "description": "Third Sphere celestial guard armed with sword and shield to protect allies (2nd tier)."
+    "description": "A celestial sentinel warding righteous mortals behind consecrated aegis and smiting evil with blessed steel."
   },
   "archangel-flame": {
     "name": "Archangel of Flame",
-    "description": "Third Sphere warrior angel with a flaming sword. Core offensive unit of the Sunlight Scripture (3rd tier)."
+    "description": "A radiant champion of heavens whose burning blade immolates fiends and scourges unholy hordes."
   },
   "principality-observation": {
     "name": "Principality of Observation",
-    "description": "Third Sphere Principality angel specialized in aerial reconnaissance and barrier warding (4th tier)."
+    "description": "An all-seeing angelic messenger detecting covert perils and shielding companions under a dome of holy sanctuary."
   },
   "principality-peace": {
     "name": "Principality of Peace",
-    "description": "Third Sphere Principality angel providing healing auras and restorative blessing buffs (4th tier)."
+    "description": "A tranquil celestial benefactor soothing worldly strife, curing mortal maladies, and restoring inner serenity."
   },
   "dominion-authority": {
-    "name": "Dominion Authority",
-    "description": "Second Sphere winged disembodied visage holding a holy tablet (7th tier Slane trump card)."
+    "name": "Dominion of Authority",
+    "description": "An exalted order of heavenly judgment appearing as hovering wings with testament tablets, dispensing divine decree."
   },
   "cherubim-gatekeeper": {
     "name": "Cherubim Gatekeeper",
-    "description": "First Sphere elite Nazarick sentinel with a massive tower shield and holy spear (80th level, 10th tier)."
+    "description": "A colossal guardian of the pearly threshold bearing an impenetrable shield and holy lance of light."
   },
   "seraph": {
     "name": "Seraph",
-    "description": "Highest order celestial seraphim. High-level raid bosses in Yggdrasil."
+    "description": "A six-winged lord of celestial fire, radiating primordial creation light and boundless sacred potency."
   },
   "seraph-empyrean": {
-    "name": "Seraph Empyrean",
-    "description": "First Sphere pinnacle angel commanding monumental holy aegis and divine radiance (100th level super-tier)."
+    "name": "Empyrean Seraph",
+    "description": "An empyrean sovereign of the highest spheres, dispersing any curse or blight before its transcendent holiness."
   },
   "seraph-aerosphere": {
-    "name": "Seraph Aerosphere",
-    "description": "First Sphere martial seraph encased in luminous armor (90+ level high-tier celestial)."
+    "name": "Aerosphere Seraph",
+    "description": "A celestial warlord clad in luminous armor commanding tempest storms of sacred lightning and smiting from the firmament."
   },
   "slime": {
     "name": "Slime",
-    "description": "Basic amorphous creature (15 levels). Completely immune to critical strikes and piercing."
+    "description": "An amorphous fluid lifeform lacking vital organs, highly resistant to physical slashing and puncture impacts."
   },
   "black-ooze": {
     "name": "Black Ooze",
-    "description": "Advanced corrosive slime variant secreting concentrated acid."
+    "description": "A lethal darkened slime secreting concentrated caustic acid that dissolves metal, stone, and flesh in moments."
   },
   "elder-black-ooze": {
     "name": "Elder Black Ooze",
-    "description": "Devastating acidic ooze (10 levels) capable of instantly dissolving durable equipment."
+    "description": "An ancient predatory protoplasm whose digestive enzymes liquefy reinforced shields, armor, and enchanted arms."
   },
   "shoggoth": {
     "name": "Shoggoth",
-    "description": "Terrifying eldritch amorphous entity inspired by Lovecraftian lore (10 levels)."
+    "description": "A terrifying eldritch protoplasm with shifting eyes and gaping maws, flattening obstacles with relentless crushing bulk."
   },
   "ubbo-sathla": {
     "name": "Ubbo-Sathla",
-    "description": "Divine primordial slime demiurge (5 levels). Supreme evolutionary race of Herohero."
+    "description": "A primordial amorphous demiurge spawning endless mutable life, possessing absolute dissolutive might."
   },
   "insectoid": {
     "name": "Insectoid",
-    "description": "Insectoid heteromorphs with exoskeleton carapaces. Race of Cocytus and Entoma."
+    "description": "Chitinous hunters boasting hyper-reflexes, compound multi-spectrum vision, and a resilient exoskeleton."
   },
   "doppelganger": {
-    "name": "Doppelgänger",
-    "description": "Shapeshifters capable of replicating appearance and skillsets. Race of Pandora's Actor and Narberal."
+    "name": "Doppelganger",
+    "description": "Mysterious mimics flawlessly duplicating appearances, vocal timbres, memories, and mannerisms of their targets."
   },
   "dragonoid": {
     "name": "Dragonoid",
-    "description": "Humanoid beings bearing noble draconic traits and immense fortitude. Race of Sebas Tian."
+    "description": "Noble humanoids carrying draconic blood, blending draconic resilience with warrior discipline."
   },
   "frost-dragon": {
     "name": "Frost Dragon",
-    "description": "Draconic species adapted to the sub-zero peaks of the Azerlisia range. Race of Hejinmal."
+    "description": "Lords of glacial summits exhaling freezing blizzards and encased in armor of perpetual ice."
   },
   "fire-dragon": {
     "name": "Fire Dragon",
-    "description": "Classic ferocious dragons commanding destructive elemental infernos."
+    "description": "Terrifying rulers of volcanic spires capable of reducing entire settlements to cinder with a single flame breath."
   },
   "true-dragon-lord": {
     "name": "True Dragon Lord",
-    "description": "Supreme entities of the New World wielders of primordial Wild Magic, such as the Platinum Dragon Lord."
+    "description": "Primordial sovereigns of the realm commanding wild magic, whose will alters the fundamental fabric of reality."
   },
   "automaton": {
     "name": "Automaton",
-    "description": "Artificial clockwork constructs free from hunger, fatigue, and sleep. Race of CZ2128 Delta."
+    "description": "Precision mechanical constructs free of fatigue, hunger, and sleep, devoted entirely to logic and design directives."
   },
   "homunculus": {
     "name": "Homunculus",
-    "description": "Artificial beings created through advanced alchemy. Race of the standard Pleiades and Nazarick maid staff."
+    "description": "Artificially birthed creations distilled from alchemical retorts, utterly faithful and obedient to their creators."
   },
   "sceleton": {
     "name": "Skeleton",
     "description": "Animated skeletal frame immune to poison, biological afflictions, and piercing blows."
+  },
+  "ghost": {
+    "name": "Ghost",
+    "description": "An incorporeal apparition haunting the material realm. Immune to mundane weapons and drifting freely through physical barriers."
+  },
+  "wraith": {
+    "name": "Wraith",
+    "description": "A sinister phantom of darkness woven from shadows and tomb cold, draining life warmth from any living soul."
+  },
+  "spectre": {
+    "name": "Spectre",
+    "description": "An exalted phantom radiating an aura of chilling otherworldly dread, subduing the will of those who meet its gaze."
+  },
+  "blood-guard": {
+    "name": "Blood Guard",
+    "description": "An elite warrior of the vampiric lineage, drinking strength and battle ferocity from spilt enemy blood."
+  },
+  "vampire-bride": {
+    "name": "Vampire Bride",
+    "description": "A captivating, dangerous vampire of noble bloodline, weaving hypnotic allure with lightning-fast combat lethality."
+  },
+  "vampire-lord": {
+    "name": "Vampire Lord",
+    "description": "Overlord of a bloodline clan, wielding centuries of wisdom, misty transmutation, and dominance over lesser undead."
+  },
+  "werewolf": {
+    "name": "Werewolf",
+    "description": "A shapechanger melding hunter cunning with lupine ferocity. Under a full moon, its strength and speed soar immensely."
+  },
+  "alpha-werewolf": {
+    "name": "Alpha Werewolf",
+    "description": "A natural pack leader whose piercing howl bolsters allies and routes enemies in paralyzing terror."
+  },
+  "true-werewolf": {
+    "name": "True Werewolf",
+    "description": "An ancient progenitor of lycanthropes, mending fatal wounds instantly and sundering forged steel with bare claws."
+  },
+  "incubus": {
+    "name": "Incubus",
+    "description": "A male demon feeding on mortal desires, dreams, and life energy, enslaving minds in euphoric reveries."
+  },
+  "demon": {
+    "name": "Demon",
+    "description": "An infernal beast of the netherworld personifying chaotic destruction, cruelty, and brimstone."
+  },
+  "devil": {
+    "name": "Devil",
+    "description": "A cunning archfiend adept in formulating binding infernal pacts and commanding legions of lower demons."
+  },
+  "dragon": {
+    "name": "Dragon",
+    "description": "Majestic ancient wyrms ruling atop the predatory hierarchy, blessed with impenetrable scales, cunning intellect, and breath attacks."
+  },
+  "wolf": {
+    "name": "Wolf",
+    "description": "Enduring pack predators gifted with acute senses and flawless hunting synergy."
+  },
+  "pack-leader": {
+    "name": "Pack Leader",
+    "description": "A seasoned alpha predator whose furious rush and howl spearhead the pack into relentless onslaughts."
+  },
+  "legendary-wolf": {
+    "name": "Legendary Wolf",
+    "description": "A mythical beast of immense size harboring primordial forest power, striking awe through presence alone."
+  },
+  "wolf-god": {
+    "name": "Wolf God",
+    "description": "An immortal divine incarnation of wild nature, venerated as the progenitor of all wolf kind."
+  },
+  "horse": {
+    "name": "Horse",
+    "description": "Swift and hardy equine companions providing trusty conveyance and battlefield footing for riders."
+  },
+  "pegasus": {
+    "name": "Pegasus",
+    "description": "Noble winged steeds gliding the winds, covering boundless reaches and striking from above."
+  },
+  "unicorn": {
+    "name": "Unicorn",
+    "description": "Sacred horned equines symbolizing purity, gifted with curative arts and hex purging."
+  },
+  "bicorn": {
+    "name": "Bicorn",
+    "description": "The fiendish antithesis of the unicorn with twin horns, tamed only by tainted and corrupt riders."
+  },
+  "nightmare": {
+    "name": "Nightmare",
+    "description": "A hellish steed bearing smoldering fiery hooves and burning gaze, leaving ash trails across the earth."
+  },
+  "alicorn": {
+    "name": "Alicorn",
+    "description": "A legendary mythical equine uniting pegasus wings with a unicorn horn, mastering storm skies and creative magics."
+  },
+  "chicken": {
+    "name": "Chicken",
+    "description": "A domestic fowl raised for eggs and meat, known for skittish temper and loud clucks."
+  },
+  "cow": {
+    "name": "Cow",
+    "description": "A peaceful ruminant providing milk and leather, prized for gentle and docile temperament."
+  },
+  "cat": {
+    "name": "Cat",
+    "description": "An agile, independent domestic hunter of vermin with razor claws and acute night vision."
+  },
+  "dog": {
+    "name": "Dog",
+    "description": "A steadfast companion and guardian, endowed with sharp scenting, loyalty, and vigilance."
+  },
+  "goat": {
+    "name": "Goat",
+    "description": "A hardy, nimble mountain herbivore adept at scaling sheer rocky crags."
+  },
+  "sheep": {
+    "name": "Sheep",
+    "description": "A flock-oriented herbivore with dense wool fleece, reared for fleece, milk, and sustenance."
+  },
+  "fire-elemental": {
+    "name": "Fire Elemental",
+    "description": "A living manifest of fire searing the air around it and striking with lashing tongues of flame."
+  },
+  "elder-fire-elemental": {
+    "name": "Elder Fire Elemental",
+    "description": "A mighty pyric manifestation radiating incandescent white heat and summoning firestorms."
+  },
+  "magma-elemental": {
+    "name": "Magma Elemental",
+    "description": "A primordial fusion of fire and earth composed of boiling lava encased in basalt crust."
+  },
+  "fire-lord": {
+    "name": "Fire Lord",
+    "description": "A supreme monarch of flame whose mere presence melts metal and reduces surroundings to ash."
+  },
+  "water-elemental": {
+    "name": "Water Elemental",
+    "description": "A fluid aquatic spirit morphing freely, quenching flames and slamming foes with hydraulic force."
+  },
+  "elder-water-elemental": {
+    "name": "Elder Water Elemental",
+    "description": "A surging vortex of water shattering plate armor under pressurized currents and absorbing kinetic strikes."
+  },
+  "ice-elemental": {
+    "name": "Ice Elemental",
+    "description": "A crystallized form of water elemental chilling space and skewering enemies with glacial shards."
+  },
+  "tidal-lord": {
+    "name": "Tidal Lord",
+    "description": "An ancient sovereign of oceanic abysses calling forth tidal waves and ruling ocean currents."
+  },
+  "earth-elemental": {
+    "name": "Earth Elemental",
+    "description": "A monolithic titan of soil and boulder possessing crushing weight and great physical density."
+  },
+  "elder-earth-elemental": {
+    "name": "Elder Earth Elemental",
+    "description": "An ancient earthen behemoth initiating tremors and gliding seamlessly through solid subterranean strata."
+  },
+  "crystal-elemental": {
+    "name": "Crystal Elemental",
+    "description": "A hyper-dense mineral entity made of durable gems that refract and disrupt magical beams."
+  },
+  "earth-lord": {
+    "name": "Earth Lord",
+    "description": "A primordial overlord of the lithosphere whose adamantine body weathers titanic and divine-scale blows."
+  },
+  "air-elemental": {
+    "name": "Air Elemental",
+    "description": "A rushing vortex of primal gale traveling at dizzying speed and carving air currents."
+  },
+  "elder-air-elemental": {
+    "name": "Elder Air Elemental",
+    "description": "A destructive tempest tossing foes aloft and cutting them down with compressed vacuum blades."
+  },
+  "storm-elemental": {
+    "name": "Storm Elemental",
+    "description": "A tempestuous stormcloud crackling with lethal electric discharges and deafening thunderclaps."
+  },
+  "storm-lord": {
+    "name": "Storm Lord",
+    "description": "A legendary master of skystorms unleashing catastrophic twisters and lightning squalls."
+  },
+  "clay-golem": {
+    "name": "Clay Golem",
+    "description": "A base construct of fired clay animated by a mana core, dampening blunt impacts with its viscous body."
+  },
+  "stone-golem": {
+    "name": "Stone Golem",
+    "description": "A massive sentinel sculpted from solid granite, immune to poisons and bleeding."
+  },
+  "iron-golem": {
+    "name": "Iron Golem",
+    "description": "A heavyweight automaton of wrought iron resisting mundane steel and packing devastating force."
+  },
+  "crystal-golem": {
+    "name": "Crystal Golem",
+    "description": "A rare automaton forged of enchanted crystals reflecting hostile incantations back at casters."
+  },
+  "adamantine-golem": {
+    "name": "Adamantine Golem",
+    "description": "A supreme masterpiece of mystic engineering forged of adamantine, almost invulnerable to physical and magic blows."
+  },
+  "raven": {
+    "name": "Raven",
+    "description": "A cunning, wary black-feathered bird serving as an occult scout and messenger in dark sorceries."
+  },
+  "falcon": {
+    "name": "Falcon",
+    "description": "A swift avian raptor with phenomenal eyesight plunging upon prey in blinding dives."
+  },
+  "shark": {
+    "name": "Shark",
+    "description": "A dangerous marine predator with razor teeth and an unmatched sense for blood scent."
+  },
+  "megalodon": {
+    "name": "Megalodon",
+    "description": "A prehistoric colossal apex predator of the depths capable of snapping galleons and sea leviathans in two."
+  },
+  "octopus": {
+    "name": "Octopus",
+    "description": "An intelligent cephalopod equipped with eight suckered tentacles, ink defensive shrouds, and natural camouflage."
+  },
+  "giant-octopus": {
+    "name": "Giant Octopus",
+    "description": "A colossal deep-sea mollusk whose powerful tentacles crush vessel hulls and drag them into the abyss."
+  },
+  "kraken": {
+    "name": "Kraken",
+    "description": "A legendary abyssal monstrosity ruling the oceanic depths and whipping up devastating whirlpools."
   }
 }

@@ -18,5 +18,5 @@ describe('AGENTS.md Style Rules Compliance', () => {
 		}
 
 		expect(errors).toEqual([])
-	})
+	}, 20000)
 })

@@ -375,6 +375,7 @@ export function useDataEditor() {
 					name: '',
 					icon: '👤',
 					parent_id: null,
+					family: null,
 					category: 'humanoid',
 					tags: [],
 					lvl_min: 1,
@@ -417,6 +418,9 @@ export function useDataEditor() {
 			const parent = entities.value[activeTab.value]?.find((e) => e.id === newEntity.parent_id)
 			if (parent?.category) {
 				newEntity.category = parent.category
+			}
+			if (parent?.family && activeTab.value === 'races' && !newEntity.family) {
+				newEntity.family = parent.family
 			}
 		}
 		const _loc = {}
@@ -920,6 +924,17 @@ export function useDataEditor() {
 			if (copy.lvl_min !== undefined) copy.lvl_min = Number(copy.lvl_min) || 1
 			if (copy.parent_id === '') copy.parent_id = null
 
+			if (copy.grid_tier !== undefined && copy.grid_tier !== null && copy.grid_tier !== '') {
+				const parsedTier = parseInt(copy.grid_tier, 10)
+				if (!isNaN(parsedTier) && parsedTier >= 0) {
+					copy.grid_tier = parsedTier
+				} else {
+					delete copy.grid_tier
+				}
+			} else {
+				delete copy.grid_tier
+			}
+
 			// Auto-inheritance of category from parent if parent_id exists
 			if (copy.parent_id) {
 				const parentItem = entities.value[type]?.find((item) => item.id === copy.parent_id)
@@ -939,6 +954,14 @@ export function useDataEditor() {
 				if (!validRaceCats.includes(copy.category)) {
 					copy.category = 'humanoid'
 				}
+				if (copy.family !== undefined) {
+					copy.family = copy.family ? String(copy.family).trim() : null
+				} else if (copy.parent_id) {
+					const parentItem = entities.value.races?.find((item) => item.id === copy.parent_id)
+					if (parentItem?.family) {
+						copy.family = parentItem.family
+					}
+				}
 			}
 
 			if (Array.isArray(copy.skill_branches) && copy.skill_branches.length > 0) {
@@ -956,6 +979,24 @@ export function useDataEditor() {
 
 		if (type === 'fractions') {
 			if (copy.parent_id === '') copy.parent_id = null
+
+			if (copy.grid_tier !== undefined && copy.grid_tier !== null && copy.grid_tier !== '') {
+				const parsedTier = parseInt(copy.grid_tier, 10)
+				if (!isNaN(parsedTier) && parsedTier >= 0) {
+					copy.grid_tier = parsedTier
+				} else {
+					delete copy.grid_tier
+				}
+			} else {
+				delete copy.grid_tier
+			}
+
+			if (copy.parent_id && !copy.type) {
+				const parentItem = entities.value.fractions?.find((item) => item.id === copy.parent_id)
+				if (parentItem?.type) {
+					copy.type = parentItem.type
+				}
+			}
 		}
 
 		if (type === 'items') {
@@ -1304,9 +1345,9 @@ export function useDataEditor() {
 	// Known standard keys per type to identify custom/manual JSON fields
 	const STANDARD_KEYS = {
 		characters: ['id', 'name', 'names', 'icon', 'gender', 'races', 'classs', 'fractions', 'tags', 'talents', 'description'],
-		classes: ['id', 'name', 'icon', 'parent_id', 'category', 'tier', 'skill_points_per_level', 'spell_points_per_level', 'tags', 'lvl_min', 'description', 'skill_branches', 'skills'],
-		fractions: ['id', 'name', 'icon', 'type', 'parent_id', 'tags', 'description'],
-		races: ['id', 'name', 'icon', 'parent_id', 'category', 'tags', 'lvl_min', 'description', 'skill_branches', 'skills'],
+		classes: ['id', 'name', 'icon', 'parent_id', 'category', 'tier', 'grid_tier', 'skill_points_per_level', 'spell_points_per_level', 'tags', 'lvl_min', 'description', 'skill_branches', 'skills'],
+		fractions: ['id', 'name', 'icon', 'type', 'parent_id', 'grid_tier', 'tags', 'description'],
+		races: ['id', 'name', 'icon', 'parent_id', 'family', 'category', 'tier', 'grid_tier', 'skill_points_per_level', 'spell_points_per_level', 'tags', 'lvl_min', 'description', 'skill_branches', 'skills'],
 		items: [
 			'id',
 			'name',

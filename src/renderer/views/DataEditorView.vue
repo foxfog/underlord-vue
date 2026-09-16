@@ -29,13 +29,13 @@
 				</button>
 			</div>
 
-			<!-- View Mode Toggle for Classes & Races -->
-			<div v-if="['classes', 'races'].includes(activeTab)" class="header-view-mode-toggle">
+			<!-- View Mode Toggle for Classes, Races & Fractions -->
+			<div v-if="['classes', 'races', 'fractions'].includes(activeTab)" class="header-view-mode-toggle">
 				<button
 					type="button"
 					class="view-mode-btn"
 					:class="{ __active: classRaceViewMode === 'tree' }"
-					title="Интерактивное древо специализаций"
+					title="Интерактивное древо связей и специализаций"
 					@click="classRaceViewMode = 'tree'"
 				>
 					<span class="vmb-icon">🌳</span>
@@ -309,7 +309,7 @@
 			<!-- TABS: CHARACTERS, CLASSES, FRACTIONS, RACES, ITEMS        -->
 			<!-- ========================================================= -->
 			<template v-else>
-				<!-- Tree Canvas for Classes and Races in Tree Mode -->
+				<!-- Tree Canvas for Classes, Races and Fractions in Tree Mode -->
 				<div
 					v-if="isTreeMode"
 					class="tree-canvas-column"
@@ -321,7 +321,7 @@
 						:active-locale="activeLocale"
 						:locales-data="localesData"
 						@select="onSelectEntity"
-						@create-child="onCreateChildClassRace"
+						@create-child="onCreateChildEntity"
 						@delete="promptDelete"
 					/>
 				</div>
@@ -545,6 +545,9 @@
 									</template>
 
 									<!-- Category badge for races -->
+									<span v-if="activeTab === 'races' && item.family" class="rel-badge __family" :title="'Семейство: ' + item.family">
+										📁 {{ item.family }}
+									</span>
 									<span v-if="activeTab === 'races' && item.category" class="rel-badge __cat">
 										{{ item.category }}
 									</span>
@@ -784,7 +787,7 @@
 									</select>
 								</div>
 
-								<!-- Factions: Type & Parent ID -->
+								<!-- Factions: Type -->
 								<div v-if="activeTab === 'fractions'" class="form-field">
 									<label class="field-label">
 										Тип организации (Type)
@@ -793,8 +796,18 @@
 										v-model="selectedEntity.type"
 										type="text"
 										class="editor-input"
-										placeholder="guild, nation, settlement, stronghold..."
+										list="faction-types-list"
+										placeholder="nation, guild, clan, religious, stronghold..."
 									/>
+									<datalist id="faction-types-list">
+										<option value="nation">Государство / Нация (nation)</option>
+										<option value="guild">Гильдия / Орден (guild)</option>
+										<option value="clan">Клан / Синдикат (clan)</option>
+										<option value="religious">Религиозная организация (religious)</option>
+										<option value="faction">Политическая фракция (faction)</option>
+										<option value="stronghold">Крепость / База (stronghold)</option>
+										<option value="settlement">Поселение / Город (settlement)</option>
+									</datalist>
 								</div>
 
 								<!-- Items: Category / Type -->
@@ -1010,12 +1023,39 @@
 											class="editor-input"
 										/>
 									</div>
+									<div class="form-field">
+										<label class="field-label">Позиция в сетке (grid_tier)</label>
+										<input
+											v-model.number="selectedEntity.grid_tier"
+											type="number"
+											min="0"
+											max="10"
+											class="editor-input"
+											placeholder="Авто (по предку)"
+										/>
+									</div>
 								</div>
 							</template>
 
-							<!-- RACES: CATEGORY, TIER, POINTS & MIN LEVEL -->
+							<!-- RACES: FAMILY, CATEGORY, TIER, POINTS & MIN LEVEL -->
 							<template v-if="activeTab === 'races'">
 								<div class="field-row __split">
+									<div class="form-field">
+										<label class="field-label">
+											Семейство (Family)
+											<span class="field-hint">(для группировки веток)</span>
+										</label>
+										<input
+											v-model="selectedEntity.family"
+											type="text"
+											class="editor-input"
+											placeholder="elf, beastman, elemental..."
+											list="race-family-options-list"
+										/>
+										<datalist id="race-family-options-list">
+											<option v-for="fam in availableRaceFamilies" :key="fam" :value="fam" />
+										</datalist>
+									</div>
 									<div class="form-field">
 										<label class="field-label">
 											Категория расы (Category)
@@ -1072,17 +1112,28 @@
 											class="editor-input"
 										/>
 									</div>
+									<div class="form-field">
+										<label class="field-label">Позиция в сетке (grid_tier)</label>
+										<input
+											v-model.number="selectedEntity.grid_tier"
+											type="number"
+											min="0"
+											max="10"
+											class="editor-input"
+											placeholder="Авто (по предку)"
+										/>
+									</div>
 								</div>
 							</template>
 
-							<!-- FRACTIONS: PARENT ID -->
+							<!-- FRACTIONS: PARENT ID & GRID TIER -->
 							<template v-if="activeTab === 'fractions'">
 								<div class="field-row __split">
 									<div class="form-field">
 										<label class="field-label">
 											Вышестоящая организация (Parent Faction)
 										</label>
-										<select v-model="selectedEntity.parent_id" class="editor-select">
+										<select v-model="selectedEntity.parent_id" class="editor-select" @change="onParentChange">
 											<option :value="null">— Нет (суверенная фракция) —</option>
 											<option
 												v-for="parentOpt in availableParentOptions"
@@ -1092,6 +1143,18 @@
 												{{ parentOpt.name }} ({{ parentOpt.id }})
 											</option>
 										</select>
+									</div>
+
+									<div class="form-field">
+										<label class="field-label">Позиция в сетке (grid_tier)</label>
+										<input
+											v-model.number="selectedEntity.grid_tier"
+											type="number"
+											min="0"
+											max="10"
+											class="editor-input"
+											placeholder="Авто (по рангу предка)"
+										/>
 									</div>
 								</div>
 							</template>
@@ -2438,25 +2501,48 @@ const isTagDropdownOpen = ref(false)
 const highlightedTagIndex = ref(0)
 const tagInputRef = ref(null)
 
-// Tree view mode for classes & races
+// Tree view mode for classes, races & fractions
 const classRaceViewMode = ref('tree') // 'tree' | 'list'
 const isTreeMode = computed(() => {
-	return ['classes', 'races'].includes(activeTab.value) && classRaceViewMode.value === 'tree'
+	return ['classes', 'races', 'fractions'].includes(activeTab.value) && classRaceViewMode.value === 'tree'
 })
 
-function onCreateChildClassRace(parentItem) {
+function onCreateChildEntity(parentItem) {
+	if (activeTab.value === 'fractions') {
+		startCreate({
+			parent_id: parentItem.id,
+			type: parentItem.type || 'faction'
+		})
+		return
+	}
 	startCreate({
 		parent_id: parentItem.id,
-		category: parentItem.category
+		category: parentItem.category,
+		family: parentItem.family || null
 	})
 }
 
+const availableRaceFamilies = computed(() => {
+	const set = new Set()
+	const racesList = entities.value.races || []
+	for (const r of racesList) {
+		if (r.family) set.add(r.family)
+	}
+	return Array.from(set).sort((a, b) => a.localeCompare(b))
+})
+
 function onParentChange() {
-	if (selectedEntity.value && ['classes', 'races'].includes(activeTab.value)) {
+	if (selectedEntity.value && ['classes', 'races', 'fractions'].includes(activeTab.value)) {
 		if (selectedEntity.value.parent_id) {
 			const parent = entities.value[activeTab.value]?.find((e) => e.id === selectedEntity.value.parent_id)
-			if (parent?.category) {
+			if (parent?.category && !selectedEntity.value.category) {
 				selectedEntity.value.category = parent.category
+			}
+			if (parent?.family && activeTab.value === 'races' && !selectedEntity.value.family) {
+				selectedEntity.value.family = parent.family
+			}
+			if (parent?.type && activeTab.value === 'fractions' && !selectedEntity.value.type) {
+				selectedEntity.value.type = parent.type
 			}
 		}
 	}
@@ -2721,6 +2807,13 @@ function getChildCardStyle(item) {
 
 function getParentLabel(parentId) {
 	if (!parentId) return ''
+	if (typeof parentId === 'string' && parentId.includes(',')) {
+		return parentId
+			.split(',')
+			.map((id) => getParentLabel(id.trim()))
+			.filter(Boolean)
+			.join(', ')
+	}
 	switch (activeTab.value) {
 		case 'classes':
 			return getClassName(parentId)
@@ -4132,6 +4225,12 @@ function removeSkill(skillId) {
 .rel-badge.__cat {
 	background: rgba(20, 184, 166, 0.2);
 	color: #5eead4;
+}
+
+.rel-badge.__family {
+	background: rgba(147, 51, 234, 0.2);
+	color: #d8b4fe;
+	border-color: rgba(147, 51, 234, 0.35);
 }
 
 .card-actions-col {

@@ -70,6 +70,40 @@
     "category": "combat"
   },
   {
+    "id": "slayer-of-evil",
+    "name": "Убийца зла",
+    "icon": "⚡",
+    "parent_id": "paladin",
+    "tags": [
+      "holy",
+      "damage",
+      "bane"
+    ],
+    "lvl_min": 10,
+    "description": "Фанатичный истребитель нежити и демонов, наносящий умноженный священный урон.",
+    "tier": "advanced",
+    "skill_points_per_level": 2,
+    "spell_points_per_level": 0,
+    "category": "combat"
+  },
+  {
+    "id": "holy-lord",
+    "name": "Святой лорд",
+    "icon": "☀️",
+    "parent_id": "paladin",
+    "tags": [
+      "holy",
+      "support",
+      "aura"
+    ],
+    "lvl_min": 15,
+    "description": "Высший ранг паладинов, распространяющий вокруг себя благословение небес.",
+    "tier": "rare",
+    "skill_points_per_level": 2,
+    "spell_points_per_level": 0,
+    "category": "combat"
+  },
+  {
     "id": "cursed-paladin",
     "name": "Проклятый паладин",
     "icon": "🩸",
@@ -206,41 +240,8 @@
     "tier": "rare",
     "skill_points_per_level": 2,
     "spell_points_per_level": 0,
-    "category": "combat"
-  },
-  {
-    "id": "slayer-of-evil",
-    "name": "Убийца зла",
-    "icon": "⚡",
-    "parent_id": "paladin",
-    "tags": [
-      "holy",
-      "damage",
-      "bane"
-    ],
-    "lvl_min": 10,
-    "description": "Фанатичный истребитель нежити и демонов, наносящий умноженный священный урон.",
-    "tier": "advanced",
-    "skill_points_per_level": 2,
-    "spell_points_per_level": 0,
-    "category": "combat"
-  },
-  {
-    "id": "holy-lord",
-    "name": "Святой лорд",
-    "icon": "☀️",
-    "parent_id": "paladin",
-    "tags": [
-      "holy",
-      "support",
-      "aura"
-    ],
-    "lvl_min": 15,
-    "description": "Высший ранг паладинов, распространяющий вокруг себя благословение небес.",
-    "tier": "rare",
-    "skill_points_per_level": 2,
-    "spell_points_per_level": 0,
-    "category": "combat"
+    "category": "combat",
+    "grid_tier": 4
   },
   {
     "id": "thief",
