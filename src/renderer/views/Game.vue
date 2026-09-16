@@ -42,6 +42,7 @@
 			:location-id="activeIsometricLocationId"
 			@exit="onIsometricExit"
 			@quest-completed="onIsometricQuestCompleted"
+			@combat-requested="onIsometricCombatRequested"
 		/>
 
 		<!-- Fast-forward / Skip indicator (Ren'Py Ctrl skip style) -->
@@ -164,6 +165,7 @@
 	<CombatOverlay
 		v-if="showCombatOverlay"
 		:encounter-id="activeCombatEncounterId"
+		:encounter-data="activeCombatEncounterData"
 		@combat-end="onCombatEnd"
 	/>
 
@@ -299,6 +301,8 @@ const isometricOverlayRef = ref(null)
 // Combat overlay state
 const showCombatOverlay = ref(false)
 const activeCombatEncounterId = ref('')
+const activeCombatEncounterData = ref(null)
+const combatOriginIsometricMob = ref(null)
 
 const {
 	menuVisible,
@@ -756,6 +760,13 @@ function onIsometricQuestCompleted() {
 	questsManager.completeTask('chief_garden_quest', 'weed_task')
 }
 
+function onIsometricCombatRequested({ encounter, mobObject }) {
+	activeCombatEncounterData.value = encounter
+	activeCombatEncounterId.value = encounter.id || 'dynamic_encounter'
+	combatOriginIsometricMob.value = mobObject
+	showCombatOverlay.value = true
+}
+
 function onCombatEnd({ result }) {
 	// Store result in global state for story branching
 	const vnGlobal = visualNovel.value?.globalData?.value || visualNovel.value?.globalData
@@ -763,8 +774,22 @@ function onCombatEnd({ result }) {
 	gameState.global.lastCombatResult = result
 
 	const encounterId = activeCombatEncounterId.value
+	const originMob = combatOriginIsometricMob.value
+
 	showCombatOverlay.value = false
 	activeCombatEncounterId.value = ''
+	activeCombatEncounterData.value = null
+	combatOriginIsometricMob.value = null
+
+	// If combat was initiated from an isometric location mob
+	if (originMob) {
+		if (result === 'win' || result === 'victory') {
+			if (isometricOverlayRef.value?.onMobDefeated) {
+				isometricOverlayRef.value.onMobDefeated(originMob)
+			}
+		}
+		return
+	}
 
 	// Navigate to win/lose story label based on encounter id
 	const winLabel = `${encounterId}_win`

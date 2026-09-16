@@ -60,7 +60,10 @@
     ],
     "stackable": false,
     "sprite": "images/sprites/items/equipments/neuro_helmet.png",
-    "weight": 1.5
+    "weight": 1.5,
+    "skills": [
+      "neuro_link"
+    ]
   },
   {
     "id": "medicalmask",
@@ -168,6 +171,32 @@
       "attack": 34,
       "defense": 3
     },
+    "skills": [
+      "adamantite_edge"
+    ],
     "description": "Тяжелый и несокрушимый меч из чистого адамантия."
+  },
+  {
+    "id": "fluder_stiletto",
+    "name": "Зачарованный стилет",
+    "slot": [
+      "weapon-hand-1",
+      "weapon-hand-2"
+    ],
+    "categories": [
+      "weapon",
+      "one_handed",
+      "dagger"
+    ],
+    "rarity": "epic",
+    "stackable": false,
+    "weight": 0.4,
+    "stats": {
+      "attack": 22
+    },
+    "skills": [
+      "stiletto_fire_burst"
+    ],
+    "description": "Кинжал-стилет, зачарованный главным придворным магом Империи Багарут Флюдером Парадайном по заказу Момона (Аинза)."
   }
 ]

@@ -29,6 +29,30 @@
 				</button>
 			</div>
 
+			<!-- View Mode Toggle for Classes & Races -->
+			<div v-if="['classes', 'races'].includes(activeTab)" class="header-view-mode-toggle">
+				<button
+					type="button"
+					class="view-mode-btn"
+					:class="{ __active: classRaceViewMode === 'tree' }"
+					title="Интерактивное древо специализаций"
+					@click="classRaceViewMode = 'tree'"
+				>
+					<span class="vmb-icon">🌳</span>
+					<span>Древо</span>
+				</button>
+				<button
+					type="button"
+					class="view-mode-btn"
+					:class="{ __active: classRaceViewMode === 'list' }"
+					title="Классический список карточек"
+					@click="classRaceViewMode = 'list'"
+				>
+					<span class="vmb-icon">📋</span>
+					<span>Список</span>
+				</button>
+			</div>
+
 			<div class="header-right">
 				<!-- Global Language Switcher Dropdown -->
 				<div class="header-locale-dropdown-wrap" ref="headerLocaleDropdownRef">
@@ -285,8 +309,25 @@
 			<!-- TABS: CHARACTERS, CLASSES, FRACTIONS, RACES, ITEMS        -->
 			<!-- ========================================================= -->
 			<template v-else>
-				<!-- Left Column: Entities List & Filter -->
-				<aside class="sidebar-list-pane">
+				<!-- Tree Canvas for Classes and Races in Tree Mode -->
+				<div
+					v-if="isTreeMode"
+					class="tree-canvas-column"
+				>
+					<ClassRaceTreeCanvas
+						:type="activeTab"
+						:items="entities[activeTab]"
+						:selected-id="selectedEntity ? selectedEntity.id : null"
+						:active-locale="activeLocale"
+						:locales-data="localesData"
+						@select="onSelectEntity"
+						@create-child="onCreateChildClassRace"
+						@delete="promptDelete"
+					/>
+				</div>
+
+				<!-- Left Column: Entities List & Filter (Classic Mode) -->
+				<aside v-else class="sidebar-list-pane">
 					<div class="list-toolbar">
 						<div class="search-box">
 							<span class="search-icon">🔍</span>
@@ -535,8 +576,12 @@
 					</div>
 				</aside>
 
-				<!-- Right Column: Detail / Edit Form -->
-				<main class="form-pane">
+				<!-- Right Column: Detail / Edit Form (or Side Drawer in Tree Mode) -->
+				<main
+					v-if="!isTreeMode || selectedEntity"
+					class="form-pane"
+					:class="{ '__tree-drawer': isTreeMode }"
+				>
 					<div v-if="selectedEntity" class="form-container">
 						<div class="form-header">
 							<div class="form-title-group">
@@ -550,7 +595,7 @@
 
 							<div class="form-header-actions">
 								<button class="editor-btn editor-btn-secondary" @click="cancelEdit">
-									Отмена
+									{{ isTreeMode ? '✕ Закрыть' : 'Отмена' }}
 								</button>
 								<button
 									class="editor-btn editor-btn-primary save-btn"
@@ -723,7 +768,11 @@
 										Родитель (Parent ID)
 										<span class="field-hint">(для иерархии/подклассов)</span>
 									</label>
-									<select v-model="selectedEntity.parent_id" class="editor-select">
+									<select
+										v-model="selectedEntity.parent_id"
+										class="editor-select"
+										@change="onParentChange"
+									>
 										<option :value="null">— Нет (базовая сущность) —</option>
 										<option
 											v-for="parentOpt in availableParentOptions"
@@ -852,12 +901,77 @@
 										:get-name="(id) => getFactionName(id)"
 										:get-icon="(f) => f?.icon || '🏛️'"
 									/>
+
+									<!-- Character Talents Section -->
+									<div class="character-talents-box">
+										<div class="field-label">
+											🌟 Врождённые таланты (Character Talents)
+											<span class="field-sub-hint">(хранятся в characters_data.json, описания в skills/talents/talents.json)</span>
+										</div>
+										<div class="interactive-tags-container">
+											<span
+												v-for="tId in (selectedEntity.talents || [])"
+												:key="'char-tal-' + tId"
+												class="interactive-tag-chip __talent"
+											>
+												<span class="chip-icon">{{ getTalentIcon(tId) }}</span>
+												<span class="chip-text">{{ getTalentName(tId) }}</span>
+												<button
+													type="button"
+													class="chip-remove-btn"
+													title="Удалить талант у персонажа"
+													@click="removeTalentFromCharacter(tId)"
+												>
+													✕
+												</button>
+											</span>
+											<span v-if="!(selectedEntity.talents && selectedEntity.talents.length > 0)" class="no-tags-hint">
+												У персонажа нет врождённого таланта (в Новом Мире талант есть лишь у 1 из 200)
+											</span>
+										</div>
+
+										<!-- Suggestions / Available Talents -->
+										<div class="skill-suggestions-box" v-if="talents.length > 0">
+											<span class="suggestions-label">Быстрый выбор из skills/talents/talents.json:</span>
+											<div class="suggestion-pills-list">
+												<button
+													v-for="tal in talents"
+													:key="'add-tal-' + tal.id"
+													type="button"
+													class="suggestion-pill __talent-pill"
+													:class="{ __already: (selectedEntity.talents || []).includes(tal.id) }"
+													:disabled="(selectedEntity.talents || []).includes(tal.id)"
+													@click="addTalentToCharacter(tal.id)"
+												>
+													{{ tal.icon || '🌟' }} {{ tal.name }}
+												</button>
+											</div>
+										</div>
+									</div>
 								</div>
 							</template>
 
-							<!-- CLASSES: TIER, POINTS & MIN LEVEL -->
+							<!-- CLASSES: CATEGORY, TIER, POINTS & MIN LEVEL -->
 							<template v-if="activeTab === 'classes'">
 								<div class="field-row __split">
+									<div class="form-field">
+										<label class="field-label">
+											Категория класса (Category)
+											<span v-if="selectedEntity.parent_id" class="locked-parent-badge" :title="'Унаследовано от родителя: ' + getParentLabel(selectedEntity.parent_id)">
+												🔒 Унаследовано
+											</span>
+										</label>
+										<select
+											v-model="selectedEntity.category"
+											class="editor-select"
+											:disabled="!!selectedEntity.parent_id"
+											:title="selectedEntity.parent_id ? 'Категория заблокирована и унаследована от родителя' : ''"
+										>
+											<option value="combat">⚔️ Боевой (combat)</option>
+											<option value="social">👑 Социальный (social)</option>
+											<option value="craft">🔨 Ремесленный (craft)</option>
+										</select>
+									</div>
 									<div class="form-field">
 										<label class="field-label">Ступень класса (Tier)</label>
 										<select v-model="selectedEntity.tier" class="editor-select">
@@ -903,11 +1017,21 @@
 							<template v-if="activeTab === 'races'">
 								<div class="field-row __split">
 									<div class="form-field">
-										<label class="field-label">Категория расы (Category)</label>
-										<select v-model="selectedEntity.category" class="editor-select">
-											<option value="humanoid">Гуманоидная (humanoid)</option>
-											<option value="demi-human">Полулюди (demi-human)</option>
-											<option value="heteromorphic">Гетероморфная (heteromorphic)</option>
+										<label class="field-label">
+											Категория расы (Category)
+											<span v-if="selectedEntity.parent_id" class="locked-parent-badge" :title="'Унаследовано от родителя: ' + getParentLabel(selectedEntity.parent_id)">
+												🔒 Унаследовано
+											</span>
+										</label>
+										<select
+											v-model="selectedEntity.category"
+											class="editor-select"
+											:disabled="!!selectedEntity.parent_id"
+											:title="selectedEntity.parent_id ? 'Категория заблокирована и унаследована от родителя' : ''"
+										>
+											<option value="humanoid">👤 Гуманоидная (humanoid)</option>
+											<option value="demi-human">🐾 Полулюди (demi-human)</option>
+											<option value="heteromorphic">💀 Гетероморфная (heteromorphic)</option>
 										</select>
 									</div>
 									<div class="form-field">
@@ -1129,6 +1253,56 @@
 										:get-name="(id) => getItemCategoryName(id)"
 										:get-icon="(cat) => cat?.icon || '🏷️'"
 									/>
+								</div>
+
+								<!-- ITEM SKILLS (Встроенные навыки предмета) -->
+								<div class="item-skills-panel">
+									<div class="panel-section-title">
+										<span>⚔️ Встроенные навыки предмета (Item Skills & Enchantments)</span>
+										<span class="panel-section-hint">Способности и зачарования, даруемые носителю предмета</span>
+									</div>
+
+									<!-- Selected skills chips -->
+									<div class="current-skills-chips">
+										<span
+											v-for="skId in (selectedEntity.skills || [])"
+											:key="'item-sk-' + skId"
+											class="interactive-tag-chip __skill"
+										>
+											<span class="chip-icon">{{ getItemSkillIcon(skId) }}</span>
+											<span class="chip-text">{{ getItemSkillName(skId) }}</span>
+											<button
+												type="button"
+												class="chip-remove-btn"
+												title="Удалить навык из предмета"
+												@click="removeItemSkillFromEntity(skId)"
+											>
+												✕
+											</button>
+										</span>
+
+										<span v-if="!(selectedEntity.skills && selectedEntity.skills.length > 0)" class="no-tags-hint">
+											Встроенные навыки не назначены (предмет без зачарований)
+										</span>
+									</div>
+
+									<!-- Available item skills suggestions -->
+									<div class="skill-suggestions-box" v-if="itemSkills.length > 0">
+										<span class="suggestions-label">Быстрый выбор из skills/items/items.json:</span>
+										<div class="suggestion-pills-list">
+											<button
+												v-for="sk in itemSkills"
+												:key="'add-isk-' + sk.id"
+												type="button"
+												class="suggestion-pill"
+												:class="{ __already: (selectedEntity.skills || []).includes(sk.id) }"
+												:disabled="(selectedEntity.skills || []).includes(sk.id)"
+												@click="addItemSkillToEntity(sk.id)"
+											>
+												{{ sk.icon || '⚔️' }} {{ sk.name }}
+											</button>
+										</div>
+									</div>
 								</div>
 							</template>
 
@@ -2090,6 +2264,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDataEditor } from '@/composables/useDataEditor'
 import EntityTagPicker from '@/components/tests/EntityTagPicker.vue'
+import ClassRaceTreeCanvas from '@/components/game/dataEditor/ClassRaceTreeCanvas.vue'
 import {
 	SKILL_CATEGORIES,
 	getCategoryMeta,
@@ -2155,11 +2330,69 @@ const {
 	STANDARD_KEYS,
 	itemCategories,
 	getItemCategoryName,
+	itemSkills,
+	talents,
 	ITEM_RARITIES,
 	getRarity,
 	getRarityColor,
 	getRarityBadgeStyle
 } = useDataEditor()
+
+function getItemSkillName(skId) {
+	const sk = itemSkills.value.find((s) => s.id === skId)
+	return sk ? sk.name : skId
+}
+
+function getItemSkillIcon(skId) {
+	const sk = itemSkills.value.find((s) => s.id === skId)
+	return sk?.icon || '⚔️'
+}
+
+function addItemSkillToEntity(skId) {
+	if (!selectedEntity.value) return
+	if (!Array.isArray(selectedEntity.value.skills)) {
+		selectedEntity.value.skills = []
+	}
+	if (!selectedEntity.value.skills.includes(skId)) {
+		selectedEntity.value.skills.push(skId)
+	}
+}
+
+function removeItemSkillFromEntity(skId) {
+	if (!selectedEntity.value || !Array.isArray(selectedEntity.value.skills)) return
+	const idx = selectedEntity.value.skills.indexOf(skId)
+	if (idx >= 0) {
+		selectedEntity.value.skills.splice(idx, 1)
+	}
+}
+
+function getTalentName(tId) {
+	const tal = talents.value.find((t) => t.id === tId)
+	return tal ? tal.name : tId
+}
+
+function getTalentIcon(tId) {
+	const tal = talents.value.find((t) => t.id === tId)
+	return tal?.icon || '🌟'
+}
+
+function addTalentToCharacter(tId) {
+	if (!selectedEntity.value) return
+	if (!Array.isArray(selectedEntity.value.talents)) {
+		selectedEntity.value.talents = []
+	}
+	if (!selectedEntity.value.talents.includes(tId)) {
+		selectedEntity.value.talents.push(tId)
+	}
+}
+
+function removeTalentFromCharacter(tId) {
+	if (!selectedEntity.value || !Array.isArray(selectedEntity.value.talents)) return
+	const idx = selectedEntity.value.talents.indexOf(tId)
+	if (idx >= 0) {
+		selectedEntity.value.talents.splice(idx, 1)
+	}
+}
 
 function isSlotSelected(slotId) {
 	if (!selectedEntity.value?.slot) return false
@@ -2204,6 +2437,30 @@ const newTagField = ref('')
 const isTagDropdownOpen = ref(false)
 const highlightedTagIndex = ref(0)
 const tagInputRef = ref(null)
+
+// Tree view mode for classes & races
+const classRaceViewMode = ref('tree') // 'tree' | 'list'
+const isTreeMode = computed(() => {
+	return ['classes', 'races'].includes(activeTab.value) && classRaceViewMode.value === 'tree'
+})
+
+function onCreateChildClassRace(parentItem) {
+	startCreate({
+		parent_id: parentItem.id,
+		category: parentItem.category
+	})
+}
+
+function onParentChange() {
+	if (selectedEntity.value && ['classes', 'races'].includes(activeTab.value)) {
+		if (selectedEntity.value.parent_id) {
+			const parent = entities.value[activeTab.value]?.find((e) => e.id === selectedEntity.value.parent_id)
+			if (parent?.category) {
+				selectedEntity.value.category = parent.category
+			}
+		}
+	}
+}
 
 // Header Dropdown & Add Language Modal State
 const isHeaderLocaleOpen = ref(false)
@@ -4167,6 +4424,59 @@ function removeSkill(skillId) {
 	font-weight: bold;
 }
 
+.item-skills-panel {
+	background: rgba(15, 23, 42, 0.45);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: 0.5em;
+	padding: 1.2em;
+	display: flex;
+	flex-direction: column;
+	gap: 1em;
+	margin-top: 1em;
+}
+
+.current-skills-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5em;
+	align-items: center;
+}
+
+.interactive-tag-chip.__skill {
+	background: rgba(245, 158, 11, 0.15);
+	border-color: rgba(245, 158, 11, 0.4);
+	color: #fbbf24;
+}
+
+.interactive-tag-chip.__talent {
+	background: rgba(234, 179, 8, 0.2);
+	border-color: rgba(234, 179, 8, 0.5);
+	color: #fef08a;
+}
+
+.character-talents-box {
+	display: flex;
+	flex-direction: column;
+	gap: 0.6em;
+	padding-top: 0.8em;
+	border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.suggestion-pill.__talent-pill {
+	border-color: rgba(234, 179, 8, 0.35);
+	color: #fef08a;
+}
+
+.suggestion-pill.__talent-pill:hover:not(:disabled) {
+	background: rgba(234, 179, 8, 0.2);
+	border-color: #facc15;
+}
+
+.suggestion-pill.__already {
+	opacity: 0.4;
+	cursor: default;
+}
+
 .chip-toggle-btn.__selected.__gender.__male {
 	background: rgba(59, 130, 246, 0.25);
 	border-color: #3b82f6;
@@ -6105,5 +6415,76 @@ function removeSkill(skillId) {
 	border-color: rgba(255, 255, 255, 0.06);
 	padding: 0.7em;
 	margin-top: 0.2em;
+}
+
+/* ==========================================================================
+   Class & Race Interactive Tree Canvas Mode
+   ========================================================================== */
+.tree-canvas-column {
+	flex: 1;
+	height: 100%;
+	position: relative;
+	overflow: hidden;
+}
+
+.form-pane.__tree-drawer {
+	width: 36em;
+	max-width: 50%;
+	border-left: 1px solid rgba(255, 255, 255, 0.15);
+	box-shadow: -0.5em 0 2em rgba(0, 0, 0, 0.6);
+	z-index: 15;
+	background: #0d121f;
+}
+
+.header-view-mode-toggle {
+	display: flex;
+	align-items: center;
+	background: rgba(0, 0, 0, 0.35);
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	border-radius: 0.5em;
+	padding: 0.15em;
+	gap: 0.2em;
+	margin-left: 0.8em;
+}
+
+.view-mode-btn {
+	background: transparent;
+	border: none;
+	color: #94a3b8;
+	font-size: 0.8em;
+	font-weight: 600;
+	padding: 0.35em 0.7em;
+	border-radius: 0.35em;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	gap: 0.35em;
+	transition: background 0.15s, color 0.15s;
+}
+
+.view-mode-btn:hover {
+	background: rgba(255, 255, 255, 0.08);
+	color: #f1f5f9;
+}
+
+.view-mode-btn.__active {
+	background: rgba(255, 255, 255, 0.15);
+	color: #ffffff;
+	box-shadow: 0 0.1em 0.5em rgba(0, 0, 0, 0.3);
+}
+
+.vmb-icon {
+	font-size: 0.95em;
+}
+
+.locked-parent-badge {
+	font-size: 0.72em;
+	color: #38bdf8;
+	background: rgba(56, 189, 248, 0.12);
+	border: 1px solid rgba(56, 189, 248, 0.25);
+	border-radius: 0.3em;
+	padding: 0.1em 0.45em;
+	margin-left: 0.5em;
+	font-weight: 500;
 }
 </style>

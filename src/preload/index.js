@@ -23,6 +23,7 @@ const api = {
 		readFile: (relPath) => ipcRenderer.invoke('data-editor-read-file', relPath),
 		writeFile: (relPath, data) => ipcRenderer.invoke('data-editor-write-file', relPath, data),
 		deleteFile: (relPath) => ipcRenderer.invoke('data-editor-delete-file', relPath),
+		listFiles: (relDir) => ipcRenderer.invoke('data-editor-list-files', relDir),
 		copyLocale: (params) => ipcRenderer.invoke('data-editor-copy-locale', params),
 		listLocales: () => ipcRenderer.invoke('data-editor-list-locales'),
 		deleteLocale: (lang) => ipcRenderer.invoke('data-editor-delete-locale', lang)

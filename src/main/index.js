@@ -338,6 +338,25 @@ ipcMain.handle('data-editor-delete-file', async (_event, relativePath) => {
 	}
 })
 
+ipcMain.handle('data-editor-list-files', async (_event, relativeDir) => {
+	try {
+		const baseDir = getDataDirectory()
+		const dirPath = join(baseDir, relativeDir)
+		try {
+			const entries = await fs.readdir(dirPath)
+			return { success: true, files: entries }
+		} catch (err) {
+			if (err.code === 'ENOENT') {
+				return { success: true, files: [] }
+			}
+			throw err
+		}
+	} catch (error) {
+		console.error(`⛔ Ошибка при чтении списка файлов ${relativeDir}:`, error)
+		return { success: false, error: error.message, files: [] }
+	}
+})
+
 ipcMain.handle('data-editor-copy-locale', async (_event, params) => {
 	try {
 		const {

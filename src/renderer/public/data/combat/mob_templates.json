@@ -1,0 +1,392 @@
+{
+  "skeleton_warrior": {
+    "id": "skeleton_warrior",
+    "name": "Скелет-воин",
+    "icon": "💀",
+    "sprite": "images/sprites/characters/skeleton/default.png",
+    "race": "skeleton",
+    "class": "warrior",
+    "raceLevelRatio": 0.3,
+    "tags": ["undead", "monster", "melee"],
+    "moveRange": 3,
+    "equipmentTiers": [
+      {
+        "minLevel": 1,
+        "maxLevel": 3,
+        "variants": {
+          "weak": { "weapon": "rusty_sword", "armor": "tattered_rags" },
+          "normal": { "weapon": "iron_sword", "armor": "tattered_rags" },
+          "strong": { "weapon": "iron_sword", "shield": "wooden_buckler", "armor": "leather_armor" },
+          "elite": { "weapon": "iron_spear", "shield": "iron_shield", "armor": "chainmail_scrap" },
+          "legendary": { "weapon": "adamantite_sword", "shield": "iron_shield", "armor": "chainmail_scrap" }
+        }
+      },
+      {
+        "minLevel": 4,
+        "maxLevel": 8,
+        "variants": {
+          "weak": { "weapon": "iron_sword", "armor": "leather_armor" },
+          "normal": { "weapon": "iron_sword", "shield": "wooden_buckler", "armor": "leather_armor" },
+          "strong": { "weapon": "iron_spear", "shield": "iron_shield", "armor": "chainmail_scrap" },
+          "elite": { "weapon": "adamantite_sword", "shield": "iron_shield", "armor": "knight_plate" },
+          "legendary": { "weapon": "adamantite_sword", "shield": "iron_shield", "armor": "knight_plate" }
+        }
+      },
+      {
+        "minLevel": 9,
+        "maxLevel": 30,
+        "variants": {
+          "weak": { "weapon": "iron_spear", "armor": "chainmail_scrap" },
+          "normal": { "weapon": "iron_spear", "shield": "iron_shield", "armor": "chainmail_scrap" },
+          "strong": { "weapon": "adamantite_sword", "shield": "iron_shield", "armor": "knight_plate" },
+          "elite": { "weapon": "adamantite_sword", "shield": "iron_shield", "armor": "knight_plate" },
+          "legendary": { "weapon": "adamantite_sword", "shield": "iron_shield", "armor": "knight_plate" }
+        }
+      }
+    ],
+    "abilities": {
+      "guaranteed": [
+        {
+          "id": "attack",
+          "name": "Атака оружием",
+          "useWeapon": true,
+          "apCost": 1,
+          "mpCost": 0,
+          "power": 1.0,
+          "type": "damage",
+          "targetType": "enemy",
+          "icon": "⚔️"
+        }
+      ],
+      "pool": [
+        {
+          "id": "power_attack",
+          "name": "Мощный удар",
+          "reqLevel": 1,
+          "weight": 3,
+          "useWeapon": true,
+          "apCost": 2,
+          "mpCost": 0,
+          "power": 1.5,
+          "type": "damage",
+          "targetType": "enemy",
+          "icon": "💥"
+        },
+        {
+          "id": "shield_bash",
+          "name": "Удар щитом",
+          "reqLevel": 2,
+          "weight": 2,
+          "apCost": 2,
+          "mpCost": 0,
+          "power": 1.1,
+          "knockback": 1,
+          "pattern": "straight",
+          "minRange": 1,
+          "maxRange": 1,
+          "type": "damage",
+          "targetType": "enemy",
+          "icon": "🛡️"
+        },
+        {
+          "id": "iron_wall",
+          "name": "Железная стена",
+          "reqLevel": 3,
+          "weight": 1,
+          "apCost": 1,
+          "mpCost": 0,
+          "type": "status",
+          "status": "defended",
+          "targetType": "self",
+          "icon": "🧱"
+        }
+      ]
+    },
+    "lootTable": [
+      { "itemId": "bone_fragment", "chance": 0.85, "count": [1, 3] },
+      { "itemId": "iron_ingot", "chance": 0.2, "count": 1 }
+    ]
+  },
+  "skeleton_archer": {
+    "id": "skeleton_archer",
+    "name": "Скелет-лучник",
+    "icon": "🏹",
+    "sprite": "images/sprites/characters/skeleton/default.png",
+    "race": "skeleton",
+    "class": "archer",
+    "raceLevelRatio": 0.3,
+    "tags": ["undead", "monster", "ranged"],
+    "moveRange": 3,
+    "equipmentTiers": [
+      {
+        "minLevel": 1,
+        "maxLevel": 5,
+        "variants": {
+          "weak": { "weapon": "crude_bow", "armor": "tattered_rags" },
+          "normal": { "weapon": "wooden_bow", "armor": "tattered_rags" },
+          "strong": { "weapon": "composite_bow", "armor": "leather_armor" },
+          "elite": { "weapon": "composite_bow", "armor": "leather_armor" },
+          "legendary": { "weapon": "composite_bow", "armor": "chainmail_scrap" }
+        }
+      },
+      {
+        "minLevel": 6,
+        "maxLevel": 30,
+        "variants": {
+          "weak": { "weapon": "wooden_bow", "armor": "leather_armor" },
+          "normal": { "weapon": "composite_bow", "armor": "leather_armor" },
+          "strong": { "weapon": "composite_bow", "armor": "chainmail_scrap" },
+          "elite": { "weapon": "war_bow", "armor": "chainmail_scrap" },
+          "legendary": { "weapon": "war_bow", "armor": "knight_plate" }
+        }
+      }
+    ],
+    "abilities": {
+      "guaranteed": [
+        {
+          "id": "attack",
+          "name": "Выстрел из лука",
+          "useWeapon": true,
+          "apCost": 1,
+          "mpCost": 0,
+          "power": 1.0,
+          "type": "damage",
+          "targetType": "enemy",
+          "icon": "🏹"
+        }
+      ],
+      "pool": [
+        {
+          "id": "aimed_shot",
+          "name": "Прицельный выстрел",
+          "reqLevel": 2,
+          "weight": 2,
+          "useWeapon": true,
+          "apCost": 2,
+          "mpCost": 0,
+          "power": 1.6,
+          "type": "damage",
+          "targetType": "enemy",
+          "icon": "🎯"
+        },
+        {
+          "id": "quick_shot",
+          "name": "Быстрый выстрел",
+          "reqLevel": 1,
+          "weight": 3,
+          "useWeapon": true,
+          "apCost": 1,
+          "mpCost": 0,
+          "power": 0.85,
+          "type": "damage",
+          "targetType": "enemy",
+          "icon": "💨"
+        }
+      ]
+    },
+    "lootTable": [
+      { "itemId": "bone_fragment", "chance": 0.8, "count": [1, 2] },
+      { "itemId": "wood", "chance": 0.35, "count": [1, 2] }
+    ]
+  },
+  "bandit_melee": {
+    "id": "bandit_melee",
+    "name": "Разбойник",
+    "icon": "🗡️",
+    "sprite": "images/sprites/characters/bandit/default.png",
+    "race": "human",
+    "class": "fighter",
+    "raceLevelRatio": 0.0,
+    "tags": ["humanoid", "bandit", "melee"],
+    "moveRange": 3,
+    "equipmentTiers": [
+      {
+        "minLevel": 1,
+        "maxLevel": 4,
+        "variants": {
+          "weak": { "weapon": "crude_dagger", "armor": "tattered_rags" },
+          "normal": { "weapon": "iron_sword", "armor": "tattered_rags" },
+          "strong": { "weapon": "iron_sword", "shield": "wooden_buckler", "armor": "leather_armor" },
+          "elite": { "weapon": "iron_sword", "shield": "iron_shield", "armor": "chainmail_scrap" },
+          "legendary": { "weapon": "adamantite_sword", "shield": "iron_shield", "armor": "chainmail_scrap" }
+        }
+      },
+      {
+        "minLevel": 5,
+        "maxLevel": 30,
+        "variants": {
+          "weak": { "weapon": "iron_sword", "armor": "leather_armor" },
+          "normal": { "weapon": "iron_sword", "shield": "wooden_buckler", "armor": "leather_armor" },
+          "strong": { "weapon": "iron_spear", "shield": "iron_shield", "armor": "chainmail_scrap" },
+          "elite": { "weapon": "adamantite_sword", "shield": "iron_shield", "armor": "knight_plate" },
+          "legendary": { "weapon": "adamantite_sword", "shield": "iron_shield", "armor": "knight_plate" }
+        }
+      }
+    ],
+    "abilities": {
+      "guaranteed": [
+        {
+          "id": "attack",
+          "name": "Удар клинком",
+          "useWeapon": true,
+          "apCost": 1,
+          "mpCost": 0,
+          "power": 1.0,
+          "type": "damage",
+          "targetType": "enemy",
+          "icon": "⚔️"
+        }
+      ],
+      "pool": [
+        {
+          "id": "power_attack",
+          "name": "Мощный удар",
+          "reqLevel": 1,
+          "weight": 2,
+          "useWeapon": true,
+          "apCost": 2,
+          "mpCost": 0,
+          "power": 1.6,
+          "type": "damage",
+          "targetType": "enemy",
+          "icon": "💥"
+        },
+        {
+          "id": "dodge",
+          "name": "Уворот",
+          "reqLevel": 1,
+          "weight": 2,
+          "apCost": 1,
+          "mpCost": 0,
+          "minRange": 0,
+          "maxRange": 0,
+          "type": "status",
+          "status": "evading",
+          "targetType": "self",
+          "icon": "💨"
+        }
+      ]
+    },
+    "lootTable": [
+      { "itemId": "ygdrasil-coin-old", "chance": 0.85, "count": [5, 20] }
+    ]
+  },
+  "bandit_archer": {
+    "id": "bandit_archer",
+    "name": "Бандит-лучник",
+    "icon": "🏹",
+    "sprite": "images/sprites/characters/bandit/default.png",
+    "race": "human",
+    "class": "archer",
+    "raceLevelRatio": 0.0,
+    "tags": ["humanoid", "bandit", "ranged"],
+    "moveRange": 3,
+    "equipmentTiers": [
+      {
+        "minLevel": 1,
+        "maxLevel": 30,
+        "variants": {
+          "weak": { "weapon": "crude_bow", "armor": "tattered_rags" },
+          "normal": { "weapon": "wooden_bow", "armor": "leather_armor" },
+          "strong": { "weapon": "composite_bow", "armor": "leather_armor" },
+          "elite": { "weapon": "composite_bow", "armor": "chainmail_scrap" },
+          "legendary": { "weapon": "war_bow", "armor": "knight_plate" }
+        }
+      }
+    ],
+    "abilities": {
+      "guaranteed": [
+        {
+          "id": "attack",
+          "name": "Выстрел из лука",
+          "useWeapon": true,
+          "apCost": 1,
+          "mpCost": 0,
+          "power": 1.0,
+          "type": "damage",
+          "targetType": "enemy",
+          "icon": "🏹"
+        }
+      ],
+      "pool": [
+        {
+          "id": "aimed_shot",
+          "name": "Прицельный выстрел",
+          "reqLevel": 2,
+          "weight": 2,
+          "useWeapon": true,
+          "apCost": 2,
+          "mpCost": 0,
+          "power": 1.6,
+          "type": "damage",
+          "targetType": "enemy",
+          "icon": "🎯"
+        }
+      ]
+    },
+    "lootTable": [
+      { "itemId": "ygdrasil-coin-old", "chance": 0.8, "count": [4, 15] }
+    ]
+  },
+  "dire_wolf": {
+    "id": "dire_wolf",
+    "name": "Лютый волк",
+    "icon": "🐺",
+    "sprite": "images/sprites/characters/wolf/default.png",
+    "race": "beast",
+    "class": "fighter",
+    "raceLevelRatio": 0.5,
+    "tags": ["beast", "monster", "melee"],
+    "moveRange": 4,
+    "equipmentTiers": [
+      {
+        "minLevel": 1,
+        "maxLevel": 30,
+        "variants": {
+          "weak": { "weapon": "wolf_fangs", "armor": null },
+          "normal": { "weapon": "wolf_fangs", "armor": null },
+          "strong": { "weapon": "wolf_fangs", "armor": null },
+          "elite": { "weapon": "wolf_fangs", "armor": null },
+          "legendary": { "weapon": "wolf_fangs", "armor": null }
+        }
+      }
+    ],
+    "abilities": {
+      "guaranteed": [
+        {
+          "id": "attack",
+          "name": "Укус",
+          "pattern": "adjacent",
+          "minRange": 1,
+          "maxRange": 1,
+          "apCost": 1,
+          "mpCost": 0,
+          "power": 1.0,
+          "type": "damage",
+          "targetType": "enemy",
+          "icon": "🐺"
+        }
+      ],
+      "pool": [
+        {
+          "id": "pounce",
+          "name": "Свирепый бросок",
+          "reqLevel": 2,
+          "weight": 2,
+          "pattern": "straight",
+          "minRange": 1,
+          "maxRange": 2,
+          "apCost": 2,
+          "mpCost": 0,
+          "power": 1.4,
+          "type": "damage",
+          "targetType": "enemy",
+          "icon": "🐾"
+        }
+      ]
+    },
+    "lootTable": [
+      { "itemId": "wolf_pelt", "chance": 0.7, "count": 1 }
+    ]
+  }
+}

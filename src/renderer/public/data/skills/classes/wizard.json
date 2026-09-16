@@ -1,0 +1,56 @@
+{
+  "skill_branches": [
+    {
+      "id": "evocation",
+      "name": "Воплощение",
+      "icon": "🔥",
+      "description": "Разрушительная боевая магия"
+    }
+  ],
+  "skills": [
+    {
+      "id": "wizard_magic_arrow",
+      "name": "Магическая стрела",
+      "icon": "🔮",
+      "description": "Базовое заклинание чистой магической энергии первого круга. Тратит очки спелов (MP).",
+      "branch": "evocation",
+      "category": "spell",
+      "grid_col": 0,
+      "req_level": 1,
+      "max_level": 1,
+      "cost": 1,
+      "cost_type": "spell_point",
+      "level_points_given": 1,
+      "parent_ids": [],
+      "parent_requirement": "all",
+      "data": {
+        "type": "spell",
+        "damage": 80,
+        "mp_cost": 10
+      }
+    },
+    {
+      "id": "wizard_fireball",
+      "name": "Огненный шар",
+      "icon": "💥",
+      "description": "Классическое заклинание третьего круга, наносящее урон по площади. Требует 2 уровень мага.",
+      "branch": "evocation",
+      "category": "spell",
+      "grid_col": 0,
+      "req_level": 2,
+      "max_level": 1,
+      "cost": 2,
+      "cost_type": "spell_point",
+      "level_points_given": 1,
+      "parent_ids": [
+        "wizard_magic_arrow"
+      ],
+      "parent_requirement": "all",
+      "data": {
+        "type": "spell",
+        "aoe_damage": 240,
+        "mp_cost": 30
+      }
+    }
+  ]
+}

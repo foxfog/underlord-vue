@@ -14,6 +14,8 @@ const entities = ref({
 })
 const globalTags = ref([])
 const itemCategories = ref([])
+const itemSkills = ref([])
+const talents = ref([])
 const activeLocale = ref('ru')
 const availableLocales = ref([
 	{ code: 'ru', label: 'Русский', flag: '🇷🇺' },
@@ -119,6 +121,37 @@ export function useDataEditor() {
 		return { success: true, simulated: true, path: relativePath }
 	}
 
+	async function deleteDataFile(relativePath) {
+		if (typeof window !== 'undefined' && window.electronAPI?.dataEditor?.deleteFile) {
+			const res = await window.electronAPI.dataEditor.deleteFile(relativePath)
+			return res
+		}
+		// In dev/test without Electron IPC
+		console.warn(`[DataEditor] Deleting without Electron IPC: ${relativePath}`)
+		return { success: true, simulated: true, path: relativePath }
+	}
+
+	async function listDirectory(relativeDir) {
+		if (typeof window !== 'undefined' && window.electronAPI?.dataEditor?.listFiles) {
+			const res = await window.electronAPI.dataEditor.listFiles(relativeDir)
+			if (res.success && Array.isArray(res.files)) return res.files
+			return []
+		}
+		if (typeof process !== 'undefined' && process.versions?.node) {
+			try {
+				const fs = await import('fs')
+				const p = await import('path')
+				const fullPath = p.resolve(process.cwd(), basePath.value, relativeDir)
+				if (fs.existsSync(fullPath)) {
+					return fs.readdirSync(fullPath).filter((f) => f.endsWith('.json'))
+				}
+			} catch (err) {
+				return []
+			}
+		}
+		return []
+	}
+
 	// Initialize paths and load all datasets
 	async function init() {
 		isLoading.value = true
@@ -138,7 +171,7 @@ export function useDataEditor() {
 
 	// Load all collections and global tags
 	async function loadAll() {
-		const [chars, classes, fractions, races, equipItems, otherItems, tagsList, categoriesList] = await Promise.all([
+		const [chars, classes, fractions, races, equipItems, otherItems, tagsList, categoriesList, loadedItemSkills, loadedTalents] = await Promise.all([
 			readDataFile('characters/characters_data.json'),
 			readDataFile('classes/classes.json'),
 			readDataFile('fractions/fractions.json'),
@@ -146,8 +179,26 @@ export function useDataEditor() {
 			readDataFile('items/equipment.json'),
 			readDataFile('items/other.json'),
 			readDataFile('tags/tags.json'),
-			readDataFile('items/categories.json')
+			readDataFile('items/categories.json'),
+			readDataFile('skills/items/items.json'),
+			readDataFile('skills/talents/talents.json')
 		])
+
+		if (Array.isArray(loadedItemSkills)) {
+			itemSkills.value = loadedItemSkills
+		} else if (loadedItemSkills && Array.isArray(loadedItemSkills.skills)) {
+			itemSkills.value = loadedItemSkills.skills
+		} else {
+			itemSkills.value = []
+		}
+
+		if (Array.isArray(loadedTalents)) {
+			talents.value = loadedTalents
+		} else if (loadedTalents && Array.isArray(loadedTalents.talents)) {
+			talents.value = loadedTalents.talents
+		} else {
+			talents.value = []
+		}
 
 		// Classes
 		entities.value.classes = buildHierarchicalOrder(Array.isArray(classes) ? classes : [])
@@ -157,6 +208,62 @@ export function useDataEditor() {
 
 		// Races
 		entities.value.races = buildHierarchicalOrder(Array.isArray(races) ? races : [])
+
+		// Load individual skill files for classes from data/skills/classes/<id>.json
+		const classSkillFiles = await listDirectory('skills/classes')
+		if (classSkillFiles.length > 0) {
+			await Promise.all(
+				classSkillFiles.map(async (fileName) => {
+					if (!fileName.endsWith('.json')) return
+					const classId = fileName.replace('.json', '')
+					const skillData = await readDataFile(`skills/classes/${fileName}`)
+					const targetClass = entities.value.classes.find((c) => c.id === classId)
+					if (targetClass && skillData) {
+						targetClass.skill_branches = Array.isArray(skillData.skill_branches) ? skillData.skill_branches : []
+						targetClass.skills = Array.isArray(skillData.skills) ? skillData.skills : []
+					}
+				})
+			)
+		} else {
+			// Web/fallback: attempt loading skills for known classes
+			await Promise.all(
+				entities.value.classes.map(async (c) => {
+					const skillData = await readDataFile(`skills/classes/${c.id}.json`)
+					if (skillData) {
+						c.skill_branches = Array.isArray(skillData.skill_branches) ? skillData.skill_branches : []
+						c.skills = Array.isArray(skillData.skills) ? skillData.skills : []
+					}
+				})
+			)
+		}
+
+		// Load individual skill files for races from data/skills/races/<id>.json
+		const raceSkillFiles = await listDirectory('skills/races')
+		if (raceSkillFiles.length > 0) {
+			await Promise.all(
+				raceSkillFiles.map(async (fileName) => {
+					if (!fileName.endsWith('.json')) return
+					const raceId = fileName.replace('.json', '')
+					const skillData = await readDataFile(`skills/races/${fileName}`)
+					const targetRace = entities.value.races.find((r) => r.id === raceId)
+					if (targetRace && skillData) {
+						targetRace.skill_branches = Array.isArray(skillData.skill_branches) ? skillData.skill_branches : []
+						targetRace.skills = Array.isArray(skillData.skills) ? skillData.skills : []
+					}
+				})
+			)
+		} else {
+			// Web/fallback: attempt loading skills for known races
+			await Promise.all(
+				entities.value.races.map(async (r) => {
+					const skillData = await readDataFile(`skills/races/${r.id}.json`)
+					if (skillData) {
+						r.skill_branches = Array.isArray(skillData.skill_branches) ? skillData.skill_branches : []
+						r.skills = Array.isArray(skillData.skills) ? skillData.skills : []
+					}
+				})
+			)
+		}
 
 		// Characters
 		entities.value.characters = Array.isArray(chars) ? chars : []
@@ -233,6 +340,7 @@ export function useDataEditor() {
 					classs: [],
 					fractions: [],
 					tags: [],
+					talents: [],
 					description: ''
 				}
 			case 'classes':
@@ -241,6 +349,7 @@ export function useDataEditor() {
 					name: '',
 					icon: '⚔️',
 					parent_id: null,
+					category: 'combat',
 					tags: [],
 					lvl_min: 1,
 					tier: 'basic',
@@ -302,13 +411,19 @@ export function useDataEditor() {
 		}
 	}
 
-	function startCreate() {
-		const newEntity = createEmptyEntity(activeTab.value)
+	function startCreate(presetData = {}) {
+		const newEntity = { ...createEmptyEntity(activeTab.value), ...presetData }
+		if (newEntity.parent_id && (activeTab.value === 'classes' || activeTab.value === 'races')) {
+			const parent = entities.value[activeTab.value]?.find((e) => e.id === newEntity.parent_id)
+			if (parent?.category) {
+				newEntity.category = parent.category
+			}
+		}
 		const _loc = {}
 		for (const l of availableLocales.value) {
 			_loc[l.code] = {
-				name: '',
-				description: '',
+				name: newEntity.name || '',
+				description: newEntity.description || '',
 				names: []
 			}
 		}
@@ -475,6 +590,19 @@ export function useDataEditor() {
 			list.push(cleanData)
 		}
 
+		// Cascade category to all descendants if classes or races
+		if ((targetType === 'classes' || targetType === 'races') && cleanData.category) {
+			function updateDescendantsCategory(parentId, cat) {
+				for (const item of list) {
+					if (item.parent_id === parentId) {
+						item.category = cat
+						updateDescendantsCategory(item.id, cat)
+					}
+				}
+			}
+			updateDescendantsCategory(cleanData.id, cleanData.category)
+		}
+
 		if (isHierarchicalType(targetType)) {
 			entities.value[targetType] = buildHierarchicalOrder(list)
 		}
@@ -495,6 +623,21 @@ export function useDataEditor() {
 
 		// Persist changes to filesystem
 		await persistTypeToFile(targetType)
+
+		// Persist or delete individual skill file for classes or races
+		if (targetType === 'classes' || targetType === 'races') {
+			const hasSkills =
+				(Array.isArray(cleanData.skills) && cleanData.skills.length > 0) ||
+				(Array.isArray(cleanData.skill_branches) && cleanData.skill_branches.length > 0)
+			if (hasSkills) {
+				await writeDataFile(`skills/${targetType}/${cleanData.id}.json`, {
+					skill_branches: cleanData.skill_branches || [],
+					skills: cleanData.skills || []
+				})
+			} else {
+				await deleteDataFile(`skills/${targetType}/${cleanData.id}.json`)
+			}
+		}
 
 		// Re-prepare selectedEntity with _locales if still selected
 		const freshCloned = JSON.parse(JSON.stringify(cleanData))
@@ -561,6 +704,11 @@ export function useDataEditor() {
 		// Persist changes
 		await persistTypeToFile(targetType)
 
+		// Delete associated skill file if class or race
+		if (targetType === 'classes' || targetType === 'races') {
+			await deleteDataFile(`skills/${targetType}/${entityId}.json`)
+		}
+
 		const typeLabel = getTypeLabel(targetType)
 		setStatus(`✔ ${typeLabel} "${removed.name || removed.id}" успешно удален(а)!`, 'info')
 		return { success: true }
@@ -587,6 +735,76 @@ export function useDataEditor() {
 		setStatus(`✔ Тег "${tag}" удалён из tags.json!`, 'info')
 	}
 
+	// Item Skills Management (skills/items/items.json)
+	async function persistItemSkills() {
+		await writeDataFile('skills/items/items.json', itemSkills.value)
+	}
+
+	async function saveItemSkill(skill) {
+		if (!skill || !skill.id) throw new Error('ID навыка не может быть пустым')
+		const cleanSkill = {
+			id: String(skill.id).trim(),
+			name: String(skill.name || skill.id).trim(),
+			icon: skill.icon || '⚔️',
+			category: skill.category || 'active',
+			description: skill.description || '',
+			data: skill.data && typeof skill.data === 'object' ? skill.data : {}
+		}
+		const idx = itemSkills.value.findIndex((s) => s.id === cleanSkill.id)
+		if (idx >= 0) {
+			itemSkills.value[idx] = cleanSkill
+		} else {
+			itemSkills.value.push(cleanSkill)
+		}
+		await persistItemSkills()
+		setStatus(`✔ Навык предмета "${cleanSkill.name}" сохранён в skills/items/items.json!`)
+		return cleanSkill
+	}
+
+	async function deleteItemSkill(skillId) {
+		const idx = itemSkills.value.findIndex((s) => s.id === skillId)
+		if (idx >= 0) {
+			const [removed] = itemSkills.value.splice(idx, 1)
+			await persistItemSkills()
+			setStatus(`✔ Навык предмета "${removed.name || removed.id}" удалён из skills/items/items.json!`, 'info')
+		}
+	}
+
+	// Character Talents Management (skills/talents/talents.json)
+	async function persistTalents() {
+		await writeDataFile('skills/talents/talents.json', talents.value)
+	}
+
+	async function saveTalent(talent) {
+		if (!talent || !talent.id) throw new Error('ID таланта не может быть пустым')
+		const cleanTalent = {
+			id: String(talent.id).trim(),
+			name: String(talent.name || talent.id).trim(),
+			icon: talent.icon || '🌟',
+			category: talent.category || 'passive',
+			description: talent.description || '',
+			data: talent.data && typeof talent.data === 'object' ? talent.data : {}
+		}
+		const idx = talents.value.findIndex((t) => t.id === cleanTalent.id)
+		if (idx >= 0) {
+			talents.value[idx] = cleanTalent
+		} else {
+			talents.value.push(cleanTalent)
+		}
+		await persistTalents()
+		setStatus(`✔ Талант "${cleanTalent.name}" сохранён в skills/talents/talents.json!`)
+		return cleanTalent
+	}
+
+	async function deleteTalent(talentId) {
+		const idx = talents.value.findIndex((t) => t.id === talentId)
+		if (idx >= 0) {
+			const [removed] = talents.value.splice(idx, 1)
+			await persistTalents()
+			setStatus(`✔ Талант "${removed.name || removed.id}" удалён из skills/talents/talents.json!`, 'info')
+		}
+	}
+
 	// Persist changes for a specific entity type to disk
 	async function persistTypeToFile(targetType) {
 		switch (targetType) {
@@ -600,7 +818,14 @@ export function useDataEditor() {
 				break
 			}
 			case 'classes': {
-				await writeDataFile('classes/classes.json', entities.value.classes)
+				// Strip skills and skill_branches so classes.json stays lean
+				const cleanClasses = entities.value.classes.map((c) => {
+					const clone = { ...c }
+					delete clone.skill_branches
+					delete clone.skills
+					return clone
+				})
+				await writeDataFile('classes/classes.json', cleanClasses)
 				break
 			}
 			case 'fractions': {
@@ -608,7 +833,14 @@ export function useDataEditor() {
 				break
 			}
 			case 'races': {
-				await writeDataFile('races/races.json', entities.value.races)
+				// Strip skills and skill_branches so races.json stays lean
+				const cleanRaces = entities.value.races.map((r) => {
+					const clone = { ...r }
+					delete clone.skill_branches
+					delete clone.skills
+					return clone
+				})
+				await writeDataFile('races/races.json', cleanRaces)
 				break
 			}
 			case 'tags': {
@@ -672,11 +904,42 @@ export function useDataEditor() {
 			copy.races = Array.isArray(copy.races) ? copy.races : []
 			copy.classs = Array.isArray(copy.classs) ? copy.classs : []
 			copy.fractions = Array.isArray(copy.fractions) ? copy.fractions : []
+
+			if (Array.isArray(copy.talents)) {
+				copy.talents = copy.talents.map((t) => String(t).trim()).filter(Boolean)
+				if (copy.talents.length === 0) delete copy.talents
+			} else if (typeof copy.talents === 'string') {
+				copy.talents = copy.talents.split(',').map((t) => t.trim()).filter(Boolean)
+				if (copy.talents.length === 0) delete copy.talents
+			} else {
+				delete copy.talents
+			}
 		}
 
 		if (type === 'classes' || type === 'races') {
 			if (copy.lvl_min !== undefined) copy.lvl_min = Number(copy.lvl_min) || 1
 			if (copy.parent_id === '') copy.parent_id = null
+
+			// Auto-inheritance of category from parent if parent_id exists
+			if (copy.parent_id) {
+				const parentItem = entities.value[type]?.find((item) => item.id === copy.parent_id)
+				if (parentItem?.category) {
+					copy.category = parentItem.category
+				}
+			}
+
+			// Validate category fallbacks if not inherited or if root
+			if (type === 'classes') {
+				const validClassCats = ['combat', 'social', 'craft']
+				if (!validClassCats.includes(copy.category)) {
+					copy.category = 'combat'
+				}
+			} else if (type === 'races') {
+				const validRaceCats = ['humanoid', 'demi-human', 'heteromorphic']
+				if (!validRaceCats.includes(copy.category)) {
+					copy.category = 'humanoid'
+				}
+			}
 
 			if (Array.isArray(copy.skill_branches) && copy.skill_branches.length > 0) {
 				copy.skill_branches = copy.skill_branches.map(normalizeSkillBranch)
@@ -722,6 +985,17 @@ export function useDataEditor() {
 				copy.rarity = String(copy.rarity).trim().toLowerCase()
 			}
 
+			// Skills
+			if (Array.isArray(copy.skills)) {
+				copy.skills = copy.skills.map((s) => String(s).trim()).filter(Boolean)
+				if (copy.skills.length === 0) delete copy.skills
+			} else if (typeof copy.skills === 'string') {
+				copy.skills = copy.skills.split(',').map((s) => s.trim()).filter(Boolean)
+				if (copy.skills.length === 0) delete copy.skills
+			} else {
+				delete copy.skills
+			}
+
 			// Omit empty arrays to avoid cluttering JSON as requested
 			if (copy.characters.length === 0) delete copy.characters
 			if (copy.races.length === 0) delete copy.races
@@ -758,11 +1032,11 @@ export function useDataEditor() {
 			case 'characters':
 				return 'characters/characters_data.json'
 			case 'classes':
-				return 'classes/classes.json'
+				return 'classes/classes.json (+ skills/classes/<id>.json)'
 			case 'fractions':
 				return 'fractions/fractions.json'
 			case 'races':
-				return 'races/races.json'
+				return 'races/races.json (+ skills/races/<id>.json)'
 			case 'items':
 				return 'items/equipment.json & other.json'
 			case 'tags':
@@ -1029,8 +1303,8 @@ export function useDataEditor() {
 
 	// Known standard keys per type to identify custom/manual JSON fields
 	const STANDARD_KEYS = {
-		characters: ['id', 'name', 'names', 'icon', 'gender', 'races', 'classs', 'fractions', 'tags', 'description'],
-		classes: ['id', 'name', 'icon', 'parent_id', 'tags', 'lvl_min', 'description', 'skill_branches', 'skills'],
+		characters: ['id', 'name', 'names', 'icon', 'gender', 'races', 'classs', 'fractions', 'tags', 'talents', 'description'],
+		classes: ['id', 'name', 'icon', 'parent_id', 'category', 'tier', 'skill_points_per_level', 'spell_points_per_level', 'tags', 'lvl_min', 'description', 'skill_branches', 'skills'],
 		fractions: ['id', 'name', 'icon', 'type', 'parent_id', 'tags', 'description'],
 		races: ['id', 'name', 'icon', 'parent_id', 'category', 'tags', 'lvl_min', 'description', 'skill_branches', 'skills'],
 		items: [
@@ -1053,6 +1327,7 @@ export function useDataEditor() {
 			'classes',
 			'genders',
 			'tags',
+			'skills',
 			'description'
 		],
 		tags: []
@@ -1412,11 +1687,13 @@ export function useDataEditor() {
 		init,
 		loadAll,
 		createEmptyEntity,
+		normalizeEntity,
 		startCreate,
 		startEdit,
 		cancelEdit,
 		saveEntity,
 		deleteEntity,
+		persistTypeToFile,
 		addGlobalTag,
 		deleteGlobalTag,
 		getCharacterInheritedTags,
@@ -1456,6 +1733,14 @@ export function useDataEditor() {
 		STANDARD_KEYS,
 		itemCategories,
 		getItemCategoryName,
+		itemSkills,
+		saveItemSkill,
+		deleteItemSkill,
+		persistItemSkills,
+		talents,
+		saveTalent,
+		deleteTalent,
+		persistTalents,
 		ITEM_RARITIES,
 		getRarity,
 		getRarityColor,

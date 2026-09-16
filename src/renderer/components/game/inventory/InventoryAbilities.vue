@@ -17,6 +17,10 @@
 					<div class="ability-header-row">
 						<span class="ability-name">{{ ability.name }}</span>
 						<span v-if="ability.branch" class="ability-branch-pill">{{ ability.branch }}</span>
+						<span v-if="ability.isTalent" class="ability-talent-pill">🌟 Талант</span>
+						<span v-if="ability.sourceItem" class="ability-source-pill" :title="ability.sourceUid ? `Экземпляр: ${ability.sourceUid}` : 'Снаряжение'">
+							🗡️ {{ ability.sourceItem }}
+						</span>
 					</div>
 
 					<div class="ability-description">{{ ability.description || 'Нет описания' }}</div>
@@ -154,6 +158,26 @@ function formatParamKey(key) {
 	background: rgba(59, 130, 246, 0.2);
 	border: 1px solid #3b82f6;
 	color: #93c5fd;
+	padding: 0.1em 0.45em;
+	border-radius: 0.25em;
+}
+
+.ability-talent-pill {
+	font-size: 0.75em;
+	background: rgba(234, 179, 8, 0.25);
+	border: 1px solid #eab308;
+	color: #fef08a;
+	padding: 0.1em 0.45em;
+	border-radius: 0.25em;
+	font-weight: bold;
+	box-shadow: 0 0 0.4em rgba(234, 179, 8, 0.3);
+}
+
+.ability-source-pill {
+	font-size: 0.75em;
+	background: rgba(245, 158, 11, 0.2);
+	border: 1px solid #f59e0b;
+	color: #fcd34d;
 	padding: 0.1em 0.45em;
 	border-radius: 0.25em;
 }

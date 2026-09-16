@@ -123,7 +123,8 @@ const emit = defineEmits([
 	'action-failed',
 	'exit-triggered',
 	'forge-requested',
-	'chest-opened'
+	'chest-opened',
+	'combat-requested'
 ])
 
 const containerRef = ref(null)
@@ -981,6 +982,9 @@ function getContextMenuIcon(obj) {
 	if (obj.action === 'weed' || obj.type === 'weed') return '🌿'
 	if (obj.action === 'forge' || obj.type === 'anvil') return '⚒️'
 	if (obj.action === 'open_chest' || obj.type === 'chest') return '💎'
+	if (obj.type === 'mob' || obj.type === 'mob_spawn' || obj.type === 'mob_pack' || obj.action === 'combat') {
+		return obj.icon || '💀'
+	}
 	return obj.icon || '📦'
 }
 
@@ -989,6 +993,9 @@ function getContextMenuDefaultTitle(obj) {
 	if (obj.action === 'weed' || obj.type === 'weed') return 'Сорняк'
 	if (obj.action === 'forge' || obj.type === 'anvil') return 'Наковальня'
 	if (obj.action === 'open_chest' || obj.type === 'chest') return 'Сундук'
+	if (obj.type === 'mob' || obj.type === 'mob_spawn' || obj.type === 'mob_pack' || obj.action === 'combat') {
+		return obj.name || 'Противник'
+	}
 	return 'Объект'
 }
 
@@ -997,6 +1004,9 @@ function getContextMenuActionLabel(obj) {
 	if (obj.action === 'weed' || obj.type === 'weed') return 'Собрать'
 	if (obj.action === 'forge' || obj.type === 'anvil') return 'Ковать (Мечи)'
 	if (obj.action === 'open_chest' || obj.type === 'chest') return 'Открыть сундук'
+	if (obj.type === 'mob' || obj.type === 'mob_spawn' || obj.type === 'mob_pack' || obj.action === 'combat') {
+		return obj.behavior === 'sleeping' ? 'Разбудить / Атаковать' : 'Атаковать'
+	}
 	return 'Взаимодействовать'
 }
 
@@ -1012,6 +1022,40 @@ function checkExitTrigger() {
 	)
 	if (exit) {
 		emit('exit-triggered', exit)
+	}
+}
+
+function checkMobAggroTrigger() {
+	if (props.mode === 'editor' || !player.value) return
+	const px = player.value.x
+	const py = player.value.y
+
+	for (const obj of objects.value) {
+		if (obj.type !== 'mob' && obj.type !== 'mob_spawn' && obj.type !== 'mob_pack' && obj.action !== 'combat') continue
+		if (obj.defeated) continue
+
+		const dist = Math.max(Math.abs(obj.x - px), Math.abs(obj.y - py))
+		const behavior = obj.behavior || 'hostile'
+
+		// Sleeping mob: does not aggro from afar; only alerts when stepped adjacent (dist <= 1)
+		if (behavior === 'sleeping') {
+			if (dist <= 1) {
+				obj.status = 'alerted'
+				requestRender()
+				emit('combat-requested', obj)
+				return
+			}
+			continue
+		}
+
+		// Hostile / Guard / Patrol mobs: check aggro radius (default 3 tiles)
+		const aggroRadius = obj.aggroRadius ?? (behavior === 'guard' ? 2 : 3)
+		if (dist <= aggroRadius && (behavior === 'hostile' || behavior === 'guard' || behavior === 'patrol')) {
+			obj.status = 'alerted'
+			requestRender()
+			emit('combat-requested', obj)
+			return
+		}
 	}
 }
 
@@ -1319,6 +1363,9 @@ function executeObjectAction(obj) {
 			emit('quest-completed')
 		}
 		requestRender()
+	} else if (obj.action === 'combat' || obj.type === 'mob' || obj.type === 'mob_spawn' || obj.type === 'mob_pack') {
+		emit('combat-requested', obj)
+		emit('object-interacted', obj)
 	} else if (obj.action === 'forge' || obj.type === 'anvil') {
 		emit('forge-requested', obj)
 		emit('object-interacted', obj)
@@ -1379,6 +1426,7 @@ function movePlayerAlongPath(path, onComplete = null) {
 				stepsTaken: path.length
 			})
 			checkExitTrigger()
+			checkMobAggroTrigger()
 			requestRender()
 			if (onComplete) onComplete()
 			return
@@ -2121,6 +2169,42 @@ function renderObjectGraphic(ctx, obj, pos, tileW, tileH, heightStep) {
 		ctx.textAlign = 'center'
 		ctx.textBaseline = 'bottom'
 		ctx.fillText(obj.icon || '📦', 0, 2)
+	} else if (obj.type === 'mob' || obj.type === 'mob_spawn' || obj.type === 'mob_pack' || obj.action === 'combat') {
+		const star = obj.star || obj.stars || 2
+		ctx.save()
+		ctx.beginPath()
+		ctx.ellipse(0, 0, 14, 7, 0, 0, Math.PI * 2)
+		if (star >= 5) {
+			ctx.fillStyle = 'rgba(250, 204, 21, 0.45)'
+		} else if (star === 4) {
+			ctx.fillStyle = 'rgba(168, 85, 247, 0.35)'
+		} else if (star === 3) {
+			ctx.fillStyle = 'rgba(59, 130, 246, 0.3)'
+		} else {
+			ctx.fillStyle = 'rgba(239, 68, 68, 0.25)'
+		}
+		ctx.fill()
+		ctx.restore()
+
+		ctx.font = '24px sans-serif'
+		ctx.textAlign = 'center'
+		ctx.textBaseline = 'bottom'
+		ctx.fillText(obj.icon || '💀', 0, 4)
+
+		ctx.textAlign = 'center'
+		ctx.textBaseline = 'bottom'
+		if (obj.status === 'sleeping' || obj.behavior === 'sleeping') {
+			ctx.font = '13px sans-serif'
+			ctx.fillText('💤', 8, -24)
+		} else if (obj.status === 'alerted') {
+			ctx.font = 'bold 15px sans-serif'
+			ctx.fillText('❗️', 0, -26)
+		} else if (star >= 3) {
+			const starsText = '★'.repeat(star)
+			ctx.font = 'bold 9px sans-serif'
+			ctx.fillStyle = star >= 5 ? '#facc15' : (star === 4 ? '#c084fc' : '#60a5fa')
+			ctx.fillText(starsText, 0, -24)
+		}
 	} else {
 		ctx.font = '20px sans-serif'
 		ctx.textAlign = 'center'

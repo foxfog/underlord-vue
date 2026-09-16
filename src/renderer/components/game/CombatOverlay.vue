@@ -217,7 +217,8 @@ import { processEnemyTurn } from '@/composables/useCombatAI'
 import IsoCombatArena from '@/components/game/combat/IsoCombatArena.vue'
 
 const props = defineProps({
-	encounterId: { type: String, required: true }
+	encounterId: { type: String, default: 'carne_bandits' },
+	encounterData: { type: Object, default: null }
 })
 
 const emit = defineEmits(['combat-end'])
@@ -233,6 +234,12 @@ let enemyTurnTimer = null
 
 async function loadEncounter() {
 	try {
+		if (props.encounterData) {
+			encounterData.value = props.encounterData
+			store.initCombat(props.encounterData)
+			moveMode.value = store.isPlayerTurn && store.currentUnit?.ap >= 1
+			return
+		}
 		const url = `/data/combat/encounters/${props.encounterId}.json`
 		const resp = await fetch(url)
 		if (!resp.ok) throw new Error(`HTTP ${resp.status}`)

@@ -11,161 +11,10 @@
     ],
     "lvl_min": 1,
     "description": "Мастер ближнего боя, использующий тяжёлое оружие и доспехи для сокрушения противников.",
-    "skill_branches": [
-      {
-        "id": "swordsmanship",
-        "name": "Фехтование",
-        "icon": "🗡️",
-        "description": "Ветка владения холодным оружием и нанесения урона"
-      },
-      {
-        "id": "defense",
-        "name": "Защита",
-        "icon": "🛡️",
-        "description": "Ветка выживаемости, брони и парирования"
-      }
-    ],
-    "skills": [
-      {
-        "id": "warrior_slash",
-        "name": "Рассечение",
-        "icon": "⚔️",
-        "description": "Базовый рубящий удар мечом. При прокачке дает очко уровня классу.",
-        "branch": "swordsmanship",
-        "category": "active",
-        "grid_col": 0,
-        "req_level": 1,
-        "max_level": 1,
-        "cost": 1,
-        "level_points_given": 1,
-        "parent_ids": [],
-        "parent_requirement": "all",
-        "data": {
-          "type": "active",
-          "damage": 100,
-          "ap_cost": 2
-        },
-        "cost_type": "skill_point"
-      },
-      {
-        "id": "warrior_shield_block",
-        "name": "Блок щитом",
-        "icon": "🛡️",
-        "description": "Базовая защитная стойка со щитом. При прокачке дает очко уровня классу.",
-        "branch": "defense",
-        "category": "passive",
-        "grid_col": 2,
-        "req_level": 1,
-        "max_level": 1,
-        "cost": 1,
-        "level_points_given": 1,
-        "parent_ids": [],
-        "parent_requirement": "all",
-        "data": {
-          "type": "passive",
-          "armor_bonus": 15
-        },
-        "cost_type": "skill_point"
-      },
-      {
-        "id": "warrior_cross_slash",
-        "name": "Крестовой выпад",
-        "icon": "✨",
-        "description": "Мощная связка из двух ударов. Требует 1 уровень класса и изученное Рассечение.",
-        "branch": "swordsmanship",
-        "category": "active",
-        "grid_col": 0,
-        "req_level": 2,
-        "max_level": 1,
-        "cost": 2,
-        "level_points_given": 1,
-        "parent_ids": [
-          "warrior_slash"
-        ],
-        "parent_requirement": "all",
-        "data": {
-          "type": "active",
-          "damage": 220,
-          "ap_cost": 3,
-          "cooldown": 2
-        },
-        "cost_type": "skill_point"
-      },
-      {
-        "id": "warrior_iron_wall",
-        "name": "Железная стена",
-        "icon": "🧱",
-        "description": "Непробиваемая стойка. Требует 1 уровень класса и изученный Блок щитом.",
-        "branch": "defense",
-        "category": "buff",
-        "grid_col": 2,
-        "req_level": 2,
-        "max_level": 1,
-        "cost": 2,
-        "level_points_given": 1,
-        "parent_ids": [
-          "warrior_shield_block"
-        ],
-        "parent_requirement": "all",
-        "data": {
-          "type": "passive",
-          "block_chance": 25
-        },
-        "cost_type": "skill_point"
-      },
-      {
-        "id": "warrior_counter_parry",
-        "name": "Контратакующее парирование",
-        "icon": "🌀",
-        "description": "Тактический маневр. Требует 2 уровень класса и знания ЛИБО Крестового выпада, ЛИБО Железной стены.",
-        "branch": "swordsmanship",
-        "category": "active",
-        "grid_col": 0,
-        "req_level": 3,
-        "max_level": 1,
-        "cost": 2,
-        "level_points_given": 2,
-        "parent_ids": [
-          "warrior_cross_slash",
-          "warrior_iron_wall"
-        ],
-        "parent_requirement": "any",
-        "data": {
-          "type": "active",
-          "parry_counter": 50,
-          "duration_turns": 2
-        },
-        "cost_type": "skill_point"
-      },
-      {
-        "id": "warrior_blade_storm",
-        "name": "Буря клинков",
-        "icon": "🌪️",
-        "description": "Вершина воинского мастерства. Требует 2 уровень класса и знания ВСЕХ предшествующих техник (Крестовой выпад И Железная стена).",
-        "branch": "swordsmanship",
-        "category": "active",
-        "grid_col": 2,
-        "req_level": 3,
-        "max_level": 1,
-        "cost": 3,
-        "level_points_given": 2,
-        "parent_ids": [
-          "warrior_cross_slash",
-          "warrior_iron_wall"
-        ],
-        "parent_requirement": "all",
-        "data": {
-          "type": "active",
-          "aoe_damage": 350,
-          "ap_cost": 4,
-          "cooldown": 4
-        },
-        "cost_type": "skill_point"
-      }
-    ],
     "tier": "basic",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "combat"
   },
   {
     "id": "berserker",
@@ -181,7 +30,8 @@
     "description": "Неистовый боец, впадающий в боевую ярость и жертвующий защитой ради колоссального урона.",
     "tier": "advanced",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "combat"
   },
   {
     "id": "knight",
@@ -198,7 +48,8 @@
     "description": "Тяжеловооружённый защитник чести, обученный стойкой обороне и командному бою.",
     "tier": "advanced",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "combat"
   },
   {
     "id": "paladin",
@@ -215,7 +66,8 @@
     "description": "Священный воин света, сочетающий воинскую доблесть с исцелением и защитной аурой.",
     "tier": "advanced",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "combat"
   },
   {
     "id": "cursed-paladin",
@@ -232,7 +84,8 @@
     "description": "Падший рыцарь, использующий силу тёмных клятв и проклятий во вред врагам.",
     "tier": "advanced",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "combat"
   },
   {
     "id": "valkyrie",
@@ -249,7 +102,8 @@
     "description": "Воинственная дева битвы с копьём, карающая врагов священной яростью (Класс Шалтир).",
     "tier": "advanced",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "combat"
   },
   {
     "id": "dark-knight",
@@ -265,7 +119,8 @@
     "description": "Рыцарь тьмы, впитывающий страх врагов и наносящий сокрушительный нечестивый урон.",
     "tier": "advanced",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "combat"
   },
   {
     "id": "niflheim-knight",
@@ -281,7 +136,8 @@
     "description": "Элитный ледяной страж, закованный в мерзлоту северных преданий.",
     "tier": "advanced",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "combat"
   },
   {
     "id": "guardian",
@@ -297,7 +153,8 @@
     "description": "Непоколебимый щитоносец, специализирующийся на перехвате атак союзников.",
     "tier": "advanced",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "combat"
   },
   {
     "id": "fencer",
@@ -313,7 +170,8 @@
     "description": "Мастер быстрых и точных уколов шпагой, полагающийся на ловкость и парирование.",
     "tier": "advanced",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "combat"
   },
   {
     "id": "champion",
@@ -329,7 +187,8 @@
     "description": "Признанный ветеран сотен дуэлей, в совершенстве владеющий оружием.",
     "tier": "advanced",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "combat"
   },
   {
     "id": "world-champion",
@@ -346,7 +205,8 @@
     "description": "Легендарный титульный класс турниров Иггдрасиля. Обладает абсолютным физическим мастерством.",
     "tier": "rare",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "combat"
   },
   {
     "id": "slayer-of-evil",
@@ -362,7 +222,8 @@
     "description": "Фанатичный истребитель нежити и демонов, наносящий умноженный священный урон.",
     "tier": "advanced",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "combat"
   },
   {
     "id": "holy-lord",
@@ -378,7 +239,8 @@
     "description": "Высший ранг паладинов, распространяющий вокруг себя благословение небес.",
     "tier": "rare",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "combat"
   },
   {
     "id": "thief",
@@ -394,7 +256,8 @@
     "description": "Ловкий разведчик, искусный во взломе, карманных кражах и скрытном передвижении.",
     "tier": "basic",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "combat"
   },
   {
     "id": "assassin",
@@ -411,7 +274,8 @@
     "description": "Смертоносный мастер скрытных атак со спины и смертельных ядов.",
     "tier": "advanced",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "combat"
   },
   {
     "id": "ninja",
@@ -427,7 +291,8 @@
     "description": "Шпион и диверсант древнего восточного стиля, владеющий сюрикенами и теневыми техниками.",
     "tier": "advanced",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "combat"
   },
   {
     "id": "spy",
@@ -443,7 +308,8 @@
     "description": "Специалист по сбору разведданных, маскировке и проникновению на вражеские объекты.",
     "tier": "advanced",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "combat"
   },
   {
     "id": "detective",
@@ -458,7 +324,8 @@
     "description": "Мастер расследования следов, поиска улик и раскрытия тайн.",
     "tier": "advanced",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "combat"
   },
   {
     "id": "archer",
@@ -474,7 +341,8 @@
     "description": "Стрелок дальнего боя, поражающий противников градом точных стрел.",
     "tier": "basic",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "combat"
   },
   {
     "id": "monk",
@@ -490,7 +358,8 @@
     "description": "Мастер рукопашного боя без оружия, закаляющий тело до прочности стали.",
     "tier": "basic",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "combat"
   },
   {
     "id": "ki-master",
@@ -506,7 +375,8 @@
     "description": "Адепт внутренней энергии Ки, высвобождающий сокрушительные энергетические удары (Класс Себаса).",
     "tier": "advanced",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "combat"
   },
   {
     "id": "wizard",
@@ -523,60 +393,7 @@
     "tier": "basic",
     "skill_points_per_level": 1,
     "spell_points_per_level": 2,
-    "skill_branches": [
-      {
-        "id": "evocation",
-        "name": "Воплощение",
-        "icon": "🔥",
-        "description": "Разрушительная боевая магия"
-      }
-    ],
-    "skills": [
-      {
-        "id": "wizard_magic_arrow",
-        "name": "Магическая стрела",
-        "icon": "🔮",
-        "description": "Базовое заклинание чистой магической энергии первого круга. Тратит очки спелов (MP).",
-        "branch": "evocation",
-        "category": "spell",
-        "grid_col": 0,
-        "req_level": 1,
-        "max_level": 1,
-        "cost": 1,
-        "cost_type": "spell_point",
-        "level_points_given": 1,
-        "parent_ids": [],
-        "parent_requirement": "all",
-        "data": {
-          "type": "spell",
-          "damage": 80,
-          "mp_cost": 10
-        }
-      },
-      {
-        "id": "wizard_fireball",
-        "name": "Огненный шар",
-        "icon": "💥",
-        "description": "Классическое заклинание третьего круга, наносящее урон по площади. Требует 2 уровень мага.",
-        "branch": "evocation",
-        "category": "spell",
-        "grid_col": 0,
-        "req_level": 2,
-        "max_level": 1,
-        "cost": 2,
-        "cost_type": "spell_point",
-        "level_points_given": 1,
-        "parent_ids": [
-          "wizard_magic_arrow"
-        ],
-        "parent_requirement": "all",
-        "data": {
-          "type": "spell",
-          "aoe_damage": 240,
-          "mp_cost": 30
-        }
-      }
-    ]
+    "category": "combat"
   },
   {
     "id": "sorcerer",
@@ -592,7 +409,8 @@
     "description": "Маг с врождённым талантом к чародейству, творящий заклинания усилием воли.",
     "tier": "advanced",
     "skill_points_per_level": 1,
-    "spell_points_per_level": 2
+    "spell_points_per_level": 2,
+    "category": "combat"
   },
   {
     "id": "necromancer",
@@ -608,7 +426,8 @@
     "description": "Повелитель тёмных искусств, способный поднимать мертвецов и повелевать духами.",
     "tier": "advanced",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "combat"
   },
   {
     "id": "master-of-death",
@@ -625,7 +444,8 @@
     "description": "Высший маг смерти (Затмение), способный уничтожить саму жизнь заклинанием The Goal of All Life is Death.",
     "tier": "rare",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "combat"
   },
   {
     "id": "demonologist",
@@ -641,7 +461,8 @@
     "description": "Специалист по призыву и подчинению демонических созданий из глубин ада.",
     "tier": "advanced",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "combat"
   },
   {
     "id": "summoner",
@@ -656,7 +477,8 @@
     "description": "Маг, специализирующийся на вызове магических существ, элементалей и духов.",
     "tier": "advanced",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "combat"
   },
   {
     "id": "sage",
@@ -672,7 +494,8 @@
     "description": "Великий мыслитель и знаток арканы, открывающий доступ к древнейшим секретам мира.",
     "tier": "advanced",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "combat"
   },
   {
     "id": "cleric",
@@ -688,7 +511,8 @@
     "description": "Служитель богов, дарующий исцеление, благословения и защиту своей пастве.",
     "tier": "basic",
     "skill_points_per_level": 1,
-    "spell_points_per_level": 2
+    "spell_points_per_level": 2,
+    "category": "combat"
   },
   {
     "id": "bishop",
@@ -704,7 +528,8 @@
     "description": "Высокопоставленный священник с мощными массовыми молитвами исцеления.",
     "tier": "advanced",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "combat"
   },
   {
     "id": "churchman",
@@ -719,7 +544,8 @@
     "description": "Ревностный служитель церкви, укрепляющий моральный дух союзников.",
     "tier": "advanced",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "combat"
   },
   {
     "id": "miko",
@@ -735,7 +561,8 @@
     "description": "Жрица храма, проводящая обряды очищения от скверны и защиты от проклятий.",
     "tier": "advanced",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "combat"
   },
   {
     "id": "shaman",
@@ -751,7 +578,8 @@
     "description": "Связующее звено между миром духов и племенем, призывающий силы природы.",
     "tier": "basic",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "combat"
   },
   {
     "id": "general",
@@ -767,7 +595,8 @@
     "description": "Полководец, управляющий войсками на поле боя и вдохновляющий целые армии (Класс Энри).",
     "tier": "basic",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "social"
   },
   {
     "id": "noble",
@@ -782,7 +611,8 @@
     "description": "Аристократ высокого происхождения, обладающий авторитетом и богатством.",
     "tier": "basic",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "social"
   },
   {
     "id": "pack-leader",
@@ -797,7 +627,8 @@
     "description": "Лидер звериной или монструозной стаи, усиливающий стайных сородичей.",
     "tier": "basic",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "social"
   },
   {
     "id": "blood-drinker",
@@ -812,7 +643,8 @@
     "description": "Особый боевой класс, черпающий силы и выносливость из поглощаемой крови врагов.",
     "tier": "basic",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "combat"
   },
   {
     "id": "minimum",
@@ -827,7 +659,8 @@
     "description": "Минимум — это профессиональный класс, который позволяет пользователю менять форму или размер своего тела.",
     "tier": "basic",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "social"
   },
   {
     "id": "cavalry",
@@ -842,7 +675,8 @@
     "description": "Наездник на боевом коне, использующий скорость разгона для таранных атак.",
     "tier": "basic",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "social"
   },
   {
     "id": "beast-rider",
@@ -857,7 +691,8 @@
     "description": "Умелый всадник, управляющий экзотическими боевыми зверями и чудовищами.",
     "tier": "advanced",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "social"
   },
   {
     "id": "beast-tamer",
@@ -872,7 +707,8 @@
     "description": "Укротитель диких хищников, способный приручать и направлять их в бою.",
     "tier": "advanced",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "social"
   },
   {
     "id": "craftsman",
@@ -887,7 +723,8 @@
     "description": "Мастер ручного труда, способный создавать базовые предметы и инструменты.",
     "tier": "basic",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "craft"
   },
   {
     "id": "blacksmith",
@@ -902,7 +739,8 @@
     "description": "Мастер ковки металлов, создающий прочную броню и грозное холодное оружие.",
     "tier": "advanced",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "craft"
   },
   {
     "id": "runesmith",
@@ -918,7 +756,8 @@
     "description": "Древнее дварфийское ремесло наполнения оружия и брони магическими рунами.",
     "tier": "advanced",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "craft"
   },
   {
     "id": "weaponsmith",
@@ -933,7 +772,8 @@
     "description": "Специалист высочайшего класса по балансировке и заточке смертоносных клинков.",
     "tier": "advanced",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "craft"
   },
   {
     "id": "alchemist",
@@ -949,7 +789,8 @@
     "description": "Создатель зелий исцеления, ядов, алхимических смесей и реагентов.",
     "tier": "advanced",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "craft"
   },
   {
     "id": "jeweler",
@@ -964,7 +805,8 @@
     "description": "Мастер обработки драгоценных камней и зачарования ювелирных колец и амулетов.",
     "tier": "advanced",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "craft"
   },
   {
     "id": "tailor",
@@ -979,7 +821,8 @@
     "description": "Мастер пошива мантий заклинателей, одежды и лёгких кожаных доспехов.",
     "tier": "advanced",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "craft"
   },
   {
     "id": "merchant",
@@ -994,6 +837,7 @@
     "description": "Купец и переговорщик, знающий цену товарам и снижающий торговые издержки.",
     "tier": "basic",
     "skill_points_per_level": 2,
-    "spell_points_per_level": 0
+    "spell_points_per_level": 0,
+    "category": "craft"
   }
 ]

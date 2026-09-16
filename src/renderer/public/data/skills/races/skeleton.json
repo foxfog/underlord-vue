@@ -1,0 +1,56 @@
+{
+  "skill_branches": [
+    {
+      "id": "necromancy",
+      "name": "Некромантия и Кости",
+      "icon": "💀",
+      "description": "Управление костяной структурой и энергией смерти"
+    }
+  ],
+  "skills": [
+    {
+      "id": "skeleton_bone_armor",
+      "name": "Костяной панцирь",
+      "icon": "🦴",
+      "description": "Укрепляет костную ткань, уменьшая получаемый физический урон.",
+      "branch": "necromancy",
+      "category": "passive",
+      "grid_col": 0,
+      "req_level": 1,
+      "max_level": 1,
+      "cost": 1,
+      "level_points_given": 1,
+      "parent_ids": [],
+      "parent_requirement": "all",
+      "data": {
+        "type": "passive",
+        "pierce_resistance": 50,
+        "armor": 20
+      },
+      "cost_type": "skill_point"
+    },
+    {
+      "id": "skeleton_death_chill",
+      "name": "Загробный холод",
+      "icon": "❄️",
+      "description": "Окутывает атаки леденящей энергией отрицательной магии. Требует 1 уровень расы.",
+      "branch": "necromancy",
+      "category": "active",
+      "grid_col": 1,
+      "req_level": 2,
+      "max_level": 1,
+      "cost": 2,
+      "level_points_given": 1,
+      "parent_ids": [
+        "skeleton_bone_armor"
+      ],
+      "parent_requirement": "all",
+      "data": {
+        "type": "active",
+        "cold_damage": 80,
+        "slow_percent": 30
+      },
+      "cost_type": "skill_point"
+    }
+  ]
+}

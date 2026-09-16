@@ -1,3 +1,5 @@
+import { canCharacterBypassEquipRestrictions } from './talents.js'
+
 /**
  * Equipment calculation utilities
  */
@@ -48,18 +50,24 @@ export function calculateEquipmentBySlot(equipmentSlots = {}, equipmentList = []
 /**
  * Checks if a character meets all restrictions to equip a given item.
  *
- * @param {Object} character - Character data (id, lvl, gender, classs/classes, races/race)
+ * @param {Object} character - Character data (id, lvl, gender, classs/classes, races/race, talents)
  * @param {Object} itemDef - Item definition
  * @param {Object|null} invItem - Inventory item instance (optional)
+ * @param {Array<Object>|null} [talentsRegistry] - Optional registry of talent definitions
  * @returns {boolean} True if character can equip the item
  */
-export function canCharacterEquipItem(character, itemDef, invItem = null) {
+export function canCharacterEquipItem(character, itemDef, invItem = null, talentsRegistry = null) {
 	if (!itemDef) return false
 	if (invItem?.can_equip === false || invItem?.equippable === false) return false
 	if (itemDef?.can_equip === false || itemDef?.equippable === false) return false
 
 	// If no character is provided, allow by default unless explicitly disabled
 	if (!character) return true
+
+	// Inborn talent check: bypass all equip restrictions (Nfirea Bareare / Enri lore)
+	if (canCharacterBypassEquipRestrictions(character, talentsRegistry)) {
+		return true
+	}
 
 	// 1. Minimum Level Check
 	const minLvl = itemDef.lvl_min ?? itemDef.lvl ?? 0
@@ -114,9 +122,10 @@ export function canCharacterEquipItem(character, itemDef, invItem = null) {
  * @param {Object} character - Character data
  * @param {Object} itemDef - Item definition
  * @param {Object|null} invItem - Inventory item instance
+ * @param {Array<Object>|null} [talentsRegistry] - Optional registry of talent definitions
  * @returns {Array<string>} Array of restriction reasons
  */
-export function getEquipRestrictionReasons(character, itemDef, invItem = null) {
+export function getEquipRestrictionReasons(character, itemDef, invItem = null, talentsRegistry = null) {
 	const reasons = []
 	if (!itemDef) return reasons
 	if (invItem?.can_equip === false || invItem?.equippable === false || itemDef?.can_equip === false || itemDef?.equippable === false) {
@@ -124,6 +133,11 @@ export function getEquipRestrictionReasons(character, itemDef, invItem = null) {
 		return reasons
 	}
 	if (!character) return reasons
+
+	// Inborn talent check: bypass all equip restrictions
+	if (canCharacterBypassEquipRestrictions(character, talentsRegistry)) {
+		return reasons
+	}
 
 	const minLvl = itemDef.lvl_min ?? itemDef.lvl ?? 0
 	if (minLvl > 1) {

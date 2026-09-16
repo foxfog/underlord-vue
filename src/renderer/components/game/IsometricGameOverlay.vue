@@ -16,6 +16,7 @@
 			@exit-triggered="onExitTriggered"
 			@forge-requested="onForgeRequested"
 			@chest-opened="onChestOpened"
+			@combat-requested="onCombatRequested"
 		/>
 		<div v-else class="iso-loading">
 			<span>Загрузка локации...</span>
@@ -105,6 +106,7 @@ import ChestModal from '@/components/game/modals/ChestModal.vue'
 import { useIsometricLocations } from '@/composables/useIsometricLocations'
 import { useGameStore } from '@/stores/gameStore'
 import { parseLootString } from '@/utils/isometric/isoLoader.js'
+import { resolveEncounterFromSquad, createMobInstance } from '@/utils/combat/mobFactory.js'
 
 const props = defineProps({
 	locationId: {
@@ -113,7 +115,7 @@ const props = defineProps({
 	}
 })
 
-const emit = defineEmits(['exit', 'quest-completed'])
+const emit = defineEmits(['exit', 'quest-completed', 'combat-requested'])
 
 const gameStore = useGameStore()
 const isoCanvasRef = ref(null)
@@ -139,6 +141,10 @@ const { loadLocationById, applyScenarioPreset } = useIsometricLocations()
 async function loadLocation() {
 	const data = await loadLocationById(props.locationId)
 	if (data) {
+		const defeated = gameStore.globalData?.defeatedMobs || []
+		if (data.objects && defeated.length > 0) {
+			data.objects = data.objects.filter((o) => !defeated.includes(o.id))
+		}
 		const hasWeeds = (data.objects || []).some((o) => o.type === 'weed') || props.locationId.includes('garden')
 		const withPreset = hasWeeds ? applyScenarioPreset(data, 'weeds') : data
 		const weedCount = (withPreset?.objects || []).filter((o) => o.type === 'weed').length
@@ -221,10 +227,99 @@ onUnmounted(() => {
 	window.removeEventListener('keydown', onKeyDown)
 })
 
+function onCombatRequested(mobObj) {
+	if (!mobObj) return
+	const mcLevel = playerCharacter.value.lvl || 1
+	const mcName = playerCharacter.value.name || 'Анон'
+
+	// Prepare player in combat allies
+	const allies = [
+		{
+			id: 'mc',
+			name: mcName,
+			team: 'ally',
+			class: 'fighter',
+			weapon: playerCharacter.value.equipment_slots?.['weapon-hand-1'] || 'sword',
+			hp: playerCharacter.value.hpmax || 40,
+			maxHp: playerCharacter.value.hpmax || 40,
+			mp: playerCharacter.value.mpmax || 10,
+			maxMp: playerCharacter.value.mpmax || 10,
+			ap: 2,
+			maxAp: 2,
+			attack: playerCharacter.value.attack || 8,
+			defense: playerCharacter.value.defense || 4,
+			initiative: 7,
+			x: -1,
+			y: 3,
+			z: 0,
+			facing: 'NW',
+			moveRange: 3,
+			icon: '⚔️',
+			abilities: [
+				{
+					id: 'attack',
+					name: 'Атака',
+					useWeapon: true,
+					apCost: 1,
+					mpCost: 0,
+					power: 1.0,
+					type: 'damage',
+					targetType: 'enemy',
+					icon: '⚔️'
+				}
+			]
+		}
+	]
+
+	let encounter = null
+
+	if (mobObj.pack) {
+		encounter = resolveEncounterFromSquad(mobObj.pack, { mcLevel, mcName, allies })
+	} else if (mobObj.encounter) {
+		if (typeof mobObj.encounter === 'string') {
+			encounter = resolveEncounterFromSquad(mobObj.encounter, { mcLevel, mcName, allies })
+		} else if (mobObj.encounter.enemies || mobObj.encounter.squad) {
+			encounter = resolveEncounterFromSquad(mobObj.encounter.squad || mobObj.encounter, { mcLevel, mcName, allies })
+		}
+	} else if (mobObj.template || mobObj.mobTemplate) {
+		const enemy = createMobInstance(mobObj.template || mobObj.mobTemplate, mobObj, { mcLevel })
+		encounter = {
+			id: `enc_${mobObj.id || 'mob'}`,
+			name: `Сражение с ${enemy.name}`,
+			mapId: mobObj.mapId || 'tests/arena_combat_test',
+			allies,
+			enemies: [enemy]
+		}
+	}
+
+	if (encounter) {
+		emit('combat-requested', {
+			encounter,
+			mobObject: mobObj
+		})
+	}
+}
+
+function onMobDefeated(mobObj) {
+	if (!mobObj || !locationData.value) return
+	const idx = (locationData.value.objects || []).findIndex((o) => o.id === mobObj.id)
+	if (idx !== -1) {
+		locationData.value.objects.splice(idx, 1)
+	}
+	if (!gameStore.globalData.defeatedMobs) {
+		gameStore.globalData.defeatedMobs = []
+	}
+	if (!gameStore.globalData.defeatedMobs.includes(mobObj.id)) {
+		gameStore.globalData.defeatedMobs.push(mobObj.id)
+	}
+	showLootNotification(`Противник ${mobObj.name || ''} повержен!`)
+}
+
 defineExpose({
 	requestExit,
 	cancelExit,
-	showExitConfirm
+	showExitConfirm,
+	onMobDefeated
 })
 </script>
 

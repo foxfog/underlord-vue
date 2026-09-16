@@ -57,16 +57,25 @@
        "defense": 9,
        "crit_rate": 17
      },
+     "skills": [
+       "adamantite_edge"
+     ],
      "crafter": "Судзуки Сатору",
      "createdAt": 1726402839482
    }
    ```
-3. **Цепочка резолвинга (Fallback Chain)**:
+3. **Встроенные навыки и зачарования предметов (`skills/items/items.json`)**:
+   - Предметы-шаблоны в `equipment.json` и скрафченные экземпляры с `uid` могут иметь массив `"skills": ["..."]`.
+   - Сами навыки хранятся в общем реестре `src/renderer/public/data/skills/items/items.json` и не имеют обратных жестких привязок к предметам.
+   - Экземпляры при ковке наследуют навыки из рецепта, а предметы легендарной и выше редкости могут получать уникальные вампирические или стихийные зачарования.
+   - Утилита `resolveEquippedSkills` (`src/renderer/utils/itemSkills.js`) собирает все активные навыки со всех надетых предметов и передает их во вкладку «Способности» инвентаря.
+4. **Цепочка резолвинга (Fallback Chain)**:
    При отображении в инвентаре, тултипе (`ItemInfoModal.vue`) или бою характеристики вычисляются каскадно:
    ```javascript
    const rarity = instance.rarity || definition.rarity || 'common'
    const displayName = instance.customName || definition.name || definition.id
    const stats = { ...(definition.stats || {}), ...(instance.stats || {}) }
+   const skills = [...(instance.skills || definition.skills || [])]
    ```
 
 ---

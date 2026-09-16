@@ -1,0 +1,122 @@
+{
+  "bandit_ambush": {
+    "id": "bandit_ambush",
+    "name": "Засада разбойников",
+    "description": "Шайка бандитов, поджидающая путников на дороге.",
+    "mapId": "tests/arena_combat_test",
+    "winStory": null,
+    "loseStory": null,
+    "enemies": [
+      {
+        "template": "bandit_melee",
+        "role": "leader",
+        "name": "Главарь шайки",
+        "star": [3, 4],
+        "level": [2, 4],
+        "x": 0,
+        "y": -3,
+        "z": 0,
+        "facing": "SE"
+      },
+      {
+        "template": "bandit_melee",
+        "role": "melee",
+        "star": [1, 2],
+        "level": [1, 3],
+        "x": 1,
+        "y": -3,
+        "z": 0,
+        "facing": "SE"
+      },
+      {
+        "template": "bandit_archer",
+        "role": "ranged",
+        "star": [1, 2],
+        "level": [1, 3],
+        "x": -2,
+        "y": -3,
+        "z": 0,
+        "facing": "SE"
+      }
+    ]
+  },
+  "skeleton_patrol": {
+    "id": "skeleton_patrol",
+    "name": "Патруль нежити",
+    "description": "Скелеты, бесцельно охраняющие заброшенные руины.",
+    "mapId": "tests/arena_combat_test",
+    "winStory": null,
+    "loseStory": null,
+    "enemies": [
+      {
+        "template": "skeleton_warrior",
+        "role": "tank",
+        "star": [2, 3],
+        "level": [2, 4],
+        "x": 0,
+        "y": -3,
+        "z": 0,
+        "facing": "SE"
+      },
+      {
+        "template": "skeleton_warrior",
+        "role": "melee",
+        "star": [1, 2],
+        "level": [1, 3],
+        "x": 1,
+        "y": -3,
+        "z": 0,
+        "facing": "SE"
+      },
+      {
+        "template": "skeleton_archer",
+        "role": "ranged",
+        "star": [1, 3],
+        "level": [1, 3],
+        "x": -2,
+        "y": -3,
+        "z": 0,
+        "facing": "SE"
+      }
+    ]
+  },
+  "wolf_pack": {
+    "id": "wolf_pack",
+    "name": "Стая лютых волков",
+    "description": "Голодные хищники выслеживают добычу.",
+    "mapId": "tests/arena_combat_test",
+    "enemies": [
+      {
+        "template": "dire_wolf",
+        "role": "alpha",
+        "name": "Вожак стаи",
+        "star": [3, 4],
+        "level": [2, 4],
+        "x": 0,
+        "y": -3,
+        "z": 0,
+        "facing": "SE"
+      },
+      {
+        "template": "dire_wolf",
+        "role": "pack",
+        "star": [1, 2],
+        "level": [1, 3],
+        "x": 1,
+        "y": -2,
+        "z": 0,
+        "facing": "SE"
+      },
+      {
+        "template": "dire_wolf",
+        "role": "pack",
+        "star": [1, 2],
+        "level": [1, 3],
+        "x": -1,
+        "y": -2,
+        "z": 0,
+        "facing": "SE"
+      }
+    ]
+  }
+}

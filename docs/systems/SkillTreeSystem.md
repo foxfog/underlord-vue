@@ -41,19 +41,39 @@
 
 ---
 
-## 2. Формат данных в `classes.json` и `races.json`
+## 2. Архитектура файлов данных: изоляция навыков
 
-В файлах `src/renderer/public/data/classes/classes.json` и `src/renderer/public/data/races/races.json` классы и расы дополняются полями `skill_branches` и `skills`.
+Для предотвращения разрастания основных реестров классов и рас (`classes.json` и `races.json`), навыки полностью вынесены в отдельные файлы:
 
+1. **Базовые реестры (`classes/classes.json`, `races/races.json`)**:
+   - Содержат только метаданные сущностей: `id`, `name`, `parent_id`, `category`, `tags`, `lvl_min`, `description`.
+   - В них **нет** полей `skills` и `skill_branches`.
+2. **Файлы навыков сущностей**:
+   - Навыки классов: `src/renderer/public/data/skills/classes/<id>.json` (например, `warrior.json`, `wizard.json`).
+   - Навыки рас: `src/renderer/public/data/skills/races/<id>.json` (например, `human.json`, `skeleton.json`).
+   - Если у класса или расы пока нет навыков, файл не создается (или удаляется при очистке).
+3. **Файлы навыков предметов (`skills/items/items.json`)**:
+   - Единый реестр встроенных навыков и зачарований снаряжения: `src/renderer/public/data/skills/items/items.json`.
+   - Навыки автономны (не содержат ссылок на предметы). Привязка указывается **в самих предметах** через поле `"skills": ["..."]`.
+   - Поддерживаются как базовые шаблоны из `equipment.json` / `other.json` (по `id`), так и уникальные/крафтовые экземпляры (по `uid`, созданные на наковальне или полученные в луте).
+   - Утилиты резолва (`src/renderer/utils/itemSkills.js`) собирают активные навыки от надетых предметов и отображают их в Инвентаре персонажа.
+4. **Файлы талантов персонажей (`skills/talents/talents.json`)**:
+   - Единый автономный реестр редких врождённых талантов Нового Мира: `src/renderer/public/data/skills/talents/talents.json`.
+   - Привязка осуществляется **со стороны персонажей** в `characters_data.json` через массив `talents: ["talent_id", ...]`.
+   - Таланты автономны, не зависят от классов/рас и могут встречаться у нескольких персонажей (по лору ~1 из 200 жителей Нового Мира).
+   - Механика снятия ограничений экипировки: талант с флагом `data.ignore_equip_requirements: true` (например, `item_restriction_bypass` по лору Нфири Бареаре / Энри) позволяет персонажу надевать абсолютно любое снаряжение и реликвии, игнорируя уровень, класс, расу, пол и персональные ограничения.
+   - Утилиты работы с талантами: `src/renderer/utils/talents.js` (`resolveCharacterTalents`, `hasTalent`, `canCharacterBypassEquipRestrictions`).
+   - Отображение в инвентаре: во вкладке способностей инвентаря таланты отображаются с золотистым бейджем `[🌟 Талант]`.
+5. **Бесшовная загрузка в память (`useDataEditor.js`)**:
+   - При вызове `loadAll()` система читает `classes.json`/`races.json` и автоматически сканирует папки `skills/classes/` и `skills/races/`, а также загружает `skills/items/items.json` и `skills/talents/talents.json`.
+   - В памяти объекты сущностей дополняются свойствами `skill_branches` и `skills`, благодаря чему компоненты UI (`SkillTreeTesterView.vue`, `DataEditorView.vue`, `useSkillTree.js`) продолжают работать без необходимости дублировать логику.
+6. **Сохранение и удаление**:
+   - При сохранении класса/расы через `saveEntity()` метаданные сохраняются в `classes.json`/`races.json` (с очисткой от `skills`), а ветки и навыки записываются в `skills/<type>/<id>.json`.
+   - При удалении сущности через `deleteEntity()` её файл навыков автоматически удаляется с диска.
+
+### Пример файла навыков (`skills/classes/warrior.json`):
 ```json
 {
-  "id": "warrior",
-  "name": "Воин",
-  "icon": "⚔️",
-  "parent_id": null,
-  "tags": ["melee", "physical", "warrior"],
-  "lvl_min": 1,
-  "description": "Мастер ближнего боя...",
   "skill_branches": [
     {
       "id": "swordsmanship",

@@ -51,6 +51,10 @@ import InventoryItems from './InventoryItems.vue'
 import InventoryStats from './InventoryStats.vue'
 import InventoryAbilities from './InventoryAbilities.vue'
 import { useGameStore } from '@/stores/gameStore'
+import { resolveEquippedSkills } from '@/utils/itemSkills.js'
+import itemSkillsData from '@data/skills/items/items.json'
+import { resolveCharacterTalents } from '@/utils/talents.js'
+import talentsData from '@data/skills/talents/talents.json'
 
 const gameStore = useGameStore()
 
@@ -123,13 +127,22 @@ const inventoryItems = computed(() => {
 
 const abilities = computed(() => {
 	const char = effectiveCharacter.value
-	if (!char?.abilities) return []
+	const innate = Array.isArray(char?.abilities)
+		? char.abilities.map((ability) => ({
+				id: ability.id || ability.name,
+				name: ability.name,
+				icon: ability.icon || '⚔️',
+				description: ability.description || 'Нет описания',
+				rank: ability.rank || ability.level,
+				branch: ability.branch,
+				data: ability.data || {}
+		  }))
+		: []
 
-	return char.abilities.map((ability) => ({
-		id: ability.id || ability.name,
-		name: ability.name,
-		description: ability.description || 'Нет описания'
-	}))
+	const charTalents = resolveCharacterTalents(char, talentsData)
+	const gearSkills = resolveEquippedSkills(char, localItemsData.value, itemSkillsData)
+
+	return [...innate, ...charTalents, ...gearSkills]
 })
 
 const hpPercentage = computed(() => {

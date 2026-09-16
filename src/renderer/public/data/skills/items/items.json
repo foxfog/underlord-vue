@@ -1,0 +1,58 @@
+[
+  {
+    "id": "stiletto_fire_burst",
+    "name": "Огненный взрыв",
+    "icon": "🔥",
+    "category": "active",
+    "description": "Зачарование великого мага Флюдера Парадайна: высвобождает заряд концентрированного пламени при ударе стилетом.",
+    "data": {
+      "damage": 85,
+      "element": "fire",
+      "ap_cost": 2,
+      "cooldown": 1
+    }
+  },
+  {
+    "id": "adamantite_edge",
+    "name": "Адамантиевая заточка",
+    "icon": "⚔️",
+    "category": "passive",
+    "description": "Невероятная твёрдость адамантия наделяет лезвие свойством рассекать доспехи и игнорировать часть защиты цели.",
+    "data": {
+      "armor_penetration": 12,
+      "crit_chance": 8
+    }
+  },
+  {
+    "id": "blood_drain",
+    "name": "Поглощение крови",
+    "icon": "🩸",
+    "category": "passive",
+    "description": "Вампирическое зачарование: вытягивает жизненную силу врагов при ранении и восстанавливает здоровье владельца.",
+    "data": {
+      "lifesteal_percent": 15
+    }
+  },
+  {
+    "id": "holy_sanctuary",
+    "name": "Священное святилище",
+    "icon": "✨",
+    "category": "buff",
+    "description": "Освящённое снаряжение окружает владельца защитным полем, снижая получаемый урон от нежити и демонов.",
+    "data": {
+      "holy_resistance": 25,
+      "defense_bonus": 10
+    }
+  },
+  {
+    "id": "neuro_link",
+    "name": "Нейро-интерфейс",
+    "icon": "🧠",
+    "category": "passive",
+    "description": "Прямое подключение нейрошлема к нервной системе ускоряет реакцию и боевое восприятие владельца.",
+    "data": {
+      "initiative_bonus": 5,
+      "accuracy": 10
+    }
+  }
+]

@@ -40,6 +40,7 @@ export const SMITHING_SWORD_RECIPES = [
 			attack: 34,
 			defense: 3
 		},
+		skills: ['adamantite_edge'],
 		rarityWeights: {
 			rare: 48,
 			epic: 32,
@@ -241,6 +242,12 @@ export function useSmithing() {
 		const stats = rollStats(recipe, rarity, quality)
 		const customName = generateCustomName(recipe.name, rarity)
 
+		// Наследование и генерация встроенных навыков
+		const skills = Array.isArray(recipe.skills) ? [...recipe.skills] : []
+		if (skills.length === 0 && ['legendary', 'ancient', 'divine', 'world'].includes(rarity)) {
+			skills.push('blood_drain')
+		}
+
 		// Создание уникального экземпляра ItemInstance
 		const instance = {
 			uid: `inst_${recipe.itemId}_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
@@ -250,6 +257,7 @@ export function useSmithing() {
 			quality,
 			customName,
 			stats,
+			skills,
 			crafter: character.name || 'Судзуки Сатору',
 			createdAt: Date.now()
 		}

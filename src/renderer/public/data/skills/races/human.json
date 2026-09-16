@@ -1,0 +1,54 @@
+{
+  "skill_branches": [
+    {
+      "id": "human_adaptability",
+      "name": "Адаптивность",
+      "icon": "🌿",
+      "description": "Уникальная гибкость и обучаемость человеческой расы"
+    }
+  ],
+  "skills": [
+    {
+      "id": "human_potential",
+      "name": "Скрытый потенциал",
+      "icon": "💡",
+      "description": "Ускоряет получение опыта и дает 1 очко расового уровня.",
+      "branch": "human_adaptability",
+      "category": "passive",
+      "grid_col": 0,
+      "req_level": 1,
+      "max_level": 1,
+      "cost": 0,
+      "cost_type": "skill_point",
+      "level_points_given": 1,
+      "parent_ids": [],
+      "parent_requirement": "all",
+      "data": {
+        "type": "passive",
+        "exp_multiplier": 1.15
+      }
+    },
+    {
+      "id": "human_versatility",
+      "name": "Разносторонность",
+      "icon": "🎭",
+      "description": "Повышает все основные характеристики. Требует 1 уровень расы и знание Скрытого потенциала.",
+      "branch": "human_adaptability",
+      "category": "buff",
+      "grid_col": 1,
+      "req_level": 2,
+      "max_level": 1,
+      "cost": 2,
+      "cost_type": "skill_point",
+      "level_points_given": 1,
+      "parent_ids": [
+        "human_potential"
+      ],
+      "parent_requirement": "all",
+      "data": {
+        "type": "passive",
+        "all_stats_bonus": 5
+      }
+    }
+  ]
+}
