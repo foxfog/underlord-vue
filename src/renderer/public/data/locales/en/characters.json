@@ -40,5 +40,14 @@
       "Elder"
     ],
     "description": "Prudent and elderly village head of Carne, dedicated to the survival of his community."
+  },
+  "default": {
+    "name": "Default Character",
+    "names": [
+      "Default",
+      "Template",
+      "Char"
+    ],
+    "description": "Base default character dummy template with minimal stats."
   }
 }

@@ -44,7 +44,7 @@ describe('useDataEditor Composable', () => {
 			],
 			fractions: [
 				{
-					id: 'nazaric',
+					id: 'nazarick',
 					name: 'Назарик',
 					icon: '🏰',
 					type: 'stronghold',
@@ -162,7 +162,7 @@ describe('useDataEditor Composable', () => {
 		expect(editor.getRaceName('unknown_race')).toBe('unknown_race')
 
 		expect(editor.getClassName('warrior')).toBe('Воин')
-		expect(editor.getFactionName('nazaric')).toBe('Назарик')
+		expect(editor.getFactionName('nazarick')).toBe('Назарик')
 		expect(editor.getCharacterName('mc')).toBe('Анон Фокс')
 	})
 
@@ -177,7 +177,7 @@ describe('useDataEditor Composable', () => {
 			icon: 'images/sprites/momonga.png',
 			races: ['undead', 'sceleton'],
 			classs: ['paladin', 'warrior'],
-			fractions: ['nazaric'],
+			fractions: ['nazarick'],
 			tags: 'guildmaster, boss',
 			description: 'Повелитель Назарика'
 		}
@@ -189,7 +189,7 @@ describe('useDataEditor Composable', () => {
 		expect(saved).toBeDefined()
 		expect(saved.races).toEqual(['undead', 'sceleton'])
 		expect(saved.classs).toEqual(['paladin', 'warrior'])
-		expect(saved.fractions).toEqual(['nazaric'])
+		expect(saved.fractions).toEqual(['nazarick'])
 		expect(saved.tags).toEqual(['guildmaster', 'boss'])
 	})
 
@@ -269,7 +269,7 @@ describe('useDataEditor Composable', () => {
 			name: 'Момонга',
 			races: ['undead', 'sceleton'], // races tags: undead, skeleton
 			classs: ['paladin'], // paladin tags: melee, holy
-			fractions: ['nazaric'], // nazaric tags: dungeon
+			fractions: ['nazarick'], // nazaric tags: dungeon
 			tags: ['gamer', 'boss'] // own tags
 		}
 
@@ -637,7 +637,7 @@ describe('useDataEditor Composable', () => {
 			gender: 'female',
 			races: ['succubus'],
 			classs: ['paladin'],
-			fractions: ['nazaric']
+			fractions: ['nazarick']
 		}
 
 		await editor.saveEntity('characters', femaleChar)
@@ -935,6 +935,53 @@ describe('useDataEditor Composable', () => {
 			const savedFighter = editor.entities.value.classes.find((c) => c.id === 'simple_fighter')
 			expect(savedFighter.skill_branches).toBeUndefined()
 			expect(savedFighter.skills).toBeUndefined()
+		})
+
+		it('preserves and persists character biometrics fields (height, age, weight, blood_type, etc.)', async () => {
+			const mockWriteDataFile = vi.fn().mockResolvedValue({ success: true })
+			vi.stubGlobal('window', {
+				electronAPI: {
+					dataEditor: {
+						writeFile: mockWriteDataFile
+					}
+				}
+			})
+
+			const characterWithBiometrics = {
+				id: 'momonga',
+				name: 'Момонга',
+				gender: 'male',
+				height: 177,
+				weight: 0,
+				age: 'Нежить',
+				blood_type: 'Отсутствует (Нежить)',
+				body_build: 'Скелетное (Нежить)',
+				hair_color: 'Отсутствуют',
+				eye_color: 'Красные огоньки в глазницах',
+				distinguishing_features: 'Костяное лицо, мантия владыки',
+				biometry_notes: 'Высший лич, не имеет плоти и внутренних органов.'
+			}
+
+			await editor.saveEntity('characters', characterWithBiometrics)
+			const savedChar = editor.entities.value.characters.find((c) => c.id === 'momonga')
+			expect(savedChar).toBeDefined()
+			expect(savedChar.height).toBe(177)
+			expect(savedChar.age).toBe('Нежить')
+			expect(savedChar.weight).toBe(0)
+			expect(savedChar.blood_type).toBe('Отсутствует (Нежить)')
+			expect(savedChar.body_build).toBe('Скелетное (Нежить)')
+			expect(savedChar.hair_color).toBe('Отсутствуют')
+			expect(savedChar.eye_color).toBe('Красные огоньки в глазницах')
+			expect(savedChar.distinguishing_features).toBe('Костяное лицо, мантия владыки')
+			expect(savedChar.biometry_notes).toBe('Высший лич, не имеет плоти и внутренних органов.')
+
+			// Verify writeDataFile was called with characters/momonga/values.json
+			expect(mockWriteDataFile).toHaveBeenCalled()
+			const charCall = mockWriteDataFile.mock.calls.find(([path]) => path === 'characters/momonga/values.json')
+			expect(charCall).toBeDefined()
+			expect(charCall[1].height).toBe(177)
+			expect(charCall[1].blood_type).toBe('Отсутствует (Нежить)')
+			expect(charCall[1].age).toBe('Нежить')
 		})
 	})
 })

@@ -4,9 +4,32 @@
 	"surname": "Фокс",
 	"nickname": "",
 	"title": "",
-	"size": 1,
-	"race": "human",
+	"names": [
+		"Анон",
+		"Игрок",
+		"Путник"
+	],
+	"icon": "images/sprites/characters/mc/icometric/char.png",
 	"gender": "male",
+	"race": "human",
+	"races": [
+		"human"
+	],
+	"classs": [
+		"warrior"
+	],
+	"fractions": [],
+	"tags": [
+		"gamer",
+		"protagonist",
+		"noob"
+	],
+	"description": "Главный герой, попавший в новый неизведанный мир через интерфейс шлема виртуальной реальности.",
+	"size": 1,
+	"root_offset": {
+		"x": 0,
+		"y": 0
+	},
 	"hpmax": 10,
 	"mpmax": 10,
 	"attack": 2,
@@ -18,8 +41,6 @@
 	"exp": 0,
 	"skill_points": 0,
 	"stat_points": 0,
-	"fractions": [],
-	"tags": ["gamer", "noob"],
 	"equipment_slots": {
 		"head": null,
 		"mask": null,
@@ -67,5 +88,7 @@
 			"name": "Исцеление",
 			"description": "Восстановить 5 HP"
 		}
-	]
+	],
+	"height": 175,
+	"age": 24
 }

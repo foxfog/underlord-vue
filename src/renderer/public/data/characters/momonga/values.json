@@ -3,9 +3,41 @@
 	"name": "Момонга",
 	"nickname": "",
 	"title": "",
-	"size": 1,
-	"race": "overlord",
+	"names": [
+		"Аинз Оал Гоун",
+		"Владыка Назарика",
+		"Высшее Существо"
+	],
+	"icon": "images/sprites/characters/momonga/icometric/char.png",
 	"gender": "male",
+	"race": "overlord",
+	"races": [
+		"overlord",
+		"skeleton"
+	],
+	"classs": [
+		"master-of-death",
+		"wizard"
+	],
+	"fractions": [
+		"ainz-ooal-gown",
+		"nazarick",
+		"sorcerer-kingdom"
+	],
+	"tags": [
+		"gamer",
+		"guildmaster",
+		"undead",
+		"supreme-being",
+		"nazarick-leader",
+		"sorcerer-kingdom-king"
+	],
+	"description": "Глава гильдии Аинз Оал Гоун и верховный правитель Великой Гробницы Назарик.",
+	"size": 1,
+	"root_offset": {
+		"x": 0,
+		"y": 0
+	},
 	"hpmax": 100000,
 	"mpmax": 100000,
 	"hp": 100000,
@@ -17,8 +49,6 @@
 	"exp": 9000201,
 	"skill_points": 1,
 	"stat_points": 90,
-	"fractions": ["nines-own-goal", "nazaric", "sorcerer-kingdom"],
-	"tags": ["gamer", "nazaric-leader", "sorcerer-kingdom-king"],
 	"equipment_slots": {
 		"head": null,
 		"neck_1": "pendant-zen",
@@ -56,5 +86,7 @@
 			"name": "Исцеление",
 			"description": "Восстановить здоровье союзнику"
 		}
-	]
+	],
+	"height": 177,
+	"age": 30
 }

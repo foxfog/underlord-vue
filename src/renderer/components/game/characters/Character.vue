@@ -57,6 +57,14 @@ const characterStyle = computed(() => {
 		scale: props.character.scale ?? props.character.size ?? 1
 	}
 
+	// Apply root avatar offset if defined (e.g. from values.json root_offset)
+	if (props.character.root_offset) {
+		const ro = props.character.root_offset
+		if (ro.x || ro.y) {
+			style.translate = `${ro.x || 0}% ${-(ro.y || 0)}%`
+		}
+	}
+
 	// Determine which position to use
 	// If we have fromPosition and NOT animating yet, use fromPosition
 	// If we have fromPosition and animating, use position (final) with transition

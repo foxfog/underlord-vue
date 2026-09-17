@@ -1,12 +1,38 @@
 {
 	"id": "carne-chief",
-	"name": "Староста",
+	"name": "Староста Карна",
 	"surname": "",
 	"nickname": "",
 	"title": "Староста деревни Карн",
-	"size": 1,
-	"race": "human",
+	"names": [
+		"Староста",
+		"Глава деревни"
+	],
+	"icon": "images/sprites/characters/carne-chief/avatar.png",
 	"gender": "male",
+	"race": "human",
+	"races": [
+		"human"
+	],
+	"classs": [
+		"cleric"
+	],
+	"fractions": [
+		"carne-village"
+	],
+	"tags": [
+		"elder",
+		"npc",
+		"villager",
+		"carne",
+		"chief"
+	],
+	"description": "Мудрый и рассудительный староста пограничной деревни Карн, заботящийся о выживании односельчан.",
+	"size": 1,
+	"root_offset": {
+		"x": 0,
+		"y": 0
+	},
 	"hpmax": 20,
 	"mpmax": 0,
 	"attack": 1,
@@ -18,8 +44,6 @@
 	"exp": 0,
 	"skill_points": 0,
 	"stat_points": 0,
-	"fractions": ["carne-village"],
-	"tags": ["villager", "carne", "chief"],
 	"equipment_slots": {
 		"head": null,
 		"neck_1": null,
@@ -35,5 +59,7 @@
 	},
 	"inventory": {
 		"items": []
-	}
+	},
+	"height": 168,
+	"age": 62
 }

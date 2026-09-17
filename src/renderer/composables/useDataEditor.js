@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { ITEM_RARITIES, getRarity, getRarityColor, getRarityBadgeStyle } from '../constants/rarity.js'
 import { normalizeSkill, normalizeSkillBranch } from '../utils/skillTree.js'
+import { calculateEquipmentBySlot } from '../utils/equipment.js'
 
 // Singleton state
 const activeTab = ref('characters') // 'characters' | 'classes' | 'fractions' | 'races' | 'items' | 'tags'
@@ -169,10 +170,60 @@ export function useDataEditor() {
 		}
 	}
 
+	// Helper to load all characters from their individual folders characters/{id}/values.json
+	async function loadCharactersData() {
+		let characterIds = ['mc', 'momonga', 'albedo', 'enri', 'carne-chief']
+		try {
+			const charRegistry = await readDataFile('characters/characters.json')
+			if (charRegistry && Array.isArray(charRegistry.characters) && charRegistry.characters.length > 0) {
+				characterIds = Array.from(new Set([...charRegistry.characters]))
+			}
+		} catch (e) {
+			// fallback to default list
+		}
+
+		const chars = await Promise.all(
+			characterIds.map(async (charId) => {
+				try {
+					const values = await readDataFile(`characters/${charId}/values.json`)
+					if (values) {
+						let bodyData = null
+						let equipmentData = []
+						try {
+							bodyData = await readDataFile(`characters/${charId}/body.json`)
+						} catch (e) {
+							// optional body
+						}
+						try {
+							equipmentData = await readDataFile(`characters/${charId}/equipment.json`)
+						} catch (e) {
+							// optional equipment
+						}
+						const equipmentBySlot = calculateEquipmentBySlot(
+							values.equipment_slots || {},
+							Array.isArray(equipmentData) ? equipmentData : []
+						)
+						return {
+							id: charId,
+							...values,
+							sprites: bodyData || null,
+							equipment: Array.isArray(equipmentData) ? equipmentData : [],
+							equipmentBySlot
+						}
+					}
+				} catch (err) {
+					console.warn(`[useDataEditor] Could not load characters/${charId}/values.json:`, err)
+				}
+				return null
+			})
+		)
+		return chars.filter(Boolean)
+	}
+
 	// Load all collections and global tags
 	async function loadAll() {
 		const [chars, classes, fractions, races, equipItems, otherItems, tagsList, categoriesList, loadedItemSkills, loadedTalents] = await Promise.all([
-			readDataFile('characters/characters_data.json'),
+			loadCharactersData(),
 			readDataFile('classes/classes.json'),
 			readDataFile('fractions/fractions.json'),
 			readDataFile('races/races.json'),
@@ -333,15 +384,54 @@ export function useDataEditor() {
 				return {
 					id: '',
 					name: '',
+					surname: '',
+					nickname: '',
+					title: '',
 					names: [],
 					icon: '',
 					gender: 'male',
-					races: [],
-					classs: [],
+					race: 'human',
+					races: ['human'],
+					classs: ['warrior'],
 					fractions: [],
 					tags: [],
 					talents: [],
-					description: ''
+					description: '',
+					size: 1,
+					lvl: 1,
+					exp: 0,
+					hpmax: 10,
+					mpmax: 0,
+					hp: 10,
+					mp: 0,
+					attack: 1,
+					defense: 1,
+					weight: 60,
+					skill_points: 0,
+					stat_points: 0,
+					equipment_slots: {
+						head: null,
+						mask: null,
+						neck_1: null,
+						'torso-1': null,
+						'torso-2': null,
+						'torso-3': null,
+						'legs-2': null,
+						legs: null,
+						feet: null,
+						'weapon-hand-1': null,
+						'weapon-hand-2': null,
+						hands: null,
+						weapon_off: null,
+						underpants: null
+					},
+					inventory: {
+						items: []
+					},
+					abilities: [],
+					skills: {},
+					class_levels: {},
+					race_levels: {}
 				}
 			case 'classes':
 				return {
@@ -445,6 +535,26 @@ export function useDataEditor() {
 			if (!Array.isArray(cloned.races)) cloned.races = []
 			if (!Array.isArray(cloned.classs)) cloned.classs = []
 			if (!Array.isArray(cloned.fractions)) cloned.fractions = []
+			if (!cloned.equipment_slots || typeof cloned.equipment_slots !== 'object') {
+				cloned.equipment_slots = {}
+			}
+			if (!cloned.inventory || typeof cloned.inventory !== 'object') {
+				cloned.inventory = { items: [] }
+			} else if (!Array.isArray(cloned.inventory.items)) {
+				cloned.inventory.items = []
+			}
+			if (!cloned.skills || typeof cloned.skills !== 'object' || Array.isArray(cloned.skills)) {
+				cloned.skills = {}
+			}
+			if (!cloned.class_levels || typeof cloned.class_levels !== 'object') {
+				cloned.class_levels = {}
+			}
+			if (!cloned.race_levels || typeof cloned.race_levels !== 'object') {
+				cloned.race_levels = {}
+			}
+			if (cloned.equipmentBySlot === undefined) {
+				cloned.equipmentBySlot = calculateEquipmentBySlot(cloned.equipment_slots, cloned.equipment)
+			}
 		}
 
 		if (activeTab.value === 'classes' || activeTab.value === 'races') {
@@ -713,6 +823,13 @@ export function useDataEditor() {
 			await deleteDataFile(`skills/${targetType}/${entityId}.json`)
 		}
 
+		// Delete character folder files if character
+		if (targetType === 'characters') {
+			await deleteDataFile(`characters/${entityId}/values.json`)
+			await deleteDataFile(`characters/${entityId}/body.json`)
+			await deleteDataFile(`characters/${entityId}/equipment.json`)
+		}
+
 		const typeLabel = getTypeLabel(targetType)
 		setStatus(`✔ ${typeLabel} "${removed.name || removed.id}" успешно удален(а)!`, 'info')
 		return { success: true }
@@ -813,8 +930,38 @@ export function useDataEditor() {
 	async function persistTypeToFile(targetType) {
 		switch (targetType) {
 			case 'characters': {
-				// 1. Save full characters data (only own tags are saved in characters_data.json)
-				await writeDataFile('characters/characters_data.json', entities.value.characters)
+				// 1. Save each character into characters/{id}/values.json and scaffold folder if needed
+				await Promise.all(
+					entities.value.characters.map(async (c) => {
+						const clone = { ...c }
+						delete clone.sprites
+						delete clone.equipment
+						delete clone.equipmentBySlot
+						delete clone._locales
+						delete clone._customFields
+
+						await writeDataFile(`characters/${c.id}/values.json`, clone)
+
+						// Scaffold body.json and equipment.json if they don't exist
+						try {
+							const existingBody = await readDataFile(`characters/${c.id}/body.json`)
+							if (!existingBody) {
+								const defaultImg = c.icon || 'images/sprites/characters/default/default.png'
+								await writeDataFile(`characters/${c.id}/body.json`, {
+									body: {
+										image: defaultImg
+									}
+								})
+							}
+							const existingEquip = await readDataFile(`characters/${c.id}/equipment.json`)
+							if (!existingEquip) {
+								await writeDataFile(`characters/${c.id}/equipment.json`, [])
+							}
+						} catch (scaffoldErr) {
+							console.warn(`[useDataEditor] Scaffold check error for ${c.id}:`, scaffoldErr)
+						}
+					})
+				)
 
 				// 2. Keep characters.json list of IDs synchronized for novel engine
 				const currentIds = entities.value.characters.map((c) => c.id)
@@ -1071,7 +1218,7 @@ export function useDataEditor() {
 	function getFilePathForType(type = activeTab.value) {
 		switch (type) {
 			case 'characters':
-				return 'characters/characters_data.json'
+				return 'characters/<id>/values.json (+ characters.json)'
 			case 'classes':
 				return 'classes/classes.json (+ skills/classes/<id>.json)'
 			case 'fractions':
@@ -1344,7 +1491,41 @@ export function useDataEditor() {
 
 	// Known standard keys per type to identify custom/manual JSON fields
 	const STANDARD_KEYS = {
-		characters: ['id', 'name', 'names', 'icon', 'gender', 'races', 'classs', 'fractions', 'tags', 'talents', 'description'],
+		characters: [
+			'id',
+			'name',
+			'surname',
+			'nickname',
+			'title',
+			'names',
+			'icon',
+			'gender',
+			'race',
+			'races',
+			'classs',
+			'fractions',
+			'tags',
+			'talents',
+			'description',
+			'size',
+			'lvl',
+			'exp',
+			'hpmax',
+			'mpmax',
+			'attack',
+			'defense',
+			'weight',
+			'hp',
+			'mp',
+			'skill_points',
+			'stat_points',
+			'equipment_slots',
+			'inventory',
+			'abilities',
+			'skills',
+			'class_levels',
+			'race_levels'
+		],
 		classes: ['id', 'name', 'icon', 'parent_id', 'category', 'tier', 'grid_tier', 'skill_points_per_level', 'spell_points_per_level', 'tags', 'lvl_min', 'description', 'skill_branches', 'skills'],
 		fractions: ['id', 'name', 'icon', 'type', 'parent_id', 'grid_tier', 'tags', 'description'],
 		races: ['id', 'name', 'icon', 'parent_id', 'family', 'category', 'tier', 'grid_tier', 'skill_points_per_level', 'spell_points_per_level', 'tags', 'lvl_min', 'description', 'skill_branches', 'skills'],

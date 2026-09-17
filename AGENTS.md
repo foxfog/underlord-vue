@@ -38,6 +38,7 @@
 * [Сценарные действия и UI (`docs/ui/UIControl.md`)](docs/ui/UIControl.md) — затемнения `fade`, очистка `clearCharacters`, хоткеи `H` и удержание `Ctrl` (скип).
 * [Диалоговая система (`docs/ui/DialogueSystem.md`)](docs/ui/DialogueSystem.md) — тайпрайтер, автоскрытие UI (`DIALOGUE_HIDE_UI_CONFIG`).
 * [Персонажи и спрайты (`docs/characters/BodyStructure.md`)](docs/characters/BodyStructure.md) — структура `body.json`, `values.json`, слоты `equipment.json`.
+* [Студия спрайтов и риггинга (`docs/characters/CharacterRigStudio.md`)](docs/characters/CharacterRigStudio.md) — Live2D-Lite студия, дробление тела, 2D-стикер глаз, повороты, анимации, пресеты.
 * [Квесты и журнал (`useQuests.js`)](docs/systems/QuestsSystem.md) — древовидная иерархия (`parentId`), задачи (`tasks`), сюжетные заметки.
 * [Инвентарь и экипировка (`docs/systems/Inventory.md`)](docs/systems/Inventory.md) — слоты экипировки, контекстное меню предметов.
 * [Энциклопедия и персонажи (`docs/systems/EncyclopediaSystem.md`)](docs/systems/EncyclopediaSystem.md) — карточки NPC, модульные блоки `{ id, title, text }`, симпатии `*_symp`.

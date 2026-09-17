@@ -3,9 +3,34 @@
 	"name": "Альбедо",
 	"nickname": "",
 	"title": "",
-	"size": 1,
-	"race": "succubus",
+	"names": [
+		"Смотритель Стражей",
+		"Белый Демон"
+	],
+	"icon": "images/sprites/characters/albedo/avatar.png",
 	"gender": "female",
+	"race": "succubus",
+	"races": [
+		"succubus"
+	],
+	"classs": [
+		"paladin",
+		"warrior"
+	],
+	"fractions": [
+		"nazarick",
+		"sorcerer-kingdom"
+	],
+	"tags": [
+		"guardian-overseer",
+		"demon"
+	],
+	"description": "Смотритель Стражей всех этажей Великой Гробницы Назарик, обладающая высшей защитой и преданностью.",
+	"size": 1,
+	"root_offset": {
+		"x": 0,
+		"y": 0
+	},
 	"hpmax": 100000,
 	"mpmax": 100000,
 	"attack": 2,
@@ -17,8 +42,6 @@
 	"exp": 9000201,
 	"skill_points": 1,
 	"stat_points": 90,
-	"fractions": ["nazaric", "sorcerer-kingdom"],
-	"tags": ["guardian-overseer"],
 	"equipment_slots": {
 		"head": null,
 		"neck_1": null,
@@ -51,5 +74,7 @@
 			"name": "Защитная стойка",
 			"description": "Увеличить защиту на 50% на один ход"
 		}
-	]
+	],
+	"height": 170,
+	"age": 20
 }

@@ -149,6 +149,32 @@
 					</button>
 				</div>
 			</div>
+
+			<!-- Card 7: Character Sprite Rigging Studio (Live2D-Lite) -->
+			<div class="test-card __active" @click="launchCharacterSpriteTester">
+				<div class="test-card-header">
+					<div class="test-card-icon">🎭</div>
+					<span class="test-status-badge __ready">Доступно</span>
+				</div>
+				<div class="test-card-body">
+					<h2 class="test-card-title">Студия спрайтов и риггинга (Live2D-Lite)</h2>
+					<p class="test-card-desc">
+						Визуальный редактор и тестер спрайтов: иерархическое дробление тела (голова, плечи, предплечья, кисти), круговой стикер направления глаз, переключение эмоций, прямое вращение суставов, анимации (махание, кашель), виды со спины и масштабирование роста.
+					</p>
+					<div class="test-tags">
+						<span class="test-tag">Live2D-Lite</span>
+						<span class="test-tag">Риггинг тела</span>
+						<span class="test-tag">2D Стикер глаз</span>
+						<span class="test-tag">Анимации</span>
+						<span class="test-tag">Рост и Scale</span>
+					</div>
+				</div>
+				<div class="test-card-footer">
+					<button class="test-btn test-btn-primary" @click.stop="launchCharacterSpriteTester">
+						Запустить студию →
+					</button>
+				</div>
+			</div>
 		</div>
 	</div>
 </template>
@@ -180,6 +206,10 @@ function launchLocalizationManager() {
 
 function launchSkillTreeTester() {
 	router.push('/test/skill-tree')
+}
+
+function launchCharacterSpriteTester() {
+	router.push('/test/character-sprites')
 }
 </script>
 

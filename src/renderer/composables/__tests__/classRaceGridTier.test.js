@@ -236,5 +236,32 @@ describe('Class and Race Grid Tier & Branch Lane Separation', () => {
 				expect([0, 1, 2, 9]).not.toContain(s.start)
 			}
 		})
+
+		it('ends connector path at arrowhead base with vertical lead-in to prevent side entry', () => {
+			const pX = 100
+			const pY = 300 // Parent at bottom
+			const cX = 250 // Child to the right
+			const cY = 100 // Child at top
+
+			const arrowLength = 9
+			const deltaY = pY - cY
+			const endY = deltaY > arrowLength + 4 ? cY + arrowLength : cY
+			const actualDeltaY = Math.abs(pY - endY)
+			const curveOffset = Math.max(actualDeltaY * 0.45, 25)
+
+			const leadIn = Math.min(10, actualDeltaY * 0.2)
+			const curveEndY = endY + leadIn
+
+			const d = `M ${pX} ${pY} C ${pX} ${pY - curveOffset}, ${cX} ${curveEndY + curveOffset}, ${cX} ${curveEndY} L ${cX} ${endY}`
+
+			// Path must end at endY (cY + 9 = 109), NOT at cY (100)
+			expect(endY).toBe(109)
+			expect(d.endsWith(`L ${cX} ${endY}`)).toBe(true)
+
+			// Lead-in must be strictly vertical (same X coordinate cX)
+			expect(d).toContain(`L 250 109`)
+			expect(curveEndY).toBe(119) // 109 + 10 = 119
+		})
 	})
 })
+

@@ -6,6 +6,7 @@
 * [Анимация частей тела (Animation)](./characters/Animation.md)
 * [Структура `body.json` (Body Structure)](./characters/BodyStructure.md)
 * [Настройка `z-index` для частей тела](./characters/ZIndex.md)
+* [Студия спрайтов и риггинга Live2D-Lite](./characters/CharacterRigStudio.md)
 
 ## 🎨 Интерфейс и Стили (UI)
 * [Система Диалогов и скрытие UI](./ui/DialogueSystem.md)

@@ -611,10 +611,143 @@
 							</div>
 						</div>
 
+						<!-- Character Sub-tabs Switcher Bar (Only for characters tab) -->
+						<div v-if="activeTab === 'characters'" class="char-subtabs-nav-bar">
+							<button
+								type="button"
+								class="char-subtab-nav-btn"
+								:class="{ __active: activeCharacterSubTab === 'profile' }"
+								@click="activeCharacterSubTab = 'profile'"
+							>
+								<span class="csn-icon">👤</span>
+								<span class="csn-label">Основное</span>
+							</button>
+							<button
+								type="button"
+								class="char-subtab-nav-btn"
+								:class="{ __active: activeCharacterSubTab === 'biometrics' }"
+								@click="activeCharacterSubTab = 'biometrics'"
+							>
+								<span class="csn-icon">📏</span>
+								<span class="csn-label">Биометрия</span>
+								<span v-if="selectedEntity.height" class="csn-badge">
+									{{ selectedEntity.height }} см
+								</span>
+							</button>
+							<button
+								type="button"
+								class="char-subtab-nav-btn"
+								:class="{ __active: activeCharacterSubTab === 'equipment' }"
+								@click="activeCharacterSubTab = 'equipment'"
+							>
+								<span class="csn-icon">🎒</span>
+								<span class="csn-label">Экипировка и Инвентарь</span>
+								<span v-if="selectedEntity.equipment_slots" class="csn-badge">
+									{{ Object.values(selectedEntity.equipment_slots).filter(Boolean).length }}
+								</span>
+							</button>
+							<button
+								type="button"
+								class="char-subtab-nav-btn"
+								:class="{ __active: activeCharacterSubTab === 'talents' }"
+								@click="activeCharacterSubTab = 'talents'"
+							>
+								<span class="csn-icon">🌟</span>
+								<span class="csn-label">Таланты</span>
+								<span v-if="selectedEntity.talents?.length" class="csn-badge">
+									{{ selectedEntity.talents.length }}
+								</span>
+							</button>
+							<button
+								type="button"
+								class="char-subtab-nav-btn"
+								:class="{ __active: activeCharacterSubTab === 'class_skills' }"
+								@click="activeCharacterSubTab = 'class_skills'"
+							>
+								<span class="csn-icon">⚔️</span>
+								<span class="csn-label">Классы и навыки</span>
+								<span v-if="selectedEntity.classs?.length" class="csn-badge">
+									{{ selectedEntity.classs.length }}
+								</span>
+							</button>
+							<button
+								type="button"
+								class="char-subtab-nav-btn"
+								:class="{ __active: activeCharacterSubTab === 'race_skills' }"
+								@click="activeCharacterSubTab = 'race_skills'"
+							>
+								<span class="csn-icon">🧬</span>
+								<span class="csn-label">Расы и навыки</span>
+								<span v-if="selectedEntity.races?.length" class="csn-badge">
+									{{ selectedEntity.races.length }}
+								</span>
+							</button>
+							<button
+								type="button"
+								class="char-subtab-nav-btn __studio-link"
+								title="Открыть студию спрайтов и риггинга для этого персонажа"
+								@click="openSpriteStudioForCharacter(selectedEntity.id)"
+							>
+								<span class="csn-icon">🎭</span>
+								<span class="csn-label">Студия спрайтов →</span>
+							</button>
+						</div>
+
 						<!-- Form Fields Area -->
 						<div class="form-fields-scroll">
-							<!-- Localization Switcher inside Form -->
-							<div class="form-locale-panel">
+							<!-- Sub-tab: Biometrics -->
+							<template v-if="activeTab === 'characters' && activeCharacterSubTab === 'biometrics'">
+								<CharacterBiometricsTab
+									:character="selectedEntity"
+									@open-sprite-studio="openSpriteStudioForCharacter"
+								/>
+							</template>
+
+							<!-- Sub-tab: Equipment & Inventory -->
+							<template v-else-if="activeTab === 'characters' && activeCharacterSubTab === 'equipment'">
+								<CharacterEquipmentTab
+									:character="selectedEntity"
+									:items-list="entities.items"
+									:talents-registry="talents"
+								/>
+							</template>
+
+							<!-- Sub-tab: Talents -->
+							<template v-else-if="activeTab === 'characters' && activeCharacterSubTab === 'talents'">
+								<CharacterTalentsTab
+									:character="selectedEntity"
+									:talents-registry="talents"
+								/>
+							</template>
+
+							<!-- Sub-tab: Class Skills -->
+							<template v-else-if="activeTab === 'characters' && activeCharacterSubTab === 'class_skills'">
+								<CharacterSkillsTab
+									:character="selectedEntity"
+									type="classes"
+									:classes-list="entities.classes"
+									:races-list="entities.races"
+									:active-locale="activeLocale"
+									:locales-data="localesData"
+								/>
+							</template>
+
+							<!-- Sub-tab: Race Skills -->
+							<template v-else-if="activeTab === 'characters' && activeCharacterSubTab === 'race_skills'">
+								<CharacterSkillsTab
+									:character="selectedEntity"
+									type="races"
+									:classes-list="entities.classes"
+									:races-list="entities.races"
+									:active-locale="activeLocale"
+									:locales-data="localesData"
+								/>
+							</template>
+
+							<!-- Default Profile Form Fields -->
+							<template v-else>
+								<!-- Localization Switcher inside Form -->
+								<div class="form-locale-panel">
 								<div class="form-locale-row">
 									<div class="form-locale-select-box">
 										<label class="form-locale-select-label">
@@ -879,31 +1012,31 @@
 										🔗 Привязанные сущности (Связи по ID)
 									</div>
 
-									<!-- Races Multi-Select -->
-									<EntityTagPicker
-										v-model="selectedEntity.races"
-										:options="entities.races"
-										type="race"
-										label="Расы персонажа (Races):"
-										empty-hint="Расы не выбраны"
-										placeholder="Поиск и добавление расы..."
-										:get-name="(id) => getRaceName(id)"
-										:get-icon="(r) => r?.icon || '🧬'"
-									/>
+									<!-- Biometrics Quick Nav Card -->
+									<div class="relation-quick-nav-card">
+										<div class="rqn-header">
+											<div class="rqn-title-box">
+												<span class="rqn-icon">📏</span>
+												<div>
+													<div class="rqn-title">Биометрия и телосложение</div>
+													<div class="rqn-sub">
+														Рост: {{ selectedEntity.height ? `${selectedEntity.height} см` : 'не указан' }} |
+														Возраст: {{ selectedEntity.age || 'не указан' }} |
+														Вес: {{ selectedEntity.weight ? `${selectedEntity.weight} кг` : 'не указан' }}
+													</div>
+												</div>
+											</div>
+											<button
+												type="button"
+												class="rqn-nav-btn"
+												@click="activeCharacterSubTab = 'biometrics'"
+											>
+												<span>Биометрия →</span>
+											</button>
+										</div>
+									</div>
 
-									<!-- Classes Multi-Select -->
-									<EntityTagPicker
-										v-model="selectedEntity.classs"
-										:options="entities.classes"
-										type="class"
-										label="Классы персонажа (Classes):"
-										empty-hint="Классы не выбраны"
-										placeholder="Поиск и добавление класса..."
-										:get-name="(id) => getClassName(id)"
-										:get-icon="(c) => c?.icon || '⚔️'"
-									/>
-
-									<!-- Fractions Multi-Select -->
+									<!-- Fractions Multi-Select (Organizations) -->
 									<EntityTagPicker
 										v-model="selectedEntity.fractions"
 										:options="entities.fractions"
@@ -915,50 +1048,99 @@
 										:get-icon="(f) => f?.icon || '🏛️'"
 									/>
 
-									<!-- Character Talents Section -->
-									<div class="character-talents-box">
-										<div class="field-label">
-											🌟 Врождённые таланты (Character Talents)
-											<span class="field-sub-hint">(хранятся в characters_data.json, описания в skills/talents/talents.json)</span>
+									<!-- Races Quick Nav Card -->
+									<div class="relation-quick-nav-card">
+										<div class="rqn-header">
+											<div class="rqn-title-box">
+												<span class="rqn-icon">🧬</span>
+												<div>
+													<div class="rqn-title">Расы персонажа ({{ (selectedEntity.races || []).length }})</div>
+													<div class="rqn-sub">Управление семейством, эволюцией и расовыми навыками</div>
+												</div>
+											</div>
+											<button
+												type="button"
+												class="rqn-nav-btn"
+												@click="activeCharacterSubTab = 'race_skills'"
+											>
+												<span>Древо рас →</span>
+											</button>
 										</div>
-										<div class="interactive-tags-container">
+										<div class="rqn-chips">
+											<span
+												v-for="rId in (selectedEntity.races || [])"
+												:key="'char-rel-race-' + rId"
+												class="rqn-chip"
+											>
+												{{ getRaceName(rId) }}
+											</span>
+											<span v-if="!(selectedEntity.races?.length)" class="no-tags-hint">
+												Расы не выбраны. Нажмите «Древо рас», чтобы выбрать расу.
+											</span>
+										</div>
+									</div>
+
+									<!-- Classes Quick Nav Card -->
+									<div class="relation-quick-nav-card">
+										<div class="rqn-header">
+											<div class="rqn-title-box">
+												<span class="rqn-icon">⚔️</span>
+												<div>
+													<div class="rqn-title">Классы персонажа ({{ (selectedEntity.classs || []).length }})</div>
+													<div class="rqn-sub">Управление базовыми, высшими классами и ветками навыков</div>
+												</div>
+											</div>
+											<button
+												type="button"
+												class="rqn-nav-btn"
+												@click="activeCharacterSubTab = 'class_skills'"
+											>
+												<span>Древо классов →</span>
+											</button>
+										</div>
+										<div class="rqn-chips">
+											<span
+												v-for="cId in (selectedEntity.classs || [])"
+												:key="'char-rel-cls-' + cId"
+												class="rqn-chip"
+											>
+												{{ getClassName(cId) }}
+											</span>
+											<span v-if="!(selectedEntity.classs?.length)" class="no-tags-hint">
+												Классы не выбраны. Нажмите «Древо классов», чтобы выбрать специализацию.
+											</span>
+										</div>
+									</div>
+
+									<!-- Talents Quick Nav Card -->
+									<div class="relation-quick-nav-card">
+										<div class="rqn-header">
+											<div class="rqn-title-box">
+												<span class="rqn-icon">🌟</span>
+												<div>
+													<div class="rqn-title">Врождённые таланты ({{ (selectedEntity.talents || []).length }})</div>
+													<div class="rqn-sub">Редкие дары Нового Мира (например, обход ограничений экипировки)</div>
+												</div>
+											</div>
+											<button
+												type="button"
+												class="rqn-nav-btn"
+												@click="activeCharacterSubTab = 'talents'"
+											>
+												<span>Вкладка талантов →</span>
+											</button>
+										</div>
+										<div class="rqn-chips">
 											<span
 												v-for="tId in (selectedEntity.talents || [])"
-												:key="'char-tal-' + tId"
-												class="interactive-tag-chip __talent"
+												:key="'char-rel-tal-' + tId"
+												class="rqn-chip __talent"
 											>
-												<span class="chip-icon">{{ getTalentIcon(tId) }}</span>
-												<span class="chip-text">{{ getTalentName(tId) }}</span>
-												<button
-													type="button"
-													class="chip-remove-btn"
-													title="Удалить талант у персонажа"
-													@click="removeTalentFromCharacter(tId)"
-												>
-													✕
-												</button>
+												{{ getTalentIcon(tId) }} {{ getTalentName(tId) }}
 											</span>
-											<span v-if="!(selectedEntity.talents && selectedEntity.talents.length > 0)" class="no-tags-hint">
-												У персонажа нет врождённого таланта (в Новом Мире талант есть лишь у 1 из 200)
+											<span v-if="!(selectedEntity.talents?.length)" class="no-tags-hint">
+												Врождённые таланты не выбраны.
 											</span>
-										</div>
-
-										<!-- Suggestions / Available Talents -->
-										<div class="skill-suggestions-box" v-if="talents.length > 0">
-											<span class="suggestions-label">Быстрый выбор из skills/talents/talents.json:</span>
-											<div class="suggestion-pills-list">
-												<button
-													v-for="tal in talents"
-													:key="'add-tal-' + tal.id"
-													type="button"
-													class="suggestion-pill __talent-pill"
-													:class="{ __already: (selectedEntity.talents || []).includes(tal.id) }"
-													:disabled="(selectedEntity.talents || []).includes(tal.id)"
-													@click="addTalentToCharacter(tal.id)"
-												>
-													{{ tal.icon || '🌟' }} {{ tal.name }}
-												</button>
-											</div>
 										</div>
 									</div>
 								</div>
@@ -1380,7 +1562,7 @@
 											🏷️ {{ activeTab === 'characters' ? 'Собственные теги персонажа' : 'Теги сущности' }}
 										</span>
 										<span class="tag-section-hint">
-											{{ activeTab === 'characters' ? '(сохраняются в characters_data.json)' : '(сохраняются в JSON)' }}
+											{{ activeTab === 'characters' ? '(сохраняются в values.json)' : '(сохраняются в JSON)' }}
 										</span>
 									</div>
 
@@ -1589,6 +1771,14 @@
 										</div>
 									</div>
 									<div class="ssh-actions">
+										<button
+											type="button"
+											class="editor-btn editor-btn-secondary"
+											title="Открыть интерактивное древо прокачки и тестирования навыков"
+											@click="openSkillTreeTesterForCurrent"
+										>
+											🌳 В древо навыков →
+										</button>
 										<button type="button" class="editor-btn editor-btn-secondary" @click="openAddBranchModal">
 											➕ Новая ветка
 										</button>
@@ -1827,6 +2017,7 @@
 									></textarea>
 								</div>
 							</div>
+							</template>
 						</div>
 
 						<!-- Bottom Action Bar -->
@@ -2321,13 +2512,17 @@
 		</Transition>
 	</div>
 </template>
-
+ 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useDataEditor } from '@/composables/useDataEditor'
 import EntityTagPicker from '@/components/tests/EntityTagPicker.vue'
 import ClassRaceTreeCanvas from '@/components/game/dataEditor/ClassRaceTreeCanvas.vue'
+import CharacterEquipmentTab from '@/components/game/dataEditor/CharacterEquipmentTab.vue'
+import CharacterSkillsTab from '@/components/game/dataEditor/CharacterSkillsTab.vue'
+import CharacterTalentsTab from '@/components/game/dataEditor/CharacterTalentsTab.vue'
+import CharacterBiometricsTab from '@/components/game/dataEditor/CharacterBiometricsTab.vue'
 import {
 	SKILL_CATEGORIES,
 	getCategoryMeta,
@@ -2336,6 +2531,17 @@ import {
 } from '@/utils/skillTree'
 
 const router = useRouter()
+const route = useRoute()
+const activeCharacterSubTab = ref('profile') // 'profile' | 'biometrics' | 'equipment' | 'talents' | 'class_skills' | 'race_skills'
+
+function openSpriteStudioForCharacter(charId) {
+	router.push({
+		path: '/test/character-sprites',
+		query: {
+			character: charId || selectedEntity.value?.id || 'default'
+		}
+	})
+}
 const {
 	activeTab,
 	entities,
@@ -3082,6 +3288,20 @@ const availableGlobalTagSuggestions = computed(() => {
 onMounted(async () => {
 	window.addEventListener('click', onWindowClick)
 	await init()
+
+	// Deep link routing from query params (e.g. from Sprite Studio)
+	if (route.query.tab && entities.value[route.query.tab]) {
+		activeTab.value = route.query.tab
+		if (route.query.id) {
+			const target = entities.value[route.query.tab].find((e) => e.id === route.query.id)
+			if (target) {
+				startEdit(target)
+				if (route.query.tab === 'characters' && route.query.subtab) {
+					activeCharacterSubTab.value = route.query.subtab
+				}
+			}
+		}
+	}
 })
 
 onUnmounted(() => {
@@ -3090,16 +3310,21 @@ onUnmounted(() => {
 
 function switchTab(tabId) {
 	activeTab.value = tabId
+	activeCharacterSubTab.value = 'profile'
 	cancelEdit()
 	searchQuery.value = ''
 	selectedTagForInspector.value = null
 }
 
 function onStartCreate() {
+	activeCharacterSubTab.value = 'profile'
 	startCreate()
 }
 
 function onSelectEntity(item) {
+	if (!activeCharacterSubTab.value) {
+		activeCharacterSubTab.value = 'profile'
+	}
 	startEdit(item)
 }
 
@@ -3337,6 +3562,17 @@ function openAddSkillModalAt(reqLevel = 1, gridCol = 0) {
 function getSkillsCountInBranch(branchId) {
 	if (!selectedEntity.value || !Array.isArray(selectedEntity.value.skills)) return 0
 	return selectedEntity.value.skills.filter((s) => s.branch === branchId).length
+}
+
+function openSkillTreeTesterForCurrent() {
+	if (!selectedEntity.value) return
+	router.push({
+		path: '/test/skill-tree',
+		query: {
+			type: activeTab.value,
+			id: selectedEntity.value.id
+		}
+	})
 }
 
 function getBranchName(branchId) {
@@ -4324,6 +4560,71 @@ function removeSkill(skillId) {
 	gap: 0.6em;
 }
 
+/* Character Sub-tabs Switcher Bar */
+.char-subtabs-nav-bar {
+	display: flex;
+	align-items: center;
+	gap: 0.6em;
+	padding: 0.7em 1.5em;
+	background: rgba(12, 18, 32, 0.85);
+	border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+	flex-wrap: wrap;
+}
+
+.char-subtab-nav-btn {
+	background: rgba(255, 255, 255, 0.05);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	color: #94a3b8;
+	font-size: 0.88em;
+	font-weight: 500;
+	padding: 0.45em 0.9em;
+	border-radius: 0.4em;
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+	cursor: pointer;
+	transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.char-subtab-nav-btn:hover {
+	background: rgba(255, 255, 255, 0.1);
+	color: #f1f5f9;
+}
+
+.char-subtab-nav-btn.__active {
+	background: rgba(59, 130, 246, 0.25);
+	border-color: #3b82f6;
+	color: #60a5fa;
+	font-weight: bold;
+	box-shadow: 0 0.2em 0.8em rgba(59, 130, 246, 0.2);
+}
+
+.char-subtab-nav-btn.__studio-link {
+	margin-left: auto;
+	background: rgba(246, 196, 69, 0.12);
+	border-color: rgba(246, 196, 69, 0.35);
+	color: #f6c445;
+}
+
+.char-subtab-nav-btn.__studio-link:hover {
+	background: rgba(246, 196, 69, 0.25);
+	border-color: #f6c445;
+	color: #ffffff;
+}
+
+.csn-icon {
+	font-size: 1.1em;
+}
+
+.csn-badge {
+	background: rgba(0, 0, 0, 0.4);
+	color: #fbbf24;
+	font-size: 0.78em;
+	padding: 0.1em 0.45em;
+	border-radius: 0.3em;
+	border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .form-fields-scroll {
 	flex: 1;
 	overflow-y: auto;
@@ -4521,6 +4822,86 @@ function removeSkill(skillId) {
 	border-color: #ec4899;
 	color: #f472b6;
 	font-weight: bold;
+}
+
+/* Relation Quick Nav Card */
+.relation-quick-nav-card {
+	background: rgba(10, 15, 26, 0.6);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: 0.5em;
+	padding: 0.8em 1em;
+	display: flex;
+	flex-direction: column;
+	gap: 0.6em;
+}
+
+.rqn-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1em;
+}
+
+.rqn-title-box {
+	display: flex;
+	align-items: center;
+	gap: 0.6em;
+}
+
+.rqn-icon {
+	font-size: 1.5em;
+}
+
+.rqn-title {
+	font-size: 0.95em;
+	font-weight: 700;
+	color: #f8fafc;
+}
+
+.rqn-sub {
+	font-size: 0.78em;
+	color: #94a3b8;
+}
+
+.rqn-nav-btn {
+	background: rgba(59, 130, 246, 0.15);
+	border: 1px solid rgba(59, 130, 246, 0.4);
+	color: #93c5fd;
+	padding: 0.35em 0.8em;
+	border-radius: 0.35em;
+	font-family: Kurale, sans-serif;
+	font-size: 0.82em;
+	cursor: pointer;
+	white-space: nowrap;
+	transition: all 0.15s;
+}
+
+.rqn-nav-btn:hover {
+	background: rgba(59, 130, 246, 0.3);
+	border-color: #60a5fa;
+	color: #fff;
+}
+
+.rqn-chips {
+	display: flex;
+	gap: 0.4em;
+	flex-wrap: wrap;
+	align-items: center;
+}
+
+.rqn-chip {
+	background: rgba(255, 255, 255, 0.06);
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	color: #cbd5e1;
+	border-radius: 0.3em;
+	padding: 0.2em 0.6em;
+	font-size: 0.82em;
+}
+
+.rqn-chip.__talent {
+	background: rgba(251, 191, 36, 0.12);
+	border-color: rgba(251, 191, 36, 0.3);
+	color: #fbbf24;
 }
 
 .item-skills-panel {

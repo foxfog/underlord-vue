@@ -64,6 +64,12 @@ const router = createRouter({
 			name: 'skill-tree-tester',
 			path: '/test/skill-tree',
 			component: () => import('@/views/SkillTreeTesterView.vue')
+		},
+		{
+			id: 10,
+			name: 'character-sprites-tester',
+			path: '/test/character-sprites',
+			component: () => import('@/views/CharacterSpriteTesterView.vue')
 		}
 	]
 })

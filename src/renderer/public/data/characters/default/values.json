@@ -1,0 +1,64 @@
+{
+	"id": "default",
+	"name": "Дефолтный персонаж",
+	"surname": "",
+	"nickname": "",
+	"title": "",
+	"names": [
+		"Дефолтный",
+		"Шаблон",
+		"Чар"
+	],
+	"icon": "images/sprites/characters/default/isometric/char.png",
+	"gender": "male",
+	"race": "human",
+	"races": [
+		"human"
+	],
+	"classs": [
+		"warrior"
+	],
+	"fractions": [],
+	"tags": [
+		"default",
+		"template",
+		"dummy"
+	],
+	"description": "Базовый дефолтный шаблон персонажа с минимальными характеристиками.",
+	"size": 1,
+	"root_offset": {
+		"x": 0,
+		"y": 0
+	},
+	"hpmax": 1,
+	"mpmax": 0,
+	"attack": 1,
+	"defense": 0,
+	"weight": 50,
+	"hp": 1,
+	"mp": 0,
+	"lvl": 1,
+	"exp": 0,
+	"skill_points": 0,
+	"stat_points": 0,
+	"equipment_slots": {
+		"head": null,
+		"mask": null,
+		"neck_1": null,
+		"torso-1": null,
+		"torso-2": null,
+		"torso-3": null,
+		"hands": null,
+		"legs-2": null,
+		"feet": null,
+		"weapon-hand-1": null,
+		"weapon-hand-2": null,
+		"underpants": null
+	},
+	"inventory": {
+		"items": []
+	},
+	"abilities": [],
+	"height": 175,
+	"age": 20
+}

@@ -73,9 +73,6 @@
 			class="tree-scroll-container"
 			:class="{ '__is-panning': isPanning }"
 			@mousedown="onPanStart"
-			@mousemove="onPanMove"
-			@mouseup="onPanEnd"
-			@mouseleave="onPanEnd"
 			@wheel.passive="onWheel"
 		>
 			<div
@@ -92,23 +89,27 @@
 					<defs>
 						<marker
 							id="tree-arrow-default"
-							markerWidth="6"
-							markerHeight="6"
-							refX="5"
-							refY="3"
+							viewBox="0 0 12 12"
+							markerWidth="11"
+							markerHeight="11"
+							refX="1"
+							refY="6"
+							markerUnits="userSpaceOnUse"
 							orient="auto"
 						>
-							<polygon points="0 0.8, 5 3, 0 5.2" fill="#94a3b8" />
+							<polygon points="1 2.2, 10.5 6, 1 9.8" fill="#94a3b8" />
 						</marker>
 						<marker
 							id="tree-arrow-active"
-							markerWidth="6"
-							markerHeight="6"
-							refX="5"
-							refY="3"
+							viewBox="0 0 12 12"
+							markerWidth="11"
+							markerHeight="11"
+							refX="1"
+							refY="6"
+							markerUnits="userSpaceOnUse"
 							orient="auto"
 						>
-							<polygon points="0 0.8, 5 3, 0 5.2" fill="#fbbf24" />
+							<polygon points="1 2.2, 10.5 6, 1 9.8" fill="#fbbf24" />
 						</marker>
 					</defs>
 
@@ -182,6 +183,7 @@
 												`__tier-${node.tier || 'basic'}`,
 												{
 													__selected: selectedId === node.id,
+													__assigned: selectionMode && assignedIds.includes(node.id),
 													__hovered: hoveredNodeId === node.id,
 													__related: relatedNodeIds.has(node.id),
 													__highlighted: isSearchMatched(node)
@@ -194,7 +196,10 @@
 											<!-- Square Box (Skill Tree Aesthetic) -->
 											<div
 												class="tree-node-square"
-												:class="`__tier-${node.tier || 'basic'}`"
+												:class="[
+													`__tier-${node.tier || 'basic'}`,
+													{ __assigned: selectionMode && assignedIds.includes(node.id) }
+												]"
 											>
 												<!-- Tier badge in corner: I, II, III -->
 												<span class="node-tier-badge" :title="getTierLabel(node)">
@@ -206,17 +211,48 @@
 													{{ node.icon || defaultIcon }}
 												</span>
 
-												<!-- Subclasses counter badge in bottom-right corner -->
+												<!-- Subclasses counter badge in bottom-right corner (if not assigned) -->
 												<span
-													v-if="getChildCount(node.id) > 0"
+													v-if="getChildCount(node.id) > 0 && !(selectionMode && assignedIds.includes(node.id))"
 													class="node-child-badge"
 													:title="type === 'fractions' ? (`Подразделений/филиалов: ${getChildCount(node.id)}`) : (`Подклассов/эволюций: ${getChildCount(node.id)}`)"
 												>
 													↳{{ getChildCount(node.id) }}
 												</span>
 
-												<!-- Hover Action Buttons overlay -->
-												<div class="node-hover-actions" @click.stop>
+												<!-- Assigned Checkmark in corner when in selectionMode -->
+												<span
+													v-if="selectionMode && assignedIds.includes(node.id)"
+													class="node-assigned-check"
+													title="Назначен персонажу"
+												>
+													✔
+												</span>
+
+												<!-- Selection Mode Action Buttons overlay -->
+												<div v-if="selectionMode" class="node-selection-actions" @click.stop>
+													<button
+														v-if="assignedIds.includes(node.id)"
+														type="button"
+														class="node-select-btn __remove"
+														title="Снять с персонажа"
+														@click.stop="$emit('toggleAssign', node)"
+													>
+														✔ Снять
+													</button>
+													<button
+														v-else
+														type="button"
+														class="node-select-btn __add"
+														title="Назначить персонажу"
+														@click.stop="$emit('toggleAssign', node)"
+													>
+														➕ Взять
+													</button>
+												</div>
+
+												<!-- Hover Action Buttons overlay (Standard Editor Mode) -->
+												<div v-else class="node-hover-actions" @click.stop>
 													<button
 														type="button"
 														class="node-action-btn __edit"
@@ -232,6 +268,15 @@
 														@click.stop="$emit('createChild', node)"
 													>
 														➕
+													</button>
+													<button
+														v-if="type === 'classes' || type === 'races'"
+														type="button"
+														class="node-action-btn __skills"
+														title="Открыть древо навыков и прокачки"
+														@click.stop="openSkillTree(node)"
+													>
+														⚡
 													</button>
 													<button
 														type="button"
@@ -309,6 +354,9 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
+import { useTreePanZoom } from '@/composables/useTreePanZoom'
+import { buildBottomUpConnectorPath, TREE_MARKER_CONFIG } from '@/utils/treeConnectors'
 
 const props = defineProps({
 	type: {
@@ -323,6 +371,14 @@ const props = defineProps({
 		type: String,
 		default: null
 	},
+	selectionMode: {
+		type: Boolean,
+		default: false
+	},
+	assignedIds: {
+		type: Array,
+		default: () => []
+	},
 	activeLocale: {
 		type: String,
 		default: 'ru'
@@ -333,19 +389,51 @@ const props = defineProps({
 	}
 })
 
-const emit = defineEmits(['select', 'createChild', 'delete'])
+const emit = defineEmits(['select', 'createChild', 'delete', 'toggleAssign'])
+const router = useRouter()
 
 // State
 const activeCategory = ref('combat') // will default based on type
 const searchQuery = ref('')
-const zoomScale = ref(1.0)
 const scrollContainerRef = ref(null)
 const zoomContentRef = ref(null)
 const clustersContainerRef = ref(null)
 
-const isPanning = ref(false)
-const panStart = { x: 0, y: 0 }
-const scrollStart = { left: 0, top: 0 }
+const {
+	zoomScale,
+	isPanning,
+	zoomContentStyle,
+	zoomIn,
+	zoomOut,
+	resetZoom,
+	centerView: panZoomCenterView,
+	onPanStart: handlePanStart,
+	onWheel: handleWheel
+} = useTreePanZoom({
+	onZoomChange: () => recalculateConnectors()
+})
+
+function centerView() {
+	panZoomCenterView(scrollContainerRef.value, zoomContentRef.value, { alignY: 'bottom' })
+}
+
+function onPanStart(e) {
+	handlePanStart(e, scrollContainerRef.value)
+}
+
+function onWheel(e) {
+	handleWheel(e, scrollContainerRef.value)
+}
+
+function openSkillTree(node) {
+	router.push({
+		path: '/test/skill-tree',
+		query: {
+			type: props.type,
+			id: node.id
+		}
+	})
+}
 
 const hoveredNodeId = ref(null)
 const nodeElementsMap = new Map()
@@ -908,6 +996,9 @@ const relatedNodeIds = computed(() => {
 
 function onNodeClick(node) {
 	emit('select', node)
+	if (props.selectionMode) {
+		emit('toggleAssign', node)
+	}
 }
 
 function onNodeMouseEnter(node) {
@@ -964,17 +1055,13 @@ function recalculateConnectors() {
 			const cX = (childRect.left + childRect.width / 2 - containerRect.left) / currentZoom
 			const cY = (childRect.bottom - containerRect.top) / currentZoom // Bottom center of child
 
-			// Connection curve from parent (bottom) to child (top)
-			const deltaY = Math.abs(pY - cY)
-			const curveOffset = Math.max(deltaY * 0.45, 25)
-
-			let d = ''
-			if (Math.abs(pX - cX) < 2) {
-				// Pure vertical line when parent and child are aligned in same column
-				d = `M ${pX} ${pY} L ${cX} ${cY}`
-			} else {
-				d = `M ${pX} ${pY} C ${pX} ${pY - curveOffset}, ${cX} ${cY + curveOffset}, ${cX} ${cY}`
-			}
+			const d = buildBottomUpConnectorPath({
+				pX,
+				pY,
+				cX,
+				cY,
+				arrowLength: TREE_MARKER_CONFIG.arrowLength
+			})
 
 			lines.push({
 				key: `${pid}->${item.id}`,
@@ -1001,90 +1088,12 @@ function updateConnectorActiveStates() {
 	}
 }
 
-// Zoom & Pan Engine
-const zoomContentStyle = computed(() => {
-	return {
-		transform: `scale(${zoomScale.value})`,
-		transformOrigin: '0 0'
-	}
-})
-
 const svgDimensionStyle = computed(() => {
 	return {
 		width: `${svgDimensions.value.width}px`,
 		height: `${svgDimensions.value.height}px`
 	}
 })
-
-function zoomIn() {
-	zoomScale.value = Math.min(zoomScale.value + 0.15, 2.0)
-	nextTick(() => recalculateConnectors())
-}
-
-function zoomOut() {
-	zoomScale.value = Math.max(zoomScale.value - 0.15, 0.45)
-	nextTick(() => recalculateConnectors())
-}
-
-function resetZoom() {
-	zoomScale.value = 1.0
-	nextTick(() => recalculateConnectors())
-}
-
-function centerView() {
-	if (!scrollContainerRef.value || !zoomContentRef.value) return
-	const container = scrollContainerRef.value
-	const content = zoomContentRef.value
-	container.scrollLeft = (content.scrollWidth * zoomScale.value - container.clientWidth) / 2
-	container.scrollTop = content.scrollHeight * zoomScale.value - container.clientHeight
-}
-
-function onWheel(e) {
-	if (e.ctrlKey) {
-		const delta = e.deltaY < 0 ? 0.08 : -0.08
-		zoomScale.value = Math.min(Math.max(zoomScale.value + delta, 0.45), 2.0)
-		nextTick(() => recalculateConnectors())
-	} else if (e.shiftKey && scrollContainerRef.value && e.deltaY) {
-		scrollContainerRef.value.scrollLeft += e.deltaY
-	}
-}
-
-function onPanStart(e) {
-	if (e.button !== 0 && e.button !== 1) return
-	// Ignore if clicked directly on an interactive element (cards, buttons, inputs)
-	const isInteractive = e.target && e.target.closest && e.target.closest(
-		'.tree-node-card, button, input, textarea, select, a, .node-hover-actions'
-	)
-	if (isInteractive) return
-
-	isPanning.value = true
-	panStart.x = e.clientX
-	panStart.y = e.clientY
-	if (scrollContainerRef.value) {
-		scrollStart.left = scrollContainerRef.value.scrollLeft
-		scrollStart.top = scrollContainerRef.value.scrollTop
-	}
-
-	window.addEventListener('mousemove', onPanMove)
-	window.addEventListener('mouseup', onPanEnd)
-	e.preventDefault()
-}
-
-function onPanMove(e) {
-	if (!isPanning.value || !scrollContainerRef.value) return
-	const dx = e.clientX - panStart.x
-	const dy = e.clientY - panStart.y
-	scrollContainerRef.value.scrollLeft = scrollStart.left - dx
-	scrollContainerRef.value.scrollTop = scrollStart.top - dy
-}
-
-function onPanEnd() {
-	if (isPanning.value) {
-		isPanning.value = false
-		window.removeEventListener('mousemove', onPanMove)
-		window.removeEventListener('mouseup', onPanEnd)
-	}
-}
 
 // Recalculate on items / selection / search changes
 watch(
@@ -1120,8 +1129,6 @@ onBeforeUnmount(() => {
 	if (resizeObserver) {
 		resizeObserver.disconnect()
 	}
-	window.removeEventListener('mousemove', onPanMove)
-	window.removeEventListener('mouseup', onPanEnd)
 })
 </script>
 
@@ -1534,6 +1541,12 @@ onBeforeUnmount(() => {
 	outline-offset: 0.15em;
 }
 
+/* Assigned state (selectionMode) */
+.tree-node-wrapper.__assigned .tree-node-square {
+	border-color: #10b981;
+	box-shadow: 0 0 1.2em rgba(16, 185, 129, 0.4), inset 0 0 0.6em rgba(16, 185, 129, 0.2);
+}
+
 .node-main-icon {
 	font-size: 1.85em;
 	line-height: 1;
@@ -1575,6 +1588,20 @@ onBeforeUnmount(() => {
 	padding: 0.05em 0.3em;
 	border-radius: 0.25em;
 	border: 1px solid rgba(56, 189, 248, 0.3);
+	line-height: 1.2;
+}
+
+.node-assigned-check {
+	position: absolute;
+	top: 0.25em;
+	right: 0.25em;
+	font-size: 0.7em;
+	font-weight: 700;
+	color: #10b981;
+	background: rgba(6, 78, 59, 0.85);
+	border: 1px solid rgba(16, 185, 129, 0.5);
+	border-radius: 0.25em;
+	padding: 0.05em 0.3em;
 	line-height: 1.2;
 }
 
@@ -1659,6 +1686,58 @@ onBeforeUnmount(() => {
 
 .node-action-btn.__delete:hover {
 	background: rgba(239, 68, 68, 0.3);
+}
+
+.node-action-btn.__skills:hover {
+	background: rgba(59, 130, 246, 0.35);
+}
+
+/* Selection Mode Actions Bar */
+.node-selection-actions {
+	position: absolute;
+	bottom: -0.8em;
+	left: 50%;
+	transform: translateX(-50%);
+	display: none;
+	z-index: 10;
+	white-space: nowrap;
+}
+
+.tree-node-wrapper:hover .node-selection-actions {
+	display: flex;
+}
+
+.node-select-btn {
+	padding: 0.2em 0.55em;
+	border-radius: 0.35em;
+	font-size: 0.7em;
+	font-weight: 700;
+	cursor: pointer;
+	border: 1px solid transparent;
+	transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+	box-shadow: 0 0.2em 0.6em rgba(0, 0, 0, 0.5);
+}
+
+.node-select-btn.__add {
+	background: #10b981;
+	color: #022c22;
+	border-color: #34d399;
+}
+
+.node-select-btn.__add:hover {
+	background: #34d399;
+	transform: scale(1.06);
+}
+
+.node-select-btn.__remove {
+	background: rgba(239, 68, 68, 0.9);
+	color: #ffffff;
+	border-color: rgba(248, 113, 113, 0.8);
+}
+
+.node-select-btn.__remove:hover {
+	background: #ef4444;
+	transform: scale(1.06);
 }
 
 .tree-empty-notice {
