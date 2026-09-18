@@ -357,6 +357,81 @@ ipcMain.handle('data-editor-list-files', async (_event, relativeDir) => {
 	}
 })
 
+ipcMain.handle('data-editor-list-tree', async (_event, relativeDir = '') => {
+	try {
+		const baseDir = getDataDirectory()
+		const targetDir = join(baseDir, relativeDir)
+
+		async function scanDirectory(dir, relPath = '') {
+			const entries = await fs.readdir(dir, { withFileTypes: true })
+			const items = []
+			for (const entry of entries) {
+				const itemRelPath = relPath ? `${relPath}/${entry.name}` : entry.name
+				if (entry.isDirectory()) {
+					const children = await scanDirectory(join(dir, entry.name), itemRelPath)
+					items.push({
+						name: entry.name,
+						isDirectory: true,
+						path: itemRelPath,
+						children
+					})
+				} else if (entry.isFile() && entry.name.endsWith('.json')) {
+					items.push({
+						name: entry.name,
+						isDirectory: false,
+						path: itemRelPath
+					})
+				}
+			}
+			items.sort((a, b) => {
+				if (a.isDirectory && !b.isDirectory) return -1
+				if (!a.isDirectory && b.isDirectory) return 1
+				return a.name.localeCompare(b.name)
+			})
+			return items
+		}
+
+		try {
+			const tree = await scanDirectory(targetDir, relativeDir)
+			return { success: true, tree }
+		} catch (err) {
+			if (err.code === 'ENOENT') {
+				return { success: true, tree: [] }
+			}
+			throw err
+		}
+	} catch (error) {
+		console.error(`⛔ Ошибка при чтении дерева каталогов ${relativeDir}:`, error)
+		return { success: false, error: error.message, tree: [] }
+	}
+})
+
+ipcMain.handle('data-editor-create-dir', async (_event, relativeDir) => {
+	try {
+		const baseDir = getDataDirectory()
+		const dirPath = join(baseDir, relativeDir)
+		await fs.mkdir(dirPath, { recursive: true })
+		console.log(`✔ Каталог создан: ${dirPath}`)
+		return { success: true, path: dirPath }
+	} catch (error) {
+		console.error(`⛔ Ошибка при создании каталога ${relativeDir}:`, error)
+		return { success: false, error: error.message }
+	}
+})
+
+ipcMain.handle('data-editor-delete-dir', async (_event, relativeDir) => {
+	try {
+		const baseDir = getDataDirectory()
+		const dirPath = join(baseDir, relativeDir)
+		await fs.rm(dirPath, { recursive: true, force: true })
+		console.log(`✔ Каталог удалён: ${dirPath}`)
+		return { success: true, path: dirPath }
+	} catch (error) {
+		console.error(`⛔ Ошибка при удалении каталога ${relativeDir}:`, error)
+		return { success: false, error: error.message }
+	}
+})
+
 ipcMain.handle('data-editor-copy-locale', async (_event, params) => {
 	try {
 		const {

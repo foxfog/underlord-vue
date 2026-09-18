@@ -147,4 +147,52 @@ describe('useTreePanZoom composable', () => {
 		expect(content).not.toContain("removeEventListener('mousemove', onPanMove)")
 		expect(content).not.toContain("removeEventListener('mouseup', onPanEnd)")
 	})
+
+	it('supports deep zoom out down to 0.02 and smooth adaptive stepping', () => {
+		const { zoomScale, zoomOut, zoomIn, setZoom } = useTreePanZoom({
+			minZoom: 0.02,
+			initialZoom: 0.1
+		})
+
+		expect(zoomScale.value).toBe(0.1)
+
+		// At zoom < 0.12, adaptive step should be 0.02
+		zoomOut()
+		expect(zoomScale.value).toBe(0.08)
+
+		zoomOut()
+		expect(zoomScale.value).toBe(0.06)
+
+		zoomIn()
+		expect(zoomScale.value).toBe(0.08)
+
+		setZoom(0.02)
+		expect(zoomScale.value).toBe(0.02)
+
+		// Clamps at 0.02
+		zoomOut()
+		expect(zoomScale.value).toBe(0.02)
+	})
+
+	it('gracefully handles native MouseEvent when bound directly to @click handlers', () => {
+		const { zoomScale, zoomIn, zoomOut } = useTreePanZoom({
+			minZoom: 0.1,
+			initialZoom: 1.0,
+			zoomStep: 0.15
+		})
+
+		const mockMouseEvent = {
+			type: 'click',
+			clientX: 100,
+			clientY: 100
+		}
+
+		// When @click="zoomIn" passes MouseEvent as first argument
+		expect(() => zoomIn(mockMouseEvent)).not.toThrow()
+		expect(zoomScale.value).toBe(1.15)
+
+		// When @click="zoomOut" passes MouseEvent as first argument
+		expect(() => zoomOut(mockMouseEvent)).not.toThrow()
+		expect(zoomScale.value).toBe(1.0)
+	})
 })

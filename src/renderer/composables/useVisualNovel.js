@@ -92,6 +92,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		showCharacter,
 		hideCharacter,
 		animateCharacterPart,
+		playCharacterAnimation,
 		rebuildEquipmentBySlot,
 		syncCharacterEquipment
 	} = useStoryCharacters({ characterData })
@@ -822,6 +823,13 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					break
 				case 'part-animate':
 					if (!isRestoringGameState.value) animateCharacterPart(step)
+					stepIndex.value++
+					processStep()
+					break
+				case 'animate':
+				case 'character-animate':
+				case 'play-animation':
+					if (!isRestoringGameState.value) playCharacterAnimation(step)
 					stepIndex.value++
 					processStep()
 					break

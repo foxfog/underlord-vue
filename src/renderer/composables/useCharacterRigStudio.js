@@ -73,55 +73,254 @@ export function useCharacterRigStudio() {
 		{ id: 'avert', label: 'Отводит', icon: '🙈', left: { x: 0.8, y: 0.4 }, right: { x: 0.8, y: 0.4 } }
 	]
 
-	// Direct Rotation & Posing
+	// Direct Rotation, Translation, Scaling & Styling
 	const partRotations = reactive({})
+	const partTranslations = reactive({})
+	const partScales = reactive({})
+	const partCustomStyles = reactive({})
+	const animatedSprites = reactive({})
 	const partPivots = reactive({})
 
-	// Animation Sequencer
+	// Animation Sequencer & Custom Animations
 	const isPlaying = ref(false)
 	const activeAnimation = ref(null)
 	const animationSpeed = ref(1.0)
 	let animFrameId = null
 	let animStartTime = null
 
+	const customAnimations = ref([])
+	const selectedAnimationGroup = ref('all')
+
 	const BUILTIN_ANIMATIONS = [
 		{
 			id: 'wave_hand',
 			name: 'Махание рукой',
 			icon: '👋',
-			desc: 'Поднятие руки от плеча, колебание предплечья и ладони'
+			group: 'Базовые',
+			desc: 'Поднятие руки от плеча, колебание предплечья и ладони',
+			duration: 1.0,
+			repeat: 'loop',
+			timingMode: 'timeline',
+			tracks: [
+				{
+					target: 'arm_left',
+					targetMode: 'single',
+					keyframes: [
+						{ time: 0, transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 0.2, transform: { rotate: -55, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-out' },
+						{ time: 1.0, transform: { rotate: -55, translateX: 0, translateY: 0, scale: 1 }, easing: 'linear' }
+					]
+				},
+				{
+					target: 'arm2_left',
+					targetMode: 'single',
+					keyframes: [
+						{ time: 0, transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 0.3, transform: { rotate: -28, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 0.55, transform: { rotate: 28, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 0.8, transform: { rotate: -28, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 1.0, transform: { rotate: 28, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' }
+					]
+				},
+				{
+					target: 'arm3_left',
+					targetMode: 'single',
+					keyframes: [
+						{ time: 0, transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 0.35, transform: { rotate: -15, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 0.65, transform: { rotate: 15, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 1.0, transform: { rotate: -15, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' }
+					]
+				}
+			]
 		},
 		{
 			id: 'cough',
-			name: 'Кашель (Shake Head)',
+			name: 'Кашель / Чих (Cough)',
 			icon: '🤧',
-			desc: 'Быстрое покачивание головы при кашле'
+			group: 'Базовые',
+			desc: 'Смещение головы и наклон шеи при кашле (как в интро)',
+			duration: 1.3,
+			repeat: 'loop',
+			timingMode: 'timeline',
+			tracks: [
+				{
+					target: 'head',
+					targetMode: 'single',
+					keyframes: [
+						{ time: 0,    transform: { rotate: 0, translateX: 0,    translateY: 0,   scale: 1 }, easing: 'ease-in-out' },
+						{ time: 0.12, transform: { rotate: -3, translateX: -2.5, translateY: 3,   scale: 1 }, easing: 'ease-out' },
+						{ time: 0.25, transform: { rotate: 0, translateX: 0,    translateY: 0,   scale: 1 }, easing: 'ease-in-out' },
+						{ time: 0.37, transform: { rotate: -3, translateX: -2.5, translateY: 3,   scale: 1 }, easing: 'ease-out' },
+						{ time: 0.5,  transform: { rotate: 0, translateX: 0,    translateY: 0,   scale: 1 }, easing: 'ease-in-out' },
+						{ time: 1.3,  transform: { rotate: 0, translateX: 0,    translateY: 0,   scale: 1 }, easing: 'linear' }
+					]
+				},
+				{
+					target: 'neck',
+					targetMode: 'single',
+					keyframes: [
+						{ time: 0,    transform: { rotate: 0,  translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 0.25, transform: { rotate: -8, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-out' },
+						{ time: 0.5,  transform: { rotate: 0,  translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 1.3,  transform: { rotate: 0,  translateX: 0, translateY: 0, scale: 1 }, easing: 'linear' }
+					]
+				}
+			]
 		},
 		{
 			id: 'breathing',
 			name: 'Дыхание (Idle)',
 			icon: '🫁',
-			desc: 'Плавное покачивание и подъем корпуса'
+			group: 'Базовые',
+			desc: 'Плавное покачивание и подъем корпуса',
+			duration: 3.14,
+			repeat: 'loop',
+			timingMode: 'timeline',
+			tracks: [
+				{
+					target: 'body',
+					targetMode: 'single',
+					keyframes: [
+						{ time: 0,    transform: { rotate: 0,   translateX: 0, translateY: 0,  scale: 1 }, easing: 'ease-in-out' },
+						{ time: 0.78, transform: { rotate: 1.5, translateX: 0, translateY: -1, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 1.57, transform: { rotate: 0,   translateX: 0, translateY: 0,  scale: 1 }, easing: 'ease-in-out' },
+						{ time: 2.35, transform: { rotate: 1.5, translateX: 0, translateY: -1, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 3.14, transform: { rotate: 0,   translateX: 0, translateY: 0,  scale: 1 }, easing: 'ease-in-out' }
+					]
+				},
+				{
+					target: 'head',
+					targetMode: 'single',
+					keyframes: [
+						{ time: 0,    transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-in-out' },
+						{ time: 0.78, transform: { rotate: -0.9, translateX: 0, translateY: 0.3,  scale: 1 }, easing: 'ease-in-out' },
+						{ time: 1.57, transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-in-out' },
+						{ time: 2.35, transform: { rotate: -0.9, translateX: 0, translateY: 0.3,  scale: 1 }, easing: 'ease-in-out' },
+						{ time: 3.14, transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-in-out' }
+					]
+				},
+				{
+					target: 'arm_left',
+					targetMode: 'single',
+					keyframes: [
+						{ time: 0,    transform: { rotate: 0,   translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 0.78, transform: { rotate: 2.4, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 1.57, transform: { rotate: 0,   translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 2.35, transform: { rotate: 2.4, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 3.14, transform: { rotate: 0,   translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' }
+					]
+				},
+				{
+					target: 'arm_right',
+					targetMode: 'single',
+					keyframes: [
+						{ time: 0,    transform: { rotate: 0,    translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 0.78, transform: { rotate: -2.4, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 1.57, transform: { rotate: 0,    translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 2.35, transform: { rotate: -2.4, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 3.14, transform: { rotate: 0,    translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' }
+					]
+				}
+			]
 		},
 		{
 			id: 'tremble',
 			name: 'Дрожь (Tremble)',
 			icon: '🥶',
-			desc: 'Мелкое дрожание от холода или страха'
+			group: 'Базовые',
+			desc: 'Мелкое дрожание от холода или страха',
+			duration: 0.1,
+			repeat: 'loop',
+			timingMode: 'timeline',
+			tracks: [
+				{
+					target: 'body',
+					targetMode: 'hierarchy',
+					keyframes: [
+						{ time: 0,    transform: { rotate: -2, translateX: -1, translateY: 0, scale: 1 }, easing: 'step' },
+						{ time: 0.05, transform: { rotate: 2,  translateX: 1,  translateY: 0, scale: 1 }, easing: 'step' },
+						{ time: 0.1,  transform: { rotate: -2, translateX: -1, translateY: 0, scale: 1 }, easing: 'step' }
+					]
+				}
+			]
 		},
 		{
 			id: 'nod',
 			name: 'Кивок (Nod)',
 			icon: '👍',
-			desc: 'Наклон головы в знак согласия'
+			group: 'Базовые',
+			desc: 'Наклон головы в знак согласия',
+			duration: 0.5,
+			repeat: 'count',
+			repeatCount: 2,
+			timingMode: 'timeline',
+			tracks: [
+				{
+					target: 'head',
+					targetMode: 'single',
+					keyframes: [
+						{ time: 0,    transform: { rotate: 0,  translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 0.2,  transform: { rotate: 16, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-out' },
+						{ time: 0.5,  transform: { rotate: 0,  translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' }
+					]
+				},
+				{
+					target: 'neck',
+					targetMode: 'single',
+					keyframes: [
+						{ time: 0,    transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 0.2,  transform: { rotate: 8, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-out' },
+						{ time: 0.5,  transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' }
+					]
+				}
+			]
 		},
 		{
 			id: 'head_shake',
 			name: 'Отрицание',
 			icon: '👎',
-			desc: 'Поворот головы из стороны в сторону'
+			group: 'Базовые',
+			desc: 'Поворот головы из стороны в сторону',
+			duration: 0.4,
+			repeat: 'count',
+			repeatCount: 2,
+			timingMode: 'timeline',
+			tracks: [
+				{
+					target: 'head',
+					targetMode: 'single',
+					keyframes: [
+						{ time: 0,    transform: { rotate: 0,   translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 0.1,  transform: { rotate: -14, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 0.2,  transform: { rotate: 14,  translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 0.3,  transform: { rotate: -14, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 0.4,  transform: { rotate: 0,   translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' }
+					]
+				}
+			]
 		}
 	]
+
+
+	const allAnimations = computed(() => {
+		return [...BUILTIN_ANIMATIONS, ...customAnimations.value]
+	})
+
+	const animationGroups = computed(() => {
+		const set = new Set(['all', 'Базовые'])
+		customAnimations.value.forEach((a) => {
+			if (a.group) set.add(a.group)
+		})
+		return Array.from(set)
+	})
+
+	const filteredAnimations = computed(() => {
+		if (selectedAnimationGroup.value === 'all') {
+			return allAnimations.value
+		}
+		return allAnimations.value.filter((a) => a.group === selectedAnimationGroup.value)
+	})
 
 	// Notification helper
 	function setStatus(text, type = 'success') {
@@ -286,6 +485,8 @@ export function useCharacterRigStudio() {
 			if (!bodyParts[selectedPartName.value]) {
 				selectedPartName.value = Object.keys(bodyParts)[0] || 'body'
 			}
+
+			await loadAnimationsJson(charId)
 
 			stopAnimation()
 		} catch (err) {
@@ -467,11 +668,38 @@ export function useCharacterRigStudio() {
 		return bodyParts[partName]?.image || ''
 	}
 
+	// Rig tree helper: recursively get all child part names
+	function getDescendants(rootPartName) {
+		const result = []
+		function traverse(parent) {
+			for (const [name, p] of Object.entries(bodyParts)) {
+				if (p.parent === parent) {
+					result.push(name)
+					traverse(name)
+				}
+			}
+		}
+		traverse(rootPartName)
+		return result
+	}
+
 	// Posing: reset
 	function resetPose() {
 		stopAnimation()
 		for (const k in partRotations) {
 			partRotations[k] = 0
+		}
+		for (const k in partTranslations) {
+			partTranslations[k] = { x: 0, y: 0 }
+		}
+		for (const k in partScales) {
+			partScales[k] = 1
+		}
+		for (const k in partCustomStyles) {
+			delete partCustomStyles[k]
+		}
+		for (const k in animatedSprites) {
+			delete animatedSprites[k]
 		}
 		for (const k in partPivots) {
 			partPivots[k] = { x: 50, y: 50 }
@@ -485,16 +713,398 @@ export function useCharacterRigStudio() {
 		setStatus('Поза сброшена в исходное положение')
 	}
 
+	// Custom animations persistence (characters/[charId]/animations.json)
+	async function loadAnimationsJson(charId = selectedCharacterId.value) {
+		try {
+			const data = await readDataFile(`characters/${charId}/animations.json`)
+			if (data && Array.isArray(data)) {
+				customAnimations.value = data
+			} else if (data && Array.isArray(data.animations)) {
+				customAnimations.value = data.animations
+			} else {
+				customAnimations.value = []
+			}
+		} catch (err) {
+			console.warn(`[useCharacterRigStudio] No animations.json for ${charId}:`, err)
+			customAnimations.value = []
+		}
+	}
+
+	async function saveAnimationsJson() {
+		const charId = selectedCharacterId.value
+		const rawPayload = JSON.parse(JSON.stringify(customAnimations.value))
+		const success = await writeDataFile(`characters/${charId}/animations.json`, rawPayload)
+		if (success) {
+			setStatus(`Анимации сохранены в characters/${charId}/animations.json`)
+		} else {
+			setStatus(`Ошибка сохранения animations.json`, 'error')
+		}
+		return success
+	}
+
+	// Animation CRUD operations
+	function createAnimation(template = {}) {
+		const newId = template.id || `anim_${Date.now()}`
+		const defaultAnim = {
+			id: newId,
+			name: template.name || 'Новая анимация',
+			icon: template.icon || '✨',
+			desc: template.desc || '',
+			group: template.group || 'Кастомные',
+			duration: Number(template.duration ?? 1.0),
+			repeat: template.repeat || 'loop', // 'loop' | 'once' | 'pingpong' | 'count'
+			repeatCount: Number(template.repeatCount ?? 2),
+			timingMode: template.timingMode || 'timeline', // 'timeline' | 'script'
+			tracks: template.tracks || [
+				{
+					target: selectedPartName.value || 'head',
+					targetMode: 'single', // 'single' | 'hierarchy'
+					keyframes: [
+						{
+							time: 0,
+							transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1 },
+							sprite: null,
+							opacity: 1,
+							customCss: '',
+							easing: 'ease-in-out'
+						},
+						{
+							time: 0.5,
+							transform: { rotate: 15, translateX: 0, translateY: -2, scale: 1 },
+							sprite: null,
+							opacity: 1,
+							customCss: '',
+							easing: 'ease-in-out'
+						},
+						{
+							time: 1.0,
+							transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1 },
+							sprite: null,
+							opacity: 1,
+							customCss: '',
+							easing: 'ease-in-out'
+						}
+					]
+				}
+			],
+			script: template.script || {
+				enabled: false,
+				code: `// Процедурный скрипт тика анимации:\n// time: время в сек, progress: 0..1, cycle: время цикла\nconst wave = sin(progress * 2 * PI);\nreturn {\n  head: { rot: wave * 10, x: wave * 2, y: 0 }\n};`
+			}
+		}
+
+		customAnimations.value.push(defaultAnim)
+		saveAnimationsJson()
+		setStatus(`Создана анимация "${defaultAnim.name}"`)
+		return defaultAnim
+	}
+
+	function updateAnimation(animId, updatedData) {
+		const idx = customAnimations.value.findIndex((a) => a.id === animId)
+		if (idx !== -1) {
+			customAnimations.value[idx] = { ...customAnimations.value[idx], ...updatedData }
+			saveAnimationsJson()
+			setStatus(`Анимация "${customAnimations.value[idx].name}" обновлена`)
+			return customAnimations.value[idx]
+		}
+		return null
+	}
+
+	function deleteAnimation(animId) {
+		const idx = customAnimations.value.findIndex((a) => a.id === animId)
+		if (idx !== -1) {
+			const deleted = customAnimations.value.splice(idx, 1)[0]
+			if (activeAnimation.value === animId) {
+				stopAnimation()
+			}
+			saveAnimationsJson()
+			setStatus(`Анимация "${deleted.name}" удалена`)
+			return true
+		}
+		return false
+	}
+
+	function duplicateAnimation(animId) {
+		const original = allAnimations.value.find((a) => a.id === animId)
+		if (!original) return null
+		const copy = JSON.parse(JSON.stringify(original))
+		copy.id = `anim_${Date.now()}`
+		copy.name = `${original.name} (Копия)`
+		copy.group = original.group === 'Базовые' ? 'Кастомные' : (original.group || 'Кастомные')
+		customAnimations.value.push(copy)
+		saveAnimationsJson()
+		setStatus(`Создана копия "${copy.name}"`)
+		return copy
+	}
+
+	// Keyframe easing & interpolation helpers
+	function applyEasing(t, easing = 'ease-in-out') {
+		const clamped = Math.max(0, Math.min(1, t))
+		switch (easing) {
+			case 'linear':
+				return clamped
+			case 'ease-in':
+				return clamped * clamped
+			case 'ease-out':
+				return clamped * (2 - clamped)
+			case 'ease':
+			case 'ease-in-out':
+				return clamped < 0.5 ? 2 * clamped * clamped : -1 + (4 - 2 * clamped) * clamped
+			case 'step':
+			case 'steps':
+				return 0
+			default:
+				return clamped
+		}
+	}
+
+	function parseCustomCss(cssString) {
+		if (!cssString || typeof cssString !== 'string') return null
+		const styles = {}
+		cssString.split(';').forEach((rule) => {
+			const parts = rule.split(':').map((s) => s?.trim())
+			if (parts[0] && parts[1]) {
+				const camelProp = parts[0].replace(/-([a-z])/g, (_, c) => c.toUpperCase())
+				styles[camelProp] = parts[1]
+			}
+		})
+		return Object.keys(styles).length > 0 ? styles : null
+	}
+
+	function interpolateKeyframes(keyframes, localTime) {
+		const sorted = [...keyframes].sort((a, b) => a.time - b.time)
+		if (sorted.length === 1 || localTime <= sorted[0].time) {
+			const kf = sorted[0]
+			return {
+				rotate: kf.transform?.rotate ?? kf.transform?.rot ?? 0,
+				translateX: kf.transform?.translateX ?? kf.transform?.x ?? 0,
+				translateY: kf.transform?.translateY ?? kf.transform?.y ?? 0,
+				scale: kf.transform?.scale ?? 1,
+				sprite: kf.sprite || null,
+				customStyles: parseCustomCss(kf.customCss)
+			}
+		}
+
+		const last = sorted[sorted.length - 1]
+		if (localTime >= last.time) {
+			return {
+				rotate: last.transform?.rotate ?? last.transform?.rot ?? 0,
+				translateX: last.transform?.translateX ?? last.transform?.x ?? 0,
+				translateY: last.transform?.translateY ?? last.transform?.y ?? 0,
+				scale: last.transform?.scale ?? 1,
+				sprite: last.sprite || null,
+				customStyles: parseCustomCss(last.customCss)
+			}
+		}
+
+		let kfA = sorted[0]
+		let kfB = sorted[1]
+		for (let i = 0; i < sorted.length - 1; i++) {
+			if (sorted[i].time <= localTime && localTime <= sorted[i + 1].time) {
+				kfA = sorted[i]
+				kfB = sorted[i + 1]
+				break
+			}
+		}
+
+		const span = kfB.time - kfA.time
+		const tNorm = span > 0 ? (localTime - kfA.time) / span : 0
+		const easedT = applyEasing(tNorm, kfA.easing || 'ease-in-out')
+
+		function lerp(a, b, t) {
+			return a + (b - a) * t
+		}
+
+		const rotA = kfA.transform?.rotate ?? kfA.transform?.rot ?? 0
+		const rotB = kfB.transform?.rotate ?? kfB.transform?.rot ?? 0
+		const xA = kfA.transform?.translateX ?? kfA.transform?.x ?? 0
+		const xB = kfB.transform?.translateX ?? kfB.transform?.x ?? 0
+		const yA = kfA.transform?.translateY ?? kfA.transform?.y ?? 0
+		const yB = kfB.transform?.translateY ?? kfB.transform?.y ?? 0
+		const sA = kfA.transform?.scale ?? 1
+		const sB = kfB.transform?.scale ?? 1
+
+		let activeSprite = null
+		for (const kf of sorted) {
+			if (kf.time <= localTime) {
+				if (kf.sprite !== undefined) {
+					activeSprite = kf.sprite
+				}
+			} else {
+				break
+			}
+		}
+
+		return {
+			rotate: Number(lerp(rotA, rotB, easedT).toFixed(2)),
+			translateX: Number(lerp(xA, xB, easedT).toFixed(2)),
+			translateY: Number(lerp(yA, yB, easedT).toFixed(2)),
+			scale: Number(lerp(sA, sB, easedT).toFixed(3)),
+			sprite: activeSprite,
+			customStyles: parseCustomCss(kfA.customCss)
+		}
+	}
+
+	// Custom animation playback evaluator
+	function evaluateCustomAnimation(anim, time) {
+		const duration = anim.duration && anim.duration > 0 ? anim.duration : 1.0
+		const repeat = anim.repeat || 'loop'
+		let localTime = 0
+
+		if (repeat === 'loop') {
+			localTime = time % duration
+		} else if (repeat === 'once') {
+			if (time >= duration) {
+				localTime = duration
+				stopAnimation()
+				return
+			}
+			localTime = time
+		} else if (repeat === 'pingpong') {
+			const cycle = time % (duration * 2)
+			localTime = cycle < duration ? cycle : (duration * 2 - cycle)
+		} else if (repeat === 'count') {
+			const maxLoops = anim.repeatCount || 2
+			if (time >= duration * maxLoops) {
+				localTime = duration
+				stopAnimation()
+				return
+			}
+			localTime = time % duration
+		} else {
+			localTime = time % duration
+		}
+
+		const progress = duration > 0 ? localTime / duration : 0
+
+		// Procedural Script Mode
+		if (
+			anim.mode === 'script' ||
+			anim.timingMode === 'script' ||
+			anim.script?.enabled ||
+			(anim.script?.code && (!anim.tracks || anim.tracks.length === 0))
+		) {
+			const code = anim.script?.code || ''
+			if (code.trim()) {
+				try {
+					// Note: new Function() may be blocked by CSP in Electron production builds.
+					// If blocked, we skip the script frame and show a one-time warning.
+					const fn = new Function( // eslint-disable-line no-new-func
+						'time', 'progress', 'cycle', 'duration',
+						'sin', 'cos', 'tan', 'PI', 'abs', 'min', 'max', 'round', 'floor', 'random',
+						'parts', 'getDescendants',
+						code
+					)
+					const result = fn(
+						time,
+						progress,
+						localTime,
+						duration,
+						Math.sin,
+						Math.cos,
+						Math.tan,
+						Math.PI,
+						Math.abs,
+						Math.min,
+						Math.max,
+						Math.round,
+						Math.floor,
+						Math.random,
+						bodyParts,
+						getDescendants
+					)
+					if (result && typeof result === 'object') {
+						for (const [part, vals] of Object.entries(result)) {
+							if (!vals) continue
+							if (vals.rot !== undefined) partRotations[part] = Number(vals.rot)
+							if (vals.rotate !== undefined) partRotations[part] = Number(vals.rotate)
+							if (vals.x !== undefined || vals.y !== undefined) {
+								partTranslations[part] = {
+									x: Number(vals.x || 0),
+									y: Number(vals.y || 0)
+								}
+							}
+							if (vals.scale !== undefined) partScales[part] = Number(vals.scale)
+							if (vals.sprite !== undefined) {
+								if (vals.sprite) animatedSprites[part] = vals.sprite
+								else delete animatedSprites[part]
+							}
+							if (vals.styles) partCustomStyles[part] = vals.styles
+						}
+					}
+				} catch (err) {
+					// EvalError = CSP blocked new Function() — only warn once to avoid console spam
+					if (err instanceof EvalError) {
+						if (!evaluateCustomAnimation._cspWarned) {
+							evaluateCustomAnimation._cspWarned = true
+							console.warn(
+								'[AnimationScript] Процедурные скрипты заблокированы политикой CSP (Content Security Policy).\n' +
+								'В production-сборке Electron new Function() недоступен.\n' +
+								'Используйте режим «Ключевые кадры (Таймлайн)» вместо процедурного скрипта.',
+								err
+							)
+						}
+					} else {
+						console.warn('[AnimationScript Error]:', err)
+					}
+				}
+			}
+			return
+		}
+
+		// Timeline Keyframe Mode
+
+		if (!anim.tracks || !Array.isArray(anim.tracks)) return
+
+		for (const track of anim.tracks) {
+			if (!track.target) continue
+			const keyframes = track.keyframes || []
+			if (keyframes.length === 0) continue
+
+			const targetParts = track.targetMode === 'hierarchy'
+				? [track.target, ...getDescendants(track.target)]
+				: [track.target]
+
+			const state = interpolateKeyframes(keyframes, localTime)
+
+			for (const part of targetParts) {
+				if (state.rotate !== undefined) {
+					partRotations[part] = state.rotate
+				}
+				if (state.translateX !== undefined || state.translateY !== undefined) {
+					partTranslations[part] = {
+						x: state.translateX || 0,
+						y: state.translateY || 0
+					}
+				}
+				if (state.scale !== undefined) {
+					partScales[part] = state.scale
+				}
+				if (state.sprite !== undefined) {
+					if (state.sprite) {
+						animatedSprites[part] = state.sprite
+					} else {
+						delete animatedSprites[part]
+					}
+				}
+				if (state.customStyles) {
+					partCustomStyles[part] = state.customStyles
+				}
+			}
+		}
+	}
+
 	// Animation Sequencer
-	function playAnimation(animId) {
+	function playAnimation(animIdOrObj) {
 		stopAnimation()
+		const animId = typeof animIdOrObj === 'object' && animIdOrObj !== null ? animIdOrObj.id : animIdOrObj
 		activeAnimation.value = animId
 		isPlaying.value = true
 		animStartTime = performance.now()
 
 		function loop(timestamp) {
 			if (!isPlaying.value) return
-			const elapsed = (timestamp - animStartTime) / 1000 * animationSpeed.value
+			const elapsed = ((timestamp - animStartTime) / 1000) * animationSpeed.value
 			stepAnimation(activeAnimation.value, elapsed)
 			animFrameId = requestAnimationFrame(loop)
 		}
@@ -509,13 +1119,40 @@ export function useCharacterRigStudio() {
 			cancelAnimationFrame(animFrameId)
 			animFrameId = null
 		}
-		// Reset temporary rotations to base
+		// Reset temporary rotations, translations, scales, styles, and sprite overrides
 		for (const k in partRotations) {
 			partRotations[k] = 0
+		}
+		for (const k in partTranslations) {
+			partTranslations[k] = { x: 0, y: 0 }
+		}
+		for (const k in partScales) {
+			partScales[k] = 1
+		}
+		for (const k in partCustomStyles) {
+			delete partCustomStyles[k]
+		}
+		for (const k in animatedSprites) {
+			delete animatedSprites[k]
 		}
 	}
 
 	function stepAnimation(animId, time) {
+		// Check if custom animation exists first
+		const custom = customAnimations.value.find((a) => a.id === animId)
+		if (custom) {
+			evaluateCustomAnimation(custom, time)
+			return
+		}
+
+		// Check if builtin animation has tracks (new keyframe format) — use unified evaluator
+		const builtin = BUILTIN_ANIMATIONS.find((a) => a.id === animId)
+		if (builtin && Array.isArray(builtin.tracks) && builtin.tracks.length > 0) {
+			evaluateCustomAnimation(builtin, time)
+			return
+		}
+
+		// Legacy switch/case fallback for builtins without tracks (VN runtime backward compat)
 		switch (animId) {
 			case 'wave_hand': {
 				// Arm left raises up: base -60deg
@@ -533,13 +1170,46 @@ export function useCharacterRigStudio() {
 				break
 			}
 			case 'cough': {
-				// Rapid shake head burst
-				const burst = Math.sin(time * 14) * 8
-				if (bodyParts['head']) {
-					partRotations['head'] = burst
+				// Replicate intro cough animation (0.5s double-cough burst matching CSS coughHead/coughNeck)
+				const cycleDuration = 1.3
+				const localTime = time % cycleDuration
+				let impulse = 0
+				let neckTilt = 0
+
+				if (localTime < 0.5) {
+					// Two distinct cough impulses: 0 to 0.25s (peak at 0.125s), 0.25s to 0.5s (peak at 0.375s)
+					if (localTime < 0.25) {
+						impulse = Math.sin((localTime / 0.25) * Math.PI)
+					} else {
+						impulse = Math.sin(((localTime - 0.25) / 0.25) * Math.PI)
+					}
+					// Overall neck/head forward tilt during the coughing burst (peaks at -8deg)
+					neckTilt = Math.sin((localTime / 0.5) * Math.PI) * -8
 				}
+
+				// Head displacement: translate(-2.5%, 3%) matching @keyframes coughHead
+				if (bodyParts['head']) {
+					partTranslations['head'] = {
+						x: Number((-2.5 * impulse).toFixed(2)),
+						y: Number((3.0 * impulse).toFixed(2))
+					}
+				}
+
+				// Neck and head rotation:
+				if (bodyParts['neck']) {
+					partRotations['neck'] = Number(neckTilt.toFixed(2))
+					if (bodyParts['head']) {
+						partRotations['head'] = Number((-3 * impulse).toFixed(2))
+					}
+				} else if (bodyParts['head']) {
+					// Fallback when character has no separate neck part
+					partRotations['head'] = Number((neckTilt - 3 * impulse).toFixed(2))
+				}
+
+				// Body does NOT shake!
 				if (bodyParts['body']) {
-					partRotations['body'] = Math.sin(time * 14) * 2
+					partRotations['body'] = 0
+					partTranslations['body'] = { x: 0, y: 0 }
 				}
 				break
 			}
@@ -576,14 +1246,44 @@ export function useCharacterRigStudio() {
 	}
 
 	// Export animation step to VN JSON
-	function exportAnimationToJson(partName = selectedPartName.value) {
+	function exportAnimationToJson(animIdOrPart = selectedPartName.value) {
+		const anim = allAnimations.value.find((a) => a.id === animIdOrPart)
+		if (anim) {
+			const step = {
+				type: 'animate',
+				character: selectedCharacterId.value,
+				animation: anim.id,
+				duration: anim.duration || 1.0
+			}
+			const jsonString = JSON.stringify(step, null, 2)
+			if (navigator.clipboard?.writeText) {
+				navigator.clipboard.writeText(jsonString)
+				setStatus(`Шаг сценария для анимации "${anim.name}" скопирован в буфер обмена!`)
+			}
+			return jsonString
+		}
+
+		// Fallback to single part export
+		const partName = animIdOrPart || selectedPartName.value
 		const rot = partRotations[partName] || 0
+		const trans = partTranslations[partName] || { x: 0, y: 0 }
+		const scale = partScales[partName] ?? 1
+		const transformParts = []
+		if (rot) {
+			transformParts.push(`rotate(${Math.round(rot)}deg)`)
+		}
+		if (trans.x || trans.y) {
+			transformParts.push(`translate(${trans.x}%, ${trans.y}%)`)
+		}
+		if (scale !== undefined && scale !== 1) {
+			transformParts.push(`scale(${scale})`)
+		}
 		const step = {
 			type: 'part-animate',
 			character: selectedCharacterId.value,
 			part: partName,
 			styles: {
-				transform: `rotate(${Math.round(rot)}deg)`,
+				transform: transformParts.length > 0 ? transformParts.join(' ') : 'none',
 				transition: 'transform 0.4s ease-in-out'
 			},
 			duration: 0.4
@@ -681,11 +1381,20 @@ export function useCharacterRigStudio() {
 		eyeLeftOffset,
 		eyeRightOffset,
 		EYE_PRESETS,
-		// Rotations & Posing
+		// Rotations, Translations, Scales & Posing
 		partRotations,
+		partTranslations,
+		partScales,
+		partCustomStyles,
+		animatedSprites,
 		partPivots,
 		// Animations
 		BUILTIN_ANIMATIONS,
+		customAnimations,
+		allAnimations,
+		animationGroups,
+		selectedAnimationGroup,
+		filteredAnimations,
 		isPlaying,
 		activeAnimation,
 		animationSpeed,
@@ -704,6 +1413,16 @@ export function useCharacterRigStudio() {
 		resetPose,
 		playAnimation,
 		stopAnimation,
+		stepAnimation,
+		evaluateCustomAnimation,
+		interpolateKeyframes,
+		getDescendants,
+		loadAnimationsJson,
+		saveAnimationsJson,
+		createAnimation,
+		updateAnimation,
+		deleteAnimation,
+		duplicateAnimation,
 		exportAnimationToJson,
 		saveBodyJson,
 		saveValuesJson,

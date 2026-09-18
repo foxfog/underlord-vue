@@ -175,6 +175,32 @@
 					</button>
 				</div>
 			</div>
+
+			<!-- Card 8: Storyline Editor (Active) -->
+			<div class="test-card __active" @click="launchStorylineEditor">
+				<div class="test-card-header">
+					<div class="test-card-icon">📜</div>
+					<span class="test-status-badge __ready">Доступно</span>
+				</div>
+				<div class="test-card-body">
+					<h2 class="test-card-title">Редактор сценариев и сторилейна</h2>
+					<p class="test-card-desc">
+						Визуальный редактор сюжета и новеллы: дерево папок и файлов (intro.json и др.), создание подпапок, инспектор экшенов (диалоги с выбором персонажей, сцены, звуки, выборы) и поддержка прямого JSON-редактирования.
+					</p>
+					<div class="test-tags">
+						<span class="test-tag">Сторилейн</span>
+						<span class="test-tag">Дерево папок</span>
+						<span class="test-tag">Визуальные экшены</span>
+						<span class="test-tag">JSON Редактор</span>
+						<span class="test-tag">Новелла</span>
+					</div>
+				</div>
+				<div class="test-card-footer">
+					<button class="test-btn test-btn-primary" @click.stop="launchStorylineEditor">
+						Открыть редактор →
+					</button>
+				</div>
+			</div>
 		</div>
 	</div>
 </template>
@@ -210,6 +236,10 @@ function launchSkillTreeTester() {
 
 function launchCharacterSpriteTester() {
 	router.push('/test/character-sprites')
+}
+
+function launchStorylineEditor() {
+	router.push('/test/storyline-editor')
 }
 </script>
 

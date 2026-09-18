@@ -142,9 +142,26 @@ describe('useCharacterRigStudio Composable', () => {
 		expect(parsed.duration).toBe(0.4)
 	})
 
-	it('resets all posing angles and eye offsets on resetPose', () => {
+	it('generates valid visual novel animation step JSON with translation and rotation', () => {
+		studio.selectedCharacterId.value = 'default'
+		studio.selectedPartName.value = 'head'
+		studio.partRotations['head'] = -8
+		studio.partTranslations['head'] = { x: -2.5, y: 3.0 }
+
+		const json = studio.exportAnimationToJson('head')
+		const parsed = JSON.parse(json)
+
+		expect(parsed.type).toBe('part-animate')
+		expect(parsed.character).toBe('default')
+		expect(parsed.part).toBe('head')
+		expect(parsed.styles.transform).toBe('rotate(-8deg) translate(-2.5%, 3%)')
+		expect(parsed.duration).toBe(0.4)
+	})
+
+	it('resets all posing angles, translations, and eye offsets on resetPose and stopAnimation', () => {
 		studio.partRotations['head'] = 25
 		studio.partRotations['arm_left'] = -40
+		studio.partTranslations['head'] = { x: -2.5, y: 3.0 }
 		studio.eyeLeftOffset.x = 0.8
 		studio.eyeRightOffset.y = -0.5
 
@@ -152,9 +169,45 @@ describe('useCharacterRigStudio Composable', () => {
 
 		expect(studio.partRotations['head']).toBe(0)
 		expect(studio.partRotations['arm_left']).toBe(0)
+		expect(studio.partTranslations['head']).toEqual({ x: 0, y: 0 })
 		expect(studio.eyeLeftOffset.x).toBe(0)
 		expect(studio.eyeRightOffset.y).toBe(0)
+
+		// Also check stopAnimation
+		studio.partRotations['head'] = 10
+		studio.partTranslations['head'] = { x: 1, y: 2 }
+		studio.stopAnimation()
+		expect(studio.partRotations['head']).toBe(0)
+		expect(studio.partTranslations['head']).toEqual({ x: 0, y: 0 })
 	})
+
+	it('animates cough with head translation and neck tilt without shaking body', () => {
+		studio.bodyParts['body'] = { image: 'body.png', parent: null, offset: { x: 0, y: 0 } }
+		studio.bodyParts['neck'] = { image: 'neck.png', parent: 'body', offset: { x: 0, y: -50 } }
+		studio.bodyParts['head'] = { image: 'head.png', parent: 'neck', offset: { x: -40, y: -40 } }
+
+		// Step at first cough impulse peak (0.125s into 1.3s cycle)
+		studio.stepAnimation('cough', 0.125)
+
+		// Body MUST NOT rotate or shake (keyframe cough doesn't touch body; value stays 0 or undefined)
+		expect(studio.partRotations['body'] ?? 0).toBe(0)
+		expect(studio.partTranslations['body'] ?? { x: 0, y: 0 }).toEqual({ x: 0, y: 0 })
+
+		// Head must displace forward/down toward (-2.5%, 3.0%) — keyframe peak is at t=0.12,
+		// so at t=0.125 we are very close but slightly interpolating back; check sign and order of magnitude
+		expect(studio.partTranslations['head'].x).toBeCloseTo(-2.5, 0)
+		expect(studio.partTranslations['head'].y).toBeCloseTo(3.0, 0)
+
+		// Neck tilts forward/down
+		expect(studio.partRotations['neck']).toBeLessThan(0)
+
+		// Step at pause between coughs (0.8s into 1.3s cycle)
+		studio.stepAnimation('cough', 0.8)
+		expect(studio.partTranslations['head']).toEqual({ x: 0, y: 0 })
+		expect(studio.partRotations['neck']).toBe(0)
+		expect(studio.partRotations['body'] ?? 0).toBe(0)
+	})
+
 
 	it('supports 4-level deep nesting hierarchy matching MC structure', () => {
 		studio.bodyParts['body'] = { image: 'body.png', parent: null, offset: { x: 0, y: 0 } }
@@ -293,5 +346,200 @@ describe('useCharacterRigStudio Composable', () => {
 		expect(receivedPayload.size).toBe(1.277)
 		expect(receivedPayload.root_offset).toEqual({ x: 0, y: -11.1 })
 		expect(studio.statusMessage.value?.type).toBe('success')
+	})
+
+	it('supports animation CRUD operations: create, update, duplicate, delete', () => {
+		const anim = {
+			id: 'custom_nod',
+			name: 'Кивок',
+			icon: '🙇',
+			group: 'Эмоции',
+			duration: 0.8,
+			repeat: 'once',
+			mode: 'timeline',
+			tracks: [
+				{
+					target: 'head',
+					targetMode: 'single',
+					keyframes: [
+						{ time: 0, transform: { rot: 0, x: 0, y: 0, scale: 1 }, easing: 'linear' },
+						{ time: 0.4, transform: { rot: 15, x: 0, y: 2, scale: 1 }, easing: 'ease-out' },
+						{ time: 0.8, transform: { rot: 0, x: 0, y: 0, scale: 1 }, easing: 'ease-in' }
+					]
+				}
+			]
+		}
+
+		// Create
+		studio.createAnimation(anim)
+		expect(studio.customAnimations.value.find((a) => a.id === 'custom_nod')).toBeDefined()
+		expect(studio.animationGroups.value).toContain('Эмоции')
+
+		// Update
+		studio.updateAnimation('custom_nod', { name: 'Глубокий кивок', duration: 1.2 })
+		const updated = studio.customAnimations.value.find((a) => a.id === 'custom_nod')
+		expect(updated.name).toBe('Глубокий кивок')
+		expect(updated.duration).toBe(1.2)
+
+		// Duplicate
+		const duplicated = studio.duplicateAnimation('custom_nod')
+		expect(duplicated).toBeDefined()
+		expect(duplicated.name).toBe('Глубокий кивок (Копия)')
+		expect(studio.customAnimations.value).toContainEqual(duplicated)
+
+		// Delete
+		studio.deleteAnimation(duplicated.id)
+		expect(studio.customAnimations.value.find((a) => a.id === duplicated.id)).toBeUndefined()
+	})
+
+	it('filters animations by group correctly', () => {
+		studio.customAnimations.value = [
+			{ id: 'a1', name: 'Anim 1', group: 'Бой' },
+			{ id: 'a2', name: 'Anim 2', group: 'Диалоги' }
+		]
+
+		studio.selectedAnimationGroup.value = 'all'
+		expect(studio.filteredAnimations.value.some((a) => a.id === 'a1')).toBe(true)
+		expect(studio.filteredAnimations.value.some((a) => a.id === 'cough')).toBe(true)
+
+		studio.selectedAnimationGroup.value = 'Бой'
+		expect(studio.filteredAnimations.value.every((a) => a.group === 'Бой')).toBe(true)
+		expect(studio.filteredAnimations.value.length).toBe(1)
+	})
+
+	it('correctly discovers hierarchical descendants with getDescendants', () => {
+		studio.bodyParts['body'] = { image: 'body.png', parent: null }
+		studio.bodyParts['arm_left'] = { image: 'arm1.png', parent: 'body' }
+		studio.bodyParts['arm_left2'] = { image: 'arm2.png', parent: 'arm_left' }
+		studio.bodyParts['arm_left3'] = { image: 'arm3.png', parent: 'arm_left2' }
+		studio.bodyParts['head'] = { image: 'head.png', parent: 'body' }
+
+		const armDescendants = studio.getDescendants('arm_left')
+		expect(armDescendants).toEqual(['arm_left2', 'arm_left3'])
+
+		const bodyDescendants = studio.getDescendants('body')
+		expect(bodyDescendants).toContain('arm_left')
+		expect(bodyDescendants).toContain('arm_left2')
+		expect(bodyDescendants).toContain('arm_left3')
+		expect(bodyDescendants).toContain('head')
+
+		const leafDescendants = studio.getDescendants('arm_left3')
+		expect(leafDescendants).toEqual([])
+	})
+
+	it('interpolates keyframes with translation, rotation, scale, sprite override, and hierarchy cascade', () => {
+		studio.bodyParts['body'] = { image: 'body.png', parent: null }
+		studio.bodyParts['arm_left'] = { image: 'arm.png', parent: 'body' }
+		studio.bodyParts['arm_left2'] = { image: 'arm2.png', parent: 'arm_left' }
+
+		const anim = {
+			id: 'test_timeline',
+			name: 'Test Timeline',
+			duration: 1.0,
+			repeat: 'once',
+			mode: 'timeline',
+			tracks: [
+				{
+					target: 'arm_left',
+					targetMode: 'hierarchy',
+					keyframes: [
+						{ time: 0, transform: { rot: 0, x: 0, y: 0, scale: 1 }, easing: 'linear' },
+						{ time: 0.5, transform: { rot: 40, x: 10, y: -5, scale: 1.5 }, sprite: 'arm_custom.png', easing: 'linear' },
+						{ time: 1.0, transform: { rot: 80, x: 20, y: -10, scale: 2.0 }, easing: 'linear' }
+					]
+				}
+			]
+		}
+
+		// Evaluate at t = 0.25 (midpoint between 0 and 0.5)
+		studio.evaluateCustomAnimation(anim, 0.25)
+		expect(studio.partRotations['arm_left']).toBeCloseTo(20, 1)
+		expect(studio.partTranslations['arm_left'].x).toBeCloseTo(5, 1)
+		expect(studio.partTranslations['arm_left'].y).toBeCloseTo(-2.5, 1)
+		expect(studio.partScales['arm_left']).toBeCloseTo(1.25, 2)
+		// Target mode is hierarchy, so arm_left2 also gets transform
+		expect(studio.partRotations['arm_left2']).toBeCloseTo(20, 1)
+
+		// Evaluate at t = 0.5 (sprite swap frame)
+		studio.evaluateCustomAnimation(anim, 0.5)
+		expect(studio.animatedSprites['arm_left']).toBe('arm_custom.png')
+	})
+
+	it('evaluates procedural math script animations safely in sandbox', () => {
+		const anim = {
+			id: 'test_script',
+			name: 'Test Script',
+			duration: 2.0,
+			repeat: 'loop',
+			mode: 'script',
+			script: {
+				code: `
+					return {
+						head: {
+							rot: sin(progress * PI) * 30,
+							x: cos(progress * PI) * 10,
+							y: 5,
+							scale: 1.1
+						}
+					};
+				`
+			}
+		}
+
+		// At t = 1.0s (progress = 0.5), sin(0.5 * PI) = 1, cos(0.5 * PI) = 0
+		studio.evaluateCustomAnimation(anim, 1.0)
+		expect(studio.partRotations['head']).toBeCloseTo(30, 1)
+		expect(studio.partTranslations['head'].x).toBeCloseTo(0, 1)
+		expect(studio.partTranslations['head'].y).toBeCloseTo(5, 1)
+		expect(studio.partScales['head']).toBeCloseTo(1.1, 2)
+	})
+
+	it('exports custom animation to VN JSON step format', () => {
+		studio.selectedCharacterId.value = 'mc'
+		studio.customAnimations.value = [
+			{
+				id: 'epic_cough',
+				name: 'Эпичный кашель',
+				duration: 1.5
+			}
+		]
+
+		const json = studio.exportAnimationToJson('epic_cough')
+		const parsed = JSON.parse(json)
+
+		expect(parsed.type).toBe('animate')
+		expect(parsed.character).toBe('mc')
+		expect(parsed.animation).toBe('epic_cough')
+		expect(parsed.duration).toBe(1.5)
+	})
+
+	it('integrates with playCharacterAnimation in story characters', async () => {
+		const { useStoryCharacters } = await import('../story/useStoryCharacters')
+		const { ref } = await import('vue')
+
+		const characterData = ref({
+			mc: { id: 'mc', name: 'Момонга', partAnimations: {} }
+		})
+
+		const storyChars = useStoryCharacters({ characterData })
+
+		// Builtin cough animation
+		storyChars.playCharacterAnimation({ character: 'mc', animation: 'cough', duration: 0.8 })
+		expect(characterData.value.mc.partAnimations['neck']).toBeDefined()
+		expect(characterData.value.mc.partAnimations['neck'].class).toBe('cough-head')
+
+		// Custom tracks animation
+		storyChars.playCharacterAnimation({
+			character: 'mc',
+			animation: 'custom_dance',
+			duration: 1.0,
+			tracks: [
+				{ target: 'arm_left', styles: { transform: 'rotate(45deg)' } },
+				{ target: 'head', styles: { transform: 'translate(0, 5px)' } }
+			]
+		})
+		expect(characterData.value.mc.partAnimations['arm_left']).toBeDefined()
+		expect(characterData.value.mc.partAnimations['arm_left'].styles.transform).toBe('rotate(45deg)')
+		expect(characterData.value.mc.partAnimations['head']).toBeDefined()
 	})
 })

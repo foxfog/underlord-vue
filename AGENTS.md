@@ -51,6 +51,7 @@
 * [Крафт, ковка и экземпляры (`docs/systems/CraftingSystem.md`)](docs/systems/CraftingSystem.md) — 9 уровней редкости, сундуки (`useContainers.js`), наковальня Карна.
 * [Древо навыков (`docs/systems/SkillTreeSystem.md`)](docs/systems/SkillTreeSystem.md) — ветки классов/рас, уровневая сетка, зависимости предков (`all`/`any`), SP.
 * [Система безымянных мобов (`docs/systems/MobSystem.md`)](docs/systems/MobSystem.md) — расчёт статов из рас/классов, звёздность 1★–5★, экипировка по тирам, скалирование, агро/сон.
+* [Редактор сценариев и сторилейна (`docs/systems/StorylineEditorSystem.md`)](docs/systems/StorylineEditorSystem.md) — визуальный редактор сюжета, дерево папок/файлов, инспектор экшенов (диалоги, сцены, выборы, звук), прямой JSON-режим.
 
 ---
 

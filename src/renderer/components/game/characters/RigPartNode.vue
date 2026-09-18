@@ -37,6 +37,10 @@
 				:selected-part-name="selectedPartName"
 				:part-pivots="partPivots"
 				:part-rotations="partRotations"
+				:part-translations="partTranslations"
+				:part-scales="partScales"
+				:part-custom-styles="partCustomStyles"
+				:animated-sprites="animatedSprites"
 				:eye-offset="eyeOffset"
 				:show-bones="showBones"
 				:get-effective-part-image="getEffectivePartImage"
@@ -88,6 +92,22 @@ const props = defineProps({
 		type: Object,
 		default: () => ({})
 	},
+	partTranslations: {
+		type: Object,
+		default: () => ({})
+	},
+	partScales: {
+		type: Object,
+		default: () => ({})
+	},
+	partCustomStyles: {
+		type: Object,
+		default: () => ({})
+	},
+	animatedSprites: {
+		type: Object,
+		default: () => ({})
+	},
 	eyeOffset: {
 		type: Object,
 		default: () => ({ x: 0, y: 0 })
@@ -112,6 +132,9 @@ const onImageLoad = (event) => {
 }
 
 const partImageUrl = computed(() => {
+	if (props.animatedSprites?.[props.spriteName]) {
+		return props.animatedSprites[props.spriteName]
+	}
 	if (typeof props.getEffectivePartImage === 'function') {
 		return props.getEffectivePartImage(props.spriteName)
 	}
@@ -163,10 +186,21 @@ const computedPartStyle = computed(() => {
 	style.transformOrigin = `${pivot.value.x}% ${pivot.value.y}%`
 
 	const rot = props.partRotations[props.spriteName] || 0
+	const trans = props.partTranslations?.[props.spriteName]
+	const scale = props.partScales?.[props.spriteName]
+	const customStyle = props.partCustomStyles?.[props.spriteName]
 	const transforms = []
 
 	if (rot) {
 		transforms.push(`rotate(${rot}deg)`)
+	}
+
+	if (trans && (trans.x || trans.y)) {
+		transforms.push(`translate(${trans.x}%, ${trans.y}%)`)
+	}
+
+	if (scale !== undefined && scale !== 1) {
+		transforms.push(`scale(${scale})`)
 	}
 
 	// Eye joystick translation for eyes / head
@@ -180,6 +214,10 @@ const computedPartStyle = computed(() => {
 
 	if (transforms.length > 0) {
 		style.transform = transforms.join(' ')
+	}
+
+	if (customStyle) {
+		Object.assign(style, customStyle)
 	}
 
 	return style

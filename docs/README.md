@@ -30,6 +30,7 @@
 * [Система Крафта, Ковки и Экземпляров предметов (Crafting & Item Instances)](./systems/CraftingSystem.md)
 * [Древо навыков и система прокачки (Skill Tree System)](./systems/SkillTreeSystem.md)
 * [Система безымянных мобов, звёздности и энкаунтеров (Mob System)](./systems/MobSystem.md)
+* [Редактор сценариев и сторилейна (Storyline Editor System)](./systems/StorylineEditorSystem.md)
 
 ## 🤖 Разработка и Агенты
 * [Руководство для ИИ-агентов и правила адаптивной верстки (AGENTS.md)](../AGENTS.md)

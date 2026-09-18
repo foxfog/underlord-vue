@@ -228,11 +228,75 @@ export function useStoryCharacters({ characterData } = {}) {
 		}
 	}
 
+	function playCharacterAnimation(step) {
+		const characterId = step.character
+		const animId = step.animation || step.id
+		const character = characterData.value[characterId]
+		if (!character || !animId) return
+
+		const duration = step.duration || 0.5
+		const durationMs = duration * 1000
+
+		if (!character.partAnimations) {
+			character.partAnimations = {}
+		}
+
+		if (animId === 'cough') {
+			character.partAnimations['neck'] = {
+				class: 'cough-head',
+				animationDuration: durationMs
+			}
+		} else if (animId === 'tremble') {
+			character.partAnimations['body'] = {
+				class: 'tremble',
+				animationDuration: durationMs
+			}
+		} else if (step.tracks && Array.isArray(step.tracks)) {
+			for (const track of step.tracks) {
+				if (track.target) {
+					character.partAnimations[track.target] = {
+						styles: track.styles || null,
+						class: track.class || null,
+						animationDuration: durationMs
+					}
+				}
+			}
+		} else {
+			const targetPart = step.part || 'head'
+			character.partAnimations[targetPart] = {
+				class: animId,
+				styles: step.styles || null,
+				animationDuration: durationMs
+			}
+		}
+
+		console.log(`🎬 [${characterId}] Character animation: ${animId}, duration=${duration}s`)
+
+		if (duration > 0) {
+			scheduleTimer(() => {
+				if (character.partAnimations) {
+					if (animId === 'cough') {
+						delete character.partAnimations['neck']
+					} else if (animId === 'tremble') {
+						delete character.partAnimations['body']
+					} else if (step.tracks) {
+						for (const track of step.tracks) {
+							delete character.partAnimations[track.target]
+						}
+					} else {
+						delete character.partAnimations[step.part || 'head']
+					}
+				}
+			}, durationMs)
+		}
+	}
+
 	return {
 		visibleCharacters,
 		showCharacter,
 		hideCharacter,
 		animateCharacterPart,
+		playCharacterAnimation,
 		rebuildEquipmentBySlot,
 		syncCharacterEquipment,
 		clearAllTimers

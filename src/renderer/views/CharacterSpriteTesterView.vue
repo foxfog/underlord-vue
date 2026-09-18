@@ -183,6 +183,25 @@
 					</div>
 				</div>
 
+				<!-- Floating Stage Hierarchy Breadcrumb -->
+				<div v-if="selectedPartName && selectedAncestorChain.length > 1" class="stage-hierarchy-breadcrumb">
+					<span class="shb-icon">🧬</span>
+					<span class="shb-label">Иерархия:</span>
+					<div class="shb-nodes">
+						<span
+							v-for="(anc, idx) in selectedAncestorChain"
+							:key="anc"
+							class="shb-node"
+							:class="{ __current: anc === selectedPartName }"
+							:title="`Кликните для выбора детали: ${anc}`"
+							@click.stop="selectedPartName = anc"
+						>
+							{{ anc }}
+							<span v-if="idx < selectedAncestorChain.length - 1" class="shb-sep">›</span>
+						</span>
+					</div>
+				</div>
+
 				<!-- Side Drawer Modal for Part Center Filter -->
 				<Transition name="slide-left">
 					<div
@@ -421,6 +440,10 @@
 										:selected-part-name="selectedPartName"
 										:part-pivots="partPivots"
 										:part-rotations="partRotations"
+										:part-translations="partTranslations"
+										:part-scales="partScales"
+										:part-custom-styles="partCustomStyles"
+										:animated-sprites="animatedSprites"
 										:eye-offset="eyeLinkedOffset"
 										:show-bones="showBones"
 										:get-effective-part-image="getEffectivePartImage"
@@ -603,29 +626,41 @@
 						<!-- Parts List -->
 						<div class="parts-hierarchy-list">
 							<div
-								v-for="(p, name) in bodyParts"
-								:key="name"
+								v-for="item in hierarchicalPartsList"
+								:key="item.name"
 								class="part-list-item"
 								:class="{
-									__active: selectedPartName === name,
-									'__is-child': Boolean(p.parent)
+									__active: selectedPartName === item.name,
+									'__is-root': item.depth === 0,
+									'__is-child': item.depth > 0,
+									'__is-ancestor': selectedAncestorChain.includes(item.name) && selectedPartName !== item.name
 								}"
-								@click="selectedPartName = name"
+								:style="{
+									paddingLeft: `${0.45 + item.depth * 0.95}em`
+								}"
+								@click="selectedPartName = item.name"
 							>
-								<span class="pli-tree-indent">
-									{{ p.parent ? '↳' : '•' }}
+								<span class="pli-tree-guide" :class="`__depth-${item.depth}`">
+									<template v-if="item.depth === 0">⭐</template>
+									<template v-else-if="item.depth === 1">├─</template>
+									<template v-else-if="item.depth === 2">│ └─</template>
+									<template v-else-if="item.depth === 3">│   └─</template>
+									<template v-else>│     └─</template>
 								</span>
-								<span class="pli-name">{{ name }}</span>
-								<span v-if="p.parent" class="pli-parent-tag"
-									>-> {{ p.parent }}</span
-								>
-								<span class="pli-zindex">Z: {{ p.zindex }}</span>
+								<span class="pli-name">{{ item.name }}</span>
+								<span v-if="item.parent" class="pli-parent-tag" :title="`Прикреплена к: ${item.parent}`">
+									↳ {{ item.parent }}
+								</span>
+								<span v-if="item.depth > 0" class="pli-depth-tag" :title="`Уровень вложенности: L${item.depth}`">
+									L{{ item.depth }}
+								</span>
+								<span class="pli-zindex">z: {{ item.part?.zindex ?? item.part?.['z-index'] ?? 0 }}</span>
 								<button
-									v-if="name !== 'body'"
+									v-if="item.name !== 'body'"
 									type="button"
 									class="pli-delete-btn"
-									title="Удалить часть"
-									@click.stop="removeBodyPart(name)"
+									title="Удалить деталь"
+									@click.stop="removeBodyPart(item.name)"
 								>
 									✕
 								</button>
@@ -639,6 +674,24 @@
 							<span class="ssc-title"
 								>Инспектор части: <strong>{{ selectedPartName }}</strong></span
 							>
+						</div>
+
+						<!-- Hierarchy Breadcrumbs -->
+						<div v-if="selectedAncestorChain.length > 1" class="part-breadcrumb-card">
+							<span class="pbc-label">Иерархия (от корня к детали):</span>
+							<div class="pbc-chain">
+								<span
+									v-for="(anc, idx) in selectedAncestorChain"
+									:key="anc"
+									class="pbc-node"
+									:class="{ __current: anc === selectedPartName }"
+									:title="`Кликните для перехода к детали: ${anc}`"
+									@click="selectedPartName = anc"
+								>
+									<span class="pbc-name">{{ anc }}</span>
+									<span v-if="idx < selectedAncestorChain.length - 1" class="pbc-sep">›</span>
+								</span>
+							</div>
 						</div>
 
 						<!-- Image Source -->
@@ -663,7 +716,15 @@
 
 						<!-- Parent Selection -->
 						<div class="control-field">
-							<label class="field-label">Родительская часть (Parent):</label>
+							<div class="field-label-row">
+								<label class="field-label">Родительская часть (Parent):</label>
+								<span v-if="currentPart.parent" class="field-val __highlight">
+									Уровень L{{ selectedPartDepth }} (под {{ currentPart.parent }})
+								</span>
+								<span v-else class="field-val">
+									⭐ Корень
+								</span>
+							</div>
 							<select
 								v-model="currentPart.parent"
 								class="studio-select"
@@ -803,21 +864,26 @@
 
 				<!-- TAB 2: POSING & ANIMATIONS -->
 				<div v-else-if="activeSidebarTab === 'pose'" class="sidebar-tab-content">
-					<!-- Direct Rotation Slider for Selected Part -->
+					<!-- Direct Posing: Rotation, Translation, Scale for Selected Part -->
 					<div class="sidebar-section-card">
 						<div class="ssc-header">
 							<span class="ssc-title"
-								>Прямой поворот: <strong>{{ selectedPartName }}</strong></span
+								>Позирование: <strong>{{ selectedPartName }}</strong></span
 							>
 							<button
 								type="button"
 								class="mini-btn"
-								@click="partRotations[selectedPartName] = 0"
+								@click="
+									partRotations[selectedPartName] = 0;
+									if (partTranslations[selectedPartName]) { partTranslations[selectedPartName].x = 0; partTranslations[selectedPartName].y = 0; }
+									if (partScales[selectedPartName] !== undefined) partScales[selectedPartName] = 1;
+								"
 							>
-								Сброс 0°
+								Сброс
 							</button>
 						</div>
 
+						<!-- Rotation (Expanded to +/- 720 deg) -->
 						<div class="control-field">
 							<div class="field-label-row">
 								<label class="field-label">Угол вращения (Degrees):</label>
@@ -829,8 +895,8 @@
 								<input
 									v-model.number="partRotations[selectedPartName]"
 									type="range"
-									min="-180"
-									max="180"
+									min="-720"
+									max="720"
 									step="1"
 									class="studio-range"
 								/>
@@ -841,19 +907,136 @@
 								/>
 							</div>
 						</div>
+
+						<!-- Translation X -->
+						<div class="control-field">
+							<div class="field-label-row">
+								<label class="field-label">Смещение X (%):</label>
+								<span class="field-val"
+									>{{ ((partTranslations[selectedPartName] && partTranslations[selectedPartName].x) || 0).toFixed(1) }}%</span
+								>
+							</div>
+							<div class="field-range-row">
+								<input
+									:value="(partTranslations[selectedPartName] && partTranslations[selectedPartName].x) || 0"
+									type="range"
+									min="-100"
+									max="100"
+									step="0.5"
+									class="studio-range"
+									@input="
+										if (!partTranslations[selectedPartName]) partTranslations[selectedPartName] = { x: 0, y: 0 };
+										partTranslations[selectedPartName].x = Number($event.target.value);
+									"
+								/>
+								<input
+									:value="(partTranslations[selectedPartName] && partTranslations[selectedPartName].x) || 0"
+									type="number"
+									step="0.5"
+									class="studio-number-input"
+									@input="
+										if (!partTranslations[selectedPartName]) partTranslations[selectedPartName] = { x: 0, y: 0 };
+										partTranslations[selectedPartName].x = Number($event.target.value);
+									"
+								/>
+							</div>
+						</div>
+
+						<!-- Translation Y -->
+						<div class="control-field">
+							<div class="field-label-row">
+								<label class="field-label">Смещение Y (%):</label>
+								<span class="field-val"
+									>{{ ((partTranslations[selectedPartName] && partTranslations[selectedPartName].y) || 0).toFixed(1) }}%</span
+								>
+							</div>
+							<div class="field-range-row">
+								<input
+									:value="(partTranslations[selectedPartName] && partTranslations[selectedPartName].y) || 0"
+									type="range"
+									min="-100"
+									max="100"
+									step="0.5"
+									class="studio-range"
+									@input="
+										if (!partTranslations[selectedPartName]) partTranslations[selectedPartName] = { x: 0, y: 0 };
+										partTranslations[selectedPartName].y = Number($event.target.value);
+									"
+								/>
+								<input
+									:value="(partTranslations[selectedPartName] && partTranslations[selectedPartName].y) || 0"
+									type="number"
+									step="0.5"
+									class="studio-number-input"
+									@input="
+										if (!partTranslations[selectedPartName]) partTranslations[selectedPartName] = { x: 0, y: 0 };
+										partTranslations[selectedPartName].y = Number($event.target.value);
+									"
+								/>
+							</div>
+						</div>
+
+						<!-- Scale -->
+						<div class="control-field">
+							<div class="field-label-row">
+								<label class="field-label">Масштаб (Scale):</label>
+								<span class="field-val"
+									>{{ (partScales[selectedPartName] ?? 1).toFixed(2) }}x</span
+								>
+							</div>
+							<div class="field-range-row">
+								<input
+									v-model.number="partScales[selectedPartName]"
+									type="range"
+									min="0.1"
+									max="3"
+									step="0.05"
+									class="studio-range"
+								/>
+								<input
+									v-model.number="partScales[selectedPartName]"
+									type="number"
+									step="0.05"
+									class="studio-number-input"
+								/>
+							</div>
+						</div>
 					</div>
 
-					<!-- Animation Presets Library -->
+					<!-- Animation Library & Creator -->
 					<div class="sidebar-section-card">
 						<div class="ssc-header">
-							<span class="ssc-title">Библиотека анимаций (Presets)</span>
+							<span class="ssc-title">Библиотека анимаций</span>
+							<div class="ssc-header-btns">
+								<button
+									type="button"
+									class="mini-btn __accent"
+									@click="openCreateAnimation"
+								>
+									➕ Создать
+								</button>
+								<button
+									v-if="isPlaying"
+									type="button"
+									class="mini-btn __stop"
+									@click="stopAnimation"
+								>
+									⏹ Стоп
+								</button>
+							</div>
+						</div>
+
+						<!-- Animation Group Filters -->
+						<div class="anim-group-filter-row">
 							<button
-								v-if="isPlaying"
+								v-for="grp in animationGroups"
+								:key="grp"
 								type="button"
-								class="mini-btn __stop"
-								@click="stopAnimation"
+								class="agf-btn"
+								:class="{ __active: selectedAnimationGroup === grp }"
+								@click="selectedAnimationGroup = grp"
 							>
-								⏹ Остановить
+								{{ grp === 'all' ? 'Все' : grp }}
 							</button>
 						</div>
 
@@ -874,37 +1057,68 @@
 							</div>
 						</div>
 
+						<!-- Animations Grid -->
 						<div class="animations-grid">
 							<div
-								v-for="anim in BUILTIN_ANIMATIONS"
+								v-for="anim in filteredAnimations"
 								:key="anim.id"
 								class="anim-preset-card"
 								:class="{ __playing: isPlaying && activeAnimation === anim.id }"
 								@click="playAnimation(anim.id)"
 							>
 								<div class="apc-top">
-									<span class="apc-icon">{{ anim.icon }}</span>
+									<span class="apc-icon">{{ anim.icon || '✨' }}</span>
 									<span class="apc-name">{{ anim.name }}</span>
 									<span
 										v-if="isPlaying && activeAnimation === anim.id"
 										class="apc-badge"
 										>ИГРАЕТ</span
 									>
+									<div class="apc-actions" @click.stop>
+										<button
+											type="button"
+											class="apc-action-btn"
+											title="Редактировать анимацию"
+											@click="openEditAnimation(anim)"
+										>
+											✏️
+										</button>
+										<button
+											type="button"
+											class="apc-action-btn"
+											title="Дублировать анимацию"
+											@click="duplicateAnimation(anim.id)"
+										>
+											📋
+										</button>
+										<button
+											v-if="anim.group !== 'Базовые'"
+											type="button"
+											class="apc-action-btn __danger"
+											title="Удалить анимацию"
+											@click="deleteAnimation(anim.id)"
+										>
+											🗑️
+										</button>
+									</div>
 								</div>
-								<p class="apc-desc">{{ anim.desc }}</p>
+								<p class="apc-desc">{{ anim.desc || (anim.tracks ? `Треков: ${anim.tracks.length}, ${anim.duration}с` : 'Пользовательская анимация') }}</p>
 							</div>
 						</div>
 
 						<div class="anim-footer-actions">
 							<button type="button" class="action-btn __secondary" @click="resetPose">
-								🔄 Сбросить всю позу
+								🔄 Сбросить позу
+							</button>
+							<button type="button" class="action-btn __accent" @click="openCreateAnimation">
+								➕ Новая анимация
 							</button>
 							<button
 								type="button"
 								class="action-btn __primary"
-								@click="exportAnimationToJson(selectedPartName)"
+								@click="exportAnimationToJson(activeAnimation || selectedPartName)"
 							>
-								📋 Экспорт шага VN JSON
+								📋 Экспорт VN JSON
 							</button>
 						</div>
 					</div>
@@ -1395,6 +1609,21 @@
 				</div>
 			</aside>
 		</div>
+
+		<!-- Animation Editor Modal -->
+		<CharacterAnimationEditorModal
+			:is-open="isAnimEditorOpen"
+			:animation-data="editingAnimation"
+			:character-id="selectedCharacterId"
+			:body-parts="bodyParts"
+			:available-images="availableImages"
+			:animation-groups="animationGroups"
+			@close="isAnimEditorOpen = false"
+			@save="onSaveAnimationFromEditor"
+			@preview-step="onScrubStepPreview"
+			@play="playAnimation"
+			@stop="stopAnimation"
+		/>
 	</div>
 </template>
 
@@ -1404,6 +1633,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useCharacterRigStudio } from '@/composables/useCharacterRigStudio'
 import EyeDirectionPad from '@/components/game/characters/EyeDirectionPad.vue'
 import RigPartNode from '@/components/game/characters/RigPartNode.vue'
+import CharacterAnimationEditorModal from '@/components/game/characters/CharacterAnimationEditorModal.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -1441,8 +1671,17 @@ const {
 	eyeRightOffset,
 	EYE_PRESETS,
 	partRotations,
+	partTranslations,
+	partScales,
+	partCustomStyles,
 	partPivots,
+	animatedSprites,
 	BUILTIN_ANIMATIONS,
+	customAnimations,
+	animationGroups,
+	selectedAnimationGroup,
+	allAnimations,
+	filteredAnimations,
 	isPlaying,
 	activeAnimation,
 	animationSpeed,
@@ -1460,6 +1699,11 @@ const {
 	resetPose,
 	playAnimation,
 	stopAnimation,
+	createAnimation,
+	updateAnimation,
+	deleteAnimation,
+	duplicateAnimation,
+	evaluateCustomAnimation,
 	exportAnimationToJson,
 	saveBodyJson,
 	saveValuesJson
@@ -1633,6 +1877,8 @@ watch([orientation, isBackView], () => {
 	setTimeout(scheduleUpdatePartCenters, 60)
 })
 watch(partRotations, scheduleUpdatePartCenters, { deep: true })
+watch(partTranslations, scheduleUpdatePartCenters, { deep: true })
+watch([partScales, partCustomStyles], scheduleUpdatePartCenters, { deep: true })
 watch(bodyParts, scheduleUpdatePartCenters, { deep: true })
 watch(stageZoom, scheduleUpdatePartCenters)
 watch(eyeLinkedOffset, scheduleUpdatePartCenters, { deep: true })
@@ -1643,6 +1889,34 @@ watch(viewMode, (mode) => {
 		scheduleUpdatePartCenters()
 	}
 })
+
+// Animation Editor Modal State & Handlers
+const isAnimEditorOpen = ref(false)
+const editingAnimation = ref(null)
+
+function openCreateAnimation() {
+	editingAnimation.value = null
+	isAnimEditorOpen.value = true
+}
+
+function openEditAnimation(anim) {
+	editingAnimation.value = anim
+	isAnimEditorOpen.value = true
+}
+
+function onSaveAnimationFromEditor(animData) {
+	if (customAnimations.value.some((a) => a.id === animData.id)) {
+		updateAnimation(animData.id, animData)
+	} else {
+		createAnimation(animData)
+	}
+	isAnimEditorOpen.value = false
+}
+
+function onScrubStepPreview({ anim, time }) {
+	stopAnimation()
+	evaluateCustomAnimation(anim, time)
+}
 
 function onKeyDown(e) {
 	if (e.key === 'Escape' && isCenterPartsModalOpen.value) {
@@ -1907,6 +2181,99 @@ const spritesByParent = computed(() => {
 	}
 
 	return grouped
+})
+
+// Hierarchical flat list with depth for tree rendering
+const hierarchicalPartsList = computed(() => {
+	if (!bodyParts) return []
+
+	const childrenMap = {}
+	const allNames = Object.keys(bodyParts)
+	for (const name of allNames) {
+		const p = bodyParts[name]?.parent || null
+		if (!childrenMap[p]) childrenMap[p] = []
+		childrenMap[p].push(name)
+	}
+
+	const result = []
+	const visited = new Set()
+
+	function traverse(parentName, depth) {
+		const children = childrenMap[parentName] || []
+		for (let i = 0; i < children.length; i++) {
+			const name = children[i]
+			if (visited.has(name)) continue
+			visited.add(name)
+			const part = bodyParts[name]
+			const isLast = i === children.length - 1
+			result.push({
+				name,
+				part,
+				depth,
+				parent: parentName,
+				hasChildren: Boolean(childrenMap[name]?.length),
+				isLast
+			})
+			traverse(name, depth + 1)
+		}
+	}
+
+	// Root elements (no parent or parent not in bodyParts)
+	const roots = allNames.filter(
+		(name) => !bodyParts[name]?.parent || !bodyParts[bodyParts[name].parent]
+	)
+	roots.sort((a, b) => (a === 'body' ? -1 : b === 'body' ? 1 : a.localeCompare(b)))
+
+	for (let i = 0; i < roots.length; i++) {
+		const rootName = roots[i]
+		if (visited.has(rootName)) continue
+		visited.add(rootName)
+		result.push({
+			name: rootName,
+			part: bodyParts[rootName],
+			depth: 0,
+			parent: null,
+			hasChildren: Boolean(childrenMap[rootName]?.length),
+			isLast: i === roots.length - 1
+		})
+		traverse(rootName, 1)
+	}
+
+	// Any unvisited nodes (islands/cycles fallback)
+	for (const name of allNames) {
+		if (!visited.has(name)) {
+			visited.add(name)
+			result.push({
+				name,
+				part: bodyParts[name],
+				depth: 1,
+				parent: bodyParts[name]?.parent || null,
+				hasChildren: Boolean(childrenMap[name]?.length),
+				isLast: true
+			})
+			traverse(name, 2)
+		}
+	}
+
+	return result
+})
+
+// Ancestor chain for selected part (e.g. ['body', 'arm_left', 'arm_left2'])
+const selectedAncestorChain = computed(() => {
+	if (!selectedPartName.value || !bodyParts[selectedPartName.value]) return []
+	const chain = []
+	let curr = selectedPartName.value
+	const visited = new Set()
+	while (curr && bodyParts[curr] && !visited.has(curr)) {
+		visited.add(curr)
+		chain.unshift(curr)
+		curr = bodyParts[curr].parent || null
+	}
+	return chain
+})
+
+const selectedPartDepth = computed(() => {
+	return Math.max(0, selectedAncestorChain.value.length - 1)
 })
 
 const updateCharHeight = () => {
@@ -2857,8 +3224,8 @@ onMounted(async () => {
 .parts-hierarchy-list {
 	display: flex;
 	flex-direction: column;
-	gap: 0.3em;
-	max-height: 12em;
+	gap: 0.25em;
+	max-height: 16em;
 	overflow-y: auto;
 }
 
@@ -2873,40 +3240,91 @@ onMounted(async () => {
 	cursor: pointer;
 	font-size: 0.8em;
 	transition: all 0.15s;
+	position: relative;
 }
 
 .part-list-item:hover {
 	background: rgba(255, 255, 255, 0.08);
+	border-color: rgba(255, 255, 255, 0.2);
 }
 
 .part-list-item.__active {
-	background: rgba(246, 196, 69, 0.2);
+	background: rgba(246, 196, 69, 0.22);
 	border-color: #f6c445;
+	color: #f6c445;
+	font-weight: bold;
+}
+
+.part-list-item.__is-ancestor {
+	background: rgba(246, 196, 69, 0.07);
+	border-color: rgba(246, 196, 69, 0.3);
+}
+
+.part-list-item.__is-root {
+	border-left: 2px solid #f6c445;
+}
+
+.pli-tree-guide {
+	font-family: monospace;
+	font-weight: bold;
+	font-size: 0.85em;
+	color: #94a3b8;
+	white-space: pre;
+}
+
+.pli-tree-guide.__depth-0 {
 	color: #f6c445;
 }
 
-.part-list-item.__is-child {
-	margin-left: 0.8em;
+.pli-tree-guide.__depth-1 {
+	color: #38bdf8;
 }
 
-.pli-tree-indent {
-	color: #94a3b8;
+.pli-tree-guide.__depth-2 {
+	color: #a78bfa;
+}
+
+.pli-tree-guide.__depth-3 {
+	color: #f472b6;
 }
 
 .pli-name {
-	font-weight: bold;
+	font-weight: 600;
+	color: #e2e8f0;
 	flex: 1;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.part-list-item.__active .pli-name {
+	color: #f6c445;
 }
 
 .pli-parent-tag {
-	font-size: 0.75em;
+	font-size: 0.7em;
 	color: #94a3b8;
+	background: rgba(255, 255, 255, 0.06);
+	padding: 0.1em 0.35em;
+	border-radius: 0.2em;
+	white-space: nowrap;
+}
+
+.pli-depth-tag {
+	font-size: 0.65em;
+	font-weight: 700;
+	color: #a78bfa;
+	background: rgba(167, 139, 250, 0.15);
+	border: 1px solid rgba(167, 139, 250, 0.3);
+	padding: 0.05em 0.3em;
+	border-radius: 0.2em;
 }
 
 .pli-zindex {
-	font-size: 0.75em;
+	font-size: 0.7em;
 	color: #94a3b8;
 	font-family: monospace;
+	white-space: nowrap;
 }
 
 .pli-delete-btn {
@@ -2916,6 +3334,119 @@ onMounted(async () => {
 	cursor: pointer;
 	font-size: 0.8em;
 	padding: 0 0.2em;
+	transition: transform 0.1s;
+}
+
+.pli-delete-btn:hover {
+	transform: scale(1.2);
+}
+
+/* Part Breadcrumb Card in Inspector */
+.part-breadcrumb-card {
+	background: rgba(0, 0, 0, 0.3);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: 0.35em;
+	padding: 0.4em 0.6em;
+	display: flex;
+	flex-direction: column;
+	gap: 0.25em;
+}
+
+.pbc-label {
+	font-size: 0.68em;
+	color: #94a3b8;
+}
+
+.pbc-chain {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 0.25em;
+}
+
+.pbc-node {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25em;
+	cursor: pointer;
+	font-size: 0.75em;
+	color: #cbd5e1;
+	transition: color 0.15s;
+}
+
+.pbc-node:hover .pbc-name {
+	color: #f6c445;
+	text-decoration: underline;
+}
+
+.pbc-node.__current .pbc-name {
+	color: #f6c445;
+	font-weight: 700;
+}
+
+.pbc-sep {
+	color: #64748b;
+	font-size: 0.85em;
+}
+
+/* Floating Stage Hierarchy Breadcrumb */
+.stage-hierarchy-breadcrumb {
+	position: absolute;
+	top: 3.5em;
+	left: 50%;
+	transform: translateX(-50%);
+	background: rgba(14, 20, 32, 0.85);
+	backdrop-filter: blur(0.25em);
+	border: 1px solid rgba(246, 196, 69, 0.35);
+	border-radius: 1.5em;
+	padding: 0.25em 0.8em;
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+	z-index: 40;
+	pointer-events: auto;
+	box-shadow: 0 0.2em 0.8em rgba(0, 0, 0, 0.5);
+}
+
+.shb-icon {
+	font-size: 0.9em;
+}
+
+.shb-label {
+	font-size: 0.7em;
+	color: #94a3b8;
+	font-weight: 600;
+}
+
+.shb-nodes {
+	display: flex;
+	align-items: center;
+	gap: 0.3em;
+}
+
+.shb-node {
+	font-size: 0.72em;
+	color: #cbd5e1;
+	cursor: pointer;
+	padding: 0.1em 0.3em;
+	border-radius: 0.2em;
+	transition: all 0.15s;
+}
+
+.shb-node:hover {
+	color: #f6c445;
+	background: rgba(255, 255, 255, 0.1);
+}
+
+.shb-node.__current {
+	color: #f6c445;
+	font-weight: 700;
+	background: rgba(246, 196, 69, 0.15);
+}
+
+.shb-sep {
+	color: #64748b;
+	font-size: 0.85em;
 }
 
 /* Form Controls */
@@ -3043,6 +3574,52 @@ onMounted(async () => {
 	font-weight: bold;
 }
 
+.ssc-header-btns {
+	display: flex;
+	gap: 0.3em;
+	align-items: center;
+}
+
+.mini-btn.__accent {
+	background: rgba(246, 196, 69, 0.2);
+	border: 1px solid #f6c445;
+	color: #f6c445;
+}
+
+.mini-btn.__accent:hover {
+	background: rgba(246, 196, 69, 0.35);
+}
+
+.anim-group-filter-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.3em;
+	margin-bottom: 0.6em;
+}
+
+.agf-btn {
+	background: rgba(255, 255, 255, 0.05);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 0.25em;
+	color: #94a3b8;
+	font-size: 0.72em;
+	padding: 0.2em 0.5em;
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.agf-btn:hover {
+	background: rgba(255, 255, 255, 0.1);
+	color: #f8fafc;
+}
+
+.agf-btn.__active {
+	background: rgba(246, 196, 69, 0.2);
+	border-color: #f6c445;
+	color: #f6c445;
+	font-weight: 600;
+}
+
 .animations-grid {
 	display: grid;
 	grid-template-columns: 1fr;
@@ -3092,6 +3669,34 @@ onMounted(async () => {
 	padding: 0.1em 0.4em;
 	border-radius: 0.2em;
 	font-weight: bold;
+}
+
+.apc-actions {
+	display: flex;
+	gap: 0.2em;
+	align-items: center;
+	margin-left: auto;
+}
+
+.apc-action-btn {
+	background: transparent;
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 0.2em;
+	padding: 0.1em 0.25em;
+	font-size: 0.65em;
+	cursor: pointer;
+	color: #cbd5e1;
+	transition: all 0.15s ease;
+}
+
+.apc-action-btn:hover {
+	background: rgba(255, 255, 255, 0.15);
+	border-color: rgba(255, 255, 255, 0.25);
+}
+
+.apc-action-btn.__danger:hover {
+	background: rgba(239, 68, 68, 0.25);
+	border-color: #ef4444;
 }
 
 .apc-desc {

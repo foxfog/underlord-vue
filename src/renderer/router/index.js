@@ -70,6 +70,12 @@ const router = createRouter({
 			name: 'character-sprites-tester',
 			path: '/test/character-sprites',
 			component: () => import('@/views/CharacterSpriteTesterView.vue')
+		},
+		{
+			id: 11,
+			name: 'storyline-editor',
+			path: '/test/storyline-editor',
+			component: () => import('@/views/StorylineEditorView.vue')
 		}
 	]
 })

@@ -34,7 +34,9 @@ export function useTreePanZoom(options = {}) {
 	}
 
 	function clampZoom(val) {
-		return Math.min(Math.max(Number(val.toFixed(2)), minZoom), maxZoom)
+		const num = typeof val === 'number' && !Number.isNaN(val) ? val : Number(val)
+		if (Number.isNaN(num)) return zoomScale.value
+		return Math.min(Math.max(Number(num.toFixed(3)), minZoom), maxZoom)
 	}
 
 	function setZoom(newZoom) {
@@ -42,12 +44,21 @@ export function useTreePanZoom(options = {}) {
 		triggerZoomCallback()
 	}
 
-	function zoomIn(step = zoomStep) {
-		setZoom(zoomScale.value + step)
+	function getAdaptiveStep() {
+		if (zoomScale.value < 0.12) return 0.02
+		if (zoomScale.value < 0.35) return 0.05
+		if (zoomScale.value < 0.7) return 0.1
+		return zoomStep
 	}
 
-	function zoomOut(step = zoomStep) {
-		setZoom(zoomScale.value - step)
+	function zoomIn(step) {
+		const s = typeof step === 'number' && !Number.isNaN(step) ? step : getAdaptiveStep()
+		setZoom(zoomScale.value + s)
+	}
+
+	function zoomOut(step) {
+		const s = typeof step === 'number' && !Number.isNaN(step) ? step : getAdaptiveStep()
+		setZoom(zoomScale.value - s)
 	}
 
 	function resetZoom() {
@@ -106,18 +117,19 @@ export function useTreePanZoom(options = {}) {
 			e.target &&
 			e.target.closest &&
 			e.target.closest(
-				'.tree-node-card, .skill-node-wrapper, button, input, textarea, select, a, .node-hover-actions, .zoom-controls-bar, .inspector-panel, .skill-inspector-panel'
+				'.tree-node-card, .skill-node-wrapper, .flow-node, button, input, textarea, select, a, .node-hover-actions, .zoom-controls-bar, .inspector-panel, .skill-inspector-panel'
 			)
 		if (isInteractive) return
 
+		const container = scrollContainer || (e.currentTarget?.scrollLeft !== undefined ? e.currentTarget : null)
 		isPanning.value = true
-		activeScrollContainer = scrollContainer
+		activeScrollContainer = container
 		panStart.x = e.clientX
 		panStart.y = e.clientY
 
-		if (scrollContainer) {
-			scrollStart.left = scrollContainer.scrollLeft
-			scrollStart.top = scrollContainer.scrollTop
+		if (container) {
+			scrollStart.left = container.scrollLeft || 0
+			scrollStart.top = container.scrollTop || 0
 		}
 
 		if (typeof window !== 'undefined') {
@@ -129,7 +141,8 @@ export function useTreePanZoom(options = {}) {
 
 	function onWheel(e, scrollContainer) {
 		if (e.ctrlKey) {
-			const delta = e.deltaY < 0 ? 0.08 : -0.08
+			const step = zoomScale.value < 0.12 ? 0.015 : zoomScale.value < 0.35 ? 0.04 : 0.08
+			const delta = e.deltaY < 0 ? step : -step
 			setZoom(zoomScale.value + delta)
 			e.preventDefault?.()
 		} else if (e.shiftKey && scrollContainer && e.deltaY) {
