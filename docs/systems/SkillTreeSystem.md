@@ -41,107 +41,69 @@
 
 ---
 
-## 2. Архитектура файлов данных: изоляция навыков
+## 2. Архитектура файлов данных: двухуровневая система способностей
 
-Для предотвращения разрастания основных реестров классов и рас (`classes.json` и `races.json`), навыки полностью вынесены в отдельные файлы:
+Для эффективного повторного использования способностей между классами, расами, предметами и талантами (например, навык «Ночное зрение» у Вора на 5-м уровне и врождённо у Квагота на 1-м уровне), система разделена на два взаимосвязанных слоя:
 
-1. **Базовые реестры (`classes/classes.json`, `races/races.json`)**:
-   - Содержат только метаданные сущностей: `id`, `name`, `parent_id`, `family` (для рас), `category`, `tier`, `tags`, `lvl_min`, `description`.
-   - В них **нет** полей `skills` и `skill_branches`.
-2. **Файлы навыков сущностей**:
-   - Навыки классов: `src/renderer/public/data/skills/classes/<id>.json` (например, `warrior.json`, `wizard.json`).
-   - Навыки рас: `src/renderer/public/data/skills/races/<id>.json` (например, `human.json`, `skeleton.json`).
-   - Если у класса или расы пока нет навыков, файл не создается (или удаляется при очистке).
-3. **Файлы навыков предметов (`skills/items/items.json`)**:
-   - Единый реестр встроенных навыков и зачарований снаряжения: `src/renderer/public/data/skills/items/items.json`.
-   - Навыки автономны (не содержат ссылок на предметы). Привязка указывается **в самих предметах** через поле `"skills": ["..."]`.
-   - Поддерживаются как базовые шаблоны из `equipment.json` / `other.json` (по `id`), так и уникальные/крафтовые экземпляры (по `uid`, созданные на наковальне или полученные в луте).
-   - Утилиты резолва (`src/renderer/utils/itemSkills.js`) собирают активные навыки от надетых предметов и отображают их в Инвентаре персонажа.
-4. **Файлы талантов персонажей (`skills/talents/talents.json`)**:
-   - Единый автономный реестр редких врождённых талантов Нового Мира: `src/renderer/public/data/skills/talents/talents.json`.
-   - Привязка осуществляется **со стороны персонажей** в `data/characters/{id}/values.json` через массив `talents: ["talent_id", ...]`.
-   - Таланты автономны, не зависят от классов/рас и могут встречаться у нескольких персонажей (по лору ~1 из 200 жителей Нового Мира).
-   - Механика снятия ограничений экипировки: талант с флагом `data.ignore_equip_requirements: true` (например, `item_restriction_bypass` по лору Нфири Бареаре / Энри) позволяет персонажу надевать абсолютно любое снаряжение и реликвии, игнорируя уровень, класс, расу, пол и персональные ограничения.
-   - Утилиты работы с талантами: `src/renderer/utils/talents.js` (`resolveCharacterTalents`, `hasTalent`, `canCharacterBypassEquipRestrictions`).
-   - Отображение в инвентаре: во вкладке способностей инвентаря таланты отображаются с золотистым бейджем `[🌟 Талант]`.
-5. **Бесшовная загрузка в память (`useDataEditor.js`)**:
-   - При вызове `loadAll()` система читает `classes.json`/`races.json` и автоматически сканирует папки `skills/classes/` и `skills/races/`, а также загружает `skills/items/items.json` и `skills/talents/talents.json`.
-   - В памяти объекты сущностей дополняются свойствами `skill_branches` и `skills`, благодаря чему компоненты UI (`SkillTreeTesterView.vue`, `DataEditorView.vue`, `useSkillTree.js`) продолжают работать без необходимости дублировать логику.
-6. **Сохранение и удаление**:
-   - При сохранении класса/расы через `saveEntity()` метаданные сохраняются в `classes.json`/`races.json` (с очисткой от `skills`), а ветки и навыки записываются в `skills/<type>/<id>.json`.
-   - При удалении сущности через `deleteEntity()` её файл навыков автоматически удаляется с диска.
+1. **Единый каталог способностей (`skills/skills.json`)**:
+   - «Паспорт» каждого навыка: `id`, `name`, `icon`, `category`, `description`, произвольные данные `data` (формулы урона, эффекты, дальности).
+   - Способности автономны и не привязаны жестко к классу или расе.
+2. **Файлы деревьев прокачки сущностей (`skills/classes/<id>.json`, `skills/races/<id>.json`)**:
+   - Содержат ветки (`skill_branches`) и компактные узлы-привязки (`skills`):
+     - `skill_id`: ссылка на идентификатор из каталога `skills/skills.json`.
+     - `branch`: ветка дерева.
+     - `req_level`: требуемый уровень класса/расы (например, 1 для квагота, 5 для вора).
+     - `grid_col`: позиция в сетке уровня.
+     - `cost`: стоимость в очках прокачки (SP/MP).
+     - `auto_unlock`: флаг врождённого/автоматического навыка (`true` — автоматически разблокируется при достижении `req_level` без списания SP).
+     - `parent_ids` и `parent_requirement`: правила зависимостей («all» / «any»).
+3. **Механика врождённых способностей (`auto_unlock: true`)**:
+   - При получении уровня сущности (`levelUpEntity`) все навыки с `auto_unlock: true` и `req_level <= newLvl` автоматически активируются на 1-й ранг.
+   - Очки SP/MP не списываются (`cost = 0`).
+   - Сброс (`refundSkill`, `resetSkills`) блокируется для врождённых навыков — персонаж не может «забыть» свою врождённую расовую черту ради свободных SP.
+4. **Бесшовный резолвинг в рантайме (`resolveSkillNode`, `resolveEntitySkills`)**:
+   - При чтении деревьев утилита объединяет паспорт навыка из каталога с параметрами узла дерева.
+   - Поддерживается полная обратная совместимость со старыми файлами, содержащими inline-поля `name`, `icon` и `description`.
+5. **Файлы навыков предметов (`skills/items/items.json`) и талантов (`skills/talents/talents.json`)**:
+   - Автономные реестры зачарований снаряжения и редких талантов Нового Мира.
 
-### Пример файла навыков (`skills/classes/warrior.json`):
+### Пример каталога (`skills/skills.json`):
+```json
+{
+  "id": "night_vision",
+  "name": "Ночное зрение",
+  "icon": "👁️",
+  "category": "passive",
+  "description": "Позволяет видеть в абсолютной темноте, нивелируя штрафы к меткости.",
+  "data": { "darkness_immunity": true }
+}
+```
+
+### Пример привязки узлов в дереве Квагота (`skills/races/quagoa.json`):
 ```json
 {
   "skill_branches": [
-    {
-      "id": "swordsmanship",
-      "name": "Фехтование",
-      "icon": "🗡️",
-      "description": "Ветка владения клинком и атакующих приёмов"
-    },
-    {
-      "id": "defense",
-      "name": "Защита",
-      "icon": "🛡️",
-      "description": "Ветка выживаемости, брони и парирования"
-    }
+    { "id": "quagoa_traits", "name": "Особенности квагоа", "icon": "⛏️" }
   ],
   "skills": [
     {
-      "id": "warrior_slash",
-      "name": "Рассечение",
-      "icon": "⚔️",
-      "description": "Базовый рубящий удар мечом. При прокачке дает очко уровня классу.",
-      "branch": "swordsmanship",
-      "req_level": 0,
-      "max_level": 3,
-      "cost": 1,
-      "level_points_given": 1,
-      "parent_ids": [],
-      "parent_requirement": "all",
-      "data": {
-        "type": "active",
-        "damage": 100,
-        "ap_cost": 2
-      }
-    },
-    {
-      "id": "warrior_cross_slash",
-      "name": "Крестовой выпад",
-      "icon": "✨",
-      "description": "Мощная связка из двух ударов. Требует 1 уровень класса и Рассечение.",
-      "branch": "swordsmanship",
+      "skill_id": "night_vision",
+      "branch": "quagoa_traits",
+      "grid_col": 0,
       "req_level": 1,
-      "max_level": 2,
-      "cost": 2,
-      "level_points_given": 1,
-      "parent_ids": ["warrior_slash"],
-      "parent_requirement": "all",
-      "data": {
-        "type": "active",
-        "damage": 220,
-        "ap_cost": 3,
-        "cooldown": 2
-      }
+      "auto_unlock": true,
+      "cost": 0,
+      "parent_ids": []
     },
     {
-      "id": "warrior_counter_parry",
-      "name": "Контратакующее парирование",
-      "icon": "🌀",
-      "description": "Тактический маневр. Требует 2 уровень класса и знание ЛИБО Крестового выпада, ЛИБО Железной стены.",
-      "branch": "swordsmanship",
-      "req_level": 2,
-      "max_level": 1,
-      "cost": 2,
-      "level_points_given": 2,
-      "parent_ids": ["warrior_cross_slash", "warrior_iron_wall"],
-      "parent_requirement": "any",
-      "data": {
-        "type": "active",
-        "parry_counter": 50
-      }
+      "skill_id": "night_vision_adv",
+      "branch": "quagoa_traits",
+      "grid_col": 0,
+      "req_level": 3,
+      "auto_unlock": false,
+      "cost": 1,
+      "parent_ids": ["night_vision"],
+      "parent_requirement": "all"
     }
   ]
 }

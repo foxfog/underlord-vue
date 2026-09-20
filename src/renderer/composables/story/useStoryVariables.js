@@ -253,8 +253,78 @@ export function useStoryVariables({
 		return null
 	}
 
+	function splitVariableExpressions(str) {
+		const result = []
+		let current = ''
+		let inSingleQuote = false
+		let inDoubleQuote = false
+
+		for (let i = 0; i < str.length; i++) {
+			const char = str[i]
+			const prevChar = i > 0 ? str[i - 1] : ''
+
+			if (char === "'" && prevChar !== '\\' && !inDoubleQuote) {
+				inSingleQuote = !inSingleQuote
+				current += char
+			} else if (char === '"' && prevChar !== '\\' && !inSingleQuote) {
+				inDoubleQuote = !inDoubleQuote
+				current += char
+			} else if ((char === ';' || char === '\n') && !inSingleQuote && !inDoubleQuote) {
+				const trimmed = current.trim()
+				if (trimmed) result.push(trimmed)
+				current = ''
+			} else {
+				current += char
+			}
+		}
+
+		const finalTrimmed = current.trim()
+		if (finalTrimmed) result.push(finalTrimmed)
+		return result
+	}
+
 	function applyVariable(expr) {
-		if (!expr || typeof expr !== 'string') return
+		if (!expr) return
+
+		// Support array of variable expressions
+		if (Array.isArray(expr)) {
+			expr.forEach((item) => applyVariable(item))
+			return
+		}
+
+		// Support key-value object map
+		if (typeof expr === 'object') {
+			for (const [key, val] of Object.entries(expr)) {
+				if (typeof val === 'string') {
+					applyVariable(`${key} = '${val}'`)
+				} else if (typeof val === 'number' || typeof val === 'boolean') {
+					applyVariable(`${key} = ${val}`)
+				} else {
+					const resolved = resolvePath(key)
+					if (resolved && resolved.container && resolved.key !== undefined) {
+						resolved.container[resolved.key] = val
+						if (resolved.root === 'character' && emit) {
+							emit('character-loaded', unref(characterData))
+						} else if (resolved.root === 'global' && emit) {
+							emit('global-data-changed', unref(globalData))
+						}
+					}
+				}
+			}
+			return
+		}
+
+		if (typeof expr !== 'string') return
+
+		// Support multiple statements separated by ';' or newlines
+		if ((expr.includes(';') || expr.includes('\n')) && !expr.trim().startsWith('delete ')) {
+			const subExprs = splitVariableExpressions(expr)
+			if (subExprs.length > 1) {
+				subExprs.forEach((sub) => applyVariable(sub))
+				return
+			}
+		}
+
 		const trimmedExpr = expr.trim()
 		const cData = unref(characterData)
 		const gData = unref(globalData)
@@ -446,6 +516,7 @@ export function useStoryVariables({
 		updateCharacterData,
 		resolvePath,
 		applyVariable,
+		applyVariables: applyVariable,
 		evaluateCondition,
 		getInitialValue
 	}

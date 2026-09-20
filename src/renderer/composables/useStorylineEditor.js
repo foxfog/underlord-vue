@@ -713,6 +713,18 @@ export function useStorylineEditor() {
 			case 'variable':
 				newStep = { variable: 'global.flag = true' }
 				break
+			case 'variables':
+				newStep = {
+					type: 'variables',
+					operations: ['global.flag = true']
+				}
+				break
+			case 'batch':
+				newStep = {
+					type: 'batch',
+					actions: [{ type: 'variables', operations: ['global.flag = true'] }]
+				}
+				break
 			case 'titles':
 				newStep = {
 					type: 'titles',
@@ -847,6 +859,12 @@ export function useStorylineEditor() {
 		} else if (newType === 'variable') {
 			delete updated.type
 			updated.variable = 'global.flag = true'
+		} else if (newType === 'variables') {
+			updated.type = 'variables'
+			updated.operations = ['global.flag = true']
+		} else if (newType === 'batch') {
+			updated.type = 'batch'
+			updated.actions = [{ type: 'variables', operations: ['global.flag = true'] }]
 		}
 
 		currentStory.value.steps[activeStepIndex.value] = updated
@@ -897,7 +915,7 @@ export function useStorylineEditor() {
 	}
 
 	// Build node topology graph for visual node-based editor
-	function buildStoryGraph(steps = []) {
+	function buildStoryGraph(steps = [], storyMeta = null) {
 		if (!Array.isArray(steps)) return { nodes: [], links: [], outboundNodes: [] }
 
 		const nodes = []
@@ -905,16 +923,82 @@ export function useStorylineEditor() {
 		const outboundNodes = []
 		const outboundStackCount = new Map()
 
+		const currentStoryId = storyMeta?.id || (typeof storyMeta === 'string' ? storyMeta : null) || currentStory.value?.id || getCleanScenarioId(selectedFilePath.value)
+		const currentClean = getCleanScenarioId(currentStoryId)
+		const fileClean = getCleanScenarioId(storyMeta?.filePath || selectedFilePath.value)
+
 		// Build label/id index map
 		const idToIndexMap = new Map()
 		steps.forEach((step, idx) => {
 			if (step.id) idToIndexMap.set(String(step.id), idx)
 			if (step.label) idToIndexMap.set(String(step.label), idx)
+			if (step.name) idToIndexMap.set(String(step.name), idx)
 		})
+
+		function resolveTarget(rawTarget, fromIdx = -1) {
+			if (!rawTarget) {
+				return { hasTarget: false, isInternal: false, targetIndex: -1, isExternal: false, isLoop: false, cleanTarget: '' }
+			}
+			const strTarget = String(rawTarget).trim()
+			if (!strTarget) {
+				return { hasTarget: false, isInternal: false, targetIndex: -1, isExternal: false, isLoop: false, cleanTarget: '' }
+			}
+			let storyPart = strTarget
+			let stepPart = null
+			if (strTarget.includes('#')) {
+				const parts = strTarget.split('#')
+				storyPart = parts[0].trim()
+				stepPart = parts[1].trim()
+			}
+
+			// 1. Direct step match inside current story
+			if (!stepPart && idToIndexMap.has(strTarget)) {
+				const tIdx = idToIndexMap.get(strTarget)
+				return {
+					hasTarget: true,
+					isInternal: true,
+					targetIndex: tIdx,
+					isExternal: false,
+					isLoop: fromIdx >= 0 ? tIdx <= fromIdx : false,
+					cleanTarget: strTarget
+				}
+			}
+
+			// 2. Reference to current scenario / file
+			const targetClean = storyPart ? getCleanScenarioId(storyPart) : ''
+			const isSelfScenario = !storyPart ||
+				(targetClean && (targetClean === currentClean || targetClean === fileClean)) ||
+				(currentStoryId && storyPart === currentStoryId)
+
+			if (isSelfScenario) {
+				let tIdx = 0
+				if (stepPart && idToIndexMap.has(stepPart)) {
+					tIdx = idToIndexMap.get(stepPart)
+				}
+				return {
+					hasTarget: true,
+					isInternal: true,
+					targetIndex: tIdx,
+					isExternal: false,
+					isLoop: fromIdx >= 0 ? tIdx <= fromIdx : true,
+					cleanTarget: targetClean || currentClean || fileClean || 'step 1'
+				}
+			}
+
+			// 3. External scenario target
+			return {
+				hasTarget: true,
+				isInternal: false,
+				targetIndex: -1,
+				isExternal: true,
+				isLoop: false,
+				cleanTarget: targetClean
+			}
+		}
 
 		const defaultNodeWidth = 16.5
 		const nodeHeight = 7.5
-		const colGap = 7.0
+		const colGap = 10.0
 
 		// Pre-compute node widths and horizontal positions (with adaptive width for choices)
 		const stepLayouts = []
@@ -981,12 +1065,12 @@ export function useStorylineEditor() {
 			if (isGoto) {
 				gotoTarget = step.target || step.id || step.label || step.step || null
 				if (gotoTarget) {
-					if (idToIndexMap.has(String(gotoTarget))) {
-						targetInternalIndex = idToIndexMap.get(String(gotoTarget))
-						isLoop = targetInternalIndex < idx
+					const targetRes = resolveTarget(gotoTarget, idx)
+					if (targetRes.isInternal) {
+						targetInternalIndex = targetRes.targetIndex
+						isLoop = targetRes.isLoop
 					} else {
 						isExternalJump = true
-						const currentStoryId = currentStory.value?.id || getCleanScenarioId(selectedFilePath.value)
 						const ret = checkScenarioReturn(gotoTarget, currentStoryId)
 						if (ret && ret.returns) {
 							externalReturnInfo = ret
@@ -1025,19 +1109,21 @@ export function useStorylineEditor() {
 						const g = opt.actions.find((a) => a.type === 'goto')
 						if (g) optT = g.target || g.id
 					}
-					if (!optT) {
+					const targetRes = resolveTarget(optT, idx)
+					if (!targetRes.hasTarget) {
 						continuationOptIdx = oIdx
 						break
 					}
-					if (idToIndexMap.has(String(optT)) && idToIndexMap.get(String(optT)) === idx + 1) {
+					if (targetRes.isInternal && targetRes.targetIndex === idx + 1) {
 						continuationOptIdx = oIdx
 						break
 					}
-					const currentStoryId = currentStory.value?.id || getCleanScenarioId(selectedFilePath.value)
-					const ret = checkScenarioReturn(optT, currentStoryId)
-					if (ret && ret.returns) {
-						continuationOptIdx = oIdx
-						break
+					if (targetRes.isExternal) {
+						const ret = checkScenarioReturn(optT, currentStoryId)
+						if (ret && ret.returns) {
+							continuationOptIdx = oIdx
+							break
+						}
 					}
 				}
 
@@ -1047,40 +1133,36 @@ export function useStorylineEditor() {
 						const g = opt.actions.find((a) => a.type === 'goto')
 						if (g) optTarget = g.target || g.id
 					}
-					let optInternalIndex = -1
-					let optExternal = false
-					let optLoop = false
+					const targetRes = resolveTarget(optTarget, idx)
+					let optInternalIndex = targetRes.targetIndex
+					let optExternal = targetRes.isExternal
+					let optLoop = targetRes.isLoop
 					let branchReturnInfo = null
-					if (optTarget) {
-						if (idToIndexMap.has(String(optTarget))) {
-							optInternalIndex = idToIndexMap.get(String(optTarget))
-							optLoop = optInternalIndex < idx
+
+					if (optExternal && optTarget) {
+						const ret = checkScenarioReturn(optTarget, currentStoryId)
+						if (ret && ret.returns) {
+							branchReturnInfo = ret
 						} else {
-							optExternal = true
-							const currentStoryId = currentStory.value?.id || getCleanScenarioId(selectedFilePath.value)
-							const ret = checkScenarioReturn(optTarget, currentStoryId)
-							if (ret && ret.returns) {
-								branchReturnInfo = ret
-							} else {
-								// Generate Outbound Node for choice branch with external jump
-								const hasNext = idx < steps.length - 1
-								const pos = getChoiceOutboundPos(idx, optIdx, continuationOptIdx, hasNext)
-								outboundNodes.push({
-									id: `outbound_choice_${idx}_${optIdx}`,
-									target: optTarget,
-									targetClean: getCleanScenarioId(optTarget),
-									sourceStepIndex: idx,
-									sourceOptionIndex: optIdx,
-									optionText: opt.text || `Вариант ${optIdx + 1}`,
-									condition: opt.if || opt.condition || null,
-									x: pos.x,
-									y: pos.y,
-									width: defaultNodeWidth,
-									height: nodeHeight
-								})
-							}
+							// Generate Outbound Node for choice branch with external jump
+							const hasNext = idx < steps.length - 1
+							const pos = getChoiceOutboundPos(idx, optIdx, continuationOptIdx, hasNext)
+							outboundNodes.push({
+								id: `outbound_choice_${idx}_${optIdx}`,
+								target: optTarget,
+								targetClean: getCleanScenarioId(optTarget),
+								sourceStepIndex: idx,
+								sourceOptionIndex: optIdx,
+								optionText: opt.text || `Вариант ${optIdx + 1}`,
+								condition: opt.if || opt.condition || null,
+								x: pos.x,
+								y: pos.y,
+								width: defaultNodeWidth,
+								height: nodeHeight
+							})
 						}
 					}
+
 					choiceBranches.push({
 						optionIndex: optIdx,
 						text: opt.text || `Вариант ${optIdx + 1}`,
@@ -1102,7 +1184,7 @@ export function useStorylineEditor() {
 				index: idx,
 				id: step.id || `step_${idx}`,
 				step,
-				type: step.type || (step.variable ? 'variable' : 'custom'),
+				type: step.type || (step.variables || step.operations ? 'variables' : (step.variable ? 'variable' : 'custom')),
 				x,
 				y,
 				width: layout.width,
@@ -1286,6 +1368,16 @@ export function useStorylineEditor() {
 		if (!step.type && step.variable) {
 			return `⚙️ ${step.variable}`
 		}
+		if (step.type === 'variables' || (!step.type && (step.variables || step.operations))) {
+			const ops = step.operations || step.variables || []
+			const count = Array.isArray(ops) ? ops.length : (typeof ops === 'string' ? ops.split('\n').filter(Boolean).length : 1)
+			const preview = Array.isArray(ops) ? ops.slice(0, 2).join('; ') : String(ops).slice(0, 30)
+			return `🎛️ Пакет переменных (${count}): ${preview}${Array.isArray(ops) && ops.length > 2 ? '...' : ''}`
+		}
+		if (step.type === 'batch') {
+			const acts = step.actions || step.operations || []
+			return `📦 Пакет действий (${acts.length})`
+		}
 
 		switch (step.type) {
 			case 'dialogue': {
@@ -1352,6 +1444,8 @@ export function useStorylineEditor() {
 
 	function getStepTypeIcon(step) {
 		if (!step || typeof step !== 'object') return '❓'
+		if (step.type === 'variables' || (!step.type && (step.variables || step.operations))) return '🎛️'
+		if (step.type === 'batch') return '📦'
 		if (!step.type && step.variable) return '⚙️'
 
 		const icons = {
@@ -1368,6 +1462,8 @@ export function useStorylineEditor() {
 			choice: '🔀',
 			goto: '➡️',
 			variable: '⚙️',
+			variables: '🎛️',
+			batch: '📦',
 			titles: '🏷️',
 			fade: '⬛',
 			'fade-in': '⬛',

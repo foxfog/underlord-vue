@@ -242,7 +242,10 @@
 										</div>
 
 										<!-- Compact Cost Badge Under Name -->
-										<div class="skill-cost-badge">
+										<div v-if="slot.auto_unlock" class="skill-cost-badge __auto" title="Врождённая способность, открывается автоматически">
+											⚡ Врождённый
+										</div>
+										<div v-else class="skill-cost-badge">
 											{{ slot.cost }} {{ slot.cost_type === 'spell_point' ? '🔮 MP' : '⚔️ SP' }}
 										</div>
 									</div>
@@ -293,11 +296,15 @@
 						class="inspector-status-banner"
 						:class="{
 							__learned: getSkillRank(selectedSkill.id) > 0,
+							__auto: selectedSkill.auto_unlock,
 							__available: getSkillRank(selectedSkill.id) === 0 && checkCanLearn(selectedSkill).canLearn,
 							__locked: getSkillRank(selectedSkill.id) === 0 && !checkCanLearn(selectedSkill).canLearn
 						}"
 					>
-						<span v-if="getSkillRank(selectedSkill.id) > 0">🏆 Навык изучен</span>
+						<span v-if="getSkillRank(selectedSkill.id) > 0">
+							{{ selectedSkill.auto_unlock ? '🧬 Врождённый навык (активен)' : '🏆 Навык изучен' }}
+						</span>
+						<span v-else-if="selectedSkill.auto_unlock">⚡ Врождённый (откроется на ур. {{ selectedSkill.req_level }})</span>
 						<span v-else-if="checkCanLearn(selectedSkill).canLearn">✨ Доступен для изучения</span>
 						<span v-else>🔒 Требования не выполнены</span>
 					</div>
@@ -345,7 +352,13 @@
 						</div>
 
 						<!-- Cost and Currency breakdown -->
-						<div class="req-item" :class="{ __met: totalAvailablePoints >= selectedSkill.cost || !isStrictMode }">
+						<div v-if="selectedSkill.auto_unlock" class="req-item __met">
+							<span class="req-icon">✔</span>
+							<span class="req-text">
+								Стоимость: <strong>0 SP (Врождённый навык)</strong>
+							</span>
+						</div>
+						<div v-else class="req-item" :class="{ __met: totalAvailablePoints >= selectedSkill.cost || !isStrictMode }">
 							<span class="req-icon">{{ (totalAvailablePoints >= selectedSkill.cost || !isStrictMode) ? '✔' : '❌' }}</span>
 							<span class="req-text">
 								Стоимость: <strong>{{ selectedSkill.cost }} {{ selectedSkill.cost_type === 'spell_point' ? '🔮 MP' : '⚔️ SP' }}</strong>
@@ -410,22 +423,27 @@
 								</div>
 							</div>
 
-							<button
-								type="button"
-								class="action-btn __secondary full-btn"
-								@click="triggerDowngradeOrUnlearn(selectedSkill)"
-							>
-								➖ {{ getSkillRank(selectedSkill.id) > 1 ? 'Понизить ранг' : 'Забыть навык' }}
-							</button>
+							<template v-if="!selectedSkill.auto_unlock">
+								<button
+									type="button"
+									class="action-btn __secondary full-btn"
+									@click="triggerDowngradeOrUnlearn(selectedSkill)"
+								>
+									➖ {{ getSkillRank(selectedSkill.id) > 1 ? 'Понизить ранг' : 'Забыть навык' }}
+								</button>
 
-							<button
-								v-if="getSkillRank(selectedSkill.id) > 1"
-								type="button"
-								class="action-btn __danger full-btn"
-								@click="triggerUnlearn(selectedSkill)"
-							>
-								🗑️ Забыть полностью
-							</button>
+								<button
+									v-if="getSkillRank(selectedSkill.id) > 1"
+									type="button"
+									class="action-btn __danger full-btn"
+									@click="triggerUnlearn(selectedSkill)"
+								>
+									🗑️ Забыть полностью
+								</button>
+							</template>
+							<div v-else class="innate-locked-hint">
+								🔒 Врождённый навык привязан к сущности и не может быть сброшен
+							</div>
 						</template>
 
 						<!-- Error explanation if cannot upgrade -->
@@ -458,8 +476,10 @@ import {
 	organizeSkillsByGrid,
 	canLearnSkill,
 	getCategoryMeta,
-	getAvailableSkillPoints
+	getAvailableSkillPoints,
+	resolveEntitySkills
 } from '@/utils/skillTree'
+import { useDataEditor } from '@/composables/useDataEditor'
 
 const props = defineProps({
 	entity: {
@@ -553,10 +573,13 @@ const currentBranches = computed(() => {
 	return raw.map(normalizeSkillBranch)
 })
 
+const { skillsCatalog } = useDataEditor()
+
 const currentSkills = computed(() => {
 	if (!props.entity) return []
 	const raw = props.entity.skills || []
-	return raw.map(normalizeSkill)
+	const catalog = props.allKnownSkills?.length ? props.allKnownSkills : (skillsCatalog?.value || [])
+	return resolveEntitySkills(raw, catalog)
 })
 
 const filteredSkills = computed(() => {
@@ -567,7 +590,8 @@ const filteredSkills = computed(() => {
 })
 
 const gridData = computed(() => {
-	return organizeSkillsByGrid(filteredSkills.value, currentBranches.value)
+	const catalog = props.allKnownSkills?.length ? props.allKnownSkills : (skillsCatalog?.value || [])
+	return organizeSkillsByGrid(filteredSkills.value, currentBranches.value, catalog)
 })
 
 const displayTiers = computed(() => {
@@ -1302,6 +1326,24 @@ defineExpose({
 	border-radius: 0.3em;
 	padding: 0.1em 0.45em;
 	white-space: nowrap;
+}
+
+.skill-cost-badge.__auto {
+	background: rgba(16, 185, 129, 0.25);
+	border-color: rgba(16, 185, 129, 0.5);
+	color: #6ee7b7;
+	font-weight: bold;
+}
+
+.innate-locked-hint {
+	font-size: 0.8em;
+	color: #94a3b8;
+	text-align: center;
+	padding: 0.5em;
+	background: rgba(0, 0, 0, 0.25);
+	border: 1px dashed rgba(255, 255, 255, 0.15);
+	border-radius: 0.4em;
+	width: 100%;
 }
 
 .skill-node-wrapper.__locked .skill-cost-badge {

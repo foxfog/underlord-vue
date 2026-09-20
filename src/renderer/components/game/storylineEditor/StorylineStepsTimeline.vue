@@ -106,6 +106,12 @@
 					<button type="button" class="more-menu-item" @click="addFromMore('hold')">
 						⏸️ Удержание (hold)
 					</button>
+					<button type="button" class="more-menu-item" @click="addFromMore('variables')">
+						🎛️ Пакет переменных (variables)
+					</button>
+					<button type="button" class="more-menu-item" @click="addFromMore('batch')">
+						📦 Пакет действий (batch)
+					</button>
 					<button type="button" class="more-menu-item" @click="addFromMore('end')">
 						🛑 Завершить сценарий (end)
 					</button>
@@ -239,12 +245,14 @@ function addFromMore(type) {
 
 function getStepTypeName(step) {
 	if (!step) return 'unknown'
+	if (step.type === 'variables' || (!step.type && (step.variables || step.operations))) return 'пакет переменных'
+	if (step.type === 'batch') return 'пакет действий'
 	if (!step.type && step.variable) return 'переменная'
 	return step.type || 'кастомный'
 }
 
 function getTypeClass(step) {
-	const t = step?.type || (step?.variable ? 'variable' : 'default')
+	const t = step?.type || (step?.variables || step?.operations ? 'variables' : (step?.variable ? 'variable' : 'default'))
 	return `__type-${t}`
 }
 
@@ -558,6 +566,18 @@ function isFilteredOut(step, idx) {
 .step-type-badge.__type-variable {
 	background: rgba(234, 179, 8, 0.18);
 	color: #facc15;
+}
+
+.step-type-badge.__type-variables {
+	background: rgba(234, 179, 8, 0.22);
+	color: #facc15;
+	border: 1px solid rgba(234, 179, 8, 0.35);
+}
+
+.step-type-badge.__type-batch {
+	background: rgba(14, 165, 233, 0.22);
+	color: #38bdf8;
+	border: 1px solid rgba(14, 165, 233, 0.35);
 }
 
 .step-condition-badge {

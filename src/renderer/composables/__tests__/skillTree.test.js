@@ -170,4 +170,69 @@ describe('useSkillTree composable', () => {
 		expect(refundRes.success).toBe(true)
 		expect(tree.globalSP.value).toBe(2)
 	})
+
+	it('resolves skills using skillsCatalog and auto-unlocks innate skills on syncAutoUnlockedSkills and entity level-up', () => {
+		const tree = useSkillTree()
+		const catalog = [
+			{
+				id: 'night_vision',
+				name: 'Ночное зрение',
+				icon: '👁️',
+				category: 'passive',
+				description: 'Видит во тьме',
+				data: { vision: 10 }
+			}
+		]
+
+		const quagoaRace = {
+			id: 'quagoa',
+			name: 'Квагот',
+			tier: 'basic',
+			skill_branches: [{ id: 'racial', name: 'Расовые' }],
+			skills: [
+				{
+					skill_id: 'night_vision',
+					branch: 'racial',
+					req_level: 1,
+					auto_unlock: true,
+					cost: 0
+				}
+			]
+		}
+
+		tree.setEntitiesData({
+			...mockData,
+			races: [quagoaRace],
+			skillsCatalog: catalog
+		})
+
+		tree.selectEntityType('races')
+		tree.selectEntity('quagoa')
+
+		// Check currentSkills resolved against catalog
+		const resolvedSkill = tree.currentSkills.value.find((s) => s.id === 'night_vision')
+		expect(resolvedSkill).toBeDefined()
+		expect(resolvedSkill.name).toBe('Ночное зрение')
+		expect(resolvedSkill.icon).toBe('👁️')
+		expect(resolvedSkill.auto_unlock).toBe(true)
+		expect(resolvedSkill.cost).toBe(0)
+
+		// Set character progression with race_levels.quagoa = 1
+		tree.charactersProgression.value.mc = {
+			char_level: 1,
+			level_points: 0,
+			race_levels: { quagoa: 1 },
+			class_levels: {},
+			entity_points: { quagoa: { skill_points: 0, spell_points: 0 } },
+			skills: {},
+			skill_purchases: {}
+		}
+
+		// Run syncAutoUnlockedSkills
+		tree.syncAutoUnlockedSkills('mc')
+
+		// Expect night_vision to be unlocked automatically at rank 1
+		expect(tree.charactersProgression.value.mc.skills.night_vision).toBe(1)
+		expect(tree.charactersProgression.value.mc.skill_purchases.night_vision?.auto_unlock).toBe(true)
+	})
 })

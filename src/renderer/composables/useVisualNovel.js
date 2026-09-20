@@ -746,11 +746,33 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			return
 		}
 
-		if (!step.type && step.variable) {
-			applyVariable(step.variable)
-			// Optional one-shot sound for variable-only steps
+		const isVarStep =
+			step.type === 'variables' ||
+			step.type === 'variable' ||
+			(!step.type && (step.variable || step.variables || step.operations))
+
+		if (isVarStep) {
+			const ops = step.operations || step.variables || step.variable
+			if (ops) {
+				applyVariable(ops)
+			}
+			// Optional one-shot sound for variable steps
 			if (step.sound) {
 				playVariableStepSound(step.sound)
+			}
+			stepIndex.value++
+			processStep()
+			return
+		}
+
+		if (step.type === 'batch') {
+			const actions = Array.isArray(step.actions)
+				? step.actions
+				: Array.isArray(step.operations)
+				? step.operations
+				: []
+			for (const subAct of actions) {
+				executeInstantAction(subAct)
 			}
 			stepIndex.value++
 			processStep()
@@ -1010,6 +1032,99 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			}
 		} catch (error) {
 			console.error('Error processing step:', error)
+		}
+	}
+
+	function executeInstantAction(act) {
+		if (!act) return
+		if (typeof act === 'string') {
+			applyVariable(act)
+			return
+		}
+		const type = act.type
+		if (
+			type === 'variable' ||
+			type === 'variables' ||
+			(!type && (act.variable || act.variables || act.operations))
+		) {
+			const ops = act.operations || act.variables || act.variable
+			if (ops) applyVariable(ops)
+			if (act.sound) playVariableStepSound(act.sound)
+			return
+		}
+		switch (type) {
+			case 'sound':
+			case 'voice':
+			case 'music':
+			case 'stop-stream':
+			case 'stop-all-streams':
+				handleAudioStep(act)
+				break
+			case 'inventory-remove':
+				handleInventoryRemoveStep(act)
+				break
+			case 'inventory-add':
+				handleInventoryAddStep(act)
+				break
+			case 'inventory-item-update':
+			case 'inventory-item-modify':
+			case 'inventory-item-property':
+			case 'item-property':
+			case 'item-modify':
+				handleInventoryModifyStep(act)
+				break
+			case 'inventory-reset':
+			case 'character-reset-inventory':
+				handleInventoryResetStep(act)
+				break
+			case 'quest':
+				handleQuestStep(act)
+				break
+			case 'journal':
+			case 'encyclopedia':
+				handleJournalStep(act)
+				break
+			case 'discover-location':
+			case 'undiscover-location':
+			case 'discover-marker':
+			case 'map-marker':
+				handleDiscoverLocationStep(act)
+				break
+			case 'ui':
+				handleUIStep(act)
+				break
+			case 'hotspot':
+			case 'scene-hotspot':
+			case 'unlock-hotspot':
+			case 'lock-hotspot':
+			case 'hide-hotspot':
+			case 'show-hotspot':
+				if (!isRestoringGameState.value) {
+					handleHotspotStep(act)
+				}
+				break
+			case 'npc':
+			case 'npc-state':
+			case 'npc-schedule':
+				handleNpcStep(act)
+				break
+			case 'notification':
+				if (!isRestoringGameState.value && notificationComponent.value && act.text) {
+					const html = substituteVariables(act.text)
+					const notificationType = act.notificationType || 'info'
+					const duration = act.duration || 3000
+					notificationComponent.value.showNotification(
+						html,
+						notificationType,
+						duration
+					)
+				}
+				break
+			default:
+				if (act.variable || act.variables || act.operations) {
+					applyVariable(act.operations || act.variables || act.variable)
+				}
+				break
 		}
 	}
 
@@ -1389,8 +1504,9 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		if (!choice || choice.disabled) return // Prevent selecting disabled choices
 		currentChoices.value = []
 		currentChoicesLayout.value = 'center'
-		if (choice.variable) {
-			applyVariable(choice.variable)
+		const choiceVars = choice.operations || choice.variables || choice.variable
+		if (choiceVars) {
+			applyVariable(choiceVars)
 		}
 		if (choice.actions && choice.actions.length > 0) {
 			processChoiceActions(choice.actions)
@@ -1456,9 +1572,26 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					break
 
 				case 'variable':
-					if (action.variable) applyVariable(action.variable)
+				case 'variables': {
+					const ops = action.operations || action.variables || action.variable
+					if (ops) applyVariable(ops)
+					if (action.sound) playVariableStepSound(action.sound)
 					runNextAction()
 					break
+				}
+
+				case 'batch': {
+					const batchActs = Array.isArray(action.actions)
+						? action.actions
+						: Array.isArray(action.operations)
+						? action.operations
+						: []
+					for (const subAct of batchActs) {
+						executeInstantAction(subAct)
+					}
+					runNextAction()
+					break
+				}
 
 				case 'quest':
 					handleQuestStep(action)
@@ -1532,7 +1665,8 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 							runNextAction()
 						}
 					} else {
-						if (action.variable) applyVariable(action.variable)
+						const ops = action.operations || action.variables || action.variable
+						if (ops) applyVariable(ops)
 						runNextAction()
 					}
 					break

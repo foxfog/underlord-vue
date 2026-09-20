@@ -200,6 +200,8 @@
 						:build-graph-fn="buildStoryGraph"
 						:get-summary-fn="getStepSummary"
 						:get-step-icon="getStepTypeIcon"
+						:story-id="currentStory?.id || ''"
+						:file-path="selectedFilePath"
 						@select-step="handleSelectStep"
 						@jump-scenario="(target, stepIdx) => jumpToScenario(target, stepIdx)"
 					/>

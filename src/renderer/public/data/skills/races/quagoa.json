@@ -1,0 +1,53 @@
+{
+  "skill_branches": [
+    {
+      "id": "quagoa_traits",
+      "name": "Особенности квагоа",
+      "icon": "⛏️",
+      "description": "Врождённые черты и адаптации подземного народа поедателей руды"
+    }
+  ],
+  "skills": [
+    {
+      "skill_id": "night_vision",
+      "branch": "quagoa_traits",
+      "grid_col": 0,
+      "req_level": 1,
+      "max_level": 1,
+      "cost": 0,
+      "cost_type": "skill_point",
+      "level_points_given": 1,
+      "auto_unlock": true,
+      "parent_ids": [],
+      "parent_requirement": "all"
+    },
+    {
+      "skill_id": "mineral_diet",
+      "branch": "quagoa_traits",
+      "grid_col": 2,
+      "req_level": 1,
+      "max_level": 1,
+      "cost": 0,
+      "cost_type": "skill_point",
+      "level_points_given": 1,
+      "auto_unlock": true,
+      "parent_ids": [],
+      "parent_requirement": "all"
+    },
+    {
+      "skill_id": "night_vision_adv",
+      "branch": "quagoa_traits",
+      "grid_col": 0,
+      "req_level": 3,
+      "max_level": 1,
+      "cost": 1,
+      "cost_type": "skill_point",
+      "level_points_given": 1,
+      "auto_unlock": false,
+      "parent_ids": [
+        "night_vision"
+      ],
+      "parent_requirement": "all"
+    }
+  ]
+}

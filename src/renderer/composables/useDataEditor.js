@@ -1,7 +1,7 @@
 // src/renderer/composables/useDataEditor.js
 import { ref, computed } from 'vue'
 import { ITEM_RARITIES, getRarity, getRarityColor, getRarityBadgeStyle } from '../constants/rarity.js'
-import { normalizeSkill, normalizeSkillBranch } from '../utils/skillTree.js'
+import { normalizeSkill, normalizeSkillBranch, resolveSkillNode, resolveEntitySkills } from '../utils/skillTree.js'
 import { calculateEquipmentBySlot } from '../utils/equipment.js'
 
 // Singleton state
@@ -17,6 +17,7 @@ const globalTags = ref([])
 const itemCategories = ref([])
 const itemSkills = ref([])
 const talents = ref([])
+const skillsCatalog = ref([])
 const activeLocale = ref('ru')
 const availableLocales = ref([
 	{ code: 'ru', label: 'Русский', flag: '🇷🇺' },
@@ -222,7 +223,7 @@ export function useDataEditor() {
 
 	// Load all collections and global tags
 	async function loadAll() {
-		const [chars, classes, fractions, races, equipItems, otherItems, tagsList, categoriesList, loadedItemSkills, loadedTalents] = await Promise.all([
+		const [chars, classes, fractions, races, equipItems, otherItems, tagsList, categoriesList, loadedItemSkills, loadedTalents, loadedSkillsCatalog] = await Promise.all([
 			loadCharactersData(),
 			readDataFile('classes/classes.json'),
 			readDataFile('fractions/fractions.json'),
@@ -232,7 +233,8 @@ export function useDataEditor() {
 			readDataFile('tags/tags.json'),
 			readDataFile('items/categories.json'),
 			readDataFile('skills/items/items.json'),
-			readDataFile('skills/talents/talents.json')
+			readDataFile('skills/talents/talents.json'),
+			readDataFile('skills/skills.json')
 		])
 
 		if (Array.isArray(loadedItemSkills)) {
@@ -249,6 +251,14 @@ export function useDataEditor() {
 			talents.value = loadedTalents.talents
 		} else {
 			talents.value = []
+		}
+
+		if (Array.isArray(loadedSkillsCatalog)) {
+			skillsCatalog.value = loadedSkillsCatalog
+		} else if (loadedSkillsCatalog && Array.isArray(loadedSkillsCatalog.skills)) {
+			skillsCatalog.value = loadedSkillsCatalog.skills
+		} else {
+			skillsCatalog.value = []
 		}
 
 		// Classes
@@ -744,9 +754,32 @@ export function useDataEditor() {
 				(Array.isArray(cleanData.skills) && cleanData.skills.length > 0) ||
 				(Array.isArray(cleanData.skill_branches) && cleanData.skill_branches.length > 0)
 			if (hasSkills) {
+				const savedSkills = (cleanData.skills || []).map((sk) => {
+					const sId = sk.skill_id || sk.id
+					const node = {
+						id: sId,
+						skill_id: sId,
+						branch: sk.branch || '',
+						grid_col: sk.grid_col ?? 0,
+						req_level: sk.req_level ?? 1,
+						max_level: sk.max_level ?? 1,
+						cost: sk.cost ?? (sk.auto_unlock ? 0 : 1),
+						cost_type: sk.cost_type || 'skill_point',
+						level_points_given: sk.level_points_given ?? 1,
+						auto_unlock: Boolean(sk.auto_unlock),
+						parent_ids: Array.isArray(sk.parent_ids) ? sk.parent_ids : [],
+						parent_requirement: sk.parent_requirement === 'any' ? 'any' : 'all'
+					}
+					if (sk.name) node.name = sk.name
+					if (sk.icon) node.icon = sk.icon
+					if (sk.description) node.description = sk.description
+					if (sk.category) node.category = sk.category
+					if (sk.data && Object.keys(sk.data).length > 0) node.data = sk.data
+					return node
+				})
 				await writeDataFile(`skills/${targetType}/${cleanData.id}.json`, {
 					skill_branches: cleanData.skill_branches || [],
-					skills: cleanData.skills || []
+					skills: savedSkills
 				})
 			} else {
 				await deleteDataFile(`skills/${targetType}/${cleanData.id}.json`)
@@ -923,6 +956,42 @@ export function useDataEditor() {
 			const [removed] = talents.value.splice(idx, 1)
 			await persistTalents()
 			setStatus(`✔ Талант "${removed.name || removed.id}" удалён из skills/talents/talents.json!`, 'info')
+		}
+	}
+
+	// Master Skills Catalog Management (skills/skills.json)
+	async function persistSkillsCatalog() {
+		await writeDataFile('skills/skills.json', skillsCatalog.value)
+	}
+
+	async function saveSkillToCatalog(skill) {
+		if (!skill || (!skill.id && !skill.skill_id)) throw new Error('ID навыка не может быть пустым')
+		const sId = String(skill.id || skill.skill_id).trim()
+		const cleanSkill = {
+			id: sId,
+			name: String(skill.name || sId).trim(),
+			icon: skill.icon || '⚔️',
+			category: skill.category || 'active',
+			description: skill.description || '',
+			data: skill.data && typeof skill.data === 'object' ? skill.data : {}
+		}
+		const idx = skillsCatalog.value.findIndex((s) => s.id === cleanSkill.id)
+		if (idx >= 0) {
+			skillsCatalog.value[idx] = cleanSkill
+		} else {
+			skillsCatalog.value.push(cleanSkill)
+		}
+		await persistSkillsCatalog()
+		setStatus(`✔ Навык "${cleanSkill.name}" сохранён в каталог skills/skills.json!`)
+		return cleanSkill
+	}
+
+	async function deleteSkillFromCatalog(skillId) {
+		const idx = skillsCatalog.value.findIndex((s) => s.id === skillId)
+		if (idx >= 0) {
+			const [removed] = skillsCatalog.value.splice(idx, 1)
+			await persistSkillsCatalog()
+			setStatus(`✔ Навык "${removed.name || removed.id}" удалён из каталога skills/skills.json!`, 'info')
 		}
 	}
 
@@ -1963,6 +2032,10 @@ export function useDataEditor() {
 		saveTalent,
 		deleteTalent,
 		persistTalents,
+		skillsCatalog,
+		saveSkillToCatalog,
+		deleteSkillFromCatalog,
+		persistSkillsCatalog,
 		ITEM_RARITIES,
 		getRarity,
 		getRarityColor,

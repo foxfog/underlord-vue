@@ -1898,7 +1898,8 @@
 															{{ getCategoryBadge(slot.category).icon }} {{ getCategoryBadge(slot.category).shortLabel }}
 														</span>
 														<span class="sci-badge __level" title="Требуемый уровень класса/расы">Треб. ур. {{ slot.req_level }}</span>
-														<span class="sci-badge __cost" title="Стоимость прокачки">{{ slot.cost }} {{ slot.cost_type === 'spell_point' ? '🔮 MP' : '⚔️ SP' }}</span>
+														<span v-if="slot.auto_unlock" class="sci-badge __auto" title="Врождённый навык (активируется автоматически)">⚡ Врождённый</span>
+														<span v-else class="sci-badge __cost" title="Стоимость прокачки">{{ slot.cost }} {{ slot.cost_type === 'spell_point' ? '🔮 MP' : '⚔️ SP' }}</span>
 														<span class="sci-badge __points" title="Очков уровня дает классу/расе">+{{ slot.level_points_given ?? 1 }} ур.</span>
 														<span v-if="slot.branch" class="sci-badge __branch">{{ getBranchName(slot.branch) }}</span>
 													</div>
@@ -2281,6 +2282,19 @@
 						<button type="button" class="modal-close-icon-btn" @click="isSkillModalOpen = false">✕</button>
 					</div>
 					<div class="modal-body skill-modal-body">
+						<!-- Quick pick from central skills catalog (skills.json) -->
+						<div v-if="!editingSkillId && (skillsCatalog || []).length > 0" class="form-field __catalog-quick-pick">
+							<label class="field-label">
+								📖 Быстрый выбор из каталога (skills.json):
+							</label>
+							<select class="editor-select" @change="handlePickCatalogSkill($event.target.value)">
+								<option value="">— Создать новый скил или выбрать из базы... —</option>
+								<option v-for="catSkill in skillsCatalog" :key="catSkill.id" :value="catSkill.id">
+									{{ catSkill.icon || '⚔️' }} {{ catSkill.name }} ({{ catSkill.id }}) [{{ catSkill.category }}]
+								</option>
+							</select>
+						</div>
+
 						<div class="field-row __split">
 							<div class="form-field">
 								<label class="field-label">ID скила (уникальный ID)</label>
@@ -2352,7 +2366,7 @@
 						<div class="field-row __split">
 							<div class="form-field">
 								<label class="field-label">Тип валюты (Cost Type)</label>
-								<select v-model="skillForm.cost_type" class="editor-select">
+								<select v-model="skillForm.cost_type" class="editor-select" :disabled="skillForm.auto_unlock">
 									<option value="skill_point">⚔️ Очки навыков (SP)</option>
 									<option value="spell_point">🔮 Очки спелов (MP)</option>
 								</select>
@@ -2365,7 +2379,19 @@
 									min="0"
 									max="50"
 									class="editor-input"
+									:disabled="skillForm.auto_unlock"
 								/>
+							</div>
+							<div class="form-field __checkbox-field">
+								<label class="field-label">Врождённый навык</label>
+								<label class="checkbox-label" title="Навык активируется автоматически при взятии требуемого уровня">
+									<input
+										v-model="skillForm.auto_unlock"
+										type="checkbox"
+										@change="onAutoUnlockToggle"
+									/>
+									<span>⚡ Авто (бесплатно)</span>
+								</label>
 							</div>
 							<div class="form-field">
 								<label class="field-label">Условие родителей (Parent req)</label>
@@ -2601,6 +2627,8 @@ const {
 	getItemCategoryName,
 	itemSkills,
 	talents,
+	skillsCatalog,
+	saveSkillToCatalog,
 	ITEM_RARITIES,
 	getRarity,
 	getRarityColor,
@@ -3536,7 +3564,7 @@ const filteredEditorSkills = computed(() => {
 const editorTierGrid = computed(() => {
 	const skills = filteredEditorSkills.value || []
 	const branches = selectedEntity.value?.skill_branches || []
-	return organizeSkillsByGrid(skills, branches)
+	return organizeSkillsByGrid(skills, branches, skillsCatalog.value)
 })
 
 const availableParentSkills = computed(() => {
@@ -3680,6 +3708,7 @@ function openAddSkillModal() {
 		cost: 1,
 		cost_type: 'skill_point',
 		level_points_given: 1,
+		auto_unlock: false,
 		parent_ids: [],
 		parent_requirement: 'all'
 	}
@@ -3700,9 +3729,10 @@ function openEditSkillModal(skill) {
 		grid_col: skill.grid_col ?? 0,
 		req_level: Math.max(1, skill.req_level ?? 1),
 		max_level: 1,
-		cost: skill.cost !== undefined ? Math.max(0, parseInt(skill.cost, 10) || 0) : 1,
+		cost: skill.cost !== undefined ? Math.max(0, parseInt(skill.cost, 10) || 0) : (skill.auto_unlock ? 0 : 1),
 		cost_type: skill.cost_type === 'spell_point' ? 'spell_point' : 'skill_point',
 		level_points_given: skill.level_points_given ?? 1,
+		auto_unlock: Boolean(skill.auto_unlock),
 		parent_ids: Array.isArray(skill.parent_ids) ? [...skill.parent_ids] : [],
 		parent_requirement: skill.parent_requirement || 'all'
 	}
@@ -3713,6 +3743,31 @@ function openEditSkillModal(skill) {
 	}
 	skillJsonError.value = null
 	isSkillModalOpen.value = true
+}
+
+function handlePickCatalogSkill(catSkillId) {
+	if (!catSkillId) return
+	const found = skillsCatalog.value?.find((s) => s.id === catSkillId)
+	if (!found) return
+	skillForm.value.id = found.id
+	skillForm.value.name = found.name
+	skillForm.value.icon = found.icon || '⚔️'
+	skillForm.value.category = found.category || 'active'
+	skillForm.value.description = found.description || ''
+	try {
+		skillJsonStr.value = JSON.stringify(found.data || {}, null, 2)
+	} catch (e) {
+		skillJsonStr.value = '{}'
+	}
+	skillJsonError.value = null
+}
+
+function onAutoUnlockToggle() {
+	if (skillForm.value.auto_unlock) {
+		skillForm.value.cost = 0
+	} else if (skillForm.value.cost === 0) {
+		skillForm.value.cost = 1
+	}
 }
 
 function toggleSkillParent(pid) {
@@ -3771,11 +3826,13 @@ function saveSkillModal() {
 		return
 	}
 
+	const isAutoUnlock = Boolean(skillForm.value.auto_unlock)
 	const parsedCost = parseInt(skillForm.value.cost, 10)
-	const cost = isNaN(parsedCost) ? 1 : Math.max(0, parsedCost)
+	const cost = isAutoUnlock ? 0 : (isNaN(parsedCost) ? 1 : Math.max(0, parsedCost))
 
 	const skillObj = {
 		id: String(skillForm.value.id || '').trim(),
+		skill_id: String(skillForm.value.id || '').trim(),
 		name: String(skillForm.value.name || '').trim(),
 		icon: skillForm.value.icon || '⚔️',
 		description: String(skillForm.value.description || '').trim(),
@@ -3787,6 +3844,7 @@ function saveSkillModal() {
 		cost,
 		cost_type: skillForm.value.cost_type === 'spell_point' ? 'spell_point' : 'skill_point',
 		level_points_given: Math.max(0, parseInt(skillForm.value.level_points_given, 10) || 0),
+		auto_unlock: isAutoUnlock,
 		parent_ids: skillForm.value.parent_ids || [],
 		parent_requirement: skillForm.value.parent_requirement === 'any' ? 'any' : 'all',
 		data: parsedData
@@ -3805,6 +3863,16 @@ function saveSkillModal() {
 		}
 		selectedEntity.value.skills.push(skillObj)
 	}
+
+	// Persist to central catalog if new or updated
+	saveSkillToCatalog({
+		id: skillObj.id,
+		name: skillObj.name,
+		icon: skillObj.icon,
+		category: skillObj.category,
+		description: skillObj.description,
+		data: parsedData
+	}).catch(() => {})
 
 	isSkillModalOpen.value = false
 }
@@ -6605,6 +6673,27 @@ function removeSkill(skillId) {
 	background: rgba(168, 85, 247, 0.2);
 	border: 1px solid #a855f7;
 	color: #d8b4fe;
+}
+
+.sci-badge.__auto {
+	background: rgba(16, 185, 129, 0.25);
+	border: 1px solid rgba(16, 185, 129, 0.6);
+	color: #6ee7b7;
+	font-weight: bold;
+}
+
+.__catalog-quick-pick {
+	margin-bottom: 0.8em;
+	background: rgba(59, 130, 246, 0.1);
+	border: 1px solid rgba(59, 130, 246, 0.3);
+	border-radius: 0.4em;
+	padding: 0.6em;
+}
+
+.__checkbox-field {
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-end;
 }
 
 /* Empty Cell Slot */

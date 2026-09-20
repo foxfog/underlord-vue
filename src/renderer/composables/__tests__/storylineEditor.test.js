@@ -118,6 +118,16 @@ describe('useStorylineEditor Composable', () => {
 		editor.addStep('variable')
 		expect(editor.currentStory.value.steps.length).toBe(4)
 		expect(editor.currentStory.value.steps[3].variable).toBeDefined()
+
+		editor.addStep('variables')
+		expect(editor.currentStory.value.steps.length).toBe(5)
+		expect(editor.currentStory.value.steps[4].type).toBe('variables')
+		expect(Array.isArray(editor.currentStory.value.steps[4].operations)).toBe(true)
+
+		editor.addStep('batch')
+		expect(editor.currentStory.value.steps.length).toBe(6)
+		expect(editor.currentStory.value.steps[5].type).toBe('batch')
+		expect(Array.isArray(editor.currentStory.value.steps[5].actions)).toBe(true)
 	})
 
 	it('duplicates, moves and removes steps accurately', () => {
@@ -255,6 +265,21 @@ describe('useStorylineEditor Composable', () => {
 
 		const varStep = { variable: 'global.year = 2138' }
 		expect(editor.getStepSummary(varStep)).toBe('⚙️ global.year = 2138')
+
+		// Batch variables step
+		expect(editor.getStepTypeIcon({ type: 'variables', operations: ['global.x = 1'] })).toBe('🎛️')
+		expect(editor.getStepTypeIcon({ type: 'batch', actions: [] })).toBe('📦')
+		expect(editor.getStepTypeIcon({ operations: ['global.x = 1'] })).toBe('🎛️')
+
+		const variablesStep = { type: 'variables', operations: ['global.x = 1', 'global.y = 2', 'global.z = 3'] }
+		const varsSummary = editor.getStepSummary(variablesStep)
+		expect(varsSummary).toContain('🎛️')
+		expect(varsSummary).toContain('3')
+
+		const batchStep = { type: 'batch', actions: [{ type: 'variables', operations: ['global.flag = true'] }] }
+		const batchSummary = editor.getStepSummary(batchStep)
+		expect(batchSummary).toContain('📦')
+		expect(batchSummary).toContain('1')
 	})
 
 	it('builds story topology graph with sequence links, choices, and loops', () => {
@@ -612,8 +637,8 @@ describe('useStorylineEditor Composable', () => {
 		const graph = editor.buildStoryGraph(stepsWithLongText)
 		expect(graph.nodes[0].width).toBe(19.5)
 		expect(graph.nodes[1].width).toBe(16.5)
-		// Check that the second node's x-coordinate is shifted by the first node's wider width
-		expect(graph.nodes[1].x).toBe(19.5 + 7.0)
+		// Check that the second node's x-coordinate is shifted by the first node's wider width and colGap
+		expect(graph.nodes[1].x).toBe(19.5 + 10.0)
 	})
 
 	it('creates outbound node for standalone external goto without return', () => {
@@ -632,5 +657,74 @@ describe('useStorylineEditor Composable', () => {
 		expect(gotoLink).toBeDefined()
 		expect(gotoLink.type).toBe('goto-outbound')
 		expect(gotoLink.outboundId).toBe(outNode.id)
+	})
+
+	it('routes choice option and goto targeting current scenario (nameinput.json) back to step 1 as a loop', () => {
+		const nameinputSteps = [
+			{
+				type: 'inputtext',
+				text: 'Введите свое имя',
+				variable: 'character.mc.name',
+				showCloseButton: false,
+				showCancelButton: false,
+				confirmButtonText: 'Продолжить'
+			},
+			{
+				type: 'choice',
+				text: 'Ваше имя {character.mc.name}?',
+				options: [
+					{
+						text: 'Да',
+						actions: [
+							{ variable: 'character.mc.title = character.mc.name' }
+						]
+					},
+					{
+						text: 'Нет',
+						actions: [{ type: 'goto', target: 'nameinput' }]
+					}
+				]
+			},
+			{ variable: 'character.mc.title = character.mc.name' },
+			{ type: 'continue' }
+		]
+
+		editor.currentStory.value = { id: 'nameinput', steps: nameinputSteps }
+		editor.selectedFilePath.value = 'story/ru/nameinput.json'
+
+		const graph = editor.buildStoryGraph(nameinputSteps, { id: 'nameinput', filePath: 'story/ru/nameinput.json' })
+		expect(graph.nodes.length).toBe(4)
+
+		const choiceNode = graph.nodes[1]
+		expect(choiceNode.choiceBranches.length).toBe(2)
+
+		// Option "Да" -> fallthrough to next step (step index 2)
+		expect(choiceNode.choiceBranches[0].isExternal).toBe(false)
+		expect(choiceNode.choiceBranches[0].isLoop).toBe(false)
+
+		// Option "Нет" -> loops back to step 0 (step 1 in UI) of the same file
+		expect(choiceNode.choiceBranches[1].target).toBe('nameinput')
+		expect(choiceNode.choiceBranches[1].targetIndex).toBe(0)
+		expect(choiceNode.choiceBranches[1].isExternal).toBe(false)
+		expect(choiceNode.choiceBranches[1].isLoop).toBe(true)
+		expect(choiceNode.choiceBranches[1].externalReturnInfo).toBeNull()
+
+		// Verify links
+		const loopLink = graph.links.find((l) => l.key === 'choice_1_opt_1_to_0')
+		expect(loopLink).toBeDefined()
+		expect(loopLink.type).toBe('loop')
+		expect(loopLink.fromIndex).toBe(1)
+		expect(loopLink.toIndex).toBe(0)
+		expect(loopLink.isLoop).toBe(true)
+		expect(loopLink.label).toBe('Нет')
+
+		// Ensure NO false forward return link was generated for "Нет"
+		const falseReturnLink = graph.links.find((l) => l.key.startsWith('choice_return_1_opt_1'))
+		expect(falseReturnLink).toBeUndefined()
+
+		// Option "Да" goes forward to step 2
+		const forwardLink = graph.links.find((l) => l.key === 'choice_fallthrough_1_opt_0_to_2')
+		expect(forwardLink).toBeDefined()
+		expect(forwardLink.toIndex).toBe(2)
 	})
 })

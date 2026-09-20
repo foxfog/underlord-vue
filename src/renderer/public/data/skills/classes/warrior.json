@@ -15,140 +15,92 @@
   ],
   "skills": [
     {
-      "id": "warrior_slash",
-      "name": "Рассечение",
-      "icon": "⚔️",
-      "description": "Базовый рубящий удар мечом. При прокачке дает очко уровня классу.",
+      "skill_id": "warrior_slash",
       "branch": "swordsmanship",
-      "category": "active",
       "grid_col": 0,
       "req_level": 1,
       "max_level": 1,
       "cost": 1,
       "cost_type": "skill_point",
       "level_points_given": 1,
+      "auto_unlock": false,
       "parent_ids": [],
-      "parent_requirement": "all",
-      "data": {
-        "type": "active",
-        "damage": 100,
-        "ap_cost": 2
-      }
+      "parent_requirement": "all"
     },
     {
-      "id": "warrior_shield_block",
-      "name": "Блок щитом",
-      "icon": "🛡️",
-      "description": "Базовая защитная стойка со щитом. При прокачке дает очко уровня классу.",
+      "skill_id": "warrior_shield_block",
       "branch": "defense",
-      "category": "passive",
       "grid_col": 2,
       "req_level": 1,
       "max_level": 1,
       "cost": 1,
       "cost_type": "skill_point",
       "level_points_given": 1,
+      "auto_unlock": false,
       "parent_ids": [],
-      "parent_requirement": "all",
-      "data": {
-        "type": "passive",
-        "armor_bonus": 15
-      }
+      "parent_requirement": "all"
     },
     {
-      "id": "warrior_cross_slash",
-      "name": "Крестовой выпад",
-      "icon": "✨",
-      "description": "Мощная связка из двух ударов. Требует 1 уровень класса и изученное Рассечение.",
+      "skill_id": "warrior_cross_slash",
       "branch": "swordsmanship",
-      "category": "active",
       "grid_col": 0,
       "req_level": 2,
       "max_level": 1,
       "cost": 2,
       "cost_type": "skill_point",
       "level_points_given": 1,
+      "auto_unlock": false,
       "parent_ids": [
         "warrior_slash"
       ],
-      "parent_requirement": "all",
-      "data": {
-        "type": "active",
-        "damage": 220,
-        "ap_cost": 3,
-        "cooldown": 2
-      }
+      "parent_requirement": "all"
     },
     {
-      "id": "warrior_iron_wall",
-      "name": "Железная стена",
-      "icon": "🧱",
-      "description": "Непробиваемая стойка. Требует 1 уровень класса и изученный Блок щитом.",
+      "skill_id": "warrior_iron_wall",
       "branch": "defense",
-      "category": "buff",
       "grid_col": 2,
       "req_level": 2,
       "max_level": 1,
       "cost": 2,
       "cost_type": "skill_point",
       "level_points_given": 1,
+      "auto_unlock": false,
       "parent_ids": [
         "warrior_shield_block"
       ],
-      "parent_requirement": "all",
-      "data": {
-        "type": "passive",
-        "block_chance": 25
-      }
+      "parent_requirement": "all"
     },
     {
-      "id": "warrior_counter_parry",
-      "name": "Контратакующее парирование",
-      "icon": "🌀",
-      "description": "Тактический маневр. Требует 2 уровень класса и знания ЛИБО Крестового выпада, ЛИБО Железной стены.",
+      "skill_id": "warrior_counter_parry",
       "branch": "swordsmanship",
-      "category": "active",
       "grid_col": 0,
       "req_level": 3,
       "max_level": 1,
       "cost": 2,
       "cost_type": "skill_point",
       "level_points_given": 2,
+      "auto_unlock": false,
       "parent_ids": [
         "warrior_cross_slash",
         "warrior_iron_wall"
       ],
-      "parent_requirement": "any",
-      "data": {
-        "type": "active",
-        "parry_counter": 50,
-        "duration_turns": 2
-      }
+      "parent_requirement": "any"
     },
     {
-      "id": "warrior_blade_storm",
-      "name": "Буря клинков",
-      "icon": "🌪️",
-      "description": "Вершина воинского мастерства. Требует 2 уровень класса и знания ВСЕХ предшествующих техник (Крестовой выпад И Железная стена).",
+      "skill_id": "warrior_blade_storm",
       "branch": "swordsmanship",
-      "category": "active",
       "grid_col": 2,
       "req_level": 3,
       "max_level": 1,
       "cost": 3,
       "cost_type": "skill_point",
       "level_points_given": 2,
+      "auto_unlock": false,
       "parent_ids": [
         "warrior_cross_slash",
         "warrior_iron_wall"
       ],
-      "parent_requirement": "all",
-      "data": {
-        "type": "active",
-        "aoe_damage": 350,
-        "ap_cost": 4,
-        "cooldown": 4
-      }
+      "parent_requirement": "all"
     }
   ]
 }

@@ -1,16 +1,16 @@
 {
   "skill_branches": [
     {
-      "id": "necromancy",
-      "name": "Некромантия и Кости",
-      "icon": "💀",
-      "description": "Управление костяной структурой и энергией смерти"
+      "id": "subterfuge",
+      "name": "Скрытность и плутовство",
+      "icon": "🗡️",
+      "description": "Искусство незаметного перемещения, взлома и внезапных смертоносных атак"
     }
   ],
   "skills": [
     {
-      "skill_id": "skeleton_bone_armor",
-      "branch": "necromancy",
+      "skill_id": "stealth_ambush",
+      "branch": "subterfuge",
       "grid_col": 0,
       "req_level": 1,
       "max_level": 1,
@@ -22,17 +22,17 @@
       "parent_requirement": "all"
     },
     {
-      "skill_id": "skeleton_death_chill",
-      "branch": "necromancy",
-      "grid_col": 1,
-      "req_level": 2,
+      "skill_id": "night_vision",
+      "branch": "subterfuge",
+      "grid_col": 0,
+      "req_level": 5,
       "max_level": 1,
-      "cost": 2,
+      "cost": 1,
       "cost_type": "skill_point",
       "level_points_given": 1,
       "auto_unlock": false,
       "parent_ids": [
-        "skeleton_bone_armor"
+        "stealth_ambush"
       ],
       "parent_requirement": "all"
     }

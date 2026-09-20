@@ -163,6 +163,38 @@ describe('useStoryVariables composable', () => {
 			applyVariable('global.day = 4')
 			expect(emit).toHaveBeenCalledWith('global-data-changed', expect.any(Object))
 		})
+
+		it('applies batch operations when passed an array of expressions', () => {
+			const { applyVariable, globalData, characterData } = setupStoryVariables()
+			applyVariable([
+				"global.calendarType = 'real'",
+				'global.year = 2138',
+				'global.gold += 200',
+				"character.mc.name = 'Suzuki Satoru'"
+			])
+			expect(globalData.calendarType).toBe('real')
+			expect(globalData.year).toBe(2138)
+			expect(globalData.gold).toBe(300)
+			expect(characterData.mc.name).toBe('Suzuki Satoru')
+		})
+
+		it('applies multi-statement expressions separated by semicolons and newlines', () => {
+			const { applyVariable, globalData } = setupStoryVariables()
+			applyVariable("global.day = 10;\nglobal.timeOfDay = 'night'; global.gold = 500")
+			expect(globalData.day).toBe(10)
+			expect(globalData.timeOfDay).toBe('night')
+			expect(globalData.gold).toBe(500)
+		})
+
+		it('applies object key-value variable mappings', () => {
+			const { applyVariable, globalData } = setupStoryVariables()
+			applyVariable({
+				'global.visitedLocations': ['factory', 'market'],
+				'global.day': 7
+			})
+			expect(globalData.visitedLocations).toEqual(['factory', 'market'])
+			expect(globalData.day).toBe(7)
+		})
 	})
 
 	describe('evaluateCondition', () => {

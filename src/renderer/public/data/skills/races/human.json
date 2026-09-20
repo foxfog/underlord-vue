@@ -9,46 +9,32 @@
   ],
   "skills": [
     {
-      "id": "human_potential",
-      "name": "Скрытый потенциал",
-      "icon": "💡",
-      "description": "Ускоряет получение опыта и дает 1 очко расового уровня.",
+      "skill_id": "human_potential",
       "branch": "human_adaptability",
-      "category": "passive",
       "grid_col": 0,
       "req_level": 1,
       "max_level": 1,
       "cost": 0,
       "cost_type": "skill_point",
       "level_points_given": 1,
+      "auto_unlock": true,
       "parent_ids": [],
-      "parent_requirement": "all",
-      "data": {
-        "type": "passive",
-        "exp_multiplier": 1.15
-      }
+      "parent_requirement": "all"
     },
     {
-      "id": "human_versatility",
-      "name": "Разносторонность",
-      "icon": "🎭",
-      "description": "Повышает все основные характеристики. Требует 1 уровень расы и знание Скрытого потенциала.",
+      "skill_id": "human_versatility",
       "branch": "human_adaptability",
-      "category": "buff",
       "grid_col": 1,
       "req_level": 2,
       "max_level": 1,
       "cost": 2,
       "cost_type": "skill_point",
       "level_points_given": 1,
+      "auto_unlock": false,
       "parent_ids": [
         "human_potential"
       ],
-      "parent_requirement": "all",
-      "data": {
-        "type": "passive",
-        "all_stats_bonus": 5
-      }
+      "parent_requirement": "all"
     }
   ]
 }

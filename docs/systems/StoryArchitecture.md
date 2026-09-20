@@ -77,3 +77,6 @@ npm run lint:styles
 * `src/renderer/utils/eventBus.js` — типизированная шина событий с дублированием в `window.dispatchEvent` для обратной совместимости.
 * `src/renderer/utils/logger.js` — условный логгер (`import.meta.env.DEV`), предотвращающий спам в консоль в продакшене.
 * **Модульные обработчики шагов в `useVisualNovel.js`**: `handleAudioStep`, `handleInventoryRemoveStep`, `handleInventoryModifyStep`, `handleInventoryAddStep`, `handleInventoryResetStep`, `handleQuestStep`, `handleMapStep`, `handleDiscoverLocationStep`, `handleNpcStep`.
+* **Пакетное выполнение экшенов**:
+  * `variables` (`operations: [...]`): последовательное синхронное применение массива выражений в рамках одного шага таймлайна/ноды.
+  * `batch` (`actions: [...]`): универсальный пакет мгновенных действий через `executeInstantAction`, позволяющий группировать звук, выдачу предметов, модификацию переменных и открытие локаций без лишних шагов и задержек.

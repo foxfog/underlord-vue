@@ -1,0 +1,193 @@
+[
+  {
+    "id": "warrior_slash",
+    "name": "Рассечение",
+    "icon": "⚔️",
+    "category": "active",
+    "description": "Базовый рубящий удар мечом. При прокачке дает очко уровня классу.",
+    "data": {
+      "type": "active",
+      "damage": 100,
+      "ap_cost": 2
+    }
+  },
+  {
+    "id": "warrior_shield_block",
+    "name": "Блок щитом",
+    "icon": "🛡️",
+    "category": "passive",
+    "description": "Базовая защитная стойка со щитом. При прокачке дает очко уровня классу.",
+    "data": {
+      "type": "passive",
+      "armor_bonus": 15
+    }
+  },
+  {
+    "id": "warrior_cross_slash",
+    "name": "Крестовой выпад",
+    "icon": "✨",
+    "category": "active",
+    "description": "Мощная связка из двух ударов. Требует 1 уровень класса и изученное Рассечение.",
+    "data": {
+      "type": "active",
+      "damage": 220,
+      "ap_cost": 3,
+      "cooldown": 2
+    }
+  },
+  {
+    "id": "warrior_iron_wall",
+    "name": "Железная стена",
+    "icon": "🧱",
+    "category": "buff",
+    "description": "Непробиваемая стойка. Требует 1 уровень класса и изученный Блок щитом.",
+    "data": {
+      "type": "passive",
+      "block_chance": 25
+    }
+  },
+  {
+    "id": "warrior_counter_parry",
+    "name": "Контратакующее парирование",
+    "icon": "🌀",
+    "category": "active",
+    "description": "Тактический маневр. Требует 2 уровень класса и знания ЛИБО Крестового выпада, ЛИБО Железной стены.",
+    "data": {
+      "type": "active",
+      "parry_counter": 50,
+      "duration_turns": 2
+    }
+  },
+  {
+    "id": "warrior_blade_storm",
+    "name": "Буря клинков",
+    "icon": "🌪️",
+    "category": "active",
+    "description": "Вершина воинского мастерства. Требует 2 уровень класса и знания ВСЕХ предшествующих техник (Крестовой выпад И Железная стена).",
+    "data": {
+      "type": "active",
+      "aoe_damage": 350,
+      "ap_cost": 4,
+      "cooldown": 4
+    }
+  },
+  {
+    "id": "wizard_magic_arrow",
+    "name": "Магическая стрела",
+    "icon": "🔮",
+    "category": "spell",
+    "description": "Базовое заклинание чистой магической энергии первого круга. Тратит очки спелов (MP).",
+    "data": {
+      "type": "spell",
+      "damage": 80,
+      "mp_cost": 10
+    }
+  },
+  {
+    "id": "wizard_fireball",
+    "name": "Огненный шар",
+    "icon": "💥",
+    "category": "spell",
+    "description": "Классическое заклинание третьего круга, наносящее урон по площади. Требует 2 уровень мага.",
+    "data": {
+      "type": "spell",
+      "aoe_damage": 240,
+      "mp_cost": 30
+    }
+  },
+  {
+    "id": "human_potential",
+    "name": "Скрытый потенциал",
+    "icon": "💡",
+    "category": "passive",
+    "description": "Ускоряет получение опыта и дает 1 очко расового уровня.",
+    "data": {
+      "type": "passive",
+      "exp_multiplier": 1.15
+    }
+  },
+  {
+    "id": "human_versatility",
+    "name": "Разносторонность",
+    "icon": "🎭",
+    "category": "buff",
+    "description": "Повышает все основные характеристики. Требует 1 уровень расы и знание Скрытого потенциала.",
+    "data": {
+      "type": "passive",
+      "all_stats_bonus": 5
+    }
+  },
+  {
+    "id": "skeleton_bone_armor",
+    "name": "Костяной панцирь",
+    "icon": "🦴",
+    "category": "passive",
+    "description": "Укрепляет костную ткань, уменьшая получаемый физический урон.",
+    "data": {
+      "type": "passive",
+      "pierce_resistance": 50,
+      "armor": 20
+    }
+  },
+  {
+    "id": "skeleton_death_chill",
+    "name": "Загробный холод",
+    "icon": "❄️",
+    "category": "active",
+    "description": "Окутывает атаки леденящей энергией отрицательной магии. Требует 1 уровень расы.",
+    "data": {
+      "type": "active",
+      "cold_damage": 80,
+      "slow_percent": 30
+    }
+  },
+  {
+    "id": "night_vision",
+    "name": "Ночное зрение",
+    "icon": "👁️",
+    "category": "passive",
+    "description": "Позволяет видеть в абсолютной темноте, нивелируя штрафы к меткости и обнаружению скрытых угроз.",
+    "data": {
+      "type": "passive",
+      "darkness_immunity": true,
+      "perception_bonus": 10
+    }
+  },
+  {
+    "id": "night_vision_adv",
+    "name": "Истинное ночное зрение",
+    "icon": "✨",
+    "category": "passive",
+    "description": "Продвинутое ночное восприятие: позволяет видеть сквозь магическую тьму и распознавать невидимых противников.",
+    "data": {
+      "type": "passive",
+      "see_invis": true,
+      "perception_bonus": 25
+    }
+  },
+  {
+    "id": "stealth_ambush",
+    "name": "Внезапный удар из тени",
+    "icon": "🗡️",
+    "category": "active",
+    "description": "Атака из состояния скрытности, наносящая критический урон по уязвимым точкам противника.",
+    "data": {
+      "type": "active",
+      "damage": 180,
+      "crit_chance": 40,
+      "ap_cost": 2
+    }
+  },
+  {
+    "id": "mineral_diet",
+    "name": "Питание рудой",
+    "icon": "⛏️",
+    "category": "passive",
+    "description": "Уникальная врождённая особенность квагота: поглощение минералов укрепляет шкуру и плотность когтей.",
+    "data": {
+      "type": "passive",
+      "natural_armor": 15,
+      "physical_reduction": 10
+    }
+  }
+]

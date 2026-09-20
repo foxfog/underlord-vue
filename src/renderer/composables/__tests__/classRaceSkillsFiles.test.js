@@ -53,6 +53,14 @@ describe('Class & Race Skill File Separation and Management', () => {
 								}
 							}
 						}
+						if (relPath === 'skills/skills.json') {
+							return {
+								success: true,
+								data: [
+									{ id: 'slash', name: 'Рубящий удар', icon: '⚔️', category: 'active' }
+								]
+							}
+						}
 						return { success: false, notFound: true }
 					}),
 					writeFile: vi.fn(async (relPath, data) => {
@@ -200,5 +208,61 @@ describe('Class & Race Skill File Separation and Management', () => {
 		await editor.deleteEntity('classes', 'warrior')
 
 		expect(deletedFiles).toContain('skills/classes/warrior.json')
+	})
+
+	it('loads central skillsCatalog from skills/skills.json on loadAll', async () => {
+		await editor.loadAll()
+		expect(editor.skillsCatalog.value).toHaveLength(1)
+		expect(editor.skillsCatalog.value[0].id).toBe('slash')
+		expect(editor.skillsCatalog.value[0].name).toBe('Рубящий удар')
+	})
+
+	it('saveSkillToCatalog adds/updates central catalog and writes skills/skills.json', async () => {
+		await editor.loadAll()
+
+		await editor.saveSkillToCatalog({
+			id: 'night_vision',
+			name: 'Ночное зрение',
+			icon: '👁️',
+			category: 'passive',
+			description: 'Видит в темноте',
+			data: { radius: 15 }
+		})
+
+		expect(writtenFiles['skills/skills.json']).toBeDefined()
+		const saved = writtenFiles['skills/skills.json'].find((s) => s.id === 'night_vision')
+		expect(saved).toBeDefined()
+		expect(saved.name).toBe('Ночное зрение')
+		expect(saved.data).toEqual({ radius: 15 })
+
+		// Update existing
+		await editor.saveSkillToCatalog({
+			id: 'night_vision',
+			name: 'Ночное зрение II',
+			icon: '👁️',
+			category: 'passive',
+			description: 'Улучшенное видение',
+			data: { radius: 25 }
+		})
+
+		const updated = writtenFiles['skills/skills.json'].find((s) => s.id === 'night_vision')
+		expect(updated.name).toBe('Ночное зрение II')
+		expect(updated.data.radius).toBe(25)
+	})
+
+	it('deleteSkillFromCatalog removes skill from catalog and writes skills/skills.json', async () => {
+		await editor.loadAll()
+
+		await editor.saveSkillToCatalog({
+			id: 'temp_skill',
+			name: 'Временный скил'
+		})
+
+		expect(editor.skillsCatalog.value.some((s) => s.id === 'temp_skill')).toBe(true)
+
+		await editor.deleteSkillFromCatalog('temp_skill')
+
+		expect(editor.skillsCatalog.value.some((s) => s.id === 'temp_skill')).toBe(false)
+		expect(writtenFiles['skills/skills.json'].some((s) => s.id === 'temp_skill')).toBe(false)
 	})
 })

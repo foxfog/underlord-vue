@@ -32,6 +32,8 @@
 						<option value="hide">👻 Скрыть спрайт (hide)</option>
 						<option value="hide-all">👥 Скрыть всех (hide-all)</option>
 						<option value="variable">⚙️ Переменная (variable)</option>
+						<option value="variables">🎛️ Пакет переменных (variables)</option>
+						<option value="batch">📦 Пакет действий (batch)</option>
 						<option value="titles">🏷️ Титры (titles)</option>
 						<option value="goto">➡️ Переход (goto)</option>
 						<option value="quest">📜 Квест (quest)</option>
@@ -138,7 +140,7 @@
 						@update="onStepUpdate"
 					/>
 					<StepVariableForm
-						v-else-if="currentStepType === 'variable'"
+						v-else-if="['variable', 'variables'].includes(currentStepType)"
 						:step="step"
 						@update="onStepUpdate"
 					/>
@@ -220,6 +222,7 @@ watch(
 
 const currentStepType = computed(() => {
 	if (!props.step) return 'raw'
+	if (props.step.type === 'variables' || (!props.step.type && (props.step.variables || props.step.operations))) return 'variables'
 	if (!props.step.type && props.step.variable) return 'variable'
 	return props.step.type || 'raw'
 })
@@ -238,6 +241,7 @@ const isRawStepType = computed(() => {
 		'hide-all',
 		'clear-characters',
 		'variable',
+		'variables',
 		'titles',
 		'quest'
 	]

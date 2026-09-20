@@ -15,7 +15,9 @@ import {
 	getEntityMaxLevel,
 	canLevelUpEntity,
 	levelUpEntity,
-	getAvailableSkillPoints
+	getAvailableSkillPoints,
+	resolveSkillNode,
+	resolveEntitySkills
 } from '../skillTree.js'
 
 describe('skillTree utilities', () => {
@@ -548,4 +550,231 @@ describe('skillTree utilities', () => {
 			expect(refParentOk.characterState.skills.free_trait).toBeUndefined()
 		})
 	})
+
+	describe('central catalog & auto_unlock mechanics', () => {
+		const mockCatalog = {
+			night_vision: {
+				id: 'night_vision',
+				name: 'Ночное зрение',
+				icon: '👁️',
+				category: 'passive',
+				description: 'Позволяет видеть в темноте',
+				data: { vision_range: 10 }
+			},
+			stealth_ambush: {
+				id: 'stealth_ambush',
+				name: 'Внезапная атака',
+				icon: '🗡️',
+				category: 'active',
+				description: 'Атака из тени',
+				data: { backstab_multiplier: 2.0 }
+			}
+		}
+
+		it('resolves skill node referencing catalog by skill_id', () => {
+			const node = {
+				skill_id: 'night_vision',
+				branch: 'racial',
+				req_level: 1,
+				grid_col: 1,
+				auto_unlock: true,
+				cost: 0
+			}
+
+			const resolved = resolveSkillNode(node, mockCatalog)
+			expect(resolved.id).toBe('night_vision')
+			expect(resolved.name).toBe('Ночное зрение')
+			expect(resolved.icon).toBe('👁️')
+			expect(resolved.category).toBe('passive')
+			expect(resolved.description).toBe('Позволяет видеть в темноте')
+			expect(resolved.data).toEqual({ vision_range: 10 })
+			expect(resolved.branch).toBe('racial')
+			expect(resolved.req_level).toBe(1)
+			expect(resolved.auto_unlock).toBe(true)
+			expect(resolved.cost).toBe(0)
+		})
+
+		it('resolves a list of skills using resolveEntitySkills', () => {
+			const list = [
+				{ skill_id: 'night_vision', req_level: 1, auto_unlock: true },
+				{ skill_id: 'stealth_ambush', req_level: 3, cost: 2 },
+				{ id: 'custom_skill', name: 'Кастомный', cost: 1 }
+			]
+
+			const resolved = resolveEntitySkills(list, mockCatalog)
+			expect(resolved).toHaveLength(3)
+			expect(resolved[0].name).toBe('Ночное зрение')
+			expect(resolved[0].auto_unlock).toBe(true)
+			expect(resolved[1].name).toBe('Внезапная атака')
+			expect(resolved[2].name).toBe('Кастомный')
+		})
+
+		it('normalizes skill with auto_unlock: true to cost: 0', () => {
+			const raw = {
+				id: 'innate_passive',
+				name: 'Врождённый навык',
+				auto_unlock: true,
+				cost: 5
+			}
+			const norm = normalizeSkill(raw)
+			expect(norm.auto_unlock).toBe(true)
+			expect(norm.cost).toBe(0)
+		})
+
+		it('levelUpEntity automatically unlocks auto_unlock skills matching req_level without consuming SP', () => {
+			const entitySkills = [
+				{
+					id: 'night_vision',
+					skill_id: 'night_vision',
+					name: 'Ночное зрение',
+					req_level: 1,
+					auto_unlock: true,
+					cost: 0
+				},
+				{
+					id: 'deep_sight',
+					skill_id: 'deep_sight',
+					name: 'Глубинное зрение',
+					req_level: 2,
+					auto_unlock: true,
+					cost: 0
+				},
+				{
+					id: 'stealth',
+					name: 'Скрытность',
+					req_level: 1,
+					auto_unlock: false,
+					cost: 1
+				}
+			]
+
+			const quagoaRace = {
+				id: 'quagoa',
+				name: 'Квагот',
+				tier: 'basic',
+				skill_points_per_level: 1,
+				spell_points_per_level: 0
+			}
+
+			const char = {
+				id: 'char_quagoa',
+				level_points: 1,
+				race_levels: { quagoa: 1 },
+				class_levels: {},
+				entity_points: { quagoa: { skill_points: 0, spell_points: 0 } },
+				skills: {},
+				skill_purchases: {}
+			}
+
+			const result = levelUpEntity(quagoaRace, 'races', char, [quagoaRace], entitySkills)
+			expect(result.success).toBe(true)
+			expect(result.characterProgression.race_levels.quagoa).toBe(2)
+
+			expect(result.characterProgression.skills.night_vision).toBe(1)
+			expect(result.characterProgression.skills.deep_sight).toBe(1)
+			expect(result.characterProgression.skills.stealth).toBeUndefined()
+
+			expect(result.characterProgression.entity_points.quagoa.skill_points).toBe(1)
+
+			const autoPurchases = Object.values(result.characterProgression.skill_purchases).filter((p) => p.auto_unlock)
+			expect(autoPurchases).toHaveLength(2)
+			expect(autoPurchases.every((p) => p.cost === 0)).toBe(true)
+		})
+
+		it('canRefundSkill and refundSkill prevent refunding auto_unlock skills', () => {
+			const treeSkills = [
+				{
+					id: 'night_vision',
+					name: 'Ночное зрение',
+					req_level: 1,
+					auto_unlock: true,
+					cost: 0
+				}
+			]
+
+			const char = {
+				id: 'quagoa_miner',
+				race_levels: { quagoa: 1 },
+				class_levels: {},
+				entity_points: { quagoa: { skill_points: 0, spell_points: 0 } },
+				skills: { night_vision: 1 },
+				skill_purchases: {
+					night_vision: {
+						entityId: 'quagoa',
+						cost: 0,
+						cost_type: 'skill_point',
+						auto_unlock: true
+					}
+				}
+			}
+
+			const check = canRefundSkill(treeSkills[0], char, treeSkills)
+			expect(check.canRefund).toBe(false)
+			expect(check.reasons.some((r) => r.includes('Врождённый навык'))).toBe(true)
+
+			const refundRes = refundSkill(char, 'night_vision', treeSkills)
+			expect(refundRes.success).toBe(false)
+			expect(refundRes.characterState.skills.night_vision).toBe(1)
+		})
+
+		it('resetSkills preserves auto_unlock skills at rank 1 and does not refund points for them', () => {
+			const treeSkills = [
+				{
+					id: 'night_vision',
+					name: 'Ночное зрение',
+					req_level: 1,
+					auto_unlock: true,
+					cost: 0
+				},
+				{
+					id: 'power_strike',
+					name: 'Силовой удар',
+					req_level: 1,
+					auto_unlock: false,
+					cost: 2,
+					cost_type: 'skill_point'
+				}
+			]
+
+			const char = {
+				id: 'fighter',
+				class_levels: { warrior: 3 },
+				entity_points: { warrior: { skill_points: 1, spell_points: 0 } },
+				skills: {
+					night_vision: 1,
+					power_strike: 1
+				},
+				skill_purchases: {
+					night_vision: {
+						entityId: 'warrior',
+						cost: 0,
+						costType: 'skill_point',
+						pointsKey: 'skill_points',
+						globalKey: 'global_skill_points',
+						fromLocal: 0,
+						fromGlobal: 0,
+						auto_unlock: true
+					},
+					power_strike: {
+						entityId: 'warrior',
+						cost: 2,
+						costType: 'skill_point',
+						pointsKey: 'skill_points',
+						globalKey: 'global_skill_points',
+						fromLocal: 2,
+						fromGlobal: 0
+					}
+				}
+			}
+
+			const res = resetSkills(char, treeSkills, { id: 'warrior' })
+			expect(res.success).toBe(true)
+			expect(res.characterState.skills.power_strike).toBeUndefined()
+			expect(res.characterState.entity_points.warrior.skill_points).toBe(3)
+			expect(res.characterState.skills.night_vision).toBe(1)
+			expect(res.characterState.skill_purchases.night_vision).toBeDefined()
+			expect(res.characterState.skill_purchases.power_strike).toBeUndefined()
+		})
+	})
 })
+

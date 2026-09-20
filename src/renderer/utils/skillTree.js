@@ -49,19 +49,46 @@ export function getCategoryMeta(categoryId) {
 }
 
 /**
- * Normalizes a single skill object to ensure all required fields exist with valid defaults.
- * @param {Object} skill
- * @returns {Object} normalized skill
+ * Resolves a skill tree node by merging intrinsic attributes from the central catalog
+ * with tree-specific progression parameters (branch, req_level, cost, auto_unlock, parent_ids).
+ * @param {Object} node - Skill node from class/race tree
+ * @param {Array<Object>} catalog - Master skill catalog (from skills/skills.json)
+ * @returns {Object} normalized full skill object
  */
+export function resolveSkillNode(node, catalog = []) {
+	if (!node || typeof node !== 'object') return normalizeSkill(node)
+	const skillId = String(node.skill_id || node.id || '').trim()
+	let catalogItem = null
+	if (Array.isArray(catalog)) {
+		catalogItem = catalog.find((s) => s.id === skillId) || null
+	} else if (catalog && typeof catalog === 'object') {
+		catalogItem = catalog[skillId] || (Array.isArray(Object.values(catalog)) ? Object.values(catalog).find((s) => s?.id === skillId) : null)
+	}
+	return normalizeSkill(node, catalogItem)
+}
+
+/**
+ * Resolves an array of skill tree nodes against a skill catalog.
+ * @param {Array<Object>} skillsList
+ * @param {Array<Object>} catalog
+ * @returns {Array<Object>}
+ */
+export function resolveEntitySkills(skillsList = [], catalog = []) {
+	if (!Array.isArray(skillsList)) return []
+	return skillsList.map((node) => resolveSkillNode(node, catalog))
+}
+
 /**
  * Normalizes a single skill object to ensure all required fields exist with valid defaults.
  * @param {Object} skill
+ * @param {Object|null} catalogItem - Optional intrinsic skill definition from skills.json
  * @returns {Object} normalized skill
  */
-export function normalizeSkill(skill) {
+export function normalizeSkill(skill, catalogItem = null) {
 	if (!skill || typeof skill !== 'object') {
 		return {
 			id: 'unknown_skill',
+			skill_id: 'unknown_skill',
 			name: 'Навык',
 			icon: '⚔️',
 			description: '',
@@ -73,6 +100,7 @@ export function normalizeSkill(skill) {
 			cost: 1,
 			cost_type: 'skill_point',
 			level_points_given: 1,
+			auto_unlock: false,
 			parent_ids: [],
 			parent_requirement: 'all',
 			entity_id: '',
@@ -80,7 +108,10 @@ export function normalizeSkill(skill) {
 		}
 	}
 
-	let parsedData = skill.data
+	const skillId = String(skill.skill_id || skill.id || '').trim()
+
+	let rawData = skill.data !== undefined ? skill.data : (catalogItem?.data || {})
+	let parsedData = rawData
 	if (typeof parsedData === 'string') {
 		try {
 			parsedData = JSON.parse(parsedData)
@@ -90,8 +121,11 @@ export function normalizeSkill(skill) {
 	} else if (!parsedData || typeof parsedData !== 'object' || Array.isArray(parsedData)) {
 		parsedData = {}
 	}
+	if (Object.keys(parsedData).length === 0 && catalogItem?.data && typeof catalogItem.data === 'object') {
+		parsedData = catalogItem.data
+	}
 
-	let category = String(skill.category || 'active').trim().toLowerCase()
+	let category = String(skill.category || catalogItem?.category || 'active').trim().toLowerCase()
 	if (!VALID_SKILL_CATEGORIES.has(category)) {
 		category = 'active'
 	}
@@ -100,14 +134,21 @@ export function normalizeSkill(skill) {
 	const parsedReq = parseInt(skill.req_level, 10)
 	const reqLevel = isNaN(parsedReq) ? 1 : Math.max(1, parsedReq)
 
+	const autoUnlock = Boolean(skill.auto_unlock)
+
 	const parsedCost = parseInt(skill.cost, 10)
-	const cost = isNaN(parsedCost) ? 1 : Math.max(0, parsedCost)
+	let cost = autoUnlock ? 0 : (isNaN(parsedCost) ? 1 : Math.max(0, parsedCost))
+
+	const name = String(skill.name || catalogItem?.name || skillId || 'Навык').trim()
+	const icon = skill.icon || catalogItem?.icon || '⚔️'
+	const description = String(skill.description !== undefined ? skill.description : (catalogItem?.description || '')).trim()
 
 	return {
-		id: String(skill.id || '').trim(),
-		name: String(skill.name || skill.id || '').trim(),
-		icon: skill.icon || '⚔️',
-		description: String(skill.description || '').trim(),
+		id: skillId || 'unknown_skill',
+		skill_id: skillId || 'unknown_skill',
+		name,
+		icon,
+		description,
 		branch: String(skill.branch || '').trim(),
 		category,
 		grid_col: gridCol,
@@ -118,6 +159,7 @@ export function normalizeSkill(skill) {
 		level_points_given: skill.level_points_given !== undefined && !isNaN(parseInt(skill.level_points_given, 10))
 			? Math.max(0, parseInt(skill.level_points_given, 10))
 			: 1,
+		auto_unlock: autoUnlock,
 		parent_ids: Array.isArray(skill.parent_ids)
 			? skill.parent_ids.map((p) => String(p).trim()).filter(Boolean)
 			: [],
@@ -353,14 +395,16 @@ export function canLevelUpEntity(entity, entityType = 'classes', characterProgre
 
 /**
  * Levels up an entity by +1, deducting 1 level point and awarding dedicated local points.
+ * Automatically unlocks any entity skills marked with auto_unlock: true when required level is met.
  *
  * @param {Object} entity
  * @param {string} entityType - 'classes' | 'races'
  * @param {Object} characterProgression
  * @param {Array<Object>} allEntities
+ * @param {Array<Object>} entitySkills - Optional skills belonging to this class/race
  * @returns {{ success: boolean, reasons?: string[], characterProgression: Object }}
  */
-export function levelUpEntity(entity, entityType = 'classes', characterProgression = {}, allEntities = []) {
+export function levelUpEntity(entity, entityType = 'classes', characterProgression = {}, allEntities = [], entitySkills = []) {
 	const check = canLevelUpEntity(entity, entityType, characterProgression, allEntities)
 	if (!check.canLevelUp) {
 		return { success: false, reasons: check.reasons, characterProgression }
@@ -371,7 +415,8 @@ export function levelUpEntity(entity, entityType = 'classes', characterProgressi
 
 	const levelKey = entityType === 'classes' ? 'class_levels' : 'race_levels'
 	if (!nextState[levelKey]) nextState[levelKey] = {}
-	nextState[levelKey][entity.id] = (nextState[levelKey][entity.id] || 0) + 1
+	const newLvl = (nextState[levelKey][entity.id] || 0) + 1
+	nextState[levelKey][entity.id] = newLvl
 
 	if (!nextState.entity_points) nextState.entity_points = {}
 	if (!nextState.entity_points[entity.id]) {
@@ -385,6 +430,30 @@ export function levelUpEntity(entity, entityType = 'classes', characterProgressi
 		(nextState.entity_points[entity.id].skill_points || 0) + spPerLvl
 	nextState.entity_points[entity.id].spell_points =
 		(nextState.entity_points[entity.id].spell_points || 0) + mpPerLvl
+
+	// Auto-unlock skills marked with auto_unlock where req_level <= newLvl
+	const skillsToScan = Array.isArray(entitySkills) && entitySkills.length > 0
+		? entitySkills
+		: (Array.isArray(entity.skills) ? entity.skills : [])
+
+	for (const rawSkill of skillsToScan) {
+		const normSkill = normalizeSkill(rawSkill)
+		if (normSkill.auto_unlock && normSkill.req_level <= newLvl) {
+			if (!nextState.skills) nextState.skills = {}
+			if ((nextState.skills[normSkill.id] || 0) < 1) {
+				nextState.skills[normSkill.id] = 1
+				if (!nextState.skill_purchases) nextState.skill_purchases = {}
+				nextState.skill_purchases[normSkill.id] = {
+					entityId: entity.id,
+					costType: normSkill.cost_type,
+					auto_unlock: true,
+					cost: 0,
+					fromLocal: 0,
+					fromGlobal: 0
+				}
+			}
+		}
+	}
 
 	return {
 		success: true,
@@ -429,9 +498,15 @@ export function canLearnSkill(skill, characterState = {}, entitySkills = [], ent
 	// 2. Class / Race level requirement check
 	const currentEntityLevel = getEntityLevel(characterState, entityId, entitySkills)
 	if (currentEntityLevel < normalizedSkill.req_level) {
-		reasons.push(
-			`Требуется уровень класса/расы: ${normalizedSkill.req_level} (текущий: ${currentEntityLevel})`
-		)
+		if (normalizedSkill.auto_unlock) {
+			reasons.push(
+				`Требуется уровень класса/расы: ${normalizedSkill.req_level} (навык откроется автоматически при получении уровня)`
+			)
+		} else {
+			reasons.push(
+				`Требуется уровень класса/расы: ${normalizedSkill.req_level} (текущий: ${currentEntityLevel})`
+			)
+		}
 	}
 
 	// 3. Parent prerequisites check
@@ -560,6 +635,15 @@ export function canRefundSkill(skill, characterState = {}, entitySkills = [], en
 
 	if (currentRank <= 0) {
 		return { canRefund: false, reasons: ['Навык еще не прокачан'] }
+	}
+
+	if (norm.auto_unlock) {
+		return { canRefund: false, reasons: ['Врождённый навык нельзя сбросить'] }
+	}
+
+	const existingPurchase = characterState.skill_purchases?.[norm.id]
+	if (existingPurchase?.auto_unlock) {
+		return { canRefund: false, reasons: ['Врождённый навык нельзя сбросить'] }
 	}
 
 	const reasons = []
@@ -693,6 +777,10 @@ export function resetSkills(characterState, entitySkills = [], entity = null) {
 		const rank = nextState.skills[skill.id] || 0
 		if (rank > 0) {
 			const purchase = nextState.skill_purchases?.[skill.id]
+			if (skill.auto_unlock || purchase?.auto_unlock) {
+				// Keep innate/auto-unlocked skill active at rank 1, refund no points
+				continue
+			}
 			if (purchase) {
 				const { entityId, pointsKey, globalKey, fromLocal, fromGlobal } = purchase
 				if (nextState.entity_points?.[entityId]) {
@@ -759,8 +847,8 @@ export function swapSkillColumns(skillsList = [], skillId, direction = 1, maxCol
  * @param {Array<Object>} rawBranches
  * @returns {Object} { tiers: Array<{ level: number, skills: Array, cells: Array }>, branches: Array, connectors: Array, maxCols: number, skills: Array }
  */
-export function organizeSkillsByGrid(rawSkills = [], rawBranches = []) {
-	const skills = (Array.isArray(rawSkills) ? rawSkills : []).map(normalizeSkill)
+export function organizeSkillsByGrid(rawSkills = [], rawBranches = [], catalog = []) {
+	const skills = (Array.isArray(rawSkills) ? rawSkills : []).map((s) => resolveSkillNode(s, catalog))
 	const branches = (Array.isArray(rawBranches) ? rawBranches : []).map(normalizeSkillBranch)
 
 	// Determine all unique tiers (req_level)

@@ -3,6 +3,8 @@ import { ref, computed } from 'vue'
 import {
 	normalizeSkill,
 	normalizeSkillBranch,
+	resolveSkillNode,
+	resolveEntitySkills,
 	calculateClassLevel,
 	getEntityLevel,
 	getAvailableSkillPoints,
@@ -21,6 +23,7 @@ import {
 const charactersList = ref([])
 const classesList = ref([])
 const racesList = ref([])
+const skillsCatalog = ref([])
 
 const selectedCharacterId = ref('mc')
 const selectedEntityType = ref('classes') // 'classes' | 'races'
@@ -90,10 +93,11 @@ export function useSkillTree() {
 		return p
 	}
 
-	function setEntitiesData({ characters, classes, races }) {
+	function setEntitiesData({ characters, classes, races, skillsCatalog: catalog }) {
 		if (Array.isArray(characters)) charactersList.value = characters
 		if (Array.isArray(classes)) classesList.value = classes
 		if (Array.isArray(races)) racesList.value = races
+		if (Array.isArray(catalog)) skillsCatalog.value = catalog
 
 		// Auto-select initial entity if none selected
 		if (!selectedEntityId.value) {
@@ -102,6 +106,7 @@ export function useSkillTree() {
 				selectedEntityId.value = activeList[0].id
 			}
 		}
+		syncAutoUnlockedSkills()
 	}
 
 	const currentCharacter = computed(() => {
@@ -172,7 +177,7 @@ export function useSkillTree() {
 	const currentSkills = computed(() => {
 		if (!currentEntity.value) return []
 		const raw = currentEntity.value.skills || []
-		return raw.map(normalizeSkill)
+		return resolveEntitySkills(raw, skillsCatalog.value)
 	})
 
 	const currentEntityLevel = computed(() => {
@@ -242,7 +247,7 @@ export function useSkillTree() {
 	})
 
 	const gridData = computed(() => {
-		return organizeSkillsByGrid(filteredSkills.value, currentBranches.value)
+		return organizeSkillsByGrid(filteredSkills.value, currentBranches.value, skillsCatalog.value)
 	})
 
 	const selectedSkill = computed(() => {
@@ -253,6 +258,7 @@ export function useSkillTree() {
 	function selectCharacter(charId) {
 		selectedCharacterId.value = charId
 		initCharacterProgression(charId)
+		syncAutoUnlockedSkills(charId)
 	}
 
 	function selectEntityType(type) {
@@ -265,12 +271,14 @@ export function useSkillTree() {
 		}
 		selectedBranchId.value = 'all'
 		selectedSkillId.value = null
+		syncAutoUnlockedSkills()
 	}
 
 	function selectEntity(id) {
 		selectedEntityId.value = id
 		selectedBranchId.value = 'all'
 		selectedSkillId.value = null
+		syncAutoUnlockedSkills()
 	}
 
 	function selectBranch(branchId) {
@@ -279,6 +287,36 @@ export function useSkillTree() {
 
 	function selectSkill(skillId) {
 		selectedSkillId.value = skillId
+	}
+
+	function syncAutoUnlockedSkills(charId = selectedCharacterId.value) {
+		const prog = initCharacterProgression(charId)
+		const list = selectedEntityType.value === 'classes' ? classesList.value : racesList.value
+		const levelMap = selectedEntityType.value === 'classes' ? prog.class_levels : prog.race_levels
+		if (!levelMap) return
+
+		for (const entity of list) {
+			const lvl = levelMap[entity.id] || 0
+			if (lvl <= 0) continue
+			const skills = resolveEntitySkills(entity.skills || [], skillsCatalog.value)
+			for (const sk of skills) {
+				if (sk.auto_unlock && sk.req_level <= lvl) {
+					if (!prog.skills) prog.skills = {}
+					if ((prog.skills[sk.id] || 0) < 1) {
+						prog.skills[sk.id] = 1
+						if (!prog.skill_purchases) prog.skill_purchases = {}
+						prog.skill_purchases[sk.id] = {
+							entityId: entity.id,
+							costType: sk.cost_type,
+							auto_unlock: true,
+							cost: 0,
+							fromLocal: 0,
+							fromGlobal: 0
+						}
+					}
+				}
+			}
+		}
 	}
 
 	function addCharacterLevel(amount = 1) {
@@ -335,7 +373,8 @@ export function useSkillTree() {
 			currentEntity.value,
 			selectedEntityType.value,
 			currentCharacterProgression.value,
-			allList
+			allList,
+			currentSkills.value
 		)
 		if (res.success) {
 			charactersProgression.value[selectedCharacterId.value] = res.characterProgression
@@ -406,6 +445,7 @@ export function useSkillTree() {
 		charactersList,
 		classesList,
 		racesList,
+		skillsCatalog,
 		selectedCharacterId,
 		selectedEntityType,
 		selectedEntityId,
@@ -439,6 +479,7 @@ export function useSkillTree() {
 
 		// Actions
 		setEntitiesData,
+		syncAutoUnlockedSkills,
 		selectCharacter,
 		selectEntityType,
 		selectEntity,

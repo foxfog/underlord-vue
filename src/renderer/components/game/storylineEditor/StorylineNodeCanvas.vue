@@ -226,9 +226,10 @@
 								rx="4"
 								class="link-label-pill"
 								:class="{
-									'__return-pill': link.type === 'return',
-									'__inbound-pill': link.type === 'inbound' || link.type === 'goto-outbound',
-									'__choice-pill': link.type.startsWith('choice')
+									'__loop-pill': link.isLoop,
+									'__return-pill': !link.isLoop && link.type === 'return',
+									'__inbound-pill': !link.isLoop && (link.type === 'inbound' || link.type === 'goto-outbound'),
+									'__choice-pill': !link.isLoop && link.type.startsWith('choice')
 								}"
 							/>
 							<text
@@ -237,8 +238,9 @@
 								text-anchor="middle"
 								class="link-label"
 								:class="{
-									'__return-label': link.type === 'return',
-									'__inbound-label': link.type === 'inbound' || link.type === 'goto-outbound'
+									'__loop-label': link.isLoop,
+									'__return-label': !link.isLoop && link.type === 'return',
+									'__inbound-label': !link.isLoop && (link.type === 'inbound' || link.type === 'goto-outbound')
 								}"
 							>
 								{{ formatLinkLabel(link.label) }}
@@ -362,6 +364,28 @@
 								{{ getSummaryFn(node.step) }}
 							</div>
 
+							<!-- Special: Variables Operations List in Node -->
+							<div
+								v-if="getNodeOperations(node.step).length > 0"
+								class="node-ops-box"
+							>
+								<div
+									v-for="(op, opIdx) in getNodeOperations(node.step).slice(0, 3)"
+									:key="opIdx"
+									class="node-op-line"
+									:title="op"
+								>
+									<span class="op-bullet">›</span>
+									<span class="op-code">{{ op }}</span>
+								</div>
+								<div
+									v-if="getNodeOperations(node.step).length > 3"
+									class="node-op-more"
+								>
+									+ ещё {{ getNodeOperations(node.step).length - 3 }}...
+								</div>
+							</div>
+
 							<!-- Special: Choice Options List in Node -->
 							<div v-if="node.isChoice && node.choiceBranches.length > 0" class="node-choice-options">
 								<div
@@ -369,6 +393,7 @@
 									:key="bIdx"
 									:ref="(el) => registerBranchRef(node.index, bIdx, el)"
 									class="node-choice-branch"
+									:class="{ '__loop': b.isLoop }"
 									:title="b.text"
 								>
 									<span class="branch-arrow">↳</span>
@@ -448,6 +473,14 @@ const props = defineProps({
 	getStepIcon: {
 		type: Function,
 		required: true
+	},
+	storyId: {
+		type: String,
+		default: ''
+	},
+	filePath: {
+		type: String,
+		default: ''
 	}
 })
 
@@ -456,7 +489,7 @@ const emit = defineEmits(['select-step', 'jump-scenario'])
 const scrollContainerRef = ref(null)
 const zoomContentRef = ref(null)
 const searchQuery = ref('')
-const baseX = computed(() => (props.inboundReferences && props.inboundReferences.length > 0 ? 25.5 : 4.5))
+const baseX = computed(() => (props.inboundReferences && props.inboundReferences.length > 0 ? 27.5 : 4.5))
 const baseY = 30 // Base Y coordinate in em allowing upper branch headroom and vertical centering
 
 const {
@@ -505,6 +538,16 @@ function formatLinkLabel(text, maxChars = 18) {
 	const clean = String(text).trim()
 	if (clean.length <= maxChars) return clean
 	return clean.slice(0, maxChars - 1).trim() + '…'
+}
+
+function getNodeOperations(step) {
+	if (!step) return []
+	if (step.type === 'variables' || (!step.type && (step.variables || step.operations))) {
+		const ops = step.operations || step.variables || []
+		if (Array.isArray(ops)) return ops.map(String)
+		if (typeof ops === 'string') return ops.split(/\r?\n|;/).map((s) => s.trim()).filter(Boolean)
+	}
+	return []
 }
 
 function getLabelPillWidth(text, maxChars = 18) {
@@ -589,7 +632,7 @@ function onWheel(e) {
 
 // Graph topology
 const graphData = computed(() => {
-	return props.buildGraphFn(props.steps)
+	return props.buildGraphFn(props.steps, { id: props.storyId, filePath: props.filePath })
 })
 
 const loopCount = computed(() => {
@@ -722,9 +765,17 @@ function recalculateConnectors() {
 			}
 
 			const dx = Math.abs(endX - startX)
-			const cx1 = startX + Math.max(20, dx * 0.45)
-			const cx2 = endX - Math.max(20, dx * 0.45)
-			const d = `M ${startX} ${startY} C ${cx1} ${startY}, ${cx2} ${endY}, ${endX} ${endY}`
+			const fontPx = parseFloat(getComputedStyle(zoomContentRef.value || document.documentElement).fontSize) || 16
+			const safeExitDist = fontPx * 1.8
+			const safeEntryDist = fontPx * 1.8
+			const actualSafeExit = Math.min(safeExitDist, dx * 0.25)
+			const actualSafeEntry = Math.min(safeEntryDist, dx * 0.25)
+			const xExit = startX + actualSafeExit
+			const xEntry = endX - actualSafeEntry
+			const cxSpan = Math.max(15, (xEntry - xExit) * 0.45)
+			const cx1 = xExit + cxSpan
+			const cx2 = xEntry - cxSpan
+			const d = `M ${startX} ${startY} L ${xExit} ${startY} C ${cx1} ${startY}, ${cx2} ${endY}, ${xEntry} ${endY} L ${endX} ${endY}`
 			const midPoint = { x: (startX + endX) / 2, y: (startY + endY) / 2 }
 
 			lines.push({
@@ -740,6 +791,10 @@ function recalculateConnectors() {
 			})
 		})
 	}
+
+	const fontPx = parseFloat(getComputedStyle(zoomContentRef.value || document.documentElement).fontSize) || 16
+	const safeExitDist = fontPx * 1.8
+	const safeEntryDist = fontPx * 1.8
 
 	// Regular story links (sequential, goto, choice, loop, return, outbound)
 	for (const link of graphData.value.links) {
@@ -780,33 +835,73 @@ function recalculateConnectors() {
 		let midPoint = { x: (startX + endX) / 2, y: (startY + endY) / 2 }
 
 		if (link.isLoop) {
-			// Backward loop: control points go straight up, no rightward swing that would cross adjacent nodes
-			const arcOffset = 90 + Math.abs(startX - endX) * 0.18
+			// Backward loop: straight horizontal exit forward -> smooth 180° arc up -> straight flyover backwards -> smooth 180° arc down -> straight horizontal entry into target
+			const xExit = startX + safeExitDist
+			const xEntry = endX - safeEntryDist
+			const arcOffset = 90 + Math.abs(startX - endX) * 0.15
 			const cy = Math.min(startY, endY) - arcOffset
-			d = `M ${startX} ${startY} C ${startX} ${cy}, ${endX} ${cy}, ${endX} ${endY}`
-			midPoint = { x: (startX + endX) / 2, y: cy + 18 }
+			const rExit = Math.min(36, Math.max(16, (startY - cy) * 0.25))
+			const rEntry = Math.min(36, Math.max(16, (endY - cy) * 0.25))
+
+			d = `M ${startX} ${startY} ` +
+				`L ${xExit} ${startY} ` +
+				`C ${xExit + rExit} ${startY}, ${xExit + rExit} ${cy}, ${xExit} ${cy} ` +
+				`L ${xEntry} ${cy} ` +
+				`C ${xEntry - rEntry} ${cy}, ${xEntry - rEntry} ${endY}, ${xEntry} ${endY} ` +
+				`L ${endX} ${endY}`
+			midPoint = { x: (xExit + xEntry) / 2, y: cy + 18 }
 		} else if (link.type === 'return') {
-			const arcOffset = 28
+			const arcOffset = 30
 			const cy = Math.min(startY, endY) - arcOffset
-			d = `M ${startX} ${startY} C ${startX + 20} ${cy}, ${endX - 20} ${cy}, ${endX} ${endY}`
+			const dx = Math.abs(endX - startX)
+			const actualSafeExit = Math.min(safeExitDist, dx * 0.25)
+			const actualSafeEntry = Math.min(safeEntryDist, dx * 0.25)
+			const xExit = startX + actualSafeExit
+			const xEntry = endX - actualSafeEntry
+			d = `M ${startX} ${startY} ` +
+				`L ${xExit} ${startY} ` +
+				`C ${xExit + 20} ${cy}, ${xEntry - 20} ${cy}, ${xEntry} ${endY} ` +
+				`L ${endX} ${endY}`
 			midPoint = { x: (startX + endX) / 2, y: cy - 6 }
 		} else if (endY < startY - 80) {
 			// Outbound node significantly above source row — arc goes UP first to avoid crossing right-side nodes
 			const clearY = endY - 28
-			d = `M ${startX} ${startY} C ${startX} ${clearY}, ${endX} ${clearY}, ${endX} ${endY}`
+			const dx = Math.abs(endX - startX)
+			const actualSafeExit = Math.min(safeExitDist, dx * 0.25)
+			const actualSafeEntry = Math.min(safeEntryDist, dx * 0.25)
+			const xExit = startX + actualSafeExit
+			const xEntry = endX - actualSafeEntry
+			d = `M ${startX} ${startY} ` +
+				`L ${xExit} ${startY} ` +
+				`C ${xExit + 25} ${clearY}, ${xEntry - 25} ${clearY}, ${xEntry} ${endY} ` +
+				`L ${endX} ${endY}`
 			midPoint = { x: (startX + endX) / 2, y: clearY + 14 }
 		} else if (link.toIndex > link.fromIndex + 1) {
 			// Long forward jump skipping steps: arc cleanly over or under intermediate nodes
 			const arcOffset = 38 + Math.abs(endX - startX) * 0.05
 			const isBottomOption = link.optionIndex !== undefined && link.optionIndex > 0
 			const cy = isBottomOption ? Math.max(startY, endY) + arcOffset : Math.min(startY, endY) - arcOffset
-			d = `M ${startX} ${startY} C ${startX + 30} ${cy}, ${endX - 30} ${cy}, ${endX} ${endY}`
+			const xExit = startX + safeExitDist
+			const xEntry = endX - safeEntryDist
+			d = `M ${startX} ${startY} ` +
+				`L ${xExit} ${startY} ` +
+				`C ${xExit + 35} ${cy}, ${xEntry - 35} ${cy}, ${xEntry} ${endY} ` +
+				`L ${endX} ${endY}`
 			midPoint = { x: (startX + endX) / 2, y: cy + (isBottomOption ? -10 : 10) }
 		} else {
+			// Standard forward connections (sequence, choice branches, downward outbound)
 			const dx = Math.abs(endX - startX)
-			const cx1 = startX + Math.max(25, dx * 0.45)
-			const cx2 = endX - Math.max(25, dx * 0.45)
-			d = `M ${startX} ${startY} C ${cx1} ${startY}, ${cx2} ${endY}, ${endX} ${endY}`
+			const actualSafeExit = Math.min(safeExitDist, dx * 0.25)
+			const actualSafeEntry = Math.min(safeEntryDist, dx * 0.25)
+			const xExit = startX + actualSafeExit
+			const xEntry = endX - actualSafeEntry
+			const cxSpan = Math.max(15, (xEntry - xExit) * 0.45)
+			const cx1 = xExit + cxSpan
+			const cx2 = xEntry - cxSpan
+			d = `M ${startX} ${startY} ` +
+				`L ${xExit} ${startY} ` +
+				`C ${cx1} ${startY}, ${cx2} ${endY}, ${xEntry} ${endY} ` +
+				`L ${endX} ${endY}`
 			midPoint = { x: (startX + endX) / 2, y: (startY + endY) / 2 }
 		}
 
@@ -916,7 +1011,7 @@ function getMarkerUrl(link) {
 let resizeObserver = null
 
 watch(
-	[() => props.steps, () => props.activeIndex, () => props.inboundReferences, zoomScale],
+	[() => props.steps, () => props.activeIndex, () => props.inboundReferences, () => props.storyId, () => props.filePath, zoomScale],
 	() => {
 		nextTick(() => {
 			recalculateConnectors()
@@ -1187,6 +1282,11 @@ onBeforeUnmount(() => {
 	fill: rgba(30, 15, 45, 0.94);
 }
 
+.link-label-pill.__loop-pill {
+	stroke: rgba(244, 63, 94, 0.6);
+	fill: rgba(35, 15, 20, 0.94);
+}
+
 .link-label {
 	fill: #fbbf24;
 	font-size: 0.72em;
@@ -1201,6 +1301,10 @@ onBeforeUnmount(() => {
 
 .link-label.__inbound-label {
 	fill: #d8b4fe;
+}
+
+.link-label.__loop-label {
+	fill: #f43f5e;
 }
 
 /* Nodes Container */
@@ -1319,6 +1423,18 @@ onBeforeUnmount(() => {
 	color: #facc15;
 }
 
+.node-type-badge.__type-variables {
+	background: rgba(234, 179, 8, 0.25);
+	color: #facc15;
+	border: 1px solid rgba(234, 179, 8, 0.4);
+}
+
+.node-type-badge.__type-batch {
+	background: rgba(14, 165, 233, 0.25);
+	color: #38bdf8;
+	border: 1px solid rgba(14, 165, 233, 0.4);
+}
+
 .node-cond-pill {
 	background: rgba(99, 102, 241, 0.3);
 	border: 1px solid rgba(99, 102, 241, 0.5);
@@ -1347,6 +1463,47 @@ onBeforeUnmount(() => {
 	overflow: hidden;
 }
 
+/* Node Operations Preview */
+.node-ops-box {
+	display: flex;
+	flex-direction: column;
+	gap: 0.2em;
+	background: rgba(15, 23, 42, 0.65);
+	border: 1px solid rgba(234, 179, 8, 0.25);
+	border-radius: 0.35em;
+	padding: 0.3em 0.45em;
+	margin-top: 0.2em;
+	font-family: Consolas, monospace;
+	font-size: 0.72em;
+}
+
+.node-op-line {
+	display: flex;
+	align-items: center;
+	gap: 0.3em;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	color: #e2e8f0;
+}
+
+.op-bullet {
+	color: #facc15;
+	font-weight: bold;
+}
+
+.op-code {
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.node-op-more {
+	color: #94a3b8;
+	font-size: 0.9em;
+	font-style: italic;
+	margin-top: 0.1em;
+}
+
 /* Choice Branches */
 .node-choice-options {
 	display: flex;
@@ -1369,6 +1526,10 @@ onBeforeUnmount(() => {
 	color: #fb923c;
 	font-weight: 700;
 	margin-top: 0.1em;
+}
+
+.node-choice-branch.__loop .branch-arrow {
+	color: #f43f5e;
 }
 
 .branch-text {
