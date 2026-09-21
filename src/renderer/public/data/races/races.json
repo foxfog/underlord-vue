@@ -11,9 +11,34 @@
       "human"
     ],
     "lvl_min": 1,
-    "skill_points_per_level": 1,
+    "skill_points_per_level": 0,
     "spell_points_per_level": 0,
-    "description": "Самая многочисленная и гибкая раса. Не обладая врождённой магией или сверхчеловеческой силой, люди достигают вершин мастерства благодаря упорству и разнообразию ремёсел."
+    "description": "Самая многочисленная и гибкая раса. Не обладая врождённой магией или сверхчеловеческой силой, люди достигают вершин мастерства благодаря упорству и разнообразию ремёсел.",
+    "tierNum": 0,
+    "colStart": 0,
+    "colEnd": 0,
+    "colWidth": 1,
+    "gridRow": 1,
+    "gridColumn": "1 / 2",
+    "base_stats": {
+      "hp": 100,
+      "mp": 30,
+      "atk_phys": 10,
+      "def_phys": 6,
+      "atk_mag": 6,
+      "def_mag": 6,
+      "spd": 3,
+      "init": 5,
+      "crit_chance": 1,
+      "crit_dmg": 5,
+      "res": {}
+    },
+    "attribute_converters": {
+      "str": {},
+      "end": {},
+      "agi": {},
+      "int": {}
+    }
   },
   {
     "id": "half-elf",
@@ -27,9 +52,21 @@
       "half-elf"
     ],
     "lvl_min": 1,
-    "skill_points_per_level": 1,
+    "skill_points_per_level": 0,
     "spell_points_per_level": 0,
-    "description": "Потомки союза людей и эльфов, сочетающие адаптивность человеческого рода с острыми чувствами и предрасположенностью к магии своих лесных предков."
+    "description": "Потомки союза людей и эльфов, сочетающие адаптивность человеческого рода с острыми чувствами и предрасположенностью к магии своих лесных предков.",
+    "base_stats": {
+      "hp": 85,
+      "mp": 10,
+      "atk_phys": 8,
+      "def_phys": 4,
+      "atk_mag": 3,
+      "def_mag": 3,
+      "spd": 3,
+      "init": 6,
+      "crit_chance": 1,
+      "crit_dmg": 5
+    }
   },
   {
     "id": "elf",
@@ -43,8 +80,29 @@
       "elf"
     ],
     "lvl_min": 1,
-    "skill_points_per_level": 1,
+    "skill_points_per_level": 0,
     "spell_points_per_level": 0,
+    "base_stats": {
+      "hp": 70,
+      "mp": 60,
+      "atk_phys": 8,
+      "def_phys": 4,
+      "atk_mag": 12,
+      "def_mag": 8,
+      "spd": 4,
+      "init": 8,
+      "crit_chance": 1,
+      "crit_dmg": 5,
+      "res": {
+        "nature": 10
+      }
+    },
+    "attribute_converters": {
+      "str": {},
+      "end": {},
+      "agi": {},
+      "int": {}
+    },
     "description": "Древний лесной народ с длинными ушами и врождённым сродством к стихиям природы. Обладают долголетием, острым зрением и мастерством владения луком."
   },
   {
@@ -59,9 +117,21 @@
       "elf"
     ],
     "lvl_min": 1,
-    "skill_points_per_level": 1,
+    "skill_points_per_level": 0,
     "spell_points_per_level": 0,
-    "description": "Родственные эльфам жители сумрачных чащ и подземных глубин. Отличаются тёмным оттенком кожи, великолепным ночным зрением и талантом к тайной магии."
+    "description": "Родственные эльфам жители сумрачных чащ и подземных глубин. Отличаются тёмным оттенком кожи, великолепным ночным зрением и талантом к тайной магии.",
+    "base_stats": {
+      "hp": 75,
+      "mp": 20,
+      "atk_phys": 7,
+      "def_phys": 4,
+      "atk_mag": 6,
+      "def_mag": 5,
+      "spd": 3,
+      "init": 6,
+      "crit_chance": 1,
+      "crit_dmg": 5
+    }
   },
   {
     "id": "dwarf",
@@ -75,9 +145,21 @@
       "dwarf"
     ],
     "lvl_min": 1,
-    "skill_points_per_level": 1,
+    "skill_points_per_level": 0,
     "spell_points_per_level": 0,
-    "description": "Коренастый и выносливый подземный народ. Непревзойдённые мастера горного дела, кузнечного ремесла и древней рунной магии."
+    "description": "Коренастый и выносливый подземный народ. Непревзойдённые мастера горного дела, кузнечного ремесла и древней рунной магии.",
+    "base_stats": {
+      "hp": 120,
+      "mp": 5,
+      "atk_phys": 12,
+      "init": 4,
+      "spd": 2,
+      "def_mag": 3,
+      "atk_mag": 2,
+      "def_phys": 6,
+      "crit_chance": 1,
+      "crit_dmg": 5
+    }
   },
   {
     "id": "dark-dwarf",
@@ -93,7 +175,19 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Обитатели самых глубоких и опасных недр. Мастера закалки редких темных руд и создания смертоносного зачарованного оружия."
+    "description": "Обитатели самых глубоких и опасных недр. Мастера закалки редких темных руд и создания смертоносного зачарованного оружия.",
+    "base_stats": {
+      "hp": 110,
+      "mp": 10,
+      "def_phys": 5,
+      "init": 4,
+      "spd": 2,
+      "def_mag": 4,
+      "atk_mag": 3,
+      "atk_phys": 10,
+      "crit_chance": 1,
+      "crit_dmg": 5
+    }
   },
   {
     "id": "goblin",
@@ -109,7 +203,19 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Низкорослые полулюди, берущие числом, хитростью и сплочённостью. Обитают племенами в лесах и пещерах, мастерски устраивая засады и ловушки."
+    "description": "Низкорослые полулюди, берущие числом, хитростью и сплочённостью. Обитают племенами в лесах и пещерах, мастерски устраивая засады и ловушки.",
+    "base_stats": {
+      "hp": 50,
+      "mp": 2,
+      "atk_phys": 5,
+      "def_phys": 2,
+      "atk_mag": 1,
+      "def_mag": 1,
+      "spd": 3,
+      "init": 3,
+      "crit_chance": 1,
+      "crit_dmg": 5
+    }
   },
   {
     "id": "hobgoblin",
@@ -321,6 +427,46 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
+    "base_stats": {
+      "hp": 120,
+      "mp": 10,
+      "atk_phys": 12,
+      "def_phys": 8,
+      "atk_mag": 4,
+      "def_mag": 4,
+      "spd": 2,
+      "init": 4,
+      "res": {
+        "poison": 100,
+        "dark": 50,
+        "holy": -50,
+        "fire": -20
+      }
+    },
+    "attribute_converters": {
+      "str": {
+        "hp": 25,
+        "atk_phys": 12,
+        "def_phys": 10
+      },
+      "end": {
+        "hp": 40,
+        "def_phys": 14,
+        "res": {
+          "physical": 2
+        }
+      },
+      "agi": {
+        "spd": 0.08,
+        "init": 1,
+        "atk_phys": 3
+      },
+      "int": {
+        "mp": 15,
+        "atk_mag": 8,
+        "def_mag": 6
+      }
+    },
     "description": "Останки павших воинов, поднятые тёмной некромантией. Не ведают страха, боли и усталости, неуязвимы к холоду и ядам."
   },
   {
@@ -407,6 +553,44 @@
     "lvl_min": 15,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
+    "base_stats": {
+      "hp": 220,
+      "mp": 200,
+      "atk_phys": 14,
+      "def_phys": 12,
+      "atk_mag": 32,
+      "def_mag": 28,
+      "spd": 3,
+      "init": 7,
+      "res": {
+        "poison": 100,
+        "dark": 70,
+        "cold": 40,
+        "holy": -40
+      }
+    },
+    "attribute_converters": {
+      "str": {
+        "hp": 18,
+        "atk_phys": 8,
+        "def_phys": 8
+      },
+      "end": {
+        "hp": 30,
+        "def_phys": 12,
+        "def_mag": 5
+      },
+      "agi": {
+        "spd": 0.1,
+        "init": 2,
+        "atk_phys": 4
+      },
+      "int": {
+        "mp": 45,
+        "atk_mag": 22,
+        "def_mag": 16
+      }
+    },
     "description": "Древний и мудрый неживой заклинатель, чьи магические познания простираются далеко за пределы возможностей смертных магов."
   },
   {
@@ -1095,6 +1279,44 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
+    "base_stats": {
+      "hp": 350,
+      "mp": 80,
+      "atk_phys": 24,
+      "def_phys": 18,
+      "atk_mag": 16,
+      "def_mag": 14,
+      "spd": 3,
+      "init": 6,
+      "res": {
+        "fire": 50,
+        "physical": 15
+      }
+    },
+    "attribute_converters": {
+      "str": {
+        "hp": 30,
+        "atk_phys": 16,
+        "def_phys": 12
+      },
+      "end": {
+        "hp": 50,
+        "def_phys": 16,
+        "res": {
+          "physical": 3
+        }
+      },
+      "agi": {
+        "spd": 0.1,
+        "init": 2,
+        "atk_phys": 5
+      },
+      "int": {
+        "mp": 25,
+        "atk_mag": 12,
+        "def_mag": 10
+      }
+    },
     "description": "Благородные гуманоиды, несущие в себе драконью кровь. Сочетают физическое совершенство драконов с разумом и дисциплиной воина."
   },
   {

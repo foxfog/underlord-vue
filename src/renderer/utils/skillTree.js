@@ -423,8 +423,12 @@ export function levelUpEntity(entity, entityType = 'classes', characterProgressi
 		nextState.entity_points[entity.id] = { skill_points: 0, spell_points: 0 }
 	}
 
-	const spPerLvl = typeof entity.skill_points_per_level === 'number' ? entity.skill_points_per_level : 1
-	const mpPerLvl = typeof entity.spell_points_per_level === 'number' ? entity.spell_points_per_level : 0
+	const spPerLvl = typeof entity.sp_lvl === 'number'
+		? entity.sp_lvl
+		: (typeof entity.skill_points_per_level === 'number' ? entity.skill_points_per_level : 1)
+	const mpPerLvl = typeof entity.mp_lvl === 'number'
+		? entity.mp_lvl
+		: (typeof entity.spell_points_per_level === 'number' ? entity.spell_points_per_level : 0)
 
 	nextState.entity_points[entity.id].skill_points =
 		(nextState.entity_points[entity.id].skill_points || 0) + spPerLvl

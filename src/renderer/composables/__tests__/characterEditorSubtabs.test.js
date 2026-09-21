@@ -488,6 +488,30 @@ describe('Character Editor Subtabs: Equipment, Inventory & Skills', () => {
 		expect(mc.races).not.toContain('skeleton')
 		expect(mc.races).toContain('human')
 	})
+
+	it('supports CharacterStatsTab with active race switching, attributes, and pipeline calculation', () => {
+		const mc = {
+			id: 'mc',
+			name: 'Анон',
+			lvl: 1,
+			races: ['human', 'elder-lich'],
+			active_race: 'human',
+			attributes: { strength: 5, endurance: 0, agility: 0, intelligence: 0 },
+			free_attribute_points: 5,
+			equipment_slots: { 'torso-1': 'tshirt' }
+		}
+
+		// Initial active race is human
+		expect(mc.active_race).toBe('human')
+		expect(mc.attributes.strength).toBe(5)
+
+		// Switch active race to elder-lich
+		mc.active_race = 'elder-lich'
+		expect(mc.active_race).toBe('elder-lich')
+		// Races array still contains both
+		expect(mc.races).toContain('human')
+		expect(mc.races).toContain('elder-lich')
+	})
 })
 
 

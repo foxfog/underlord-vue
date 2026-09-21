@@ -9,6 +9,7 @@
   ],
   "skills": [
     {
+      "id": "human_potential",
       "skill_id": "human_potential",
       "branch": "human_adaptability",
       "grid_col": 0,
@@ -19,9 +20,13 @@
       "level_points_given": 1,
       "auto_unlock": true,
       "parent_ids": [],
-      "parent_requirement": "all"
+      "parent_requirement": "all",
+      "name": "human_potential",
+      "icon": "⚔️",
+      "category": "active"
     },
     {
+      "id": "human_versatility",
       "skill_id": "human_versatility",
       "branch": "human_adaptability",
       "grid_col": 1,
@@ -34,7 +39,10 @@
       "parent_ids": [
         "human_potential"
       ],
-      "parent_requirement": "all"
+      "parent_requirement": "all",
+      "name": "human_versatility",
+      "icon": "⚔️",
+      "category": "active"
     }
   ]
 }

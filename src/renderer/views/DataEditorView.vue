@@ -29,9 +29,10 @@
 				</button>
 			</div>
 
-			<!-- View Mode Toggle for Classes, Races & Fractions -->
-			<div v-if="['classes', 'races', 'fractions'].includes(activeTab)" class="header-view-mode-toggle">
+			<!-- View Mode Toggle for Classes, Races, Fractions & Items -->
+			<div v-if="['classes', 'races', 'fractions', 'items'].includes(activeTab)" class="header-view-mode-toggle">
 				<button
+					v-if="['classes', 'races', 'fractions'].includes(activeTab)"
 					type="button"
 					class="view-mode-btn"
 					:class="{ __active: classRaceViewMode === 'tree' }"
@@ -40,6 +41,16 @@
 				>
 					<span class="vmb-icon">🌳</span>
 					<span>Древо</span>
+				</button>
+				<button
+					type="button"
+					class="view-mode-btn"
+					:class="{ __active: classRaceViewMode === 'table' }"
+					title="Табличный редактор в стиле Google Sheets со сворачиванием строк и колонок"
+					@click="classRaceViewMode = 'table'"
+				>
+					<span class="vmb-icon">📊</span>
+					<span>Таблица</span>
 				</button>
 				<button
 					type="button"
@@ -326,6 +337,25 @@
 					/>
 				</div>
 
+				<!-- Table Spreadsheet Canvas for Classes, Races, Fractions & Items in Table Mode -->
+				<div
+					v-else-if="isTableMode"
+					class="table-canvas-column"
+				>
+					<DataTableEditor
+						:type="activeTab"
+						:items="entities[activeTab]"
+						:selected-id="selectedEntity ? selectedEntity.id : null"
+						:active-locale="activeLocale"
+						:locales-data="localesData"
+						@select="onSelectEntity"
+						@create="onStartCreate"
+						@delete="promptDelete"
+						@save-batch="handleTableSaveBatch"
+						@change="onTableEntityChange"
+					/>
+				</div>
+
 				<!-- Left Column: Entities List & Filter (Classic Mode) -->
 				<aside v-else class="sidebar-list-pane">
 					<div class="list-toolbar">
@@ -579,11 +609,11 @@
 					</div>
 				</aside>
 
-				<!-- Right Column: Detail / Edit Form (or Side Drawer in Tree Mode) -->
+				<!-- Right Column: Detail / Edit Form (or Side Drawer in Tree / Table Mode) -->
 				<main
-					v-if="!isTreeMode || selectedEntity"
+					v-if="(!isTreeMode && !isTableMode) || selectedEntity"
 					class="form-pane"
-					:class="{ '__tree-drawer': isTreeMode }"
+					:class="{ '__tree-drawer': isTreeMode, '__table-drawer': isTableMode }"
 				>
 					<div v-if="selectedEntity" class="form-container">
 						<div class="form-header">
@@ -598,7 +628,7 @@
 
 							<div class="form-header-actions">
 								<button class="editor-btn editor-btn-secondary" @click="cancelEdit">
-									{{ isTreeMode ? '✕ Закрыть' : 'Отмена' }}
+									{{ (isTreeMode || isTableMode) ? '✕ Закрыть' : 'Отмена' }}
 								</button>
 								<button
 									class="editor-btn editor-btn-primary save-btn"
@@ -684,6 +714,15 @@
 							</button>
 							<button
 								type="button"
+								class="char-subtab-nav-btn"
+								:class="{ __active: activeCharacterSubTab === 'stats' }"
+								@click="activeCharacterSubTab = 'stats'"
+							>
+								<span class="csn-icon">📊</span>
+								<span class="csn-label">Характеристики</span>
+							</button>
+							<button
+								type="button"
 								class="char-subtab-nav-btn __studio-link"
 								title="Открыть студию спрайтов и риггинга для этого персонажа"
 								@click="openSpriteStudioForCharacter(selectedEntity.id)"
@@ -741,6 +780,17 @@
 									:races-list="entities.races"
 									:active-locale="activeLocale"
 									:locales-data="localesData"
+								/>
+							</template>
+
+							<!-- Sub-tab: Character Stats & Pipeline -->
+							<template v-else-if="activeTab === 'characters' && activeCharacterSubTab === 'stats'">
+								<CharacterStatsTab
+									:character="selectedEntity"
+									:races-list="entities.races"
+									:items-list="entities.items"
+									:skills-catalog="skillsCatalog"
+									@change="markDirty"
 								/>
 							</template>
 
@@ -1175,8 +1225,10 @@
 											<option value="rare">Редкий / Секретный (макс 5 ур.)</option>
 										</select>
 									</div>
+								</div>
+								<div class="field-row __split">
 									<div class="form-field">
-										<label class="field-label">Очков навыков (SP) за уровень</label>
+										<label class="field-label">Очков навыков (skill_points) за уровень</label>
 										<input
 											v-model.number="selectedEntity.skill_points_per_level"
 											type="number"
@@ -1186,7 +1238,7 @@
 										/>
 									</div>
 									<div class="form-field">
-										<label class="field-label">Очков спелов (MP) за уровень</label>
+										<label class="field-label">Очков спелов (spell_points) за уровень</label>
 										<input
 											v-model.number="selectedEntity.spell_points_per_level"
 											type="number"
@@ -1264,8 +1316,10 @@
 											<option value="rare">Редкая / Секретная (макс 5 ур.)</option>
 										</select>
 									</div>
+								</div>
+								<div class="field-row __split">
 									<div class="form-field">
-										<label class="field-label">Очков навыков (SP) за уровень</label>
+										<label class="field-label">Очков навыков (skill_points) за уровень</label>
 										<input
 											v-model.number="selectedEntity.skill_points_per_level"
 											type="number"
@@ -1275,7 +1329,7 @@
 										/>
 									</div>
 									<div class="form-field">
-										<label class="field-label">Очков спелов (MP) за уровень</label>
+										<label class="field-label">Очков спелов (spell_points) за уровень</label>
 										<input
 											v-model.number="selectedEntity.spell_points_per_level"
 											type="number"
@@ -1304,6 +1358,284 @@
 											class="editor-input"
 											placeholder="Авто (по предку)"
 										/>
+									</div>
+								</div>
+
+								<!-- RACES: BASE STATS (LEVEL 1) -->
+								<div class="field-subheading">
+									<span class="fs-icon">🧬</span>
+									<span>Начальные параметры 1-го уровня (Base Stats)</span>
+								</div>
+								<div class="stats-form-grid">
+									<div class="form-field">
+										<label class="field-label">Здоровье (HP)</label>
+										<input
+											v-model.number="ensureRaceBaseStats().hp"
+											type="number"
+											min="1"
+											class="editor-input"
+											placeholder="100"
+										/>
+									</div>
+									<div class="form-field">
+										<label class="field-label">Мана (MP)</label>
+										<input
+											v-model.number="ensureRaceBaseStats().mp"
+											type="number"
+											min="0"
+											class="editor-input"
+											placeholder="30"
+										/>
+									</div>
+									<div class="form-field">
+										<label class="field-label">Физ. атака (Phys Atk)</label>
+										<input
+											v-model.number="ensureRaceBaseStats().atk_phys"
+											type="number"
+											min="0"
+											class="editor-input"
+											placeholder="10"
+										/>
+									</div>
+									<div class="form-field">
+										<label class="field-label">Физ. защита (Phys Def)</label>
+										<input
+											v-model.number="ensureRaceBaseStats().def_phys"
+											type="number"
+											min="0"
+											class="editor-input"
+											placeholder="6"
+										/>
+									</div>
+									<div class="form-field">
+										<label class="field-label">Маг. атака (Mag Atk)</label>
+										<input
+											v-model.number="ensureRaceBaseStats().atk_mag"
+											type="number"
+											min="0"
+											class="editor-input"
+											placeholder="6"
+										/>
+									</div>
+									<div class="form-field">
+										<label class="field-label">Маг. защита (Mag Def)</label>
+										<input
+											v-model.number="ensureRaceBaseStats().def_mag"
+											type="number"
+											min="0"
+											class="editor-input"
+											placeholder="6"
+										/>
+									</div>
+									<div class="form-field">
+										<label class="field-label">Скорость (spd)</label>
+										<input
+											v-model.number="ensureRaceBaseStats().spd"
+											type="number"
+											step="0.5"
+											min="1"
+											class="editor-input"
+											placeholder="3"
+										/>
+									</div>
+									<div class="form-field">
+										<label class="field-label">Инициатива (init)</label>
+										<input
+											v-model.number="ensureRaceBaseStats().init"
+											type="number"
+											min="1"
+											class="editor-input"
+											placeholder="5"
+										/>
+									</div>
+									<div class="form-field">
+										<label class="field-label">Крит. шанс % (crit_chance)</label>
+										<input
+											v-model.number="ensureRaceBaseStats().crit_chance"
+											type="number"
+											step="0.1"
+											min="0"
+											class="editor-input"
+											placeholder="5"
+										/>
+									</div>
+									<div class="form-field">
+										<label class="field-label">Крит. урон % (crit_dmg)</label>
+										<input
+											v-model.number="ensureRaceBaseStats().crit_dmg"
+											type="number"
+											step="0.1"
+											min="0"
+											class="editor-input"
+											placeholder="50"
+										/>
+									</div>
+								</div>
+
+								<!-- RACES: ATTRIBUTE CONVERTERS (SCALING) -->
+								<div class="field-subheading">
+									<span class="fs-icon">⚖️</span>
+									<span>Характеристические переработчики (Скейлы за 1 очко атрибута)</span>
+								</div>
+								<div class="converters-form-grid">
+									<!-- STR converter -->
+									<div class="converter-card __str">
+										<div class="converter-card-header">
+											<span class="cch-icon">💪</span>
+											<span class="cch-title">1 Сила (STR) даёт:</span>
+										</div>
+										<div class="converter-stats-grid">
+											<div class="converter-stat-box">
+												<span class="csb-label">+HP</span>
+												<input
+													v-model.number="ensureRaceConverters().str.hp"
+													type="number"
+													class="editor-input csb-input"
+													placeholder="20"
+												/>
+											</div>
+											<div class="converter-stat-box">
+												<span class="csb-label">+Atk</span>
+												<input
+													v-model.number="ensureRaceConverters().str.atk_phys"
+													type="number"
+													class="editor-input csb-input"
+													placeholder="10"
+												/>
+											</div>
+											<div class="converter-stat-box">
+												<span class="csb-label">+Def</span>
+												<input
+													v-model.number="ensureRaceConverters().str.def_phys"
+													type="number"
+													class="editor-input csb-input"
+													placeholder="8"
+												/>
+											</div>
+											<div class="converter-stat-box">
+												<span class="csb-label">+Крит.Урон%</span>
+												<input
+													v-model.number="ensureRaceConverters().str.crit_dmg"
+													type="number"
+													step="0.1"
+													class="editor-input csb-input"
+													placeholder="0"
+												/>
+											</div>
+										</div>
+									</div>
+
+									<!-- END converter -->
+									<div class="converter-card __end">
+										<div class="converter-card-header">
+											<span class="cch-icon">🛡️</span>
+											<span class="cch-title">1 Выносливость (END) даёт:</span>
+										</div>
+										<div class="converter-stats-grid">
+											<div class="converter-stat-box">
+												<span class="csb-label">+HP</span>
+												<input
+													v-model.number="ensureRaceConverters().end.hp"
+													type="number"
+													class="editor-input csb-input"
+													placeholder="35"
+												/>
+											</div>
+											<div class="converter-stat-box">
+												<span class="csb-label">+Def</span>
+												<input
+													v-model.number="ensureRaceConverters().end.def_phys"
+													type="number"
+													class="editor-input csb-input"
+													placeholder="10"
+												/>
+											</div>
+										</div>
+									</div>
+
+									<!-- AGI converter -->
+									<div class="converter-card __agi">
+										<div class="converter-card-header">
+											<span class="cch-icon">⚡</span>
+											<span class="cch-title">1 Ловкость (AGI) даёт:</span>
+										</div>
+										<div class="converter-stats-grid">
+											<div class="converter-stat-box">
+												<span class="csb-label">+Spd</span>
+												<input
+													v-model.number="ensureRaceConverters().agi.spd"
+													type="number"
+													step="0.05"
+													class="editor-input csb-input"
+													placeholder="0.1"
+												/>
+											</div>
+											<div class="converter-stat-box">
+												<span class="csb-label">+Init</span>
+												<input
+													v-model.number="ensureRaceConverters().agi.init"
+													type="number"
+													class="editor-input csb-input"
+													placeholder="2"
+												/>
+											</div>
+											<div class="converter-stat-box">
+												<span class="csb-label">+Atk</span>
+												<input
+													v-model.number="ensureRaceConverters().agi.atk_phys"
+													type="number"
+													class="editor-input csb-input"
+													placeholder="4"
+												/>
+											</div>
+											<div class="converter-stat-box">
+												<span class="csb-label">+Крит%</span>
+												<input
+													v-model.number="ensureRaceConverters().agi.crit_chance"
+													type="number"
+													step="0.1"
+													class="editor-input csb-input"
+													placeholder="0"
+												/>
+											</div>
+										</div>
+									</div>
+
+									<!-- INT converter -->
+									<div class="converter-card __int">
+										<div class="converter-card-header">
+											<span class="cch-icon">🔮</span>
+											<span class="cch-title">1 Интеллект (INT) даёт:</span>
+										</div>
+										<div class="converter-stats-grid">
+											<div class="converter-stat-box">
+												<span class="csb-label">+MP</span>
+												<input
+													v-model.number="ensureRaceConverters().int.mp"
+													type="number"
+													class="editor-input csb-input"
+													placeholder="20"
+												/>
+											</div>
+											<div class="converter-stat-box">
+												<span class="csb-label">+M.Atk</span>
+												<input
+													v-model.number="ensureRaceConverters().int.atk_mag"
+													type="number"
+													class="editor-input csb-input"
+													placeholder="10"
+												/>
+											</div>
+											<div class="converter-stat-box">
+												<span class="csb-label">+M.Def</span>
+												<input
+													v-model.number="ensureRaceConverters().int.def_mag"
+													type="number"
+													class="editor-input csb-input"
+													placeholder="8"
+												/>
+											</div>
+										</div>
 									</div>
 								</div>
 							</template>
@@ -2545,10 +2877,12 @@ import { useRouter, useRoute } from 'vue-router'
 import { useDataEditor } from '@/composables/useDataEditor'
 import EntityTagPicker from '@/components/tests/EntityTagPicker.vue'
 import ClassRaceTreeCanvas from '@/components/game/dataEditor/ClassRaceTreeCanvas.vue'
+import DataTableEditor from '@/components/game/dataEditor/DataTableEditor.vue'
 import CharacterEquipmentTab from '@/components/game/dataEditor/CharacterEquipmentTab.vue'
 import CharacterSkillsTab from '@/components/game/dataEditor/CharacterSkillsTab.vue'
 import CharacterTalentsTab from '@/components/game/dataEditor/CharacterTalentsTab.vue'
 import CharacterBiometricsTab from '@/components/game/dataEditor/CharacterBiometricsTab.vue'
+import CharacterStatsTab from '@/components/game/dataEditor/CharacterStatsTab.vue'
 import {
 	SKILL_CATEGORIES,
 	getCategoryMeta,
@@ -2632,7 +2966,8 @@ const {
 	ITEM_RARITIES,
 	getRarity,
 	getRarityColor,
-	getRarityBadgeStyle
+	getRarityBadgeStyle,
+	saveAllEntities
 } = useDataEditor()
 
 function getItemSkillName(skId) {
@@ -2735,11 +3070,28 @@ const isTagDropdownOpen = ref(false)
 const highlightedTagIndex = ref(0)
 const tagInputRef = ref(null)
 
-// Tree view mode for classes, races & fractions
-const classRaceViewMode = ref('tree') // 'tree' | 'list'
+// View mode for classes, races, fractions & items
+const classRaceViewMode = ref('tree') // 'tree' | 'table' | 'list'
 const isTreeMode = computed(() => {
 	return ['classes', 'races', 'fractions'].includes(activeTab.value) && classRaceViewMode.value === 'tree'
 })
+const isTableMode = computed(() => {
+	return ['classes', 'races', 'fractions', 'items'].includes(activeTab.value) && classRaceViewMode.value === 'table'
+})
+
+async function handleTableSaveBatch() {
+	if (saveAllEntities) {
+		await saveAllEntities(activeTab.value)
+		setStatus('Все изменения успешно сохранены в JSON!', 'success')
+	}
+}
+
+function onTableEntityChange(item, key, val) {
+	if (selectedEntity.value && selectedEntity.value.id === item.id) {
+		// Keep inspector drawer in sync
+		selectedEntity.value = { ...selectedEntity.value, [key]: val }
+	}
+}
 
 function onCreateChildEntity(parentItem) {
 	if (activeTab.value === 'fractions') {
@@ -2780,6 +3132,53 @@ function onParentChange() {
 			}
 		}
 	}
+}
+
+function ensureRaceBaseStats() {
+	if (!selectedEntity.value) return {}
+	if (!selectedEntity.value.base_stats || typeof selectedEntity.value.base_stats !== 'object') {
+		selectedEntity.value.base_stats = {
+			hp: 100, mp: 30, atk_phys: 10, def_phys: 6, atk_mag: 6, def_mag: 6, spd: 3, init: 5, crit_chance: 5, crit_dmg: 50, res: {}
+		}
+	}
+	const bs = selectedEntity.value.base_stats
+	if (bs.spd === undefined && bs.speed !== undefined) bs.spd = bs.speed
+	if (bs.init === undefined && bs.initiative !== undefined) bs.init = bs.initiative
+	if (bs.crit_chance === undefined && bs.crit_rate !== undefined) bs.crit_chance = bs.crit_rate
+	if (bs.crit_dmg === undefined && bs.crit_damage !== undefined) bs.crit_dmg = bs.crit_damage
+	if (bs.crit_chance === undefined) bs.crit_chance = 5
+	if (bs.crit_dmg === undefined) bs.crit_dmg = 50
+	if (bs.res === undefined && bs.resistances !== undefined) bs.res = bs.resistances
+	return bs
+}
+
+function ensureRaceConverters() {
+	if (!selectedEntity.value) return { str: {}, end: {}, agi: {}, int: {} }
+	if (!selectedEntity.value.attribute_converters || typeof selectedEntity.value.attribute_converters !== 'object') {
+		selectedEntity.value.attribute_converters = {
+			str: { hp: 20, atk_phys: 10, def_phys: 8, crit_dmg: 0 },
+			end: { hp: 35, def_phys: 10 },
+			agi: { spd: 0.1, init: 2, atk_phys: 4, crit_chance: 0 },
+			int: { mp: 20, atk_mag: 10, def_mag: 8 }
+		}
+	}
+	const ac = selectedEntity.value.attribute_converters
+	const mapping = { str: 'strength', end: 'endurance', agi: 'agility', int: 'intelligence' }
+	for (const [shortK, longK] of Object.entries(mapping)) {
+		if (!ac[shortK]) {
+			ac[shortK] = ac[longK] || {}
+		}
+		const c = ac[shortK]
+		if (c.spd === undefined && c.speed !== undefined) c.spd = c.speed
+		if (c.init === undefined && c.initiative !== undefined) c.init = c.initiative
+		if (c.atk_phys === undefined && c.phys_attack !== undefined) c.atk_phys = c.phys_attack
+		if (c.def_phys === undefined && c.phys_defense !== undefined) c.def_phys = c.phys_defense
+		if (c.atk_mag === undefined && c.mag_attack !== undefined) c.atk_mag = c.mag_attack
+		if (c.def_mag === undefined && c.mag_defense !== undefined) c.def_mag = c.mag_defense
+		if (c.crit_chance === undefined && c.crit_rate !== undefined) c.crit_chance = c.crit_rate
+		if (c.crit_dmg === undefined && c.crit_damage !== undefined) c.crit_dmg = c.crit_damage
+	}
+	return ac
 }
 
 // Header Dropdown & Add Language Modal State
@@ -4696,6 +5095,7 @@ function removeSkill(skillId) {
 .form-fields-scroll {
 	flex: 1;
 	overflow-y: auto;
+	overflow-x: hidden;
 	padding: 1.5em;
 	display: flex;
 	flex-direction: column;
@@ -4704,23 +5104,52 @@ function removeSkill(skillId) {
 
 .field-row {
 	display: flex;
+	flex-wrap: wrap;
 	gap: 1.2em;
+	align-items: stretch;
 }
 
 .field-row.__split > .form-field {
-	flex: 1;
+	flex: 1 1 12em;
+	min-width: 0;
 }
 
 .form-field {
 	display: flex;
 	flex-direction: column;
 	gap: 0.4em;
+	min-width: 0;
+}
+
+/* Push input/select/textarea controls to the bottom of .form-field so that
+   variable height (1 vs multi-line) labels never cause jumping/misalignment */
+.form-field > .editor-input,
+.form-field > .editor-select,
+.form-field > .editor-textarea,
+.form-field > .icon-input-box,
+.form-field > .checkbox-label,
+.form-field > .chips-container,
+.form-field > .tag-autocomplete-wrapper {
+	margin-top: auto;
 }
 
 .field-label {
 	font-size: 0.9em;
 	color: #cbd5e1;
 	font-weight: bold;
+	line-height: 1.3;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 0.35em;
+}
+
+.field-label-row {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 0.6em;
+	flex-wrap: wrap;
 }
 
 .req-star {
@@ -4731,7 +5160,7 @@ function removeSkill(skillId) {
 	font-size: 0.8em;
 	font-weight: normal;
 	color: #94a3b8;
-	margin-left: 0.4em;
+	margin-left: 0;
 }
 
 .editor-input,
@@ -5668,7 +6097,8 @@ function removeSkill(skillId) {
 	font-size: 0.9em;
 	color: #cbd5e1;
 	cursor: pointer;
-	margin-top: 1.8em;
+	margin-top: auto;
+	padding: 0.55em 0;
 }
 
 /* Form Footer */
@@ -6987,16 +7417,18 @@ function removeSkill(skillId) {
 }
 
 /* ==========================================================================
-   Class & Race Interactive Tree Canvas Mode
+   Class & Race Interactive Tree Canvas Mode & Spreadsheet Table Mode
    ========================================================================== */
-.tree-canvas-column {
+.tree-canvas-column,
+.table-canvas-column {
 	flex: 1;
 	height: 100%;
 	position: relative;
 	overflow: hidden;
 }
 
-.form-pane.__tree-drawer {
+.form-pane.__tree-drawer,
+.form-pane.__table-drawer {
 	width: 36em;
 	max-width: 50%;
 	border-left: 1px solid rgba(255, 255, 255, 0.15);
@@ -7055,5 +7487,136 @@ function removeSkill(skillId) {
 	padding: 0.1em 0.45em;
 	margin-left: 0.5em;
 	font-weight: 500;
+}
+
+.field-subheading {
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+	font-size: 0.95em;
+	font-weight: 600;
+	color: #e2e8f0;
+	padding: 0.5em 0 0.2em 0;
+	margin-top: 0.8em;
+	border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.fs-icon {
+	font-size: 1.15em;
+}
+
+/* Base stats 4-column responsive grid */
+.stats-form-grid {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 1em;
+}
+
+@media (max-width: 75em) {
+	.stats-form-grid {
+		grid-template-columns: repeat(2, 1fr);
+	}
+}
+
+/* Converters 4-card grid */
+.converters-form-grid {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 0.8em;
+}
+
+@media (max-width: 85em) {
+	.converters-form-grid {
+		grid-template-columns: repeat(2, 1fr);
+	}
+}
+
+@media (max-width: 50em) {
+	.converters-form-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+.converter-card {
+	background: rgba(15, 23, 42, 0.55);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 0.45em;
+	padding: 0.7em 0.8em;
+	display: flex;
+	flex-direction: column;
+	gap: 0.6em;
+	min-width: 0;
+}
+
+.converter-card.__str {
+	border-color: rgba(245, 158, 11, 0.35);
+	background: linear-gradient(180deg, rgba(245, 158, 11, 0.06) 0%, rgba(15, 23, 42, 0.6) 100%);
+}
+
+.converter-card.__end {
+	border-color: rgba(59, 130, 246, 0.35);
+	background: linear-gradient(180deg, rgba(59, 130, 246, 0.06) 0%, rgba(15, 23, 42, 0.6) 100%);
+}
+
+.converter-card.__agi {
+	border-color: rgba(234, 179, 8, 0.35);
+	background: linear-gradient(180deg, rgba(234, 179, 8, 0.06) 0%, rgba(15, 23, 42, 0.6) 100%);
+}
+
+.converter-card.__int {
+	border-color: rgba(168, 85, 247, 0.35);
+	background: linear-gradient(180deg, rgba(168, 85, 247, 0.06) 0%, rgba(15, 23, 42, 0.6) 100%);
+}
+
+.converter-card-header {
+	display: flex;
+	align-items: center;
+	gap: 0.4em;
+	font-size: 0.85em;
+	font-weight: bold;
+	color: #e2e8f0;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.converter-card.__str .converter-card-header { color: #fbbf24; }
+.converter-card.__end .converter-card-header { color: #60a5fa; }
+.converter-card.__agi .converter-card-header { color: #facc15; }
+.converter-card.__int .converter-card-header { color: #c084fc; }
+
+.converter-stats-grid {
+	display: flex;
+	gap: 0.4em;
+	align-items: stretch;
+	flex-wrap: wrap;
+}
+
+.converter-stat-box {
+	flex: 1 1 3.5em;
+	min-width: 3.2em;
+	display: flex;
+	flex-direction: column;
+	gap: 0.25em;
+	background: rgba(0, 0, 0, 0.35);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: 0.35em;
+	padding: 0.35em 0.4em;
+	align-items: center;
+}
+
+.csb-label {
+	font-size: 0.75em;
+	font-weight: bold;
+	color: #94a3b8;
+	letter-spacing: 0.02em;
+}
+
+.csb-input {
+	width: 100% !important;
+	padding: 0.25em 0.3em !important;
+	font-size: 0.85em !important;
+	text-align: center;
+	border-radius: 0.25em;
 }
 </style>

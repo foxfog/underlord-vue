@@ -52,6 +52,7 @@
 * [Древо навыков (`docs/systems/SkillTreeSystem.md`)](docs/systems/SkillTreeSystem.md) — ветки классов/рас, уровневая сетка, зависимости предков (`all`/`any`), SP.
 * [Система безымянных мобов (`docs/systems/MobSystem.md`)](docs/systems/MobSystem.md) — расчёт статов из рас/классов, звёздность 1★–5★, экипировка по тирам, скалирование, агро/сон.
 * [Редактор сценариев и сторилейна (`docs/systems/StorylineEditorSystem.md`)](docs/systems/StorylineEditorSystem.md) — визуальный редактор сюжета, дерево папок/файлов, инспектор экшенов (диалоги, сцены, выборы, звук), прямой JSON-режим.
+* [Характеристики, расовые скейлы, эволюция и экипировка (`docs/systems/CharacterStatsSystem.md`)](docs/systems/CharacterStatsSystem.md) — начальные base_stats рас, атрибуты STR/END/AGI/INT, переработчики, активная раса (Дракон $\to$ Лич), 5-шаговый конвейер пассивок и экипировки.
 
 ---
 

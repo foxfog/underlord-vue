@@ -13,7 +13,10 @@
 					v-for="ent in assignedEntities"
 					:key="ent.id"
 					class="entity-chip-item"
-					:class="{ __active: activeEntityId === ent.id }"
+					:class="{
+						__active: activeEntityId === ent.id,
+						'__active-race': type === 'races' && isRaceActive(ent.id)
+					}"
 					@click="activeEntityId = ent.id"
 				>
 					<span class="ecb-icon">{{ ent.icon || (type === 'classes' ? '⚔️' : '🧬') }}</span>
@@ -25,6 +28,16 @@
 					>
 						{{ getLearnedCountForEntity(ent) }} / {{ (ent.skills || []).length }}
 					</span>
+					<button
+						v-if="type === 'races'"
+						type="button"
+						class="ecb-active-race-btn"
+						:class="{ __is_active: isRaceActive(ent.id) }"
+						:title="isRaceActive(ent.id) ? 'Текущая активная раса тела (базовые параметры и скейлы)' : 'Сделать активной расой тела'"
+						@click.stop="setAsActiveRace(ent.id)"
+					>
+						{{ isRaceActive(ent.id) ? '⭐ Активна' : '☆ Сделать активной' }}
+					</button>
 					<button
 						type="button"
 						class="ecb-remove-btn"
@@ -542,9 +555,44 @@ function formatTier(tier) {
 	if (t === 'rare' || t === 'secret') return 'Редкий'
 	return 'Базовый'
 }
+
+function isRaceActive(raceId) {
+	return (props.character.active_race || props.character.races?.[0]) === raceId
+}
+
+function setAsActiveRace(raceId) {
+	props.character.active_race = raceId
+	emit('change')
+}
 </script>
 
 <style scoped>
+.entity-chip-item.__active-race {
+	border-color: rgba(234, 179, 8, 0.7);
+	box-shadow: 0 0 0.5em rgba(234, 179, 8, 0.3);
+}
+
+.ecb-active-race-btn {
+	background: transparent;
+	border: 1px solid rgba(234, 179, 8, 0.4);
+	color: #facc15;
+	font-size: 0.75em;
+	padding: 0.1em 0.4em;
+	border-radius: 0.3em;
+	cursor: pointer;
+	transition: all 0.15s;
+}
+
+.ecb-active-race-btn:hover {
+	background: rgba(234, 179, 8, 0.2);
+}
+
+.ecb-active-race-btn.__is_active {
+	background: rgba(234, 179, 8, 0.3);
+	font-weight: bold;
+	border-color: #eab308;
+}
+
 .char-skills-tab {
 	width: 100%;
 	display: flex;

@@ -484,18 +484,19 @@ export function useDataEditor() {
 					spell_points_per_level: 0,
 					description: '',
 					skill_branches: [],
-					skills: []
+					skills: [],
+					base_stats: null,
+					attribute_converters: null
 				}
 			case 'items':
 				return {
 					id: '',
 					name: '',
+					icon: '🗡️',
 					type: 'equipment',
 					rarity: 'common',
-					categories: [],
-					slot: 'torso-1',
-					sprite: '',
-					weight: 0.5,
+					slot: 'weapon-hand-1',
+					weight: 1,
 					stackable: false,
 					lvl: 1,
 					characters: [],
@@ -569,8 +570,12 @@ export function useDataEditor() {
 
 		if (activeTab.value === 'classes' || activeTab.value === 'races') {
 			if (!cloned.tier) cloned.tier = 'basic'
-			if (cloned.skill_points_per_level === undefined) cloned.skill_points_per_level = 1
-			if (cloned.spell_points_per_level === undefined) cloned.spell_points_per_level = 0
+			const spVal = cloned.skill_points_per_level !== undefined ? cloned.skill_points_per_level : (cloned.sp_lvl !== undefined ? cloned.sp_lvl : 1)
+			const mpVal = cloned.spell_points_per_level !== undefined ? cloned.spell_points_per_level : (cloned.mp_lvl !== undefined ? cloned.mp_lvl : 0)
+			cloned.skill_points_per_level = spVal
+			cloned.spell_points_per_level = mpVal
+			delete cloned.sp_lvl
+			delete cloned.mp_lvl
 			if (!Array.isArray(cloned.skill_branches)) cloned.skill_branches = []
 			if (!Array.isArray(cloned.skills)) cloned.skills = []
 		}
@@ -1091,6 +1096,20 @@ export function useDataEditor() {
 		}
 	}
 
+	async function saveAllEntities(type = activeTab.value) {
+		isLoading.value = true
+		try {
+			await persistTypeToFile(type)
+			setStatus(`Все изменения сохранены в ${type}.json (${entities.value[type]?.length || 0} строк)`, 'success')
+			return true
+		} catch (err) {
+			setStatus(`Ошибка сохранения: ${err.message}`, 'error', 6000)
+			throw err
+		} finally {
+			isLoading.value = false
+		}
+	}
+
 	// Normalize data before saving
 	function normalizeEntity(type, raw) {
 		const copy = JSON.parse(JSON.stringify(raw))
@@ -1134,9 +1153,41 @@ export function useDataEditor() {
 			} else {
 				delete copy.talents
 			}
+
+			if (copy.active_race) copy.active_race = String(copy.active_race).trim()
+			if (copy.attributes && typeof copy.attributes === 'object') {
+				copy.attributes = {
+					strength: Number(copy.attributes.strength || 0),
+					endurance: Number(copy.attributes.endurance || 0),
+					agility: Number(copy.attributes.agility || 0),
+					intelligence: Number(copy.attributes.intelligence || 0)
+				}
+			}
+			if (copy.free_attribute_points !== undefined) {
+				copy.free_attribute_points = Math.max(0, Number(copy.free_attribute_points) || 0)
+			}
+		}
+
+		if (type === 'races') {
+			if (copy.base_stats && typeof copy.base_stats === 'object') {
+				copy.base_stats = { ...copy.base_stats }
+			}
+			if (copy.attribute_converters && typeof copy.attribute_converters === 'object') {
+				copy.attribute_converters = { ...copy.attribute_converters }
+			}
 		}
 
 		if (type === 'classes' || type === 'races') {
+			if (copy.skill_points_per_level !== undefined || copy.sp_lvl !== undefined) {
+				const val = copy.skill_points_per_level !== undefined ? Number(copy.skill_points_per_level) : Number(copy.sp_lvl)
+				copy.skill_points_per_level = Math.max(0, isNaN(val) ? 1 : val)
+				delete copy.sp_lvl
+			}
+			if (copy.spell_points_per_level !== undefined || copy.mp_lvl !== undefined) {
+				const val = copy.spell_points_per_level !== undefined ? Number(copy.spell_points_per_level) : Number(copy.mp_lvl)
+				copy.spell_points_per_level = Math.max(0, isNaN(val) ? 0 : val)
+				delete copy.mp_lvl
+			}
 			if (copy.lvl_min !== undefined) copy.lvl_min = Number(copy.lvl_min) || 1
 			if (copy.parent_id === '') copy.parent_id = null
 
@@ -1597,7 +1648,7 @@ export function useDataEditor() {
 		],
 		classes: ['id', 'name', 'icon', 'parent_id', 'category', 'tier', 'grid_tier', 'skill_points_per_level', 'spell_points_per_level', 'tags', 'lvl_min', 'description', 'skill_branches', 'skills'],
 		fractions: ['id', 'name', 'icon', 'type', 'parent_id', 'grid_tier', 'tags', 'description'],
-		races: ['id', 'name', 'icon', 'parent_id', 'family', 'category', 'tier', 'grid_tier', 'skill_points_per_level', 'spell_points_per_level', 'tags', 'lvl_min', 'description', 'skill_branches', 'skills'],
+		races: ['id', 'name', 'icon', 'parent_id', 'family', 'category', 'tier', 'grid_tier', 'skill_points_per_level', 'spell_points_per_level', 'tags', 'lvl_min', 'description', 'skill_branches', 'skills', 'base_stats', 'attribute_converters', 'converters'],
 		items: [
 			'id',
 			'name',
@@ -1983,6 +2034,7 @@ export function useDataEditor() {
 		startEdit,
 		cancelEdit,
 		saveEntity,
+		saveAllEntities,
 		deleteEntity,
 		persistTypeToFile,
 		addGlobalTag,
