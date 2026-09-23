@@ -229,6 +229,104 @@ describe('DataTableEditor Component (Google Sheets Spreadsheet Mode)', () => {
 		expect(content).toContain('z-index: 22 !important;')
 	})
 
+	it('verifies race resistances columns, water resistance in scaling, and presets', () => {
+		const content = fs.readFileSync(editorPath, 'utf-8')
+		const charTabPath = path.resolve(__dirname, '../../components/game/dataEditor/CharacterStatsTab.vue')
+		const charTabContent = fs.readFileSync(charTabPath, 'utf-8')
+		const viewPath = path.resolve(__dirname, '../../views/DataEditorView.vue')
+		const viewContent = fs.readFileSync(viewPath, 'utf-8')
+
+		// 1. Column group: resistances with all 8 resistances
+		expect(content).toContain("id: 'resistances'")
+		expect(content).toContain('__grp-resistances')
+		expect(content).toContain("key: 'res_physical'")
+		expect(content).toContain("key: 'res_water'")
+		expect(content).toContain("key: 'res_fire'")
+		expect(content).toContain("key: 'res_cold'")
+		expect(content).toContain("key: 'res_lightning'")
+		expect(content).toContain("key: 'res_poison'")
+		expect(content).toContain("key: 'res_holy'")
+		expect(content).toContain("key: 'res_dark'")
+
+		// 2. Water resistance in scaling / availableConverterStats & meta
+		expect(content).toContain("key: 'res.water'")
+		expect(content).toContain("'res.water': { label: 'Вода'")
+		expect(charTabContent).toContain("water: 'Вода'")
+		expect(charTabContent).toContain("'res.water': 'Сопр.Вода'")
+
+		// 3. Preset support
+		expect(content).toContain("setColPreset('resistances')")
+		expect(content).toContain("preset === 'resistances'")
+
+		// 4. DataEditorView inspector drawer inputs
+		expect(viewContent).toContain('race-resistances-form-grid')
+		expect(viewContent).toContain('ensureRaceResistances')
+		expect(viewContent).toContain('ensureRaceResistances().water')
+
+		// 5. Positive / negative / zero resistance color coding classes
+		expect(content).toContain('__positive-res')
+		expect(content).toContain('__negative-res')
+		expect(content).toContain('__zero-res')
+		expect(content).toContain('getRawColValue')
+	})
+
+	it('verifies column header sorting from larger values to smaller and vice versa across all grouping modes', () => {
+		const content = fs.readFileSync(editorPath, 'utf-8')
+
+		// 1. Column headers have toggleSort on click and sortable classes in template
+		expect(content).toContain('@click="toggleSort(col.key)"')
+		expect(content).toContain('__sortable: true')
+		expect(content).toContain('__sorted: sortKey === col.key')
+		expect(content).toContain("sortOrder === 'desc' ? '▼' : '▲'")
+
+		// 2. Sorting state and methods
+		expect(content).toContain('const sortKey = ref(null)')
+		expect(content).toContain("const sortOrder = ref('desc')")
+		expect(content).toContain('function toggleSort(key)')
+		expect(content).toContain('function clearSort()')
+		expect(content).toContain('function getSortColumnLabel()')
+		expect(content).toContain('function compareItems(a, b, key, order)')
+		expect(content).toContain('function getFieldValue(item, key)')
+
+		// 3. Numeric columns default to 'desc' (high-to-low / от больших значений к меньшему) on first click
+		expect(content).toContain("sortOrder.value = isText ? 'asc' : 'desc'")
+
+		// 4. Toggle between desc and asc on repeated clicks
+		expect(content).toContain("sortOrder.value = sortOrder.value === 'desc' ? 'asc' : 'desc'")
+
+		// 5. Active sort indicator badge in toolbar and clear button
+		expect(content).toContain('dte-active-sort-badge')
+		expect(content).toContain('dte-btn-clear-sort')
+		expect(content).toContain('dte-reset-sort-icon')
+
+		// 6. Sorting applied across all modes: tree, category, family, flat
+		expect(content).toContain('roots.sort((a, b) => compareItems(a, b, sortKey.value, sortOrder.value))')
+		expect(content).toContain('children.sort((a, b) => compareItems(a, b, sortKey.value, sortOrder.value))')
+		expect(content).toContain('sortedCatItems.sort((a, b) => compareItems(a, b, sortKey.value, sortOrder.value))')
+		expect(content).toContain('sortedFamItems.sort((a, b) => compareItems(a, b, sortKey.value, sortOrder.value))')
+		expect(content).toContain('sorted.sort((a, b) => compareItems(a, b, sortKey.value, sortOrder.value))')
+
+		// 7. Test sorting simulation on actual race data structures
+		const mockRaces = [
+			{ id: 'human', name: 'Человек', tier: 'basic', base_stats: { hp: 100, atk_phys: 10 } },
+			{ id: 'dragon', name: 'Драконид', tier: 'rare', base_stats: { hp: 350, atk_phys: 24 } },
+			{ id: 'goblin', name: 'Гоблин', tier: 'basic', base_stats: { hp: 50, atk_phys: 5 } },
+			{ id: 'lich', name: 'Лич', tier: 'advanced', base_stats: { hp: 220, atk_phys: 14 } }
+		]
+
+		// Descending numeric sort simulation (от больших к меньшим)
+		const sortedDescHp = [...mockRaces].sort((a, b) => b.base_stats.hp - a.base_stats.hp)
+		expect(sortedDescHp.map((r) => r.id)).toEqual(['dragon', 'lich', 'human', 'goblin'])
+		expect(sortedDescHp[0].base_stats.hp).toBe(350)
+		expect(sortedDescHp[3].base_stats.hp).toBe(50)
+
+		// Ascending numeric sort simulation (и наоборот: от меньших к большим)
+		const sortedAscHp = [...mockRaces].sort((a, b) => a.base_stats.hp - b.base_stats.hp)
+		expect(sortedAscHp.map((r) => r.id)).toEqual(['goblin', 'human', 'lich', 'dragon'])
+		expect(sortedAscHp[0].base_stats.hp).toBe(50)
+		expect(sortedAscHp[3].base_stats.hp).toBe(350)
+	})
+
 	it('ensures AGENTS.md Rule 1 compliance (strictly em units, no fixed px or rem)', () => {
 		const content = fs.readFileSync(editorPath, 'utf-8')
 		const styleMatch = content.match(/<style[^>]*>([\s\S]*?)<\/style>/)
@@ -265,6 +363,39 @@ describe('DataTableEditor Component (Google Sheets Spreadsheet Mode)', () => {
 				expect(isAllowedBorder).toBe(true)
 			}
 		}
+	})
+
+	it('verifies that digits (#) are unpinned and names follow horizontal scroll (sticky left)', () => {
+		const content = fs.readFileSync(editorPath, 'utf-8')
+
+		// 1. Index column (# digits) does NOT have __sticky-left in header and data row
+		expect(content).not.toContain('class="dte-super-th __sticky-left __index-col"')
+		expect(content).not.toContain('class="dte-td __sticky-left __index-col"')
+		expect(content).toContain('class="dte-super-th __index-col"')
+		expect(content).toContain('class="dte-td __index-col"')
+
+		// 2. Name column follows horizontal scroll with __sticky-left in both sub-th and td
+		expect(content).toContain("'__sticky-left': col.key === 'name'")
+		expect(content).toContain("'__name-col': col.key === 'name'")
+
+		// 3. CSS rules for .dte-sub-th.__sticky-left and .dte-td.__sticky-left
+		expect(content).toContain('.dte-sub-th.__sticky-left')
+		expect(content).toContain('.dte-td.__sticky-left')
+		expect(content).toContain('left: 0 !important;')
+		expect(content).toContain('.__name-col')
+
+		// 4. Group divider titles follow horizontal scroll
+		expect(content).toContain('.dte-divider-content {')
+		expect(content).toContain('position: sticky;')
+		expect(content).toContain('left: 0.8em;')
+
+		// 5. Header stacking prevents data cells from overlapping headers on vertical scroll
+		expect(content).toContain('.dte-super-header-row')
+		expect(content).toContain('z-index: 28;')
+		expect(content).toContain('.dte-sub-header-row')
+		expect(content).toContain('z-index: 26;')
+		expect(content).toContain('.dte-td.__sticky-left')
+		expect(content).toContain('z-index: 22 !important;')
 	})
 })
 

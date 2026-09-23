@@ -261,7 +261,7 @@ describe('combatStore', () => {
 		expect(testsContent).toContain("launchCombatTester")
 		expect(testsContent).toContain("/test/combat")
 		expect(testsContent).toContain("Пошаговый тактический бой")
-		expect(testsContent).toContain("test-status-badge __ready")
+		expect(testsContent).toContain("__active")
 	})
 
 	it('moveUnit перемещает юнита и выставляет hasMoved = true', () => {

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { useDataEditor } from '../useDataEditor.js'
+import { splitIconEmojis } from '../../utils/treeIcons.js'
 
 describe('Class and Race Grid Tier & Branch Lane Separation', () => {
 	const editor = useDataEditor()
@@ -261,6 +262,49 @@ describe('Class and Race Grid Tier & Branch Lane Separation', () => {
 			// Lead-in must be strictly vertical (same X coordinate cX)
 			expect(d).toContain(`L 250 109`)
 			expect(curveEndY).toBe(119) // 109 + 10 = 119
+		})
+	})
+
+	describe('splitIconEmojis multi-emoji badge parsing', () => {
+		it('handles single emoji without secondary emojis', () => {
+			expect(splitIconEmojis('🦄')).toEqual({ primary: '🦄', secondary: [] })
+			expect(splitIconEmojis('⚔️')).toEqual({ primary: '⚔️', secondary: [] })
+		})
+
+		it('splits dual emojis into centered primary and raised secondary', () => {
+			expect(splitIconEmojis('🦄🪽')).toEqual({ primary: '🦄', secondary: ['🪽'] })
+			expect(splitIconEmojis('🧝👤')).toEqual({ primary: '🧝', secondary: ['👤'] })
+			expect(splitIconEmojis('😈👑')).toEqual({ primary: '😈', secondary: ['👑'] })
+			expect(splitIconEmojis('😈♀️')).toEqual({ primary: '😈', secondary: ['♀️'] })
+			expect(splitIconEmojis('😈♂️')).toEqual({ primary: '😈', secondary: ['♂️'] })
+		})
+
+		it('splits three or more emojis into primary and secondary array', () => {
+			expect(splitIconEmojis('👤🐺🌕')).toEqual({ primary: '👤', secondary: ['🐺', '🌕'] })
+		})
+
+		it('handles edge cases gracefully', () => {
+			expect(splitIconEmojis('')).toEqual({ primary: '', secondary: [] })
+			expect(splitIconEmojis(null)).toEqual({ primary: '', secondary: [] })
+			expect(splitIconEmojis('img/icon.png')).toEqual({ primary: 'img/icon.png', secondary: [] })
+		})
+	})
+
+	describe('tree grid cell top-alignment for multi-line titles', () => {
+		it('ensures ClassRaceTreeCanvas aligns node cells to top so squares remain horizontally aligned', async () => {
+			const fs = await import('fs')
+			const path = await import('path')
+			const canvasContent = fs.readFileSync(
+				path.resolve(__dirname, '../../components/game/dataEditor/ClassRaceTreeCanvas.vue'),
+				'utf-8'
+			)
+
+			// .tree-grid-canvas must align items to start
+			expect(canvasContent).toMatch(/\.tree-grid-canvas\s*\{[^}]*align-items:\s*start;/s)
+			// .tree-grid-cell must align items to flex-start
+			expect(canvasContent).toMatch(/\.tree-grid-cell\s*\{[^}]*align-items:\s*flex-start;/s)
+			// .tree-node-wrapper must have align-self: flex-start
+			expect(canvasContent).toMatch(/\.tree-node-wrapper\s*\{[^}]*align-self:\s*flex-start;/s)
 		})
 	})
 })

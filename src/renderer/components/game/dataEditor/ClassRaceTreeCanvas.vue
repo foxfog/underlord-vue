@@ -136,7 +136,12 @@
 					>
 						<!-- Cluster Title & Category Pill -->
 						<div class="cluster-header">
-							<span class="cluster-root-icon">{{ cluster.rootIcon || '🌳' }}</span>
+							<span class="cluster-root-icon" :class="{ '__has-secondary': getIconParts(cluster.rootIcon).secondary.length > 0 }">
+								<span class="cluster-primary-icon">{{ getIconParts(cluster.rootIcon).primary }}</span>
+								<span v-if="getIconParts(cluster.rootIcon).secondary.length > 0" class="cluster-secondary-icon">
+									<span v-for="(sub, sIdx) in getIconParts(cluster.rootIcon).secondary" :key="sIdx" class="cluster-sub-emoji">{{ sub }}</span>
+								</span>
+							</span>
 							<span class="cluster-root-title">{{ cluster.rootName }}</span>
 							<span class="cluster-badge-count">{{ cluster.totalMembers }}</span>
 						</div>
@@ -155,7 +160,12 @@
 									class="branch-lane-header"
 									:title="tree.rootName"
 								>
-									<span class="branch-lane-icon">{{ tree.rootIcon }}</span>
+									<span class="branch-lane-icon" :class="{ '__has-secondary': getIconParts(tree.rootIcon).secondary.length > 0 }">
+										<span class="branch-primary-icon">{{ getIconParts(tree.rootIcon).primary }}</span>
+										<span v-if="getIconParts(tree.rootIcon).secondary.length > 0" class="branch-secondary-icon">
+											<span v-for="(sub, sIdx) in getIconParts(tree.rootIcon).secondary" :key="sIdx" class="branch-sub-emoji">{{ sub }}</span>
+										</span>
+									</span>
 									<span class="branch-lane-title">{{ tree.rootName }}</span>
 								</div>
 
@@ -206,9 +216,27 @@
 													{{ formatTierShort(node) }}
 												</span>
 
-												<!-- Main Icon in center (large, 1.85em) -->
-												<span class="node-main-icon">
-													{{ node.icon || defaultIcon }}
+												<!-- Main Icon in center (large, 1.85em, with raised secondary emoji) -->
+												<span
+													class="node-main-icon"
+													:class="{ '__has-secondary': getIconParts(node.icon).secondary.length > 0 }"
+												>
+													<span class="node-icon-primary">
+														{{ getIconParts(node.icon).primary }}
+													</span>
+													<span
+														v-if="getIconParts(node.icon).secondary.length > 0"
+														class="node-icon-secondary"
+														:class="{ __multiple: getIconParts(node.icon).secondary.length > 1 }"
+													>
+														<span
+															v-for="(sub, sIdx) in getIconParts(node.icon).secondary"
+															:key="sIdx"
+															class="node-sub-emoji"
+														>
+															{{ sub }}
+														</span>
+													</span>
 												</span>
 
 												<!-- Subclasses counter badge in bottom-right corner (if not assigned) -->
@@ -357,6 +385,7 @@ import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTreePanZoom } from '@/composables/useTreePanZoom'
 import { buildBottomUpConnectorPath, TREE_MARKER_CONFIG } from '@/utils/treeConnectors'
+import { splitIconEmojis } from '@/utils/treeIcons'
 
 const props = defineProps({
 	type: {
@@ -513,6 +542,17 @@ const entityMap = computed(() => {
 	}
 	return map
 })
+
+// Cache for parsed icon emoji parts { primary, secondary }
+const iconPartsCache = new Map()
+
+function getIconParts(iconStr) {
+	const str = iconStr || defaultIcon.value || '🌳'
+	if (iconPartsCache.has(str)) return iconPartsCache.get(str)
+	const parts = splitIconEmojis(str)
+	iconPartsCache.set(str, parts)
+	return parts
+}
 
 // Helper to parse parent ID(s) which can be null, string (single or comma-separated), or array
 function getParentIds(item) {
@@ -1399,6 +1439,25 @@ onBeforeUnmount(() => {
 
 .cluster-root-icon {
 	font-size: 1.2em;
+	display: inline-flex;
+	align-items: center;
+	position: relative;
+	line-height: 1;
+}
+
+.cluster-primary-icon {
+	display: inline-block;
+	line-height: 1;
+}
+
+.cluster-secondary-icon {
+	display: inline-flex;
+	align-items: center;
+	transform: translateY(-0.25em);
+	font-size: 0.65em;
+	line-height: 1;
+	margin-left: 0.08em;
+	filter: drop-shadow(0 0.04em 0.08em rgba(0, 0, 0, 0.6));
 }
 
 .cluster-root-title {
@@ -1451,6 +1510,25 @@ onBeforeUnmount(() => {
 
 .branch-lane-icon {
 	font-size: 1.15em;
+	display: inline-flex;
+	align-items: center;
+	position: relative;
+	line-height: 1;
+}
+
+.branch-primary-icon {
+	display: inline-block;
+	line-height: 1;
+}
+
+.branch-secondary-icon {
+	display: inline-flex;
+	align-items: center;
+	transform: translateY(-0.25em);
+	font-size: 0.65em;
+	line-height: 1;
+	margin-left: 0.08em;
+	filter: drop-shadow(0 0.04em 0.08em rgba(0, 0, 0, 0.6));
 }
 
 .branch-lane-title {
@@ -1464,14 +1542,14 @@ onBeforeUnmount(() => {
 	display: grid;
 	row-gap: 4.5em;
 	column-gap: 1.25em;
-	align-items: center;
+	align-items: start;
 	justify-items: center;
 }
 
 .tree-grid-cell {
 	display: flex;
 	justify-content: center;
-	align-items: center;
+	align-items: flex-start;
 	width: 100%;
 }
 
@@ -1480,6 +1558,7 @@ onBeforeUnmount(() => {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
+	align-self: flex-start;
 	cursor: pointer;
 	position: relative;
 	z-index: 4;
@@ -1548,9 +1627,43 @@ onBeforeUnmount(() => {
 }
 
 .node-main-icon {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	user-select: none;
+	white-space: nowrap;
+	line-height: 1;
+}
+
+.node-icon-primary {
 	font-size: 1.85em;
 	line-height: 1;
-	user-select: none;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.node-icon-secondary {
+	position: relative;
+    top: -1em;
+    margin-left: -0.5em;
+	align-items: center;
+	gap: 0.05em;
+	white-space: nowrap;
+	pointer-events: none;
+	z-index: 2;
+}
+
+.node-sub-emoji {
+	font-size: 1em;
+	line-height: 1;
+	display: inline-block;
+	filter: drop-shadow(0 0.06em 0.12em rgba(0, 0, 0, 0.8));
+}
+
+.node-icon-secondary.__multiple .node-sub-emoji {
+	font-size: 0.82em;
 }
 
 .node-tier-badge {

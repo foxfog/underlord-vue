@@ -76,6 +76,18 @@ export function getSlotDisplayName(slotId) {
 	return opt ? opt.label : slotId
 }
 
+// Helper to parse parent ID(s) which can be null, string (single or comma-separated), or array
+export function parseParentIds(parentId) {
+	if (!parentId) return []
+	if (Array.isArray(parentId)) {
+		return parentId.map((id) => String(id).trim()).filter(Boolean)
+	}
+	if (typeof parentId === 'string') {
+		return parentId.split(',').map((id) => id.trim()).filter(Boolean)
+	}
+	return []
+}
+
 export function useDataEditor() {
 	function setStatus(text, type = 'success', duration = 4000) {
 		if (statusTimeout) clearTimeout(statusTimeout)
@@ -515,8 +527,9 @@ export function useDataEditor() {
 
 	function startCreate(presetData = {}) {
 		const newEntity = { ...createEmptyEntity(activeTab.value), ...presetData }
-		if (newEntity.parent_id && (activeTab.value === 'classes' || activeTab.value === 'races')) {
-			const parent = entities.value[activeTab.value]?.find((e) => e.id === newEntity.parent_id)
+		const pids = parseParentIds(newEntity.parent_id)
+		if (pids.length > 0 && (activeTab.value === 'classes' || activeTab.value === 'races')) {
+			const parent = entities.value[activeTab.value]?.find((e) => pids.includes(e.id))
 			if (parent?.category) {
 				newEntity.category = parent.category
 			}
@@ -723,7 +736,7 @@ export function useDataEditor() {
 		if ((targetType === 'classes' || targetType === 'races') && cleanData.category) {
 			function updateDescendantsCategory(parentId, cat) {
 				for (const item of list) {
-					if (item.parent_id === parentId) {
+					if (parseParentIds(item.parent_id).includes(parentId)) {
 						item.category = cat
 						updateDescendantsCategory(item.id, cat)
 					}
@@ -1189,7 +1202,15 @@ export function useDataEditor() {
 				delete copy.mp_lvl
 			}
 			if (copy.lvl_min !== undefined) copy.lvl_min = Number(copy.lvl_min) || 1
-			if (copy.parent_id === '') copy.parent_id = null
+			if (Array.isArray(copy.parent_id)) {
+				const cleaned = copy.parent_id.map((id) => String(id).trim()).filter(Boolean)
+				copy.parent_id = cleaned.length === 0 ? null : (cleaned.length === 1 ? cleaned[0] : cleaned.join(', '))
+			} else if (typeof copy.parent_id === 'string') {
+				const cleaned = copy.parent_id.split(',').map((id) => id.trim()).filter(Boolean)
+				copy.parent_id = cleaned.length === 0 ? null : (cleaned.length === 1 ? cleaned[0] : cleaned.join(', '))
+			} else {
+				copy.parent_id = null
+			}
 
 			if (copy.grid_tier !== undefined && copy.grid_tier !== null && copy.grid_tier !== '') {
 				const parsedTier = parseInt(copy.grid_tier, 10)
@@ -1204,7 +1225,8 @@ export function useDataEditor() {
 
 			// Auto-inheritance of category from parent if parent_id exists
 			if (copy.parent_id) {
-				const parentItem = entities.value[type]?.find((item) => item.id === copy.parent_id)
+				const pids = parseParentIds(copy.parent_id)
+				const parentItem = entities.value[type]?.find((item) => pids.includes(item.id))
 				if (parentItem?.category) {
 					copy.category = parentItem.category
 				}
@@ -1224,7 +1246,8 @@ export function useDataEditor() {
 				if (copy.family !== undefined) {
 					copy.family = copy.family ? String(copy.family).trim() : null
 				} else if (copy.parent_id) {
-					const parentItem = entities.value.races?.find((item) => item.id === copy.parent_id)
+					const pids = parseParentIds(copy.parent_id)
+					const parentItem = entities.value.races?.find((item) => pids.includes(item.id))
 					if (parentItem?.family) {
 						copy.family = parentItem.family
 					}
@@ -1245,7 +1268,15 @@ export function useDataEditor() {
 		}
 
 		if (type === 'fractions') {
-			if (copy.parent_id === '') copy.parent_id = null
+			if (Array.isArray(copy.parent_id)) {
+				const cleaned = copy.parent_id.map((id) => String(id).trim()).filter(Boolean)
+				copy.parent_id = cleaned.length === 0 ? null : (cleaned.length === 1 ? cleaned[0] : cleaned.join(', '))
+			} else if (typeof copy.parent_id === 'string') {
+				const cleaned = copy.parent_id.split(',').map((id) => id.trim()).filter(Boolean)
+				copy.parent_id = cleaned.length === 0 ? null : (cleaned.length === 1 ? cleaned[0] : cleaned.join(', '))
+			} else {
+				copy.parent_id = null
+			}
 
 			if (copy.grid_tier !== undefined && copy.grid_tier !== null && copy.grid_tier !== '') {
 				const parsedTier = parseInt(copy.grid_tier, 10)
@@ -1259,7 +1290,8 @@ export function useDataEditor() {
 			}
 
 			if (copy.parent_id && !copy.type) {
-				const parentItem = entities.value.fractions?.find((item) => item.id === copy.parent_id)
+				const pids = parseParentIds(copy.parent_id)
+				const parentItem = entities.value.fractions?.find((item) => pids.includes(item.id))
 				if (parentItem?.type) {
 					copy.type = parentItem.type
 				}
@@ -1702,15 +1734,18 @@ export function useDataEditor() {
 
 	function isChildItem(item, type = activeTab.value) {
 		if (!item || !item.parent_id) return false
+		const pids = parseParentIds(item.parent_id)
+		if (pids.length === 0) return false
 		const list = entities.value[type] || []
-		return list.some((p) => p.id === item.parent_id)
+		return list.some((p) => pids.includes(p.id))
 	}
 
 	function getItemDepth(item, type = activeTab.value, visited = new Set()) {
 		if (!item || !item.parent_id || visited.has(item.id)) return 0
 		visited.add(item.id)
 		const list = entities.value[type] || []
-		const parent = list.find((p) => p.id === item.parent_id)
+		const pids = parseParentIds(item.parent_id)
+		const parent = list.find((p) => pids.includes(p.id))
 		if (!parent) return 0
 		return 1 + getItemDepth(parent, type, visited)
 	}
@@ -1718,7 +1753,8 @@ export function useDataEditor() {
 	function getParentEntity(item, type = activeTab.value) {
 		if (!item || !item.parent_id) return null
 		const list = entities.value[type] || []
-		return list.find((p) => p.id === item.parent_id) || null
+		const pids = parseParentIds(item.parent_id)
+		return list.find((p) => pids.includes(p.id)) || null
 	}
 
 	function buildHierarchicalOrder(items) {
@@ -1736,13 +1772,16 @@ export function useDataEditor() {
 		const orphanItems = []
 
 		for (const item of items) {
-			const pid = item.parent_id
-			if (!pid) {
+			const pids = parseParentIds(item.parent_id)
+			if (pids.length === 0) {
 				rootItems.push(item)
-			} else if (itemMap.has(pid)) {
-				childrenMap.get(pid).push(item)
 			} else {
-				orphanItems.push(item)
+				const primaryPid = pids.find((pid) => itemMap.has(pid))
+				if (primaryPid) {
+					childrenMap.get(primaryPid).push(item)
+				} else {
+					orphanItems.push(item)
+				}
 			}
 		}
 
@@ -1786,7 +1825,7 @@ export function useDataEditor() {
 
 		function collect(current) {
 			result.push(current)
-			const children = list.filter((it) => it.parent_id === current.id)
+			const children = list.filter((it) => parseParentIds(it.parent_id).includes(current.id))
 			for (const ch of children) {
 				collect(ch)
 			}
@@ -1808,7 +1847,8 @@ export function useDataEditor() {
 
 		const isChild = isChildItem(item, type)
 		if (isChild) {
-			const siblings = list.filter((it) => it.parent_id === item.parent_id)
+			const primaryPid = parseParentIds(item.parent_id)[0] || null
+			const siblings = list.filter((it) => parseParentIds(it.parent_id)[0] === primaryPid)
 			const siblingIndex = siblings.findIndex((it) => it.id === item.id)
 			return siblingIndex > 0
 		} else {
@@ -1831,7 +1871,8 @@ export function useDataEditor() {
 
 		const isChild = isChildItem(item, type)
 		if (isChild) {
-			const siblings = list.filter((it) => it.parent_id === item.parent_id)
+			const primaryPid = parseParentIds(item.parent_id)[0] || null
+			const siblings = list.filter((it) => parseParentIds(it.parent_id)[0] === primaryPid)
 			const siblingIndex = siblings.findIndex((it) => it.id === item.id)
 			return siblingIndex < siblings.length - 1
 		} else {
@@ -1869,7 +1910,8 @@ export function useDataEditor() {
 		} else {
 			const isChild = isChildItem(item, targetType)
 			if (isChild) {
-				const siblings = list.filter((it) => it.parent_id === item.parent_id)
+				const primaryPid = parseParentIds(item.parent_id)[0] || null
+				const siblings = list.filter((it) => parseParentIds(it.parent_id)[0] === primaryPid)
 				const sIdx = siblings.findIndex((it) => it.id === item.id)
 				if (sIdx <= 0) return false
 				const prevSibling = siblings[sIdx - 1]
@@ -1930,7 +1972,8 @@ export function useDataEditor() {
 		} else {
 			const isChild = isChildItem(item, targetType)
 			if (isChild) {
-				const siblings = list.filter((it) => it.parent_id === item.parent_id)
+				const primaryPid = parseParentIds(item.parent_id)[0] || null
+				const siblings = list.filter((it) => parseParentIds(it.parent_id)[0] === primaryPid)
 				const sIdx = siblings.findIndex((it) => it.id === item.id)
 				if (sIdx < 0 || sIdx >= siblings.length - 1) return false
 				const nextSibling = siblings[sIdx + 1]
@@ -2054,6 +2097,7 @@ export function useDataEditor() {
 		getTypeLabel,
 		getFilePathForType,
 		isHierarchicalType,
+		parseParentIds,
 		isChildItem,
 		getItemDepth,
 		getParentEntity,

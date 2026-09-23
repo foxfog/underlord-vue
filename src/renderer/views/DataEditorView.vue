@@ -948,26 +948,55 @@
 									/>
 								</div>
 
-								<!-- Classes & Races: Parent ID -->
-								<div v-if="['classes', 'races'].includes(activeTab)" class="form-field">
+								<!-- Classes & Races: Multi-Parent Tag Selector -->
+								<div v-if="['classes', 'races'].includes(activeTab)" class="form-field parent-tags-field">
 									<label class="field-label">
-										Родитель (Parent ID)
-										<span class="field-hint">(для иерархии/подклассов)</span>
+										Родители (Parent ID)
+										<span class="field-hint">(для древа и подклассов/подрас)</span>
 									</label>
-									<select
-										v-model="selectedEntity.parent_id"
-										class="editor-select"
-										@change="onParentChange"
-									>
-										<option :value="null">— Нет (базовая сущность) —</option>
-										<option
-											v-for="parentOpt in availableParentOptions"
-											:key="parentOpt.id"
-											:value="parentOpt.id"
-										>
-											{{ parentOpt.name }} ({{ parentOpt.id }})
-										</option>
-									</select>
+									<div class="parent-tags-container">
+										<!-- Selected Parent Chips -->
+										<div class="parent-chips-list">
+											<span
+												v-for="pid in currentParentIds"
+												:key="pid"
+												class="parent-tag-chip"
+											>
+												<span class="parent-chip-icon">{{ defaultIconForTab }}</span>
+												<span class="parent-chip-label">{{ getParentLabel(pid) }}</span>
+												<span class="parent-chip-id">({{ pid }})</span>
+												<button
+													type="button"
+													class="parent-chip-remove"
+													:title="`Удалить предка ${pid}`"
+													@click="removeParent(pid)"
+												>
+													✕
+												</button>
+											</span>
+											<span v-if="currentParentIds.length === 0" class="parent-empty-hint">
+												— Базовая сущность (без родителей) —
+											</span>
+										</div>
+
+										<!-- Add Parent Selector -->
+										<div v-if="unselectedParentOptions.length > 0" class="parent-add-row">
+											<select
+												class="editor-select parent-add-select"
+												value=""
+												@change="onParentSelectOption($event)"
+											>
+												<option value="" disabled selected>➕ Добавить предка из списка...</option>
+												<option
+													v-for="opt in unselectedParentOptions"
+													:key="opt.id"
+													:value="opt.id"
+												>
+													{{ opt.name || opt.id }} ({{ opt.id }})
+												</option>
+											</select>
+										</div>
+									</div>
 								</div>
 
 								<!-- Factions: Type -->
@@ -1472,6 +1501,110 @@
 									</div>
 								</div>
 
+								<!-- RACES: RESISTANCES -->
+								<div class="field-subheading">
+									<span class="fs-icon">🛡️</span>
+									<span>Сопротивления расы (%)</span>
+								</div>
+								<div class="race-resistances-form-grid">
+									<div class="form-field">
+										<label class="field-label">🛡️ Физ. (physical)</label>
+										<input
+											v-model.number="ensureRaceResistances().physical"
+											type="number"
+											step="0.1"
+											min="-100"
+											max="100"
+											class="editor-input"
+											placeholder="0"
+										/>
+									</div>
+									<div class="form-field">
+										<label class="field-label">🌊 Вода (water)</label>
+										<input
+											v-model.number="ensureRaceResistances().water"
+											type="number"
+											step="0.1"
+											min="-100"
+											max="100"
+											class="editor-input"
+											placeholder="0"
+										/>
+									</div>
+									<div class="form-field">
+										<label class="field-label">🔥 Огонь (fire)</label>
+										<input
+											v-model.number="ensureRaceResistances().fire"
+											type="number"
+											step="0.1"
+											min="-100"
+											max="100"
+											class="editor-input"
+											placeholder="0"
+										/>
+									</div>
+									<div class="form-field">
+										<label class="field-label">❄️ Холод (cold)</label>
+										<input
+											v-model.number="ensureRaceResistances().cold"
+											type="number"
+											step="0.1"
+											min="-100"
+											max="100"
+											class="editor-input"
+											placeholder="0"
+										/>
+									</div>
+									<div class="form-field">
+										<label class="field-label">⚡ Молния (lightning)</label>
+										<input
+											v-model.number="ensureRaceResistances().lightning"
+											type="number"
+											step="0.1"
+											min="-100"
+											max="100"
+											class="editor-input"
+											placeholder="0"
+										/>
+									</div>
+									<div class="form-field">
+										<label class="field-label">🧪 Яд (poison)</label>
+										<input
+											v-model.number="ensureRaceResistances().poison"
+											type="number"
+											step="0.1"
+											min="-100"
+											max="100"
+											class="editor-input"
+											placeholder="0"
+										/>
+									</div>
+									<div class="form-field">
+										<label class="field-label">☀️ Свет (holy)</label>
+										<input
+											v-model.number="ensureRaceResistances().holy"
+											type="number"
+											step="0.1"
+											min="-100"
+											max="100"
+											class="editor-input"
+											placeholder="0"
+										/>
+									</div>
+									<div class="form-field">
+										<label class="field-label">🌑 Тьма (dark)</label>
+										<input
+											v-model.number="ensureRaceResistances().dark"
+											type="number"
+											step="0.1"
+											min="-100"
+											max="100"
+											class="editor-input"
+											placeholder="0"
+										/>
+									</div>
+								</div>
+
 								<!-- RACES: ATTRIBUTE CONVERTERS (SCALING) -->
 								<div class="field-subheading">
 									<span class="fs-icon">⚖️</span>
@@ -1643,20 +1776,51 @@
 							<!-- FRACTIONS: PARENT ID & GRID TIER -->
 							<template v-if="activeTab === 'fractions'">
 								<div class="field-row __split">
-									<div class="form-field">
+									<div class="form-field parent-tags-field">
 										<label class="field-label">
 											Вышестоящая организация (Parent Faction)
 										</label>
-										<select v-model="selectedEntity.parent_id" class="editor-select" @change="onParentChange">
-											<option :value="null">— Нет (суверенная фракция) —</option>
-											<option
-												v-for="parentOpt in availableParentOptions"
-												:key="parentOpt.id"
-												:value="parentOpt.id"
-											>
-												{{ parentOpt.name }} ({{ parentOpt.id }})
-											</option>
-										</select>
+										<div class="parent-tags-container">
+											<div class="parent-chips-list">
+												<span
+													v-for="pid in currentParentIds"
+													:key="pid"
+													class="parent-tag-chip"
+												>
+													<span class="parent-chip-icon">🏛️</span>
+													<span class="parent-chip-label">{{ getParentLabel(pid) }}</span>
+													<span class="parent-chip-id">({{ pid }})</span>
+													<button
+														type="button"
+														class="parent-chip-remove"
+														:title="`Удалить вышестоящую организацию ${pid}`"
+														@click="removeParent(pid)"
+													>
+														✕
+													</button>
+												</span>
+												<span v-if="currentParentIds.length === 0" class="parent-empty-hint">
+													— Нет (суверенная фракция) —
+												</span>
+											</div>
+
+											<div v-if="unselectedParentOptions.length > 0" class="parent-add-row">
+												<select
+													class="editor-select parent-add-select"
+													value=""
+													@change="onParentSelectOption($event)"
+												>
+													<option value="" disabled selected>➕ Добавить вышестоящую организацию...</option>
+													<option
+														v-for="opt in unselectedParentOptions"
+														:key="opt.id"
+														:value="opt.id"
+													>
+														{{ opt.name || opt.id }} ({{ opt.id }})
+													</option>
+												</select>
+											</div>
+										</div>
 									</div>
 
 									<div class="form-field">
@@ -2938,6 +3102,7 @@ const {
 	getTypeLabel,
 	getFilePathForType,
 	isHierarchicalType,
+	parseParentIds,
 	isChildItem,
 	getItemDepth,
 	getParentEntity,
@@ -3089,7 +3254,7 @@ async function handleTableSaveBatch() {
 function onTableEntityChange(item, key, val) {
 	if (selectedEntity.value && selectedEntity.value.id === item.id) {
 		// Keep inspector drawer in sync
-		selectedEntity.value = { ...selectedEntity.value, [key]: val }
+		selectedEntity.value = { ...item }
 	}
 }
 
@@ -3119,8 +3284,9 @@ const availableRaceFamilies = computed(() => {
 
 function onParentChange() {
 	if (selectedEntity.value && ['classes', 'races', 'fractions'].includes(activeTab.value)) {
-		if (selectedEntity.value.parent_id) {
-			const parent = entities.value[activeTab.value]?.find((e) => e.id === selectedEntity.value.parent_id)
+		const pids = currentParentIds.value
+		if (pids.length > 0) {
+			const parent = entities.value[activeTab.value]?.find((e) => pids.includes(e.id))
 			if (parent?.category && !selectedEntity.value.category) {
 				selectedEntity.value.category = parent.category
 			}
@@ -3149,7 +3315,16 @@ function ensureRaceBaseStats() {
 	if (bs.crit_chance === undefined) bs.crit_chance = 5
 	if (bs.crit_dmg === undefined) bs.crit_dmg = 50
 	if (bs.res === undefined && bs.resistances !== undefined) bs.res = bs.resistances
+	if (!bs.res || typeof bs.res !== 'object') bs.res = {}
 	return bs
+}
+
+function ensureRaceResistances() {
+	const bs = ensureRaceBaseStats()
+	if (!bs.res || typeof bs.res !== 'object') {
+		bs.res = {}
+	}
+	return bs.res
 }
 
 function ensureRaceConverters() {
@@ -3440,6 +3615,12 @@ function getChildCardStyle(item) {
 
 function getParentLabel(parentId) {
 	if (!parentId) return ''
+	if (Array.isArray(parentId)) {
+		return parentId
+			.map((id) => getParentLabel(id))
+			.filter(Boolean)
+			.join(', ')
+	}
 	if (typeof parentId === 'string' && parentId.includes(',')) {
 		return parentId
 			.split(',')
@@ -3704,6 +3885,49 @@ const availableParentOptions = computed(() => {
 	const selfId = selectedEntity.value?.id
 	return list.filter((item) => item.id !== selfId)
 })
+
+// Current parent IDs array for selectedEntity
+const currentParentIds = computed(() => {
+	if (!selectedEntity.value?.parent_id) return []
+	return parseParentIds(selectedEntity.value.parent_id)
+})
+
+// Options for parent selector (exclude self and already selected parents)
+const unselectedParentOptions = computed(() => {
+	const list = availableParentOptions.value
+	const current = currentParentIds.value
+	return list.filter((item) => !current.includes(item.id))
+})
+
+function addParent(parentId) {
+	if (!selectedEntity.value || !parentId) return
+	const current = [...currentParentIds.value]
+	if (!current.includes(parentId)) {
+		current.push(parentId)
+		updateParentIds(current)
+	}
+}
+
+function removeParent(parentId) {
+	if (!selectedEntity.value || !parentId) return
+	const current = currentParentIds.value.filter((id) => id !== parentId)
+	updateParentIds(current)
+}
+
+function updateParentIds(idsArray) {
+	if (!selectedEntity.value) return
+	const cleaned = idsArray.map((id) => String(id).trim()).filter(Boolean)
+	selectedEntity.value.parent_id = cleaned.length === 0 ? null : (cleaned.length === 1 ? cleaned[0] : cleaned.join(', '))
+	onParentChange()
+}
+
+function onParentSelectOption(e) {
+	const val = e.target?.value
+	if (val) {
+		addParent(val)
+		e.target.value = ''
+	}
+}
 
 // Suggest tags from global registry not currently assigned to selectedEntity
 const availableGlobalTagSuggestions = computed(() => {
@@ -5799,6 +6023,117 @@ function removeSkill(skillId) {
 	font-style: italic;
 }
 
+/* Multi-Parent Tag Selector */
+.parent-tags-field {
+	display: flex;
+	flex-direction: column;
+	gap: 0.35em;
+}
+
+.parent-tags-container {
+	display: flex;
+	flex-direction: column;
+	gap: 0.45em;
+	background: rgba(15, 23, 42, 0.45);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: 0.4em;
+	padding: 0.45em 0.6em;
+}
+
+.parent-chips-list {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.35em;
+	min-height: 1.8em;
+}
+
+.parent-tag-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35em;
+	padding: 0.25em 0.55em;
+	border-radius: 0.35em;
+	font-size: 0.82em;
+	font-family: Kurale, sans-serif;
+	background: rgba(56, 189, 248, 0.15);
+	color: #7dd3fc;
+	border: 1px solid rgba(56, 189, 248, 0.35);
+	box-shadow: 0 0.1em 0.25em rgba(0, 0, 0, 0.2);
+}
+
+.parent-chip-icon {
+	font-size: 0.95em;
+	line-height: 1;
+}
+
+.parent-chip-label {
+	font-weight: 600;
+	color: #e0f2fe;
+}
+
+.parent-chip-id {
+	font-size: 0.85em;
+	color: #94a3b8;
+}
+
+.parent-chip-remove {
+	background: transparent;
+	border: none;
+	color: #fca5a5;
+	cursor: pointer;
+	font-size: 0.85em;
+	padding: 0.1em 0.25em;
+	line-height: 1;
+	border-radius: 0.2em;
+	transition: background 0.15s ease, color 0.15s ease;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.parent-chip-remove:hover {
+	background: rgba(239, 68, 68, 0.3);
+	color: #ef4444;
+}
+
+.parent-empty-hint {
+	font-size: 0.82em;
+	color: #64748b;
+	font-style: italic;
+	padding: 0.2em 0.1em;
+}
+
+.parent-add-row {
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+}
+
+.parent-add-select {
+	width: 100%;
+	font-size: 0.82em;
+	padding: 0.3em 0.6em;
+	border-radius: 0.3em;
+	border: 1px dashed rgba(255, 255, 255, 0.2);
+	background: rgba(255, 255, 255, 0.04);
+	color: #cbd5e1;
+	cursor: pointer;
+	transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.parent-add-select:hover {
+	border-color: rgba(56, 189, 248, 0.5);
+	background: rgba(56, 189, 248, 0.08);
+	color: #f0f9ff;
+}
+
+.parent-add-select:focus {
+	outline: none;
+	border-color: #38bdf8;
+	background: rgba(15, 23, 42, 0.9);
+}
+
 .tag-autocomplete-wrapper {
 	position: relative;
 	width: 100%;
@@ -7515,6 +7850,26 @@ function removeSkill(skillId) {
 @media (max-width: 75em) {
 	.stats-form-grid {
 		grid-template-columns: repeat(2, 1fr);
+	}
+}
+
+/* Race resistances 4-column responsive grid */
+.race-resistances-form-grid {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 0.6em;
+	margin-bottom: 1em;
+}
+
+@media (max-width: 75em) {
+	.race-resistances-form-grid {
+		grid-template-columns: repeat(2, 1fr);
+	}
+}
+
+@media (max-width: 50em) {
+	.race-resistances-form-grid {
+		grid-template-columns: 1fr;
 	}
 }
 

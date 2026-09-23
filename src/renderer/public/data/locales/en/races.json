@@ -295,10 +295,6 @@
     "name": "Pack Leader",
     "description": "A seasoned alpha predator whose furious rush and howl spearhead the pack into relentless onslaughts."
   },
-  "legendary-wolf": {
-    "name": "Legendary Wolf",
-    "description": "A mythical beast of immense size harboring primordial forest power, striking awe through presence alone."
-  },
   "wolf-god": {
     "name": "Wolf God",
     "description": "An immortal divine incarnation of wild nature, venerated as the progenitor of all wolf kind."
@@ -462,5 +458,45 @@
   "kraken": {
     "name": "Kraken",
     "description": "A legendary abyssal monstrosity ruling the oceanic depths and whipping up devastating whirlpools."
+  },
+  "barghest": {
+    "name": "Barghest",
+    "description": ""
+  },
+  "siberian-wolf": {
+    "name": "Siberian Wolf",
+    "description": ""
+  },
+  "moonlight-wolf": {
+    "name": "Moonlight Wolf",
+    "description": ""
+  },
+  "fenrir": {
+    "name": "Fenrir",
+    "description": ""
+  },
+  "hippocampus": {
+    "name": "Hippocampus",
+    "description": ""
+  },
+  "pig": {
+    "name": "Pig",
+    "description": ""
+  },
+  "hog": {
+    "name": "Hog",
+    "description": ""
+  },
+  "magma-slime": {
+    "name": "",
+    "description": ""
+  },
+  "ice-slime": {
+    "name": "",
+    "description": ""
+  },
+  "spark-slime": {
+    "name": "",
+    "description": ""
   }
 }

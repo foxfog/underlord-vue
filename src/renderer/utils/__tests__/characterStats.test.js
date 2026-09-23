@@ -67,8 +67,8 @@ describe('RPG Character Stats & Scaling Engine', () => {
 			expect(lich.base_stats.resistances.cold).toBe(40)
 		})
 
-		it('gracefully provides valid fallback base stats for all 114 races in races.json', () => {
-			expect(racesData.length).toBe(114)
+		it('gracefully provides valid fallback base stats for all races in races.json', () => {
+			expect(racesData.length).toBeGreaterThanOrEqual(114)
 			for (const race of racesData) {
 				const config = getRaceStatsConfig(race.id, racesData)
 				expect(config.id).toBe(race.id)

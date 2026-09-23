@@ -85,6 +85,22 @@
 						<span>➖ Свернуть все</span>
 					</button>
 				</div>
+
+				<!-- Active Sort Badge -->
+				<div v-if="sortKey" class="dte-active-sort-badge">
+					<span class="dte-sort-badge-icon">⚡</span>
+					<span class="dte-sort-badge-text">
+						{{ getSortColumnLabel() }}: <strong>{{ sortOrder === 'desc' ? '▼ макс → мин' : '▲ мин → макс' }}</strong>
+					</span>
+					<button
+						type="button"
+						class="dte-btn-clear-sort"
+						title="Сбросить сортировку к исходному порядку"
+						@click="clearSort"
+					>
+						✕
+					</button>
+				</div>
 			</div>
 
 			<div class="dte-toolbar-right">
@@ -105,6 +121,7 @@
 								<div class="dte-col-presets">
 									<button type="button" class="dte-preset-link" @click="setColPreset('all')">Все</button>
 									<button type="button" class="dte-preset-link" @click="setColPreset('stats')">Статы</button>
+									<button type="button" class="dte-preset-link" @click="setColPreset('resistances')">Резисты</button>
 									<button type="button" class="dte-preset-link" @click="setColPreset('converters')">Скейлы</button>
 									<button type="button" class="dte-preset-link" @click="setColPreset('compact')">Компактно</button>
 								</div>
@@ -186,9 +203,18 @@
 				<thead>
 					<!-- Row 1: Super Header (Functional Groups with Collapsible [-]/[+] buttons) -->
 					<tr class="dte-super-header-row">
-						<!-- Fixed index column header -->
-						<th class="dte-super-th __sticky-left __index-col" rowspan="2">
-							<span class="dte-th-content">#</span>
+						<!-- Fixed index column header (scrolls horizontally with content) -->
+						<th
+							class="dte-super-th __index-col"
+							:class="{ __sortable: Boolean(sortKey) }"
+							rowspan="2"
+							:title="sortKey ? 'Кликните, чтобы сбросить сортировку' : '#'"
+							@click="sortKey ? clearSort() : null"
+						>
+							<div class="dte-index-th-inner">
+								<span class="dte-th-content">#</span>
+								<span v-if="sortKey" class="dte-reset-sort-icon" title="Сбросить сортировку">↺</span>
+							</div>
 						</th>
 
 						<!-- Super header groups -->
@@ -262,20 +288,27 @@
 									:class="[
 										grp.themeClass,
 										col.customClass,
-										{ __sortable: groupingMode === 'flat' }
+										{
+											__sortable: true,
+											__sorted: sortKey === col.key,
+											'__sticky-left': col.key === 'name',
+											'__name-col': col.key === 'name'
+										}
 									]"
 									:style="{ minWidth: col.minWidth || '4.5em' }"
-									@click="groupingMode === 'flat' ? toggleSort(col.key) : null"
+									:title="col.tooltip ? `${col.tooltip} (Клик: сортировка)` : `Сортировка по: ${col.label}`"
+									@click="toggleSort(col.key)"
 								>
 									<div class="dte-sub-th-inner">
-										<span class="dte-col-title" :title="col.tooltip || col.label">
+										<span class="dte-col-title">
 											{{ col.label }}
 										</span>
 										<span
-											v-if="groupingMode === 'flat' && sortKey === col.key"
+											v-if="sortKey === col.key"
 											class="dte-sort-icon"
+											:title="sortOrder === 'desc' ? 'Сортировка: от больших к меньшим' : 'Сортировка: от меньших к большим'"
 										>
-											{{ sortOrder === 'asc' ? '▲' : '▼' }}
+											{{ sortOrder === 'desc' ? '▼' : '▲' }}
 										</span>
 									</div>
 								</th>
@@ -320,8 +353,8 @@
 							}"
 							@click="onRowClick(rowItem.data)"
 						>
-							<!-- # Index Column -->
-							<td class="dte-td __sticky-left __index-col">
+							<!-- # Index Column (scrolls horizontally with content) -->
+							<td class="dte-td __index-col">
 								<span class="dte-row-index">{{ rowItem.displayIndex }}</span>
 							</td>
 
@@ -350,7 +383,9 @@
 												__editing: isCellEditing(rowItem.data.id, col.key),
 												'__cat-humanoid': col.key === 'category' && rowItem.data.category === 'humanoid',
 												'__cat-demi-human': col.key === 'category' && rowItem.data.category === 'demi-human',
-												'__cat-heteromorphic': col.key === 'category' && rowItem.data.category === 'heteromorphic'
+												'__cat-heteromorphic': col.key === 'category' && rowItem.data.category === 'heteromorphic',
+												'__sticky-left': col.key === 'name',
+												'__name-col': col.key === 'name'
 											}
 										]"
 										@click.stop="onCellClick(rowItem.data.id, col.key)"
@@ -365,7 +400,8 @@
 												v-model.number="editCellValue"
 												type="number"
 												:step="col.step || (isPercentStat(col.key) ? 0.1 : (col.key === 'spd' ? 0.05 : 1))"
-												:min="col.min !== undefined ? col.min : 0"
+												:min="col.min !== undefined ? col.min : (col.key.startsWith('res_') ? -100 : 0)"
+												:max="col.max !== undefined ? col.max : undefined"
 												class="dte-inline-input __number"
 												@keydown.enter="commitEditCell(rowItem.data, col)"
 												@keydown.esc="cancelEditCell"
@@ -467,7 +503,16 @@
 
 											<!-- Number columns (formatted) -->
 											<div v-else-if="col.type === 'number'" class="dte-num-cell">
-												<span class="dte-num-val">{{ getColValue(rowItem.data, col) }}</span>
+												<span
+													class="dte-num-val"
+													:class="{
+														'__positive-res': col.key.startsWith('res_') && Number(getRawColValue(rowItem.data, col)) > 0,
+														'__negative-res': col.key.startsWith('res_') && Number(getRawColValue(rowItem.data, col)) < 0,
+														'__zero-res': col.key.startsWith('res_') && Number(getRawColValue(rowItem.data, col)) === 0
+													}"
+												>
+													{{ getColValue(rowItem.data, col) }}
+												</span>
 											</div>
 
 											<!-- Attribute Converter column with multi-stat pills (0 to many parameters) -->
@@ -736,9 +781,9 @@ const editCellValue = ref(null)
 const cellInputRef = ref(null)
 const dirtyItemIds = ref(new Set())
 
-// Sorting for flat mode
-const sortKey = ref('id')
-const sortOrder = ref('asc') // 'asc' | 'desc'
+// Column sorting state (null = natural order, desc = larger to smaller, asc = smaller to larger)
+const sortKey = ref(null)
+const sortOrder = ref('desc') // 'desc' | 'asc'
 
 // Default Icon by type
 const defaultIcon = computed(() => {
@@ -770,6 +815,8 @@ watch(
 		collapsedRowIds.value.clear()
 		collapsedDividers.value.clear()
 		editingCell.value = { itemId: null, colKey: null }
+		sortKey.value = null
+		sortOrder.value = 'desc'
 	},
 	{ immediate: true }
 )
@@ -786,7 +833,7 @@ const columnGroups = computed(() => {
 				themeClass: '__grp-core',
 				columns: [
 					{ key: 'icon', label: 'Иконка', minWidth: '3.2em', type: 'icon' },
-					{ key: 'name', label: 'Название', minWidth: '11em', type: 'text' },
+					{ key: 'name', label: 'Название', minWidth: '12.5em', type: 'text' },
 					{ key: 'id', label: 'ID', minWidth: '8em', type: 'text' },
 					{ key: 'category', label: 'Категория', minWidth: '9em', type: 'select' },
 					...(props.type === 'races' ? [{ key: 'family', label: 'Семейство', minWidth: '8.5em', type: 'text' }] : [])
@@ -819,6 +866,21 @@ const columnGroups = computed(() => {
 					{ key: 'crit_dmg', label: 'Крит. Урон %', minWidth: '5.5em', type: 'number', step: 0.1, statPath: 'base_stats.crit_dmg', tooltip: 'Процент критического урона (%)' }
 				]
 			},
+			...(props.type === 'races' ? [{
+				id: 'resistances',
+				label: 'Сопротивления (Resistances)',
+				themeClass: '__grp-resistances',
+				columns: [
+					{ key: 'res_physical', label: 'Физ. %', minWidth: '4.8em', type: 'number', step: 0.1, min: -100, max: 100, statPath: 'base_stats.res.physical', tooltip: 'Сопротивление физическому урону (%)' },
+					{ key: 'res_water', label: 'Вода %', minWidth: '4.8em', type: 'number', step: 0.1, min: -100, max: 100, statPath: 'base_stats.res.water', tooltip: 'Сопротивление воде (%)' },
+					{ key: 'res_fire', label: 'Огонь %', minWidth: '4.8em', type: 'number', step: 0.1, min: -100, max: 100, statPath: 'base_stats.res.fire', tooltip: 'Сопротивление огню (%)' },
+					{ key: 'res_cold', label: 'Холод %', minWidth: '4.8em', type: 'number', step: 0.1, min: -100, max: 100, statPath: 'base_stats.res.cold', tooltip: 'Сопротивление холоду (%)' },
+					{ key: 'res_lightning', label: 'Молния %', minWidth: '5.2em', type: 'number', step: 0.1, min: -100, max: 100, statPath: 'base_stats.res.lightning', tooltip: 'Сопротивление молнии (%)' },
+					{ key: 'res_poison', label: 'Яд %', minWidth: '4.8em', type: 'number', step: 0.1, min: -100, max: 100, statPath: 'base_stats.res.poison', tooltip: 'Сопротивление яду (%)' },
+					{ key: 'res_holy', label: 'Свет %', minWidth: '4.8em', type: 'number', step: 0.1, min: -100, max: 100, statPath: 'base_stats.res.holy', tooltip: 'Сопротивление свету (%)' },
+					{ key: 'res_dark', label: 'Тьма %', minWidth: '4.8em', type: 'number', step: 0.1, min: -100, max: 100, statPath: 'base_stats.res.dark', tooltip: 'Сопротивление тьме (%)' }
+				]
+			}] : []),
 			{
 				id: 'converters',
 				label: 'Скейлы характеристик (STR/END/AGI/INT)',
@@ -850,7 +912,7 @@ const columnGroups = computed(() => {
 				themeClass: '__grp-core',
 				columns: [
 					{ key: 'icon', label: 'Иконка', minWidth: '3.2em', type: 'icon' },
-					{ key: 'name', label: 'Название', minWidth: '12em', type: 'text' },
+					{ key: 'name', label: 'Название', minWidth: '12.5em', type: 'text' },
 					{ key: 'id', label: 'ID', minWidth: '9em', type: 'text' },
 					{ key: 'type', label: 'Тип', minWidth: '8.5em', type: 'select' }
 				]
@@ -876,7 +938,7 @@ const columnGroups = computed(() => {
 			themeClass: '__grp-core',
 			columns: [
 				{ key: 'icon', label: 'Иконка', minWidth: '3.2em', type: 'icon' },
-				{ key: 'name', label: 'Название', minWidth: '12em', type: 'text' },
+				{ key: 'name', label: 'Название', minWidth: '12.5em', type: 'text' },
 				{ key: 'id', label: 'ID', minWidth: '9em', type: 'text' },
 				{ key: 'type', label: 'Тип', minWidth: '8em', type: 'select' },
 				{ key: 'rarity', label: 'Редкость', minWidth: '8em', type: 'select' }
@@ -990,7 +1052,13 @@ function setColPreset(preset) {
 	hiddenColKeys.value.clear()
 	if (preset === 'stats') {
 		for (const col of allColumns.value) {
-			if (!['icon', 'name', 'hp', 'mp', 'atk_phys', 'def_phys', 'atk_mag', 'def_mag', 'spd', 'init'].includes(col.key)) {
+			if (!['icon', 'name', 'hp', 'mp', 'atk_phys', 'def_phys', 'atk_mag', 'def_mag', 'spd', 'init', 'crit_chance', 'crit_dmg'].includes(col.key)) {
+				hiddenColKeys.value.add(col.key)
+			}
+		}
+	} else if (preset === 'resistances') {
+		for (const col of allColumns.value) {
+			if (!['icon', 'name', 'res_physical', 'res_water', 'res_fire', 'res_cold', 'res_lightning', 'res_poison', 'res_holy', 'res_dark'].includes(col.key)) {
 				hiddenColKeys.value.add(col.key)
 			}
 		}
@@ -1002,7 +1070,7 @@ function setColPreset(preset) {
 		}
 	} else if (preset === 'compact') {
 		for (const col of allColumns.value) {
-			if (['converters', 'progression'].some((grpId) => {
+			if (['converters', 'progression', 'resistances'].some((grpId) => {
 				const grp = columnGroups.value.find((g) => g.id === grpId)
 				return grp?.columns.some((c) => c.key === col.key)
 			})) {
@@ -1086,10 +1154,21 @@ function buildTreeRows(items) {
 
 	const roots = []
 	for (const it of items) {
-		if (it.parent_id && itemMap.has(it.parent_id)) {
-			childrenMap.get(it.parent_id).push(it)
+		const pids = typeof it.parent_id === 'string'
+			? it.parent_id.split(',').map((s) => s.trim()).filter(Boolean)
+			: (Array.isArray(it.parent_id) ? it.parent_id : (it.parent_id ? [it.parent_id] : []))
+		const primaryPid = pids.find((p) => itemMap.has(p))
+		if (primaryPid) {
+			childrenMap.get(primaryPid).push(it)
 		} else {
 			roots.push(it)
+		}
+	}
+
+	if (sortKey.value) {
+		roots.sort((a, b) => compareItems(a, b, sortKey.value, sortOrder.value))
+		for (const [_, children] of childrenMap.entries()) {
+			children.sort((a, b) => compareItems(a, b, sortKey.value, sortOrder.value))
 		}
 	}
 
@@ -1148,7 +1227,11 @@ function buildCategoryRows(items) {
 		})
 
 		if (!isCollapsed) {
-			for (const item of catItems) {
+			const sortedCatItems = [...catItems]
+			if (sortKey.value) {
+				sortedCatItems.sort((a, b) => compareItems(a, b, sortKey.value, sortOrder.value))
+			}
+			for (const item of sortedCatItems) {
 				rows.push({
 					rowKey: 'cat-row-' + item.id,
 					data: item,
@@ -1189,7 +1272,11 @@ function buildFamilyRows(items) {
 		})
 
 		if (!isCollapsed) {
-			for (const item of famItems) {
+			const sortedFamItems = [...famItems]
+			if (sortKey.value) {
+				sortedFamItems.sort((a, b) => compareItems(a, b, sortKey.value, sortOrder.value))
+			}
+			for (const item of sortedFamItems) {
 				rows.push({
 					rowKey: 'fam-row-' + item.id,
 					data: item,
@@ -1210,18 +1297,7 @@ function buildFamilyRows(items) {
 function buildFlatRows(items) {
 	const sorted = [...items]
 	if (sortKey.value) {
-		sorted.sort((a, b) => {
-			let valA = getFieldValue(a, sortKey.value)
-			let valB = getFieldValue(b, sortKey.value)
-
-			if (typeof valA === 'number' && typeof valB === 'number') {
-				return sortOrder.value === 'asc' ? valA - valB : valB - valA
-			}
-
-			valA = String(valA || '').toLowerCase()
-			valB = String(valB || '').toLowerCase()
-			return sortOrder.value === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA)
-		})
+		sorted.sort((a, b) => compareItems(a, b, sortKey.value, sortOrder.value))
 	}
 
 	return sorted.map((item, idx) => ({
@@ -1282,11 +1358,25 @@ function collapseAllRows() {
 
 function toggleSort(key) {
 	if (sortKey.value === key) {
-		sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
+		sortOrder.value = sortOrder.value === 'desc' ? 'asc' : 'desc'
 	} else {
 		sortKey.value = key
-		sortOrder.value = 'asc'
+		const col = allColumns.value.find((c) => c.key === key)
+		const isText = col?.type === 'text' || col?.type === 'icon' || col?.type === 'select'
+		// For text columns start with A-Z ('asc'), for stats and numbers start with high-to-low ('desc')
+		sortOrder.value = isText ? 'asc' : 'desc'
 	}
+}
+
+function clearSort() {
+	sortKey.value = null
+	sortOrder.value = 'desc'
+}
+
+function getSortColumnLabel() {
+	if (!sortKey.value) return ''
+	const col = allColumns.value.find((c) => c.key === sortKey.value)
+	return col ? col.label : sortKey.value
 }
 
 // =========================================================================
@@ -1301,6 +1391,16 @@ function getDisplayName(item) {
 
 function getParentName(parentId) {
 	if (!parentId) return ''
+	if (Array.isArray(parentId)) {
+		return parentId.map((id) => getParentName(id)).filter(Boolean).join(', ')
+	}
+	if (typeof parentId === 'string' && parentId.includes(',')) {
+		return parentId
+			.split(',')
+			.map((id) => getParentName(id.trim()))
+			.filter(Boolean)
+			.join(', ')
+	}
 	const parent = props.items.find((it) => it.id === parentId)
 	return parent ? getDisplayName(parent) : parentId
 }
@@ -1349,13 +1449,15 @@ function isPercentStat(key) {
 	if (!key) return false
 	const k = String(key).toLowerCase()
 	return k.startsWith('res.') ||
+		k.startsWith('res_') ||
+		k.startsWith('res') ||
+		k.includes('resistance') ||
 		k === 'crit_chance' ||
 		k === 'crit_dmg' ||
 		k === 'crit_rate' ||
 		k === 'crit_damage' ||
 		k.includes('percent') ||
-		k.includes('pct') ||
-		k.includes('res')
+		k.includes('pct')
 }
 
 // Available combat stats and resistances for converter scalings
@@ -1371,6 +1473,7 @@ const availableConverterStats = [
 	{ key: 'crit_chance', label: 'Шанс крит. урона (%)', icon: '🎯', isPercent: true },
 	{ key: 'crit_dmg', label: 'Крит. урон (%)', icon: '💥', isPercent: true },
 	{ key: 'res.physical', label: 'Физ. Сопротивление (%)', icon: '🛡️', isPercent: true },
+	{ key: 'res.water', label: 'Сопр. Вода (%)', icon: '🌊', isPercent: true },
 	{ key: 'res.fire', label: 'Сопр. Огонь (%)', icon: '🔥', isPercent: true },
 	{ key: 'res.cold', label: 'Сопр. Холод (%)', icon: '❄️', isPercent: true },
 	{ key: 'res.lightning', label: 'Сопр. Молния (%)', icon: '⚡', isPercent: true },
@@ -1392,6 +1495,7 @@ function getStatDisplayMeta(statKey) {
 		crit_chance: { label: 'Крит.Шанс', icon: '🎯', theme: '__crit_chance', isPercent: true },
 		crit_dmg: { label: 'Крит.Урон', icon: '💥', theme: '__crit_dmg', isPercent: true },
 		'res.physical': { label: 'Физ.Сопр', icon: '🛡️', theme: '__res', isPercent: true },
+		'res.water': { label: 'Вода', icon: '🌊', theme: '__res', isPercent: true },
 		'res.fire': { label: 'Огонь', icon: '🔥', theme: '__res', isPercent: true },
 		'res.cold': { label: 'Холод', icon: '❄️', theme: '__res', isPercent: true },
 		'res.lightning': { label: 'Молния', icon: '⚡', theme: '__res', isPercent: true },
@@ -1541,15 +1645,119 @@ function applyConverterModal() {
 
 function getFieldValue(item, key) {
 	if (!item) return ''
+	if (key === 'name') {
+		return getDisplayName(item)
+	}
+	if (key === 'parent_id') {
+		return getParentName(item.parent_id) || item.parent_id || ''
+	}
+	if (key === 'tier') {
+		if (item.tierNum !== undefined && item.tierNum !== null && !isNaN(Number(item.tierNum))) {
+			return Number(item.tierNum)
+		}
+		if (typeof item.tier === 'number') return item.tier
+		const tierMap = {
+			basic: 1,
+			advanced: 2,
+			rare: 3,
+			epic: 4,
+			legendary: 5,
+			mythical: 6
+		}
+		if (typeof item.tier === 'string' && tierMap[item.tier.toLowerCase()]) {
+			return tierMap[item.tier.toLowerCase()]
+		}
+		const num = Number(item.tier)
+		return isNaN(num) ? String(item.tier || '') : num
+	}
 	if (key.startsWith('conv_')) {
 		const attr = key.replace('conv_', '')
 		const entries = getConverterEntries(item, attr)
-		return entries.length
+		if (!entries.length) return 0
+		const sum = entries.reduce((acc, e) => acc + (Number(e.val) || 0), 0)
+		return entries.length * 1000 + sum
+	}
+	if (key.startsWith('res_')) {
+		const resKey = key.replace('res_', '')
+		const val = item.base_stats?.res?.[resKey] ?? item.base_stats?.resistances?.[resKey] ?? 0
+		return Number(val) || 0
 	}
 	if (['hp', 'mp', 'atk_phys', 'def_phys', 'atk_mag', 'def_mag', 'spd', 'init', 'crit_chance', 'crit_dmg'].includes(key)) {
-		return item.base_stats?.[key] ?? (key === 'crit_chance' ? 5 : (key === 'crit_dmg' ? 50 : 0))
+		const val = item.base_stats?.[key]
+		if (val !== undefined && val !== null && val !== '') {
+			return Number(val)
+		}
+		if (key === 'crit_chance') return 5
+		if (key === 'crit_dmg') return 50
+		return 0
 	}
-	return item[key]
+	const col = allColumns.value.find((c) => c.key === key)
+	if (col?.statPath) {
+		const raw = getRawColValue(item, col)
+		return col.type === 'number' ? (Number(raw) || 0) : raw
+	}
+	if (col?.type === 'number' && item[key] !== undefined) {
+		return Number(item[key]) || 0
+	}
+	return item[key] ?? ''
+}
+
+function compareItems(a, b, key, order) {
+	if (!a && !b) return 0
+	if (!a) return 1
+	if (!b) return -1
+
+	let valA = getFieldValue(a, key)
+	let valB = getFieldValue(b, key)
+
+	const isNumA = typeof valA === 'number' && !isNaN(valA)
+	const isNumB = typeof valB === 'number' && !isNaN(valB)
+
+	if (isNumA && isNumB) {
+		if (valA !== valB) {
+			return order === 'desc' ? valB - valA : valA - valB
+		}
+		// Tie-breaker: sort by display name ascending
+		const nameA = getDisplayName(a)
+		const nameB = getDisplayName(b)
+		return nameA.localeCompare(nameB, 'ru', { sensitivity: 'base' })
+	}
+
+	// If one is number and other is not, numbers come first
+	if (isNumA !== isNumB) {
+		return isNumA ? -1 : 1
+	}
+
+	const strA = String(valA ?? '').toLowerCase()
+	const strB = String(valB ?? '').toLowerCase()
+	const cmp = strA.localeCompare(strB, 'ru', { numeric: true, sensitivity: 'base' })
+	if (cmp !== 0) {
+		return order === 'desc' ? -cmp : cmp
+	}
+	return (a.id || '').localeCompare(b.id || '')
+}
+
+function getRawColValue(item, col) {
+	if (!item || !col) return ''
+	if (col.statPath) {
+		const parts = col.statPath.split('.')
+		let curr = item
+		for (let i = 0; i < parts.length; i++) {
+			if (curr === undefined || curr === null) return 0
+			const p = parts[i]
+			// Support canonical 'res' and legacy 'resistances'
+			if (p === 'res' && curr.res === undefined && curr.resistances !== undefined) {
+				curr = curr.resistances
+			} else {
+				curr = curr[p]
+			}
+		}
+		if (curr !== undefined && curr !== null) {
+			return curr
+		}
+		return 0
+	}
+	return item[col.key]
 }
 
 function getColValue(item, col) {
@@ -1557,19 +1765,21 @@ function getColValue(item, col) {
 		const entries = getConverterEntries(item, col.attrKey)
 		return entries.map(e => `+${e.val}${e.meta.isPercent ? '%' : ''} ${e.meta.label}`).join(', ')
 	}
+	const raw = getRawColValue(item, col)
 	if (col.statPath) {
-		const parts = col.statPath.split('.')
-		let curr = item
-		for (const p of parts) {
-			if (!curr) return ''
-			curr = curr[p]
-		}
-		if (curr !== undefined) {
-			return isPercentStat(col.key) ? `${curr}%` : curr
+		if (raw !== undefined && raw !== null && raw !== '') {
+			if (isPercentStat(col.key)) {
+				const num = Number(raw)
+				if (col.key.startsWith('res_') && num > 0) {
+					return `+${num}%`
+				}
+				return `${raw}%`
+			}
+			return raw
 		}
 		return isPercentStat(col.key) ? '0%' : '0'
 	}
-	return item[col.key]
+	return raw ?? ''
 }
 
 function getSelectOptions(col, item) {
@@ -1676,7 +1886,7 @@ function startEditCell(item, col) {
 	}
 	editingCell.value = { itemId: item.id, colKey: col.key }
 
-	let val = getColValue(item, col)
+	let val = getRawColValue(item, col)
 	if (col.type === 'number') {
 		val = Number(val) || 0
 	}
@@ -1698,13 +1908,16 @@ function startEditCell(item, col) {
 function commitEditCell(item, col) {
 	if (!editingCell.value.itemId) return
 
-	const oldVal = getColValue(item, col)
+	const oldVal = getRawColValue(item, col)
 	let newVal = editCellValue.value
 
 	if (col.type === 'number') {
 		newVal = Number(newVal) || 0
 		if (col.min !== undefined && newVal < col.min) {
 			newVal = col.min
+		}
+		if (col.max !== undefined && newVal > col.max) {
+			newVal = col.max
 		}
 	}
 
@@ -1714,7 +1927,9 @@ function commitEditCell(item, col) {
 			const parts = col.statPath.split('.')
 			let curr = item
 			for (let i = 0; i < parts.length - 1; i++) {
-				if (!curr[parts[i]]) curr[parts[i]] = {}
+				if (!curr[parts[i]] || typeof curr[parts[i]] !== 'object') {
+					curr[parts[i]] = {}
+				}
 				curr = curr[parts[i]]
 			}
 			curr[parts[parts.length - 1]] = newVal
@@ -1855,6 +2070,43 @@ function handleSaveBatch() {
 .dte-fold-actions {
 	display: flex;
 	gap: 0.3em;
+}
+
+.dte-active-sort-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35em;
+	background: rgba(56, 189, 248, 0.12);
+	border: 1px solid rgba(56, 189, 248, 0.35);
+	border-radius: 0.3em;
+	padding: 0.2em 0.5em;
+	font-size: 0.75em;
+	color: #7dd3fc;
+	white-space: nowrap;
+}
+
+.dte-sort-badge-icon {
+	font-size: 0.85em;
+}
+
+.dte-sort-badge-text strong {
+	color: #38bdf8;
+}
+
+.dte-btn-clear-sort {
+	background: none;
+	border: none;
+	color: #94a3b8;
+	font-size: 0.85em;
+	cursor: pointer;
+	padding: 0 0.15em;
+	line-height: 1;
+	border-radius: 0.15em;
+	transition: color 0.15s;
+}
+
+.dte-btn-clear-sort:hover {
+	color: #ef4444;
 }
 
 .dte-small-btn {
@@ -2018,11 +2270,14 @@ function handleSaveBatch() {
 .dte-super-header-row {
 	position: sticky;
 	top: 0;
-	z-index: 20;
+	z-index: 28;
 	background: #000000;
 }
 
 .dte-super-th {
+	position: sticky;
+	top: 0;
+	z-index: 28;
 	background: #000000;
 	color: #ffffff;
 	font-weight: 700;
@@ -2072,11 +2327,14 @@ function handleSaveBatch() {
 .dte-sub-header-row {
 	position: sticky;
 	top: 2.1em; /* Position under super header */
-	z-index: 19;
+	z-index: 26;
 	background: #090d16;
 }
 
 .dte-sub-th {
+	position: sticky;
+	top: 2.1em;
+	z-index: 26;
 	background: #090d16;
 	color: #cbd5e1;
 	font-weight: 600;
@@ -2089,11 +2347,21 @@ function handleSaveBatch() {
 
 .dte-sub-th.__sortable {
 	cursor: pointer;
+	user-select: none;
 }
 
 .dte-sub-th.__sortable:hover {
 	background: #151d2f;
 	color: #fff;
+}
+
+.dte-sub-th.__sorted {
+	background: rgba(56, 189, 248, 0.12);
+	color: #38bdf8;
+}
+
+.dte-sub-th.__sorted:hover {
+	background: rgba(56, 189, 248, 0.22);
 }
 
 .dte-sub-th-inner {
@@ -2105,29 +2373,64 @@ function handleSaveBatch() {
 
 .dte-sort-icon {
 	color: #38bdf8;
-	font-size: 0.7em;
+	font-size: 0.75em;
+	font-weight: 700;
+	margin-left: 0.25em;
+}
+
+.dte-index-th-inner {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.25em;
+}
+
+.dte-reset-sort-icon {
+	font-size: 0.8em;
+	color: #38bdf8;
+	line-height: 1;
 }
 
 /* Sticky Columns */
 .__sticky-left {
 	position: sticky !important;
 	left: 0 !important;
-	z-index: 25;
+	z-index: 22;
 	background: #090d16;
 }
 
 .__sticky-right {
 	position: sticky !important;
 	right: 0 !important;
-	z-index: 25;
+	z-index: 22;
 	background: #090d16;
 	box-shadow: -0.25em 0 0.5em rgba(0, 0, 0, 0.4);
 }
 
 .dte-super-th.__sticky-left,
 .dte-super-th.__sticky-right {
+	position: sticky !important;
+	top: 0 !important;
 	z-index: 35 !important;
 	background: #000000 !important;
+}
+
+.dte-sub-th.__sticky-left {
+	position: sticky !important;
+	left: 0 !important;
+	top: 2.1em !important;
+	z-index: 35 !important;
+	background: #090d16 !important;
+	box-shadow: 0.25em 0 0.5em rgba(0, 0, 0, 0.4);
+	border-right: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.dte-sub-th.__sticky-left:hover {
+	background: #151d2f !important;
+}
+
+.dte-sub-th.__sticky-left.__sorted {
+	background: #0e1e38 !important;
 }
 
 .dte-td.__sticky-left,
@@ -2139,6 +2442,8 @@ function handleSaveBatch() {
 
 .dte-td.__sticky-left {
 	left: 0 !important;
+	box-shadow: 0.25em 0 0.5em rgba(0, 0, 0, 0.4);
+	border-right: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .dte-td.__sticky-right {
@@ -2161,6 +2466,11 @@ function handleSaveBatch() {
 	min-width: 2.8em;
 	text-align: center;
 	border-right: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.__name-col {
+	min-width: 12.5em;
+	text-align: left;
 }
 
 .__actions-col {
@@ -2217,8 +2527,24 @@ function handleSaveBatch() {
 	color: #93c5fd !important;
 }
 
+.__grp-resistances {
+	background-color: rgba(16, 185, 129, 0.06) !important;
+	border-color: rgba(16, 185, 129, 0.2) !important;
+}
+
+.dte-super-th.__grp-resistances {
+	background-color: #062d22 !important;
+	color: #34d399 !important;
+}
+
+.dte-sub-th.__grp-resistances {
+	background-color: #08382b !important;
+	color: #6ee7b7 !important;
+}
+
 .__grp-converters {
 	background-color: rgba(168, 85, 247, 0.06) !important;
+	min-width: 20em;
 }
 
 .dte-super-th.__grp-converters {
@@ -2441,6 +2767,21 @@ function handleSaveBatch() {
 	font-weight: 500;
 }
 
+.dte-num-val.__positive-res {
+	color: #34d399;
+	font-weight: 600;
+}
+
+.dte-num-val.__negative-res {
+	color: #f87171;
+	font-weight: 600;
+}
+
+.dte-num-val.__zero-res {
+	color: #64748b;
+	opacity: 0.65;
+}
+
 .dte-actions-wrap {
 	display: flex;
 	align-items: center;
@@ -2481,9 +2822,11 @@ function handleSaveBatch() {
 }
 
 .dte-divider-content {
-	display: flex;
+	display: inline-flex;
 	align-items: center;
 	gap: 0.5em;
+	position: sticky;
+	left: 0.8em;
 }
 
 .dte-divider-toggle-btn {

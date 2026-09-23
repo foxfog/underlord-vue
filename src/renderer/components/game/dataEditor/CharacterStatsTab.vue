@@ -422,7 +422,14 @@ function getConverterDisplay(attrId) {
 	const conv = convs[attrId] || convs[attrId === 'str' ? 'strength' : attrId === 'end' ? 'endurance' : attrId === 'agi' ? 'agility' : attrId === 'int' ? 'intelligence' : attrId] || {}
 	const res = {}
 	for (const [k, v] of Object.entries(conv)) {
-		if (k === 'resistances' || k === 'res') continue
+		if (k === 'resistances' || k === 'res') {
+			if (typeof v === 'object' && v !== null) {
+				for (const [resK, resV] of Object.entries(v)) {
+					if (resV > 0) res[`res.${resK}`] = resV
+				}
+			}
+			continue
+		}
 		if (v > 0) res[k] = v
 	}
 	return res
@@ -443,7 +450,15 @@ function formatStatName(statKey) {
 		crit_chance: 'Крит.Шанс',
 		crit_rate: 'Крит.Шанс',
 		crit_dmg: 'Крит.Урон',
-		crit_damage: 'Крит.Урон'
+		crit_damage: 'Крит.Урон',
+		'res.physical': 'Физ.Сопр',
+		'res.water': 'Сопр.Вода',
+		'res.fire': 'Сопр.Огонь',
+		'res.cold': 'Сопр.Холод',
+		'res.lightning': 'Сопр.Молния',
+		'res.poison': 'Сопр.Яд',
+		'res.holy': 'Сопр.Свет',
+		'res.dark': 'Сопр.Тьма'
 	}
 	return map[statKey] || statKey
 }
@@ -451,11 +466,13 @@ function formatStatName(statKey) {
 function formatResName(resKey) {
 	const map = {
 		physical: 'Физический',
-		poison: 'Яд',
-		dark: 'Тьма',
-		holy: 'Свет',
+		water: 'Вода',
 		fire: 'Огонь',
 		cold: 'Холод',
+		lightning: 'Молния',
+		poison: 'Яд',
+		holy: 'Свет',
+		dark: 'Тьма',
 		nature: 'Природа'
 	}
 	return map[resKey] || resKey

@@ -1,55 +1,57 @@
 <template>
-	<div class="page-content">
-		<Transition name="fade" mode="out-in">
-			<!-- Main menu content -->
-			<HomeContent v-if="currentView === 'main-menu'" key="main-menu" />
+	<div class="dynamic-content-area">
+		<!-- Static Header Container (fixed at the top, does not scroll with page content) -->
+		<header v-if="headerTitle" class="page-header">
+			<div class="page-title">{{ headerTitle }}</div>
+		</header>
 
-			<!-- Settings content -->
-			<div v-else-if="currentView === 'settings'" key="settings" class="settings-wrapper">
-				<div class="page-header">
-					<div class="page-title">{{ $t('mainmenu.settings') }}</div>
-				</div>
-				<SettingsContent
-					ref="settingsContentRef"
-					@saved="onSettingsSaved"
-					@reset="onSettingsReset"
-					@dirty-change="onSettingsDirtyChange"
-				/>
-			</div>
-			<!-- Saves content (visual placeholder) -->
-			<div v-else-if="currentView === 'saves'" key="saves" class="saves-wrapper">
-				<div class="page-header">
-					<div class="page-title">{{ $t('mainmenu.save_load') }}</div>
-				</div>
-				<SavesContent
-					:in-game="inGameContext"
-					:initial-tab="savesInitialTab"
-					@load-request="(data) => emit('load-request', data)"
-					@save-request="(data) => emit('save-request', data)"
-					@tab-change="onSavesTabChange"
-				/>
-			</div>
+		<!-- Scrollable Page Content Container -->
+		<div class="page-content">
+			<Transition name="fade" mode="out-in">
+				<!-- Main menu content -->
+				<HomeContent v-if="currentView === 'main-menu'" key="main-menu" />
 
-			<!-- Tests content -->
-			<div v-else-if="currentView === 'tests'" key="tests" class="tests-wrapper">
-				<div class="page-header">
-					<div class="page-title">{{ $t('mainmenu.test') || 'Тесты' }}</div>
+				<!-- Settings content -->
+				<div v-else-if="currentView === 'settings'" key="settings" class="settings-wrapper">
+					<SettingsContent
+						ref="settingsContentRef"
+						@saved="onSettingsSaved"
+						@reset="onSettingsReset"
+						@dirty-change="onSettingsDirtyChange"
+					/>
 				</div>
-				<TestsContent />
-			</div>
-		</Transition>
+				<!-- Saves content (visual placeholder) -->
+				<div v-else-if="currentView === 'saves'" key="saves" class="saves-wrapper">
+					<SavesContent
+						:in-game="inGameContext"
+						:initial-tab="savesInitialTab"
+						@load-request="(data) => emit('load-request', data)"
+						@save-request="(data) => emit('save-request', data)"
+						@tab-change="onSavesTabChange"
+					/>
+				</div>
 
-		<!-- Additional content can be added here -->
-		<slot></slot>
+				<!-- Tests content -->
+				<div v-else-if="currentView === 'tests'" key="tests" class="tests-wrapper">
+					<TestsContent />
+				</div>
+			</Transition>
+
+			<!-- Additional content can be added here -->
+			<slot></slot>
+		</div>
 	</div>
 </template>
 
 <script setup>
-import { watch, ref } from 'vue'
+import { computed, watch, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import HomeContent from '@/components/HomeContent.vue'
 import SettingsContent from '@/components/settings/SettingsContent.vue'
 import SavesContent from '@/components/saves/SavesContent.vue'
 import TestsContent from '@/components/tests/TestsContent.vue'
+
+const { t } = useI18n()
 
 const props = defineProps({
 	currentView: {
@@ -61,6 +63,19 @@ const props = defineProps({
 		type: String,
 		default: 'load',
 		validator: (val) => ['load', 'save'].includes(val)
+	}
+})
+
+const headerTitle = computed(() => {
+	switch (props.currentView) {
+		case 'settings':
+			return t('mainmenu.settings')
+		case 'saves':
+			return t('mainmenu.save_load')
+		case 'tests':
+			return t('mainmenu.test') || 'Тесты'
+		default:
+			return null
 	}
 })
 

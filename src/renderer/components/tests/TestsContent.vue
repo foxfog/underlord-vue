@@ -1,203 +1,37 @@
 <template>
 	<div class="tests-content">
 		<div class="tests-grid">
-			<!-- Card 1: Isometric Map Tester (Active) -->
-			<div class="test-card __active" @click="launchIsoTester">
+			<div
+				v-for="card in testCards"
+				:key="card.id"
+				:class="['test-card', card.disabled ? '__disabled' : '__active']"
+				@click="!card.disabled && card.action()"
+			>
 				<div class="test-card-header">
-					<div class="test-card-icon">🗺️</div>
-					<span class="test-status-badge __ready">Доступно</span>
-				</div>
-				<div class="test-card-body">
-					<h2 class="test-card-title">Изометрическая локация</h2>
-					<p class="test-card-desc">
-						Тестирование 2.5D ромбовидного грида (64×32), террас с перепадами высоты Z, пошагового движения ГГ (A*) и интерактивного задания по прополке сорняков на огороде старосты.
-					</p>
-					<div class="test-tags">
-						<span class="test-tag">Сетка 64×32</span>
-						<span class="test-tag">Высоты Z</span>
-						<span class="test-tag">A* Pathfinding</span>
-						<span class="test-tag">Прополка сорняков</span>
+					<div class="test-card-title-group">
+						<span class="test-card-icon">{{ card.icon }}</span>
+						<h3 class="test-card-title" :title="card.title">{{ card.title }}</h3>
 					</div>
 				</div>
-				<div class="test-card-footer">
-					<button class="test-btn test-btn-primary" @click.stop="launchIsoTester">
-						Запустить тестер →
-					</button>
-				</div>
-			</div>
 
-			<!-- Card 2: Map Editor (Active) -->
-			<div class="test-card __active" @click="launchIsoEditor">
-				<div class="test-card-header">
-					<div class="test-card-icon">🛠️</div>
-					<span class="test-status-badge __ready">Доступно</span>
-				</div>
 				<div class="test-card-body">
-					<h2 class="test-card-title">Редактор изометрических карт</h2>
-					<p class="test-card-desc">
-						Визуальный редактор сетки: выбор папок, создание карт нечетных размеров с центром (0,0), рисование тайлов, высот Z, расстановка объектов и экспорт JSON.
+					<p class="test-card-desc" :title="card.desc">
+						{{ card.desc }}
 					</p>
 					<div class="test-tags">
-						<span class="test-tag">Центр (0,0)</span>
-						<span class="test-tag">Кисти рельефа</span>
-						<span class="test-tag">Слои объектов</span>
-						<span class="test-tag">Экспорт JSON</span>
+						<span v-for="tag in card.tags" :key="tag" class="test-tag">
+							{{ tag }}
+						</span>
 					</div>
 				</div>
-				<div class="test-card-footer">
-					<button class="test-btn test-btn-primary" @click.stop="launchIsoEditor">
-						Открыть редактор →
-					</button>
-				</div>
-			</div>
 
-			<!-- Card 3: Tactical Combat Tester (Active) -->
-			<div class="test-card __active" @click="launchCombatTester">
-				<div class="test-card-header">
-					<div class="test-card-icon">⚔️</div>
-					<span class="test-status-badge __ready">Доступно</span>
-				</div>
-				<div class="test-card-body">
-					<h2 class="test-card-title">Пошаговый тактический бой</h2>
-					<p class="test-card-desc">
-						Пошаговая тактическая боёвка в стиле Sword of Convallaria: очередность ходов по инициативе, очки действий AP, мана MP, классы (боец, воин, маг, лучник) и боевой AI противников.
-					</p>
-					<div class="test-tags">
-						<span class="test-tag">SoC Style</span>
-						<span class="test-tag">Инициатива</span>
-						<span class="test-tag">Очки AP / MP</span>
-						<span class="test-tag">Боевой AI</span>
-					</div>
-				</div>
 				<div class="test-card-footer">
-					<button class="test-btn test-btn-primary" @click.stop="launchCombatTester">
-						Запустить бой →
-					</button>
-				</div>
-			</div>
-
-			<!-- Card 4: Data Editor (Active) -->
-			<div class="test-card __active" @click="launchDataEditor">
-				<div class="test-card-header">
-					<div class="test-card-icon">📚</div>
-					<span class="test-status-badge __ready">Доступно</span>
-				</div>
-				<div class="test-card-body">
-					<h2 class="test-card-title">Редактор данных</h2>
-					<p class="test-card-desc">
-						CRUD-интерфейс управления игровыми сущностями (Персонажи, Классы, Фракции, Расы, Предметы) с прямой записью в файлы JSON и связями по ID.
-					</p>
-					<div class="test-tags">
-						<span class="test-tag">JSON CRUD</span>
-						<span class="test-tag">Связи по ID</span>
-						<span class="test-tag">Файловая система</span>
-					</div>
-				</div>
-				<div class="test-card-footer">
-					<button class="test-btn test-btn-primary" @click.stop="launchDataEditor">
-						Открыть редактор →
-					</button>
-				</div>
-			</div>
-
-			<!-- Card 5: Localization Manager (Active) -->
-			<div class="test-card __active" @click="launchLocalizationManager">
-				<div class="test-card-header">
-					<div class="test-card-icon">🌐</div>
-					<span class="test-status-badge __ready">Доступно</span>
-				</div>
-				<div class="test-card-body">
-					<h2 class="test-card-title">Добавить локализацию</h2>
-					<p class="test-card-desc">
-						Создание новых языковых пакетов на основе дефолтного или выбранного языка с автоматическим копированием словарей сущностей и сценариев новеллы для ручного перевода.
-					</p>
-					<div class="test-tags">
-						<span class="test-tag">Мультиязычность</span>
-						<span class="test-tag">Клонирование</span>
-						<span class="test-tag">JSON Словари</span>
-						<span class="test-tag">Сценарии</span>
-					</div>
-				</div>
-				<div class="test-card-footer">
-					<button class="test-btn test-btn-primary" @click.stop="launchLocalizationManager">
-						Создать локализацию →
-					</button>
-				</div>
-			</div>
-
-			<!-- Card 6: Skill Tree Tester (Active) -->
-			<div class="test-card __active" @click="launchSkillTreeTester">
-				<div class="test-card-header">
-					<div class="test-card-icon">🌳</div>
-					<span class="test-status-badge __ready">Доступно</span>
-				</div>
-				<div class="test-card-body">
-					<h2 class="test-card-title">Древо навыков и прокачка</h2>
-					<p class="test-card-desc">
-						Интерактивная уровневая сетка навыков для классов и рас: прокачка за очки SP, начисление очков уровня класса, условия предков (ALL/ANY) и просмотр произвольных JSON данных.
-					</p>
-					<div class="test-tags">
-						<span class="test-tag">Уровневая сетка</span>
-						<span class="test-tag">Очки SP</span>
-						<span class="test-tag">Предки ALL/ANY</span>
-						<span class="test-tag">JSON Data</span>
-					</div>
-				</div>
-				<div class="test-card-footer">
-					<button class="test-btn test-btn-primary" @click.stop="launchSkillTreeTester">
-						Запустить тестер →
-					</button>
-				</div>
-			</div>
-
-			<!-- Card 7: Character Sprite Rigging Studio (Live2D-Lite) -->
-			<div class="test-card __active" @click="launchCharacterSpriteTester">
-				<div class="test-card-header">
-					<div class="test-card-icon">🎭</div>
-					<span class="test-status-badge __ready">Доступно</span>
-				</div>
-				<div class="test-card-body">
-					<h2 class="test-card-title">Студия спрайтов и риггинга (Live2D-Lite)</h2>
-					<p class="test-card-desc">
-						Визуальный редактор и тестер спрайтов: иерархическое дробление тела (голова, плечи, предплечья, кисти), круговой стикер направления глаз, переключение эмоций, прямое вращение суставов, анимации (махание, кашель), виды со спины и масштабирование роста.
-					</p>
-					<div class="test-tags">
-						<span class="test-tag">Live2D-Lite</span>
-						<span class="test-tag">Риггинг тела</span>
-						<span class="test-tag">2D Стикер глаз</span>
-						<span class="test-tag">Анимации</span>
-						<span class="test-tag">Рост и Scale</span>
-					</div>
-				</div>
-				<div class="test-card-footer">
-					<button class="test-btn test-btn-primary" @click.stop="launchCharacterSpriteTester">
-						Запустить студию →
-					</button>
-				</div>
-			</div>
-
-			<!-- Card 8: Storyline Editor (Active) -->
-			<div class="test-card __active" @click="launchStorylineEditor">
-				<div class="test-card-header">
-					<div class="test-card-icon">📜</div>
-					<span class="test-status-badge __ready">Доступно</span>
-				</div>
-				<div class="test-card-body">
-					<h2 class="test-card-title">Редактор сценариев и сторилейна</h2>
-					<p class="test-card-desc">
-						Визуальный редактор сюжета и новеллы: дерево папок и файлов (intro.json и др.), создание подпапок, инспектор экшенов (диалоги с выбором персонажей, сцены, звуки, выборы) и поддержка прямого JSON-редактирования.
-					</p>
-					<div class="test-tags">
-						<span class="test-tag">Сторилейн</span>
-						<span class="test-tag">Дерево папок</span>
-						<span class="test-tag">Визуальные экшены</span>
-						<span class="test-tag">JSON Редактор</span>
-						<span class="test-tag">Новелла</span>
-					</div>
-				</div>
-				<div class="test-card-footer">
-					<button class="test-btn test-btn-primary" @click.stop="launchStorylineEditor">
-						Открыть редактор →
+					<button
+						:class="['test-btn', card.disabled ? 'test-btn-disabled' : 'test-btn-primary']"
+						:disabled="card.disabled"
+						@click.stop="!card.disabled && card.action()"
+					>
+						{{ card.disabled ? 'Недоступно' : card.btnText }}
 					</button>
 				</div>
 			</div>
@@ -241,12 +75,87 @@ function launchCharacterSpriteTester() {
 function launchStorylineEditor() {
 	router.push('/test/storyline-editor')
 }
+
+const testCards = [
+	{
+		id: 'iso-tester',
+		icon: '🗺️',
+		title: 'Изометрическая локация',
+		desc: '2.5D ромбовидный грид (64×32), перепады высоты Z, пошаговое движение ГГ (A*) и прополка сорняков.',
+		tags: ['Сетка 64×32', 'Высоты Z', 'A* Pathfinding', 'Сорняки'],
+		btnText: 'Запустить тестер →',
+		action: launchIsoTester
+	},
+	{
+		id: 'iso-editor',
+		icon: '🛠️',
+		title: 'Редактор изометрических карт',
+		desc: 'Создание карт с центром (0,0), кисти рельефа, высоты Z, расстановка объектов и экспорт JSON.',
+		tags: ['Центр (0,0)', 'Кисти рельефа', 'Слои объектов', 'JSON'],
+		btnText: 'Открыть редактор →',
+		action: launchIsoEditor
+	},
+	{
+		id: 'combat',
+		icon: '⚔️',
+		title: 'Пошаговый тактический бой',
+		desc: 'Пошаговая тактика в стиле SoC: инициатива ходов, AP / MP, 4 класса и боевой AI противников.',
+		tags: ['SoC Style', 'Инициатива', 'AP / MP', 'Боевой AI'],
+		btnText: 'Запустить бой →',
+		action: launchCombatTester
+	},
+	{
+		id: 'data-editor',
+		icon: '📚',
+		title: 'Редактор данных',
+		desc: 'CRUD игровых сущностей (персонажи, классы, расы, предметы, фракции) с прямой записью в JSON.',
+		tags: ['JSON CRUD', 'Связи по ID', 'Файлы данных'],
+		btnText: 'Открыть редактор →',
+		action: launchDataEditor
+	},
+	{
+		id: 'localization',
+		icon: '🌐',
+		title: 'Добавить локализацию',
+		desc: 'Создание языковых пакетов с клонированием словарей сущностей и сценариев новеллы.',
+		tags: ['Мультиязычность', 'Клонирование', 'JSON Словари'],
+		btnText: 'Создать локализацию →',
+		action: launchLocalizationManager
+	},
+	{
+		id: 'skill-tree',
+		icon: '🌳',
+		title: 'Древо навыков и прокачка',
+		desc: 'Интерактивная уровневая сетка классов и рас: прокачка за очки SP, условия предков (ALL/ANY) и просмотр.',
+		tags: ['Уровневая сетка', 'Очки SP', 'Предки ALL/ANY'],
+		btnText: 'Запустить тестер →',
+		action: launchSkillTreeTester
+	},
+	{
+		id: 'sprite-rig',
+		icon: '🎭',
+		title: 'Студия спрайтов и риггинга (Live2D-Lite)',
+		desc: 'Live2D-Lite: дробление тела, 2D-стикер направления глаз, эмоции, анимации и вращение суставов.',
+		tags: ['Live2D-Lite', 'Риггинг', 'Стикер глаз', 'Анимации'],
+		btnText: 'Запустить студию →',
+		action: launchCharacterSpriteTester
+	},
+	{
+		id: 'storyline',
+		icon: '📜',
+		title: 'Редактор сценариев и сторилейна',
+		desc: 'Визуальный редактор сюжета: дерево папок и файлов, инспектор экшенов и прямой JSON-режим.',
+		tags: ['Сторилейн', 'Дерево папок', 'Экшены', 'JSON'],
+		btnText: 'Открыть редактор →',
+		action: launchStorylineEditor
+	}
+]
 </script>
 
 <style scoped>
 .tests-content {
 	width: 100%;
-	height: 100%;
+	min-height: 100%;
 	display: flex;
 	flex-direction: column;
 	font-size: calc(1 * var(--size));
@@ -255,16 +164,17 @@ function launchStorylineEditor() {
 
 .tests-grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(20em, 3fr));
-	gap: 1.5em;
-	padding-bottom: 2em;
+	grid-template-columns: repeat(auto-fill, minmax(17.5em, 1fr));
+	gap: 0.65em;
+	padding-bottom: 1.5em;
 }
 
 .test-card {
+	position: relative;
 	background: rgba(18, 24, 38, 0.75);
 	border: 1px solid rgba(255, 255, 255, 0.12);
-	border-radius: 0.6em;
-	padding: 1.5em;
+	border-radius: 0.45em;
+	padding: 0.65em 0.85em;
 	display: flex;
 	flex-direction: column;
 	justify-content: space-between;
@@ -278,95 +188,98 @@ function launchStorylineEditor() {
 }
 
 .test-card.__active:hover {
-	transform: translateY(-0.25em);
+	z-index: 1;
+	transform: translateY(-0.15em);
 	border-color: #f6c445;
 	background: rgba(26, 35, 54, 0.85);
-	box-shadow: 0 0.5em 1.5em rgba(246, 196, 69, 0.2);
+	box-shadow: 0 0.25em 0.8em rgba(246, 196, 69, 0.2);
 }
 
 .test-card.__disabled {
-	opacity: 0.55;
+	opacity: 0.5;
 	cursor: not-allowed;
-	background: rgba(15, 20, 30, 0.5);
+	filter: grayscale(0.4);
+	background: rgba(15, 20, 30, 0.4);
+	border-color: rgba(255, 255, 255, 0.06);
+}
+
+.test-card.__disabled:hover {
+	transform: none;
+	box-shadow: none;
+	border-color: rgba(255, 255, 255, 0.06);
 }
 
 .test-card-header {
 	display: flex;
-	justify-content: space-between;
 	align-items: center;
-	margin-bottom: 1em;
+	margin-bottom: 0.35em;
+}
+
+.test-card-title-group {
+	display: flex;
+	align-items: center;
+	gap: 0.45em;
+	min-width: 0;
+	width: 100%;
 }
 
 .test-card-icon {
-	font-size: 2em;
-}
-
-.test-status-badge {
-	font-size: 0.75em;
-	font-weight: bold;
-	padding: 0.25em 0.6em;
-	border-radius: 0.3em;
-	text-transform: uppercase;
-	letter-spacing: 0.05em;
-}
-
-.test-status-badge.__ready {
-	background: rgba(16, 185, 129, 0.2);
-	color: #10b981;
-	border: 1px solid #10b981;
-}
-
-.test-status-badge.__wip {
-	background: rgba(245, 158, 11, 0.2);
-	color: #f59e0b;
-	border: 1px solid #f59e0b;
-}
-
-.test-status-badge.__planned {
-	background: rgba(148, 163, 184, 0.2);
-	color: #94a3b8;
-	border: 1px solid #94a3b8;
-}
-
-.test-card-body {
-	flex: 1;
-	display: flex;
-	flex-direction: column;
-	margin-bottom: 1.2em;
+	font-size: 1.25em;
+	line-height: 1;
+	flex-shrink: 0;
 }
 
 .test-card-title {
-	font-size: 1.3em;
+	font-size: 1.05em;
+	font-weight: bold;
 	color: #ffffff;
-	margin: 0 0 0.6em 0;
+	margin: 0;
 	font-family: Overlord, Kurale, serif;
+	line-height: 1.25;
+	flex: 1;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
 }
 
 .test-card.__active:hover .test-card-title {
 	color: #f6c445;
 }
 
-.test-card-desc {
-	font-size: 0.9em;
-	color: #94a3b8;
-	line-height: 1.4;
-	margin: 0 0 1em 0;
+.test-card-body {
 	flex: 1;
+	display: flex;
+	flex-direction: column;
+	margin-bottom: 0.5em;
+}
+
+.test-card-desc {
+	font-size: 0.78em;
+	color: #94a3b8;
+	line-height: 1.35;
+	margin: 0 0 0.4em 0;
+	flex: 1;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
 }
 
 .test-tags {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 0.4em;
+	gap: 0.25em;
 }
 
 .test-tag {
-	font-size: 0.75em;
+	font-size: 0.68em;
 	background: rgba(255, 255, 255, 0.08);
 	color: #cbd5e1;
-	padding: 0.2em 0.5em;
+	padding: 0.1em 0.35em;
 	border-radius: 0.2em;
 	border: 1px solid rgba(255, 255, 255, 0.1);
+	white-space: nowrap;
 }
 
 .test-card-footer {
@@ -375,9 +288,9 @@ function launchStorylineEditor() {
 
 .test-btn {
 	width: 100%;
-	padding: 0.6em 1em;
-	border-radius: 0.4em;
-	font-size: 0.95em;
+	padding: 0.32em 0.6em;
+	border-radius: 0.3em;
+	font-size: 0.82em;
 	font-family: Kurale, sans-serif;
 	cursor: pointer;
 	transition: background-color 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
@@ -392,7 +305,7 @@ function launchStorylineEditor() {
 
 .test-btn-primary:hover {
 	background: #ffd369;
-	box-shadow: 0 0 0.8em rgba(246, 196, 69, 0.4);
+	box-shadow: 0 0 0.6em rgba(246, 196, 69, 0.4);
 }
 
 .test-btn-disabled {

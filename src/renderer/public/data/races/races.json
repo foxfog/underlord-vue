@@ -1,7 +1,7 @@
 [
   {
     "id": "human",
-    "name": "Человек",
+    "name": "человек",
     "icon": "👤",
     "parent_id": null,
     "family": "human",
@@ -26,23 +26,58 @@
       "atk_phys": 10,
       "def_phys": 6,
       "atk_mag": 6,
-      "def_mag": 6,
+      "def_mag": 3,
       "spd": 3,
       "init": 5,
       "crit_chance": 1,
       "crit_dmg": 5,
-      "res": {}
+      "res": {
+        "physical": 1
+      }
     },
     "attribute_converters": {
-      "str": {},
-      "end": {},
-      "agi": {},
-      "int": {}
+      "str": {
+        "hp": 3,
+        "atk_phys": 5,
+        "def_phys": 2.5,
+        "crit_dmg": 0.5,
+        "res": {
+          "physical": 0.1
+        }
+      },
+      "end": {
+        "hp": 20,
+        "mp": 5,
+        "res": {
+          "physical": 0.5,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1,
+          "holy": 0.1,
+          "dark": 0.1
+        }
+      },
+      "agi": {
+        "atk_phys": 3,
+        "def_phys": 1,
+        "crit_chance": 0.5,
+        "crit_dmg": 1,
+        "init": 2
+      },
+      "int": {
+        "mp": 10,
+        "atk_mag": 5,
+        "def_mag": 4,
+        "init": 1,
+        "crit_chance": 0.1
+      }
     }
   },
   {
     "id": "half-elf",
-    "name": "Полуэльф",
+    "name": "полуэльф",
     "icon": "🧝👤",
     "parent_id": null,
     "family": "elf",
@@ -61,16 +96,21 @@
       "atk_phys": 8,
       "def_phys": 4,
       "atk_mag": 3,
-      "def_mag": 3,
+      "def_mag": 5,
       "spd": 3,
       "init": 6,
-      "crit_chance": 1,
-      "crit_dmg": 5
+      "crit_chance": 2,
+      "crit_dmg": 5,
+      "res": {
+        "physical": -2,
+        "poison": 4,
+        "cold": -1
+      }
     }
   },
   {
     "id": "elf",
-    "name": "Эльф",
+    "name": "эльф",
     "icon": "🧝",
     "parent_id": null,
     "family": "elf",
@@ -89,12 +129,15 @@
       "def_phys": 4,
       "atk_mag": 12,
       "def_mag": 8,
-      "spd": 4,
+      "spd": 3,
       "init": 8,
       "crit_chance": 1,
-      "crit_dmg": 5,
+      "crit_dmg": 8,
       "res": {
-        "nature": 10
+        "nature": 10,
+        "physical": -5,
+        "poison": 5,
+        "cold": -5
       }
     },
     "attribute_converters": {
@@ -107,7 +150,7 @@
   },
   {
     "id": "dark-elf",
-    "name": "Тёмный эльф",
+    "name": "тёмный эльф",
     "icon": "🧝🌑",
     "parent_id": null,
     "family": "elf",
@@ -129,13 +172,19 @@
       "def_mag": 5,
       "spd": 3,
       "init": 6,
-      "crit_chance": 1,
-      "crit_dmg": 5
+      "crit_chance": 3,
+      "crit_dmg": 5,
+      "res": {
+        "dark": 5,
+        "poison": 10,
+        "physical": -3,
+        "cold": -3
+      }
     }
   },
   {
     "id": "dwarf",
-    "name": "Дварф",
+    "name": "дварф",
     "icon": "🧔",
     "parent_id": null,
     "family": "dwarf",
@@ -158,12 +207,18 @@
       "atk_mag": 2,
       "def_phys": 6,
       "crit_chance": 1,
-      "crit_dmg": 5
+      "crit_dmg": 10,
+      "res": {
+        "cold": 10,
+        "fire": 10,
+        "physical": 5,
+        "water": -1
+      }
     }
   },
   {
     "id": "dark-dwarf",
-    "name": "Темный дварф",
+    "name": "темный дварф",
     "icon": "⛏🌑",
     "parent_id": null,
     "family": "dwarf",
@@ -173,7 +228,7 @@
       "dwarf"
     ],
     "lvl_min": 1,
-    "skill_points_per_level": 1,
+    "skill_points_per_level": 0,
     "spell_points_per_level": 0,
     "description": "Обитатели самых глубоких и опасных недр. Мастера закалки редких темных руд и создания смертоносного зачарованного оружия.",
     "base_stats": {
@@ -186,12 +241,20 @@
       "atk_mag": 3,
       "atk_phys": 10,
       "crit_chance": 1,
-      "crit_dmg": 5
+      "crit_dmg": 8,
+      "res": {
+        "dark": 5,
+        "poison": 5,
+        "cold": 5,
+        "fire": 8,
+        "physical": 4,
+        "water": -1
+      }
     }
   },
   {
     "id": "goblin",
-    "name": "Гоблин",
+    "name": "гоблин",
     "icon": "👺",
     "parent_id": null,
     "family": "goblin",
@@ -214,12 +277,12 @@
       "spd": 3,
       "init": 3,
       "crit_chance": 1,
-      "crit_dmg": 5
+      "crit_dmg": 3
     }
   },
   {
     "id": "hobgoblin",
-    "name": "Хобгоблин",
+    "name": "хобгоблин",
     "icon": "👺👑",
     "parent_id": "goblin",
     "family": "goblin",
@@ -231,11 +294,23 @@
     "lvl_min": 10,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Закалённые в боях вожаки гоблинских племён. Значительно превосходят сородичей в росте, физической силе и владении тактикой военного строя."
+    "description": "Закалённые в боях вожаки гоблинских племён. Значительно превосходят сородичей в росте, физической силе и владении тактикой военного строя.",
+    "base_stats": {
+      "hp": 110,
+      "mp": 3,
+      "atk_phys": 12,
+      "def_phys": 4,
+      "atk_mag": 2,
+      "def_mag": 3,
+      "spd": 3,
+      "init": 6,
+      "crit_chance": 2,
+      "crit_dmg": 8
+    }
   },
   {
     "id": "orc",
-    "name": "Орк",
+    "name": "орк",
     "icon": "🧌🪓",
     "parent_id": null,
     "family": "orc",
@@ -251,7 +326,7 @@
   },
   {
     "id": "ogre",
-    "name": "Огр",
+    "name": "огр",
     "icon": "👹",
     "parent_id": null,
     "family": "ogre",
@@ -267,7 +342,7 @@
   },
   {
     "id": "merrow",
-    "name": "Мэрроу",
+    "name": "мэрроу",
     "icon": "👹💧",
     "parent_id": "ogre",
     "family": "ogre",
@@ -283,7 +358,7 @@
   },
   {
     "id": "troll",
-    "name": "Тролль",
+    "name": "тролль",
     "icon": "🧌",
     "parent_id": null,
     "family": "troll",
@@ -299,7 +374,7 @@
   },
   {
     "id": "scrag",
-    "name": "Скраг",
+    "name": "скраг",
     "icon": "🧌💧",
     "parent_id": "troll",
     "family": "troll",
@@ -315,7 +390,7 @@
   },
   {
     "id": "lizardman",
-    "name": "Людоящер",
+    "name": "людоящер",
     "icon": "🦎",
     "parent_id": null,
     "family": "beastman",
@@ -332,7 +407,7 @@
   },
   {
     "id": "quagoa",
-    "name": "Квагоа",
+    "name": "квагоа",
     "icon": "🐀⛏",
     "parent_id": null,
     "family": "beastman",
@@ -348,7 +423,7 @@
   },
   {
     "id": "minotaur",
-    "name": "Минотавр",
+    "name": "минотавр",
     "icon": "🐂",
     "parent_id": null,
     "family": "beastman",
@@ -365,7 +440,7 @@
   },
   {
     "id": "centaur",
-    "name": "Кентавр",
+    "name": "кентавр",
     "icon": "🐴🏹",
     "parent_id": null,
     "family": "beastman",
@@ -381,7 +456,7 @@
   },
   {
     "id": "naga",
-    "name": "Нага",
+    "name": "нага",
     "icon": "🐍",
     "parent_id": null,
     "family": "beastman",
@@ -398,7 +473,7 @@
   },
   {
     "id": "armot",
-    "name": "Армот",
+    "name": "армот",
     "icon": "🐭🪓",
     "parent_id": null,
     "family": "beastman",
@@ -414,7 +489,7 @@
   },
   {
     "id": "skeleton",
-    "name": "Скелет",
+    "name": "скелет",
     "icon": "💀",
     "parent_id": null,
     "family": "skeleton",
@@ -471,7 +546,7 @@
   },
   {
     "id": "skeleton-archer",
-    "name": "Скелет-лучник",
+    "name": "скелет-лучник",
     "icon": "💀🏹",
     "parent_id": "skeleton",
     "family": "skeleton",
@@ -488,7 +563,7 @@
   },
   {
     "id": "skeleton-warrior",
-    "name": "Скелет-воин",
+    "name": "скелет-воин",
     "icon": "💀⚔",
     "parent_id": "skeleton",
     "family": "skeleton",
@@ -505,7 +580,7 @@
   },
   {
     "id": "skeleton-mage",
-    "name": "Скелет-маг",
+    "name": "скелет-маг",
     "icon": "💀🪄",
     "parent_id": "skeleton",
     "family": "skeleton",
@@ -522,7 +597,7 @@
   },
   {
     "id": "lich",
-    "name": "Лич",
+    "name": "лич",
     "icon": "💀🔮",
     "parent_id": "skeleton-mage",
     "family": "skeleton",
@@ -539,7 +614,7 @@
   },
   {
     "id": "elder-lich",
-    "name": "Старший лич",
+    "name": "старший лич",
     "icon": "💀✨",
     "parent_id": "lich",
     "family": "skeleton",
@@ -595,7 +670,7 @@
   },
   {
     "id": "overlord",
-    "name": "Повелитель",
+    "name": "повелитель",
     "icon": "💀👑",
     "parent_id": "elder-lich",
     "family": "skeleton",
@@ -613,7 +688,7 @@
   },
   {
     "id": "night-lich",
-    "name": "Ночной лич",
+    "name": "ночной лич",
     "icon": "💀🌌",
     "parent_id": "elder-lich",
     "family": "skeleton",
@@ -637,7 +712,7 @@
   },
   {
     "id": "ghost",
-    "name": "Призрак",
+    "name": "призрак",
     "icon": "👻",
     "parent_id": null,
     "family": "ghost",
@@ -655,7 +730,7 @@
   },
   {
     "id": "wraith",
-    "name": "Рейф",
+    "name": "рейф",
     "icon": "👻🌫",
     "parent_id": "ghost",
     "family": "ghost",
@@ -674,7 +749,7 @@
   },
   {
     "id": "spectre",
-    "name": "Спектр",
+    "name": "спектр",
     "icon": "👻✨",
     "parent_id": "wraith",
     "family": "ghost",
@@ -693,7 +768,7 @@
   },
   {
     "id": "zombie",
-    "name": "Зомби",
+    "name": "зомби",
     "icon": "🧟",
     "parent_id": null,
     "family": "zombie",
@@ -709,7 +784,7 @@
   },
   {
     "id": "ghoul",
-    "name": "Упырь",
+    "name": "упырь",
     "icon": "🧟😡",
     "parent_id": "zombie",
     "family": "zombie",
@@ -725,7 +800,7 @@
   },
   {
     "id": "vampire",
-    "name": "Вампир",
+    "name": "вампир",
     "icon": "🩸🧛",
     "parent_id": null,
     "family": "vampire",
@@ -742,7 +817,7 @@
   },
   {
     "id": "blood-guard",
-    "name": "Гвардеец крови",
+    "name": "гвардеец крови",
     "icon": "🩸🧛",
     "parent_id": "vampire",
     "family": "vampire",
@@ -758,8 +833,42 @@
     "description": "Элитный воин вампирского рода, черпающий стойкость и свирепость из пролитой вражеской крови."
   },
   {
+    "id": "vampire-lord",
+    "name": "вампир-лорд",
+    "icon": "🩸👑",
+    "parent_id": "blood-guard, vampire-bride",
+    "family": "vampire",
+    "category": "heteromorphic",
+    "tier": "rare",
+    "tags": [
+      "undead",
+      "vampire"
+    ],
+    "lvl_min": 30,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Повелитель клана кровопийц, обладающий вековой мудростью, искусством превращения в туман и подчинением низшей нежити."
+  },
+  {
+    "id": "true-vampire",
+    "name": "истинный вампир",
+    "icon": "🩸✨",
+    "parent_id": "vampire-lord",
+    "family": "vampire",
+    "category": "heteromorphic",
+    "tier": "rare",
+    "tags": [
+      "undead",
+      "vampire"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Первородный владыка крови, сочетающий совершенную внешность с чудовищным боевым обличием и абсолютной регенерацией плоти."
+  },
+  {
     "id": "vampire-bride",
-    "name": "Вампирская невеста",
+    "name": "вампирская невеста",
     "icon": "🩸💍",
     "parent_id": "vampire",
     "family": "vampire",
@@ -776,7 +885,7 @@
   },
   {
     "id": "werewolf",
-    "name": "Оборотень",
+    "name": "оборотень",
     "icon": "👤🐺",
     "parent_id": null,
     "family": "werewolf",
@@ -793,7 +902,7 @@
   },
   {
     "id": "alpha-werewolf",
-    "name": "Альфа-оборотень",
+    "name": "альфа-оборотень",
     "icon": "👤🐺🌕",
     "parent_id": "werewolf",
     "family": "werewolf",
@@ -810,7 +919,7 @@
   },
   {
     "id": "true-werewolf",
-    "name": "Истинный вервольф",
+    "name": "истинный вервольф",
     "icon": "👤🐺👑",
     "parent_id": "alpha-werewolf",
     "family": "werewolf",
@@ -827,7 +936,7 @@
   },
   {
     "id": "imp",
-    "name": "Бес",
+    "name": "бес",
     "icon": "😈",
     "parent_id": null,
     "family": "infernal",
@@ -846,8 +955,8 @@
   },
   {
     "id": "incubus",
-    "name": "Инкуб",
-    "icon": "♂",
+    "name": "инкуб",
+    "icon": "😈♂",
     "parent_id": "imp",
     "family": "infernal",
     "category": "heteromorphic",
@@ -861,12 +970,54 @@
     "lvl_min": 10,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Демонический соблазнитель, питающийся чужими страстями, снами и жизненной силой, подчиняя разум смертных сладким мороком."
+    "description": "Демонический соблазнитель, питающийся чужими страстями, снами и жизненной силой, подчиняя разум смертных сладким мороком.",
+    "base_stats": {
+      "hp": 100,
+      "mp": 30,
+      "atk_phys": 10,
+      "def_phys": 6,
+      "atk_mag": 6,
+      "def_mag": 6,
+      "spd": 3,
+      "init": 5,
+      "crit_chance": 5,
+      "crit_dmg": 50,
+      "res": {}
+    },
+    "attribute_converters": {
+      "str": {
+        "hp": 20,
+        "atk_phys": 10,
+        "def_phys": 8,
+        "crit_dmg": 0
+      },
+      "end": {
+        "hp": 35,
+        "def_phys": 10
+      },
+      "agi": {
+        "spd": 0.1,
+        "init": 2,
+        "atk_phys": 4,
+        "crit_chance": 0
+      },
+      "int": {
+        "mp": 20,
+        "atk_mag": 10,
+        "def_mag": 8
+      }
+    },
+    "tierNum": 1,
+    "colStart": 1,
+    "colEnd": 1,
+    "colWidth": 1,
+    "gridRow": 3,
+    "gridColumn": "2 / 3"
   },
   {
     "id": "succubus",
-    "name": "Суккуб",
-    "icon": "♀",
+    "name": "суккуб",
+    "icon": "😈♀",
     "parent_id": "imp",
     "family": "infernal",
     "category": "heteromorphic",
@@ -880,11 +1031,94 @@
     "lvl_min": 10,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Обольстительная демоница бездны, способная подчинить своей воле даже самого стойкого воина при помощи искушения и магии разума."
+    "description": "Обольстительная демоница бездны, способная подчинить своей воле даже самого стойкого воина при помощи искушения и магии разума.",
+    "tierNum": 1,
+    "colStart": 2,
+    "colEnd": 2,
+    "colWidth": 1,
+    "gridRow": 3,
+    "gridColumn": "3 / 4",
+    "base_stats": {
+      "hp": 100,
+      "mp": 30,
+      "atk_phys": 10,
+      "def_phys": 6,
+      "atk_mag": 6,
+      "def_mag": 6,
+      "spd": 3,
+      "init": 5,
+      "crit_chance": 5,
+      "crit_dmg": 50,
+      "res": {}
+    },
+    "attribute_converters": {
+      "str": {
+        "hp": 20,
+        "atk_phys": 10,
+        "def_phys": 8,
+        "crit_dmg": 0
+      },
+      "end": {
+        "hp": 35,
+        "def_phys": 10
+      },
+      "agi": {
+        "spd": 0.1,
+        "init": 2,
+        "atk_phys": 4,
+        "crit_chance": 0
+      },
+      "int": {
+        "mp": 20,
+        "atk_mag": 10,
+        "def_mag": 8
+      }
+    }
+  },
+  {
+    "id": "devil",
+    "name": "дьявол",
+    "icon": "😈👑",
+    "parent_id": "succubus, incubus, demon",
+    "family": "infernal",
+    "category": "heteromorphic",
+    "tier": "rare",
+    "tags": [
+      "planarextra",
+      "fiend",
+      "infernal",
+      "imp",
+      "devil"
+    ],
+    "lvl_min": 50,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Коварный архидемон преисподней, искусный в составлении нерушимых темных сделок и повелевании легионами низших бесов."
+  },
+  {
+    "id": "archdevil",
+    "name": "высший демон",
+    "icon": "😈✨",
+    "parent_id": "devil",
+    "family": "infernal",
+    "category": "heteromorphic",
+    "tier": "rare",
+    "tags": [
+      "planarextra",
+      "fiend",
+      "infernal",
+      "imp",
+      "devil",
+      "archdevil"
+    ],
+    "lvl_min": 80,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Великий князь преисподней, чей взгляд обращает смертных в пепел, а стратегический гений ведет адские орды к триумфу."
   },
   {
     "id": "demon",
-    "name": "Демон",
+    "name": "демон",
     "icon": "😈",
     "parent_id": "imp",
     "family": "infernal",
@@ -904,7 +1138,7 @@
   },
   {
     "id": "angel",
-    "name": "Ангел",
+    "name": "ангел",
     "icon": "🪽",
     "parent_id": null,
     "family": "celestial",
@@ -922,7 +1156,7 @@
   },
   {
     "id": "angel-guardian",
-    "name": "Ангел-хранитель",
+    "name": "ангел-хранитель",
     "icon": "🪽🛡",
     "parent_id": "angel",
     "family": "celestial",
@@ -1035,7 +1269,7 @@
   },
   {
     "id": "seraph",
-    "name": "Серафим",
+    "name": "серафим",
     "icon": "🪽⭐",
     "parent_id": "cherubim-gatekeeper",
     "family": "celestial",
@@ -1054,7 +1288,7 @@
   },
   {
     "id": "seraph-empyrean",
-    "name": "Серафим неземной",
+    "name": "серафим неземной",
     "icon": "🪽🌟",
     "parent_id": "seraph",
     "family": "celestial",
@@ -1092,7 +1326,7 @@
   },
   {
     "id": "slime",
-    "name": "Слайм",
+    "name": "слайм",
     "icon": "🫧",
     "parent_id": null,
     "family": "slime",
@@ -1109,7 +1343,7 @@
   },
   {
     "id": "black-ooze",
-    "name": "Чёрная тина",
+    "name": "чёрная тина",
     "icon": "🫧⚫",
     "parent_id": "slime",
     "family": "slime",
@@ -1126,12 +1360,12 @@
   },
   {
     "id": "elder-black-ooze",
-    "name": "Старшая чёрная тина",
+    "name": "старшая чёрная тина",
     "icon": "🫧⚫👑",
     "parent_id": "black-ooze",
     "family": "slime",
     "category": "heteromorphic",
-    "tier": "advanced",
+    "tier": "rare",
     "tags": [
       "slime",
       "amorphous"
@@ -1139,7 +1373,49 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Древняя хищная масса, чьи кислотные ферменты мгновенно разъедают прочнейшие доспехи, щиты и оружие воинов."
+    "description": "Древняя хищная масса, чьи кислотные ферменты мгновенно разъедают прочнейшие доспехи, щиты и оружие воинов.",
+    "tierNum": 2,
+    "colStart": 1,
+    "colEnd": 1,
+    "colWidth": 1,
+    "gridRow": 1,
+    "gridColumn": "2 / 3",
+    "base_stats": {
+      "hp": 100,
+      "mp": 30,
+      "atk_phys": 10,
+      "def_phys": 6,
+      "atk_mag": 6,
+      "def_mag": 6,
+      "spd": 3,
+      "init": 5,
+      "crit_chance": 5,
+      "crit_dmg": 50,
+      "res": {}
+    },
+    "attribute_converters": {
+      "str": {
+        "hp": 20,
+        "atk_phys": 10,
+        "def_phys": 8,
+        "crit_dmg": 0
+      },
+      "end": {
+        "hp": 35,
+        "def_phys": 10
+      },
+      "agi": {
+        "spd": 0.1,
+        "init": 2,
+        "atk_phys": 4,
+        "crit_chance": 0
+      },
+      "int": {
+        "mp": 20,
+        "atk_mag": 10,
+        "def_mag": 8
+      }
+    }
   },
   {
     "id": "shoggoth",
@@ -1166,7 +1442,7 @@
     "parent_id": "shoggoth",
     "family": "slime",
     "category": "heteromorphic",
-    "tier": "advanced",
+    "tier": "rare",
     "tags": [
       "slime",
       "amorphous",
@@ -1175,11 +1451,221 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Изначальный аморфный прародитель, вечно порождающий новые формы протоплазмы и обладающий абсолютной растворяющей силой."
+    "description": "Изначальный аморфный прародитель, вечно порождающий новые формы протоплазмы и обладающий абсолютной растворяющей силой.",
+    "tierNum": 2,
+    "colStart": 2,
+    "colEnd": 2,
+    "colWidth": 1,
+    "gridRow": 1,
+    "gridColumn": "3 / 4",
+    "base_stats": {
+      "hp": 100,
+      "mp": 30,
+      "atk_phys": 10,
+      "def_phys": 6,
+      "atk_mag": 6,
+      "def_mag": 6,
+      "spd": 3,
+      "init": 5,
+      "crit_chance": 5,
+      "crit_dmg": 50,
+      "res": {}
+    },
+    "attribute_converters": {
+      "str": {
+        "hp": 20,
+        "atk_phys": 10,
+        "def_phys": 8,
+        "crit_dmg": 0
+      },
+      "end": {
+        "hp": 35,
+        "def_phys": 10
+      },
+      "agi": {
+        "spd": 0.1,
+        "init": 2,
+        "atk_phys": 4,
+        "crit_chance": 0
+      },
+      "int": {
+        "mp": 20,
+        "atk_mag": 10,
+        "def_mag": 8
+      }
+    }
+  },
+  {
+    "id": "magma-slime",
+    "name": "Магмовый слайм",
+    "icon": "🫧🌋",
+    "parent_id": "slime",
+    "family": "slime",
+    "category": "heteromorphic",
+    "tags": [],
+    "lvl_min": 1,
+    "tier": "advanced",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "",
+    "base_stats": {
+      "hp": 100,
+      "mp": 30,
+      "atk_phys": 10,
+      "def_phys": 6,
+      "atk_mag": 6,
+      "def_mag": 6,
+      "spd": 3,
+      "init": 5,
+      "crit_chance": 5,
+      "crit_dmg": 50,
+      "res": {}
+    },
+    "attribute_converters": {
+      "str": {
+        "hp": 20,
+        "atk_phys": 10,
+        "def_phys": 8,
+        "crit_dmg": 0
+      },
+      "end": {
+        "hp": 35,
+        "def_phys": 10
+      },
+      "agi": {
+        "spd": 0.1,
+        "init": 2,
+        "atk_phys": 4,
+        "crit_chance": 0
+      },
+      "int": {
+        "mp": 20,
+        "atk_mag": 10,
+        "def_mag": 8
+      }
+    },
+    "tierNum": 1,
+    "colStart": 0,
+    "colEnd": 0,
+    "colWidth": 1,
+    "gridRow": 2,
+    "gridColumn": "1 / 2"
+  },
+  {
+    "id": "ice-slime",
+    "name": "ледяной слайм",
+    "icon": "🫧🧊",
+    "parent_id": "slime",
+    "family": "slime",
+    "category": "heteromorphic",
+    "tags": [],
+    "lvl_min": 1,
+    "tier": "advanced",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "",
+    "base_stats": {
+      "hp": 100,
+      "mp": 30,
+      "atk_phys": 10,
+      "def_phys": 6,
+      "atk_mag": 6,
+      "def_mag": 6,
+      "spd": 3,
+      "init": 5,
+      "crit_chance": 5,
+      "crit_dmg": 50,
+      "res": {}
+    },
+    "attribute_converters": {
+      "str": {
+        "hp": 20,
+        "atk_phys": 10,
+        "def_phys": 8,
+        "crit_dmg": 0
+      },
+      "end": {
+        "hp": 35,
+        "def_phys": 10
+      },
+      "agi": {
+        "spd": 0.1,
+        "init": 2,
+        "atk_phys": 4,
+        "crit_chance": 0
+      },
+      "int": {
+        "mp": 20,
+        "atk_mag": 10,
+        "def_mag": 8
+      }
+    },
+    "tierNum": 1,
+    "colStart": 1,
+    "colEnd": 1,
+    "colWidth": 1,
+    "gridRow": 2,
+    "gridColumn": "2 / 3"
+  },
+  {
+    "id": "spark-slime",
+    "name": "грозовой слайм",
+    "icon": "🫧⚡",
+    "parent_id": "slime",
+    "family": "slime",
+    "category": "heteromorphic",
+    "tags": [],
+    "lvl_min": 1,
+    "tier": "advanced",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "",
+    "base_stats": {
+      "hp": 100,
+      "mp": 30,
+      "atk_phys": 10,
+      "def_phys": 6,
+      "atk_mag": 6,
+      "def_mag": 6,
+      "spd": 3,
+      "init": 5,
+      "crit_chance": 5,
+      "crit_dmg": 50,
+      "res": {}
+    },
+    "attribute_converters": {
+      "str": {
+        "hp": 20,
+        "atk_phys": 10,
+        "def_phys": 8,
+        "crit_dmg": 0
+      },
+      "end": {
+        "hp": 35,
+        "def_phys": 10
+      },
+      "agi": {
+        "spd": 0.1,
+        "init": 2,
+        "atk_phys": 4,
+        "crit_chance": 0
+      },
+      "int": {
+        "mp": 20,
+        "atk_mag": 10,
+        "def_mag": 8
+      }
+    },
+    "tierNum": 1,
+    "colStart": 0,
+    "colEnd": 0,
+    "colWidth": 1,
+    "gridRow": 2,
+    "gridColumn": "1 / 2"
   },
   {
     "id": "insectoid",
-    "name": "Инсектоид",
+    "name": "инсектоид",
     "icon": "🦗",
     "parent_id": null,
     "family": "insectoid",
@@ -1195,7 +1681,7 @@
   },
   {
     "id": "dragon",
-    "name": "Дракон",
+    "name": "дракон",
     "icon": "🐉",
     "parent_id": null,
     "family": "dragon_kin",
@@ -1213,7 +1699,7 @@
   },
   {
     "id": "frost-dragon",
-    "name": "Морозный дракон",
+    "name": "морозный дракон",
     "icon": "🐉❄",
     "parent_id": "dragon",
     "family": "dragon_kin",
@@ -1231,7 +1717,7 @@
   },
   {
     "id": "fire-dragon",
-    "name": "Огненный дракон",
+    "name": "огненный дракон",
     "icon": "🐉🔥",
     "parent_id": "dragon",
     "family": "dragon_kin",
@@ -1267,7 +1753,7 @@
   },
   {
     "id": "dragonoid",
-    "name": "Драконид",
+    "name": "драконид",
     "icon": "🐉👤",
     "parent_id": null,
     "family": "dragon_kin",
@@ -1321,7 +1807,7 @@
   },
   {
     "id": "doppelganger",
-    "name": "Доппельгангер",
+    "name": "доппельгангер",
     "icon": "🎭",
     "parent_id": null,
     "family": "other",
@@ -1337,7 +1823,7 @@
   },
   {
     "id": "automaton",
-    "name": "Автоматон",
+    "name": "автоматон",
     "icon": "🤖",
     "parent_id": null,
     "family": "other",
@@ -1354,7 +1840,7 @@
   },
   {
     "id": "homunculus",
-    "name": "Гомункул",
+    "name": "гомункул",
     "icon": "🧪",
     "parent_id": null,
     "family": "other",
@@ -1372,7 +1858,7 @@
   },
   {
     "id": "wolf",
-    "name": "Волк",
+    "name": "волк",
     "icon": "🐺",
     "parent_id": null,
     "family": "beast",
@@ -1389,7 +1875,7 @@
   },
   {
     "id": "pack-leader",
-    "name": "Вожак стаи",
+    "name": "вожак стаи",
     "icon": "🐺🐾",
     "parent_id": "wolf",
     "family": "beast",
@@ -1405,27 +1891,222 @@
     "description": "Опытный матерый хищник во главе стаи, чей свирепый натиск и боевой вой ведут сородичей за собой в любую атаку."
   },
   {
-    "id": "legendary-wolf",
-    "name": "Легендарный волк",
-    "icon": "🐺✨",
+    "id": "barghest",
+    "name": "Баргест",
+    "icon": "🐺🔗",
     "parent_id": "pack-leader",
     "family": "beast",
     "category": "heteromorphic",
-    "tier": "rare",
-    "tags": [
-      "beast",
-      "wolf"
-    ],
-    "lvl_min": 40,
+    "tags": [],
+    "lvl_min": 1,
+    "tier": "advanced",
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Мифический зверь колоссальных размеров, хранящий первобытную силу древних лесов и внушающий трепет одним своим присутствием."
+    "description": "",
+    "base_stats": {
+      "hp": 100,
+      "mp": 30,
+      "atk_phys": 10,
+      "def_phys": 6,
+      "atk_mag": 6,
+      "def_mag": 6,
+      "spd": 3,
+      "init": 5,
+      "crit_chance": 5,
+      "crit_dmg": 50,
+      "res": {}
+    },
+    "attribute_converters": {
+      "str": {
+        "hp": 20,
+        "atk_phys": 10,
+        "def_phys": 8,
+        "crit_dmg": 0
+      },
+      "end": {
+        "hp": 35,
+        "def_phys": 10
+      },
+      "agi": {
+        "spd": 0.1,
+        "init": 2,
+        "atk_phys": 4,
+        "crit_chance": 0
+      },
+      "int": {
+        "mp": 20,
+        "atk_mag": 10,
+        "def_mag": 8
+      }
+    },
+    "tierNum": 2,
+    "colStart": 0,
+    "colEnd": 0,
+    "colWidth": 1,
+    "gridRow": 3,
+    "gridColumn": "1 / 2"
+  },
+  {
+    "id": "fenrir",
+    "name": "Фенрир",
+    "icon": "🐺⚫️",
+    "parent_id": "barghest",
+    "family": "beast",
+    "category": "heteromorphic",
+    "tags": [],
+    "lvl_min": 1,
+    "tier": "rare",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "",
+    "base_stats": {
+      "hp": 100,
+      "mp": 30,
+      "atk_phys": 10,
+      "def_phys": 6,
+      "atk_mag": 6,
+      "def_mag": 6,
+      "spd": 3,
+      "init": 5,
+      "crit_chance": 5,
+      "crit_dmg": 50,
+      "res": {}
+    },
+    "attribute_converters": {
+      "str": {
+        "hp": 20,
+        "atk_phys": 10,
+        "def_phys": 8,
+        "crit_dmg": 0
+      },
+      "end": {
+        "hp": 35,
+        "def_phys": 10
+      },
+      "agi": {
+        "spd": 0.1,
+        "init": 2,
+        "atk_phys": 4,
+        "crit_chance": 0
+      },
+      "int": {
+        "mp": 20,
+        "atk_mag": 10,
+        "def_mag": 8
+      }
+    }
+  },
+  {
+    "id": "siberian-wolf",
+    "name": "сибирский волк",
+    "icon": "🐺❄️",
+    "parent_id": "pack-leader",
+    "family": "beast",
+    "category": "heteromorphic",
+    "tags": [],
+    "lvl_min": 1,
+    "tier": "advanced",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "",
+    "base_stats": {
+      "hp": 100,
+      "mp": 30,
+      "atk_phys": 10,
+      "def_phys": 6,
+      "atk_mag": 6,
+      "def_mag": 6,
+      "spd": 3,
+      "init": 5,
+      "crit_chance": 5,
+      "crit_dmg": 50,
+      "res": {}
+    },
+    "attribute_converters": {
+      "str": {
+        "hp": 20,
+        "atk_phys": 10,
+        "def_phys": 8,
+        "crit_dmg": 0
+      },
+      "end": {
+        "hp": 35,
+        "def_phys": 10
+      },
+      "agi": {
+        "spd": 0.1,
+        "init": 2,
+        "atk_phys": 4,
+        "crit_chance": 0
+      },
+      "int": {
+        "mp": 20,
+        "atk_mag": 10,
+        "def_mag": 8
+      }
+    },
+    "tierNum": 2,
+    "colStart": 1,
+    "colEnd": 1,
+    "colWidth": 1,
+    "gridRow": 2,
+    "gridColumn": "2 / 3"
+  },
+  {
+    "id": "moonlight-wolf",
+    "name": "лунный волк",
+    "icon": "🐺🌕",
+    "parent_id": "siberian-wolf",
+    "family": "beast",
+    "category": "heteromorphic",
+    "tags": [],
+    "lvl_min": 1,
+    "tier": "rare",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "",
+    "base_stats": {
+      "hp": 100,
+      "mp": 30,
+      "atk_phys": 10,
+      "def_phys": 6,
+      "atk_mag": 6,
+      "def_mag": 6,
+      "spd": 3,
+      "init": 5,
+      "crit_chance": 5,
+      "crit_dmg": 50,
+      "res": {}
+    },
+    "attribute_converters": {
+      "str": {
+        "hp": 20,
+        "atk_phys": 10,
+        "def_phys": 8,
+        "crit_dmg": 0
+      },
+      "end": {
+        "hp": 35,
+        "def_phys": 10
+      },
+      "agi": {
+        "spd": 0.1,
+        "init": 2,
+        "atk_phys": 4,
+        "crit_chance": 0
+      },
+      "int": {
+        "mp": 20,
+        "atk_mag": 10,
+        "def_mag": 8
+      }
+    }
   },
   {
     "id": "wolf-god",
-    "name": "Бог-волк",
+    "name": "Покровитель волков",
     "icon": "🐺👑",
-    "parent_id": "legendary-wolf",
+    "parent_id": "moonlight-wolf, fenrir",
     "family": "beast",
     "category": "heteromorphic",
     "tier": "rare",
@@ -1436,11 +2117,53 @@
     "lvl_min": 70,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Бессмертное божественное воплощение хищной природы, почитаемое как прародитель и покровитель всех волчьих стай."
+    "description": "Бессмертное божественное воплощение хищной природы, почитаемое как прародитель и покровитель всех волчьих стай.",
+    "base_stats": {
+      "hp": 100,
+      "mp": 30,
+      "atk_phys": 10,
+      "def_phys": 6,
+      "atk_mag": 6,
+      "def_mag": 6,
+      "spd": 3,
+      "init": 5,
+      "crit_chance": 5,
+      "crit_dmg": 50,
+      "res": {}
+    },
+    "attribute_converters": {
+      "str": {
+        "hp": 20,
+        "atk_phys": 10,
+        "def_phys": 8,
+        "crit_dmg": 0
+      },
+      "end": {
+        "hp": 35,
+        "def_phys": 10
+      },
+      "agi": {
+        "spd": 0.1,
+        "init": 2,
+        "atk_phys": 4,
+        "crit_chance": 0
+      },
+      "int": {
+        "mp": 20,
+        "atk_mag": 10,
+        "def_mag": 8
+      }
+    },
+    "tierNum": 4,
+    "colStart": 1,
+    "colEnd": 1,
+    "colWidth": 1,
+    "gridRow": 1,
+    "gridColumn": "2 / 3"
   },
   {
     "id": "horse",
-    "name": "Лошадь",
+    "name": "лошадь",
     "icon": "🐴",
     "parent_id": null,
     "family": "beast",
@@ -1457,8 +2180,8 @@
   },
   {
     "id": "pegasus",
-    "name": "Пегас",
-    "icon": "🪽🐴",
+    "name": "пегас",
+    "icon": "🐴🪽",
     "parent_id": "horse",
     "family": "beast",
     "category": "heteromorphic",
@@ -1472,11 +2195,72 @@
     "lvl_min": 10,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Благородные крылатые скакуны, парящие в небесных высях. Способны стремительно преодолевать огромные расстояния и атаковать с воздуха."
+    "description": "Благородные крылатые скакуны, парящие в небесных высях. Способны стремительно преодолевать огромные расстояния и атаковать с воздуха.",
+    "tierNum": 1,
+    "colStart": 3,
+    "colEnd": 3,
+    "colWidth": 1,
+    "gridRow": 2,
+    "gridColumn": "4 / 5",
+    "base_stats": {
+      "hp": 100,
+      "mp": 30,
+      "atk_phys": 10,
+      "def_phys": 6,
+      "atk_mag": 6,
+      "def_mag": 6,
+      "spd": 3,
+      "init": 5,
+      "crit_chance": 5,
+      "crit_dmg": 50,
+      "res": {}
+    },
+    "attribute_converters": {
+      "str": {
+        "hp": 20,
+        "atk_phys": 10,
+        "def_phys": 8,
+        "crit_dmg": 0
+      },
+      "end": {
+        "hp": 35,
+        "def_phys": 10
+      },
+      "agi": {
+        "spd": 0.1,
+        "init": 2,
+        "atk_phys": 4,
+        "crit_chance": 0
+      },
+      "int": {
+        "mp": 20,
+        "atk_mag": 10,
+        "def_mag": 8
+      }
+    }
+  },
+  {
+    "id": "alicorn",
+    "name": "аликорн",
+    "icon": "🦄🪽",
+    "parent_id": "pegasus, unicorn",
+    "family": "beast",
+    "category": "heteromorphic",
+    "tier": "rare",
+    "tags": [
+      "celestial",
+      "beast",
+      "horse",
+      "alicorn"
+    ],
+    "lvl_min": 50,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Легендарное создание, соединяющее крылья пегаса и рог единорога. Повелевает небесными бурями и владеет высшей созидательной магией."
   },
   {
     "id": "unicorn",
-    "name": "Единорог",
+    "name": "единорог",
     "icon": "🦄",
     "parent_id": "horse",
     "family": "beast",
@@ -1495,8 +2279,8 @@
   },
   {
     "id": "bicorn",
-    "name": "Двурог",
-    "icon": "🦄😈",
+    "name": "двурог",
+    "icon": "🐴😈",
     "parent_id": "horse",
     "family": "beast",
     "category": "heteromorphic",
@@ -1510,11 +2294,53 @@
     "lvl_min": 10,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Демонический антипод единорога с парой закрученных рогов. Свирепое и своенравное создание, подпускающее к себе лишь осквернённых всадников."
+    "description": "Демонический антипод единорога с парой закрученных рогов. Свирепое и своенравное создание, подпускающее к себе лишь осквернённых всадников.",
+    "tierNum": 1,
+    "colStart": 1,
+    "colEnd": 1,
+    "colWidth": 1,
+    "gridRow": 2,
+    "gridColumn": "2 / 3",
+    "base_stats": {
+      "hp": 100,
+      "mp": 30,
+      "atk_phys": 10,
+      "def_phys": 6,
+      "atk_mag": 6,
+      "def_mag": 6,
+      "spd": 3,
+      "init": 5,
+      "crit_chance": 5,
+      "crit_dmg": 50,
+      "res": {}
+    },
+    "attribute_converters": {
+      "str": {
+        "hp": 20,
+        "atk_phys": 10,
+        "def_phys": 8,
+        "crit_dmg": 0
+      },
+      "end": {
+        "hp": 35,
+        "def_phys": 10
+      },
+      "agi": {
+        "spd": 0.1,
+        "init": 2,
+        "atk_phys": 4,
+        "crit_chance": 0
+      },
+      "int": {
+        "mp": 20,
+        "atk_mag": 10,
+        "def_mag": 8
+      }
+    }
   },
   {
     "id": "nightmare",
-    "name": "Кошмар",
+    "name": "кошмар",
     "icon": "🐴🔥",
     "parent_id": "bicorn",
     "family": "beast",
@@ -1532,11 +2358,61 @@
     "description": "Инфернальный скакун с горящими адским огнём копытами и глазами. Сеет первобытный ужас, оставляя за собой дорожку из тлеющего пепла."
   },
   {
+    "id": "hippocampus",
+    "name": "гиппокампус",
+    "icon": "🐴💦",
+    "parent_id": "horse",
+    "family": "beast",
+    "category": "heteromorphic",
+    "tags": [],
+    "lvl_min": 1,
+    "tier": "advanced",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "",
+    "base_stats": {
+      "hp": 100,
+      "mp": 30,
+      "atk_phys": 10,
+      "def_phys": 6,
+      "atk_mag": 6,
+      "def_mag": 6,
+      "spd": 3,
+      "init": 5,
+      "crit_chance": 5,
+      "crit_dmg": 50,
+      "res": {}
+    },
+    "attribute_converters": {
+      "str": {
+        "hp": 20,
+        "atk_phys": 10,
+        "def_phys": 8,
+        "crit_dmg": 0
+      },
+      "end": {
+        "hp": 35,
+        "def_phys": 10
+      },
+      "agi": {
+        "spd": 0.1,
+        "init": 2,
+        "atk_phys": 4,
+        "crit_chance": 0
+      },
+      "int": {
+        "mp": 20,
+        "atk_mag": 10,
+        "def_mag": 8
+      }
+    }
+  },
+  {
     "id": "chicken",
-    "name": "Курица",
+    "name": "курица",
     "icon": "🐔",
     "parent_id": null,
-    "family": "beast",
+    "family": "pets",
     "category": "heteromorphic",
     "tier": "basic",
     "tags": [
@@ -1547,14 +2423,56 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Домашняя птица, разводимая ради яиц и мяса. Обладает пугливым нравом и громким голосом."
+    "description": "Домашняя птица, разводимая ради яиц и мяса. Обладает пугливым нравом и громким голосом.",
+    "tierNum": 0,
+    "colStart": 0,
+    "colEnd": 0,
+    "colWidth": 1,
+    "gridRow": 1,
+    "gridColumn": "1 / 2",
+    "base_stats": {
+      "hp": 100,
+      "mp": 30,
+      "atk_phys": 10,
+      "def_phys": 6,
+      "atk_mag": 6,
+      "def_mag": 6,
+      "spd": 3,
+      "init": 5,
+      "crit_chance": 5,
+      "crit_dmg": 50,
+      "res": {}
+    },
+    "attribute_converters": {
+      "str": {
+        "hp": 20,
+        "atk_phys": 10,
+        "def_phys": 8,
+        "crit_dmg": 0
+      },
+      "end": {
+        "hp": 35,
+        "def_phys": 10
+      },
+      "agi": {
+        "spd": 0.1,
+        "init": 2,
+        "atk_phys": 4,
+        "crit_chance": 0
+      },
+      "int": {
+        "mp": 20,
+        "atk_mag": 10,
+        "def_mag": 8
+      }
+    }
   },
   {
     "id": "cow",
-    "name": "Корова",
+    "name": "корова",
     "icon": "🐮",
     "parent_id": null,
-    "family": "beast",
+    "family": "pets",
     "category": "heteromorphic",
     "tier": "basic",
     "tags": [
@@ -1565,14 +2483,56 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Миролюбивое жвачное животное, ценный источник молока и кожи. Отличается спокойным и кротким характером."
+    "description": "Миролюбивое жвачное животное, ценный источник молока и кожи. Отличается спокойным и кротким характером.",
+    "tierNum": 0,
+    "colStart": 0,
+    "colEnd": 0,
+    "colWidth": 1,
+    "gridRow": 1,
+    "gridColumn": "1 / 2",
+    "base_stats": {
+      "hp": 100,
+      "mp": 30,
+      "atk_phys": 10,
+      "def_phys": 6,
+      "atk_mag": 6,
+      "def_mag": 6,
+      "spd": 3,
+      "init": 5,
+      "crit_chance": 5,
+      "crit_dmg": 50,
+      "res": {}
+    },
+    "attribute_converters": {
+      "str": {
+        "hp": 20,
+        "atk_phys": 10,
+        "def_phys": 8,
+        "crit_dmg": 0
+      },
+      "end": {
+        "hp": 35,
+        "def_phys": 10
+      },
+      "agi": {
+        "spd": 0.1,
+        "init": 2,
+        "atk_phys": 4,
+        "crit_chance": 0
+      },
+      "int": {
+        "mp": 20,
+        "atk_mag": 10,
+        "def_mag": 8
+      }
+    }
   },
   {
     "id": "cat",
-    "name": "Кошка",
+    "name": "кошка",
     "icon": "🐱",
     "parent_id": null,
-    "family": "beast",
+    "family": "pets",
     "category": "heteromorphic",
     "tier": "basic",
     "tags": [
@@ -1583,14 +2543,56 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Ловкий и независимый домашний охотник на грызунов, обладающий острыми когтями и великолепным ночным зрением."
+    "description": "Ловкий и независимый домашний охотник на грызунов, обладающий острыми когтями и великолепным ночным зрением.",
+    "tierNum": 0,
+    "colStart": 0,
+    "colEnd": 0,
+    "colWidth": 1,
+    "gridRow": 1,
+    "gridColumn": "1 / 2",
+    "base_stats": {
+      "hp": 100,
+      "mp": 30,
+      "atk_phys": 10,
+      "def_phys": 6,
+      "atk_mag": 6,
+      "def_mag": 6,
+      "spd": 3,
+      "init": 5,
+      "crit_chance": 5,
+      "crit_dmg": 50,
+      "res": {}
+    },
+    "attribute_converters": {
+      "str": {
+        "hp": 20,
+        "atk_phys": 10,
+        "def_phys": 8,
+        "crit_dmg": 0
+      },
+      "end": {
+        "hp": 35,
+        "def_phys": 10
+      },
+      "agi": {
+        "spd": 0.1,
+        "init": 2,
+        "atk_phys": 4,
+        "crit_chance": 0
+      },
+      "int": {
+        "mp": 20,
+        "atk_mag": 10,
+        "def_mag": 8
+      }
+    }
   },
   {
     "id": "dog",
-    "name": "Собака",
+    "name": "собака",
     "icon": "🐶",
     "parent_id": null,
-    "family": "beast",
+    "family": "pets",
     "category": "heteromorphic",
     "tier": "basic",
     "tags": [
@@ -1601,14 +2603,56 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Преданный спутник и охранник человека, наделенный чутким обонянием, выносливостью и готовностью защищать хозяина."
+    "description": "Преданный спутник и охранник человека, наделенный чутким обонянием, выносливостью и готовностью защищать хозяина.",
+    "base_stats": {
+      "hp": 100,
+      "mp": 30,
+      "atk_phys": 10,
+      "def_phys": 6,
+      "atk_mag": 6,
+      "def_mag": 6,
+      "spd": 3,
+      "init": 5,
+      "crit_chance": 5,
+      "crit_dmg": 50,
+      "res": {}
+    },
+    "attribute_converters": {
+      "str": {
+        "hp": 20,
+        "atk_phys": 10,
+        "def_phys": 8,
+        "crit_dmg": 0
+      },
+      "end": {
+        "hp": 35,
+        "def_phys": 10
+      },
+      "agi": {
+        "spd": 0.1,
+        "init": 2,
+        "atk_phys": 4,
+        "crit_chance": 0
+      },
+      "int": {
+        "mp": 20,
+        "atk_mag": 10,
+        "def_mag": 8
+      }
+    },
+    "tierNum": 0,
+    "colStart": 0,
+    "colEnd": 0,
+    "colWidth": 1,
+    "gridRow": 1,
+    "gridColumn": "1 / 2"
   },
   {
     "id": "goat",
-    "name": "Коза",
+    "name": "коза",
     "icon": "🐐",
     "parent_id": null,
-    "family": "beast",
+    "family": "pets",
     "category": "heteromorphic",
     "tier": "basic",
     "tags": [
@@ -1619,14 +2663,56 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Неприхотливое и выносливое горное домашнее животное, способное легко карабкаться по крутым скалистым склонам."
+    "description": "Неприхотливое и выносливое горное домашнее животное, способное легко карабкаться по крутым скалистым склонам.",
+    "tierNum": 0,
+    "colStart": 0,
+    "colEnd": 0,
+    "colWidth": 1,
+    "gridRow": 1,
+    "gridColumn": "1 / 2",
+    "base_stats": {
+      "hp": 100,
+      "mp": 30,
+      "atk_phys": 10,
+      "def_phys": 6,
+      "atk_mag": 6,
+      "def_mag": 6,
+      "spd": 3,
+      "init": 5,
+      "crit_chance": 5,
+      "crit_dmg": 50,
+      "res": {}
+    },
+    "attribute_converters": {
+      "str": {
+        "hp": 20,
+        "atk_phys": 10,
+        "def_phys": 8,
+        "crit_dmg": 0
+      },
+      "end": {
+        "hp": 35,
+        "def_phys": 10
+      },
+      "agi": {
+        "spd": 0.1,
+        "init": 2,
+        "atk_phys": 4,
+        "crit_chance": 0
+      },
+      "int": {
+        "mp": 20,
+        "atk_mag": 10,
+        "def_mag": 8
+      }
+    }
   },
   {
     "id": "sheep",
-    "name": "Овца",
+    "name": "овца",
     "icon": "🐑",
     "parent_id": null,
-    "family": "beast",
+    "family": "pets",
     "category": "heteromorphic",
     "tier": "basic",
     "tags": [
@@ -1637,11 +2723,53 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Стадное домашнее животное с густым шерстяным руном, разводимое ради шерсти, молока и мяса."
+    "description": "Стадное домашнее животное с густым шерстяным руном, разводимое ради шерсти, молока и мяса.",
+    "tierNum": 0,
+    "colStart": 0,
+    "colEnd": 0,
+    "colWidth": 1,
+    "gridRow": 1,
+    "gridColumn": "1 / 2",
+    "base_stats": {
+      "hp": 100,
+      "mp": 30,
+      "atk_phys": 10,
+      "def_phys": 6,
+      "atk_mag": 6,
+      "def_mag": 6,
+      "spd": 3,
+      "init": 5,
+      "crit_chance": 5,
+      "crit_dmg": 50,
+      "res": {}
+    },
+    "attribute_converters": {
+      "str": {
+        "hp": 20,
+        "atk_phys": 10,
+        "def_phys": 8,
+        "crit_dmg": 0
+      },
+      "end": {
+        "hp": 35,
+        "def_phys": 10
+      },
+      "agi": {
+        "spd": 0.1,
+        "init": 2,
+        "atk_phys": 4,
+        "crit_chance": 0
+      },
+      "int": {
+        "mp": 20,
+        "atk_mag": 10,
+        "def_mag": 8
+      }
+    }
   },
   {
     "id": "fire-elemental",
-    "name": "Элементаль огня",
+    "name": "элементаль огня",
     "icon": "🔥",
     "parent_id": null,
     "family": "elemental",
@@ -1658,7 +2786,7 @@
   },
   {
     "id": "elder-fire-elemental",
-    "name": "Старший элементаль огня",
+    "name": "старший элементаль огня",
     "icon": "🔥⚔",
     "parent_id": "fire-elemental",
     "family": "elemental",
@@ -1675,7 +2803,7 @@
   },
   {
     "id": "magma-elemental",
-    "name": "Магматический элементаль",
+    "name": "магматический элементаль",
     "icon": "🔥🌋",
     "parent_id": "elder-fire-elemental",
     "family": "elemental",
@@ -1690,475 +2818,6 @@
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
     "description": "Гибрид огненной и земной первозданной стихии, состоящий из кипящей вулканической лавы и базальтовой корки."
-  },
-  {
-    "id": "water-elemental",
-    "name": "Элементаль воды",
-    "icon": "💧",
-    "parent_id": null,
-    "family": "elemental",
-    "category": "heteromorphic",
-    "tier": "basic",
-    "tags": [
-      "elemental",
-      "water"
-    ],
-    "lvl_min": 1,
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0,
-    "description": "Текучий дух водной стихии, способный принимать любую форму, гасить пламя и наносить сокрушительные гидроудары."
-  },
-  {
-    "id": "elder-water-elemental",
-    "name": "Старший элементаль воды",
-    "icon": "💧⚔",
-    "parent_id": "water-elemental",
-    "family": "elemental",
-    "category": "heteromorphic",
-    "tier": "advanced",
-    "tags": [
-      "elemental",
-      "water"
-    ],
-    "lvl_min": 15,
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0,
-    "description": "Воплощение бушующего водоворота, легко сокрушающее броню давлением водных потоков и поглощающее кинетический урон."
-  },
-  {
-    "id": "ice-elemental",
-    "name": "Ледяной элементаль",
-    "icon": "❄💧",
-    "parent_id": "elder-water-elemental",
-    "family": "elemental",
-    "category": "heteromorphic",
-    "tier": "advanced",
-    "tags": [
-      "elemental",
-      "water",
-      "ice"
-    ],
-    "lvl_min": 30,
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0,
-    "description": "Кристаллизованная форма водной стихии, замораживающая пространство вокруг себя и разящая ледяными иглами."
-  },
-  {
-    "id": "earth-elemental",
-    "name": "Элементаль земли",
-    "icon": "🪨",
-    "parent_id": null,
-    "family": "elemental",
-    "category": "heteromorphic",
-    "tier": "basic",
-    "tags": [
-      "elemental",
-      "earth"
-    ],
-    "lvl_min": 1,
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0,
-    "description": "Монолитное создание из камня и почвы, наделенное колоссальной физической стойкостью и сокрушительным весом."
-  },
-  {
-    "id": "elder-earth-elemental",
-    "name": "Старший элементаль земли",
-    "icon": "🪨⚔",
-    "parent_id": "earth-elemental",
-    "family": "elemental",
-    "category": "heteromorphic",
-    "tier": "advanced",
-    "tags": [
-      "elemental",
-      "earth"
-    ],
-    "lvl_min": 15,
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0,
-    "description": "Древний каменный титан, способный вызывать локальные землетрясения и проходить сквозь твердые горные породы."
-  },
-  {
-    "id": "crystal-elemental",
-    "name": "Кристаллический элементаль",
-    "icon": "💎🪨",
-    "parent_id": "elder-earth-elemental",
-    "family": "elemental",
-    "category": "heteromorphic",
-    "tier": "advanced",
-    "tags": [
-      "elemental",
-      "earth",
-      "crystal"
-    ],
-    "lvl_min": 30,
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0,
-    "description": "Земляная сущность высокой плотности, тело которой состоит из прочнейших самоцветов, преломляющих магические лучи."
-  },
-  {
-    "id": "air-elemental",
-    "name": "Элементаль воздуха",
-    "icon": "🌪",
-    "parent_id": null,
-    "family": "elemental",
-    "category": "heteromorphic",
-    "tier": "basic",
-    "tags": [
-      "elemental",
-      "air"
-    ],
-    "lvl_min": 1,
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0,
-    "description": "Стремительный вихрь первородного ветра, перемещающийся с головокружительной скоростью и рассекающий воздух."
-  },
-  {
-    "id": "elder-air-elemental",
-    "name": "Старший элементаль воздуха",
-    "icon": "🌪⚔",
-    "parent_id": "air-elemental",
-    "family": "elemental",
-    "category": "heteromorphic",
-    "tier": "advanced",
-    "tags": [
-      "elemental",
-      "air"
-    ],
-    "lvl_min": 15,
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0,
-    "description": "Разрушительный ураганный вихрь, подбрасывающий врагов в воздух и наносящий шквал ударов сжатыми воздушными лезвиями."
-  },
-  {
-    "id": "storm-elemental",
-    "name": "Грозовой элементаль",
-    "icon": "⚡🌪",
-    "parent_id": "elder-air-elemental",
-    "family": "elemental",
-    "category": "heteromorphic",
-    "tier": "advanced",
-    "tags": [
-      "elemental",
-      "air",
-      "lightning"
-    ],
-    "lvl_min": 30,
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0,
-    "description": "Бушующее грозовое облако, генерирующее электрические разряды колоссальной мощности и оглушительный гром."
-  },
-  {
-    "id": "clay-golem",
-    "name": "Глиняный голем",
-    "icon": "🏺🤖",
-    "parent_id": null,
-    "family": "golem",
-    "category": "heteromorphic",
-    "tier": "basic",
-    "tags": [
-      "construct",
-      "artificial",
-      "golem"
-    ],
-    "lvl_min": 1,
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0,
-    "description": "Базовый конструкт из обожжённой глины, оживлённый магическим ядром. Обладает вязким телом, амортизирующим тупые удары."
-  },
-  {
-    "id": "stone-golem",
-    "name": "Каменный голем",
-    "icon": "🪨🤖",
-    "parent_id": "clay-golem",
-    "family": "golem",
-    "category": "heteromorphic",
-    "tier": "advanced",
-    "tags": [
-      "construct",
-      "artificial",
-      "golem"
-    ],
-    "lvl_min": 10,
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0,
-    "description": "Массивный страж, высеченный из цельного гранита. Отличается высокой прочностью и полным иммунитетом к ядам и кровотечению."
-  },
-  {
-    "id": "iron-golem",
-    "name": "Железный голем",
-    "icon": "⚙🤖",
-    "parent_id": "stone-golem",
-    "family": "golem",
-    "category": "heteromorphic",
-    "tier": "advanced",
-    "tags": [
-      "construct",
-      "artificial",
-      "golem"
-    ],
-    "lvl_min": 25,
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0,
-    "description": "Тяжелый боевой автомат из кованого железа, устойчивый к обычному оружию и наделенный огромной сокрушающей силой."
-  },
-  {
-    "id": "crystal-golem",
-    "name": "Кристаллический голем",
-    "icon": "💎🤖",
-    "parent_id": "iron-golem",
-    "family": "golem",
-    "category": "heteromorphic",
-    "tier": "rare",
-    "tags": [
-      "construct",
-      "artificial",
-      "golem"
-    ],
-    "lvl_min": 45,
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0,
-    "description": "Редкий конструкт из зачарованных минералов и кристаллов, способный отражать враждебную магию обратно во врагов."
-  },
-  {
-    "id": "adamantine-golem",
-    "name": "Адамантитовый голем",
-    "icon": "🛡🤖",
-    "parent_id": "crystal-golem",
-    "family": "golem",
-    "category": "heteromorphic",
-    "tier": "rare",
-    "tags": [
-      "construct",
-      "artificial",
-      "golem"
-    ],
-    "lvl_min": 70,
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0,
-    "description": "Шедевр магической инженерии из легендарного адамантита. Практически неуязвим для физических и магических атак."
-  },
-  {
-    "id": "raven",
-    "name": "Ворон",
-    "icon": "🦅",
-    "parent_id": null,
-    "family": "avian",
-    "category": "heteromorphic",
-    "tier": "basic",
-    "tags": [
-      "beast",
-      "bird",
-      "aerial"
-    ],
-    "lvl_min": 1,
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0,
-    "description": "Умная и осторожная птица с чёрным оперением, служащая разведчиком и вестником тайн в темной магии."
-  },
-  {
-    "id": "falcon",
-    "name": "Сокол",
-    "icon": "🦅",
-    "parent_id": null,
-    "family": "avian",
-    "category": "heteromorphic",
-    "tier": "basic",
-    "tags": [
-      "beast",
-      "bird",
-      "aerial"
-    ],
-    "lvl_min": 1,
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0,
-    "description": "Стремительный пернатый хищник с феноменальным зрением, атакующий добычу в молниеносном пикирующем полёте."
-  },
-  {
-    "id": "shark",
-    "name": "Акула",
-    "icon": "🦈",
-    "parent_id": null,
-    "family": "aquatic",
-    "category": "heteromorphic",
-    "tier": "basic",
-    "tags": [
-      "beast",
-      "aquatic",
-      "predator"
-    ],
-    "lvl_min": 1,
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0,
-    "description": "Опасный морской хищник с острыми, как бритва, зубами и непревзойдённым чутьем на запах крови в воде."
-  },
-  {
-    "id": "megalodon",
-    "name": "Мегалодон",
-    "icon": "🦈👑",
-    "parent_id": "shark",
-    "family": "aquatic",
-    "category": "heteromorphic",
-    "tier": "advanced",
-    "tags": [
-      "beast",
-      "aquatic",
-      "predator",
-      "giant"
-    ],
-    "lvl_min": 25,
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0,
-    "description": "Доисторический исполинский хищник глубин, способный перекусывать надвое корабли и морских чудовищ."
-  },
-  {
-    "id": "octopus",
-    "name": "Осьминог",
-    "icon": "🐙",
-    "parent_id": null,
-    "family": "aquatic",
-    "category": "heteromorphic",
-    "tier": "basic",
-    "tags": [
-      "beast",
-      "aquatic",
-      "cephalopod"
-    ],
-    "lvl_min": 1,
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0,
-    "description": "Разумный головоногий моллюск, обладающий восемью щупальцами с присосками, чернильной защитой и природной маскировкой."
-  },
-  {
-    "id": "giant-octopus",
-    "name": "Гигантский осьминог",
-    "icon": "🐙🌊",
-    "parent_id": "octopus",
-    "family": "aquatic",
-    "category": "heteromorphic",
-    "tier": "advanced",
-    "tags": [
-      "beast",
-      "aquatic",
-      "cephalopod",
-      "giant"
-    ],
-    "lvl_min": 20,
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0,
-    "description": "Колоссальный глубоководный моллюск, чьи мощные щупальца способны сминать корпуса кораблей и утаскивать их на дно."
-  },
-  {
-    "id": "kraken",
-    "name": "Кракен",
-    "icon": "🐙👑",
-    "parent_id": "giant-octopus",
-    "family": "aquatic",
-    "category": "heteromorphic",
-    "tier": "rare",
-    "tags": [
-      "beast",
-      "aquatic",
-      "cephalopod",
-      "mythical"
-    ],
-    "lvl_min": 65,
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0,
-    "description": "Легендарное чудовище бездны, властвующее над морскими пучинами и способное вызывать чудовищные водовороты."
-  },
-  {
-    "id": "vampire-lord",
-    "name": "Вампир-лорд",
-    "icon": "🩸👑",
-    "parent_id": "blood-guard, vampire-bride",
-    "family": "vampire",
-    "category": "heteromorphic",
-    "tier": "rare",
-    "tags": [
-      "undead",
-      "vampire"
-    ],
-    "lvl_min": 30,
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0,
-    "description": "Повелитель клана кровопийц, обладающий вековой мудростью, искусством превращения в туман и подчинением низшей нежити."
-  },
-  {
-    "id": "true-vampire",
-    "name": "Истинный вампир",
-    "icon": "🩸✨",
-    "parent_id": "vampire-lord",
-    "family": "vampire",
-    "category": "heteromorphic",
-    "tier": "rare",
-    "tags": [
-      "undead",
-      "vampire"
-    ],
-    "lvl_min": 1,
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0,
-    "description": "Первородный владыка крови, сочетающий совершенную внешность с чудовищным боевым обличием и абсолютной регенерацией плоти."
-  },
-  {
-    "id": "devil",
-    "name": "Дьявол",
-    "icon": "😈👑",
-    "parent_id": "succubus, incubus, demon",
-    "family": "infernal",
-    "category": "heteromorphic",
-    "tier": "rare",
-    "tags": [
-      "planarextra",
-      "fiend",
-      "infernal",
-      "imp",
-      "devil"
-    ],
-    "lvl_min": 50,
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0,
-    "description": "Коварный архидемон преисподней, искусный в составлении нерушимых темных сделок и повелевании легионами низших бесов."
-  },
-  {
-    "id": "archdevil",
-    "name": "Высший демон",
-    "icon": "😈✨",
-    "parent_id": "devil",
-    "family": "infernal",
-    "category": "heteromorphic",
-    "tier": "rare",
-    "tags": [
-      "planarextra",
-      "fiend",
-      "infernal",
-      "imp",
-      "devil",
-      "archdevil"
-    ],
-    "lvl_min": 80,
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0,
-    "description": "Великий князь преисподней, чей взгляд обращает смертных в пепел, а стратегический гений ведет адские орды к триумфу."
-  },
-  {
-    "id": "alicorn",
-    "name": "Аликорн",
-    "icon": "🦄🪽",
-    "parent_id": "pegasus, unicorn",
-    "family": "beast",
-    "category": "heteromorphic",
-    "tier": "rare",
-    "tags": [
-      "celestial",
-      "beast",
-      "horse",
-      "alicorn"
-    ],
-    "lvl_min": 50,
-    "skill_points_per_level": 1,
-    "spell_points_per_level": 0,
-    "description": "Легендарное создание, соединяющее крылья пегаса и рог единорога. Повелевает небесными бурями и владеет высшей созидательной магией."
   },
   {
     "id": "fire-lord",
@@ -2179,6 +2838,58 @@
     "description": "Владыка стихийного огня колоссальной мощи, чье присутствие плавит металл и обращает окружение в пепел."
   },
   {
+    "id": "water-elemental",
+    "name": "элементаль воды",
+    "icon": "💧",
+    "parent_id": null,
+    "family": "elemental",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "elemental",
+      "water"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Текучий дух водной стихии, способный принимать любую форму, гасить пламя и наносить сокрушительные гидроудары."
+  },
+  {
+    "id": "elder-water-elemental",
+    "name": "старший элементаль воды",
+    "icon": "💧⚔",
+    "parent_id": "water-elemental",
+    "family": "elemental",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "elemental",
+      "water"
+    ],
+    "lvl_min": 15,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Воплощение бушующего водоворота, легко сокрушающее броню давлением водных потоков и поглощающее кинетический урон."
+  },
+  {
+    "id": "ice-elemental",
+    "name": "ледяной элементаль",
+    "icon": "❄💧",
+    "parent_id": "elder-water-elemental",
+    "family": "elemental",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "elemental",
+      "water",
+      "ice"
+    ],
+    "lvl_min": 30,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Кристаллизованная форма водной стихии, замораживающая пространство вокруг себя и разящая ледяными иглами."
+  },
+  {
     "id": "tidal-lord",
     "name": "Лорд приливов",
     "icon": "💧👑",
@@ -2195,6 +2906,58 @@
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
     "description": "Древний владыка океанических глубин, способный призывать сокрушительные цунами и повелевать океанскими течениями."
+  },
+  {
+    "id": "earth-elemental",
+    "name": "элементаль земли",
+    "icon": "🪨",
+    "parent_id": null,
+    "family": "elemental",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "elemental",
+      "earth"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Монолитное создание из камня и почвы, наделенное колоссальной физической стойкостью и сокрушительным весом."
+  },
+  {
+    "id": "elder-earth-elemental",
+    "name": "старший элементаль земли",
+    "icon": "🪨⚔",
+    "parent_id": "earth-elemental",
+    "family": "elemental",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "elemental",
+      "earth"
+    ],
+    "lvl_min": 15,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Древний каменный титан, способный вызывать локальные землетрясения и проходить сквозь твердые горные породы."
+  },
+  {
+    "id": "crystal-elemental",
+    "name": "кристаллический элементаль",
+    "icon": "💎🪨",
+    "parent_id": "elder-earth-elemental",
+    "family": "elemental",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "elemental",
+      "earth",
+      "crystal"
+    ],
+    "lvl_min": 30,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Земляная сущность высокой плотности, тело которой состоит из прочнейших самоцветов, преломляющих магические лучи."
   },
   {
     "id": "earth-lord",
@@ -2215,6 +2978,58 @@
     "description": "Первородный повелитель литосферы, чья нерушимая плоть выдерживает удары божественного масштаба."
   },
   {
+    "id": "air-elemental",
+    "name": "элементаль воздуха",
+    "icon": "🌪",
+    "parent_id": null,
+    "family": "elemental",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "elemental",
+      "air"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Стремительный вихрь первородного ветра, перемещающийся с головокружительной скоростью и рассекающий воздух."
+  },
+  {
+    "id": "elder-air-elemental",
+    "name": "старший элементаль воздуха",
+    "icon": "🌪⚔",
+    "parent_id": "air-elemental",
+    "family": "elemental",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "elemental",
+      "air"
+    ],
+    "lvl_min": 15,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Разрушительный ураганный вихрь, подбрасывающий врагов в воздух и наносящий шквал ударов сжатыми воздушными лезвиями."
+  },
+  {
+    "id": "storm-elemental",
+    "name": "грозовой элементаль",
+    "icon": "⚡🌪",
+    "parent_id": "elder-air-elemental",
+    "family": "elemental",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "elemental",
+      "air",
+      "lightning"
+    ],
+    "lvl_min": 30,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Бушующее грозовое облако, генерирующее электрические разряды колоссальной мощности и оглушительный гром."
+  },
+  {
     "id": "storm-lord",
     "name": "Владыка бурь",
     "icon": "🌪👑",
@@ -2231,5 +3046,324 @@
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
     "description": "Легендарный правитель небесных штормов, одним взмахом порождающий опустошительные смерчи и грозы."
+  },
+  {
+    "id": "clay-golem",
+    "name": "глиняный голем",
+    "icon": "🏺🤖",
+    "parent_id": null,
+    "family": "golem",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "construct",
+      "artificial",
+      "golem"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Базовый конструкт из обожжённой глины, оживлённый магическим ядром. Обладает вязким телом, амортизирующим тупые удары."
+  },
+  {
+    "id": "stone-golem",
+    "name": "каменный голем",
+    "icon": "🪨🤖",
+    "parent_id": "clay-golem",
+    "family": "golem",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "construct",
+      "artificial",
+      "golem"
+    ],
+    "lvl_min": 10,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Массивный страж, высеченный из цельного гранита. Отличается высокой прочностью и полным иммунитетом к ядам и кровотечению."
+  },
+  {
+    "id": "iron-golem",
+    "name": "железный голем",
+    "icon": "⚙🤖",
+    "parent_id": "stone-golem",
+    "family": "golem",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "construct",
+      "artificial",
+      "golem"
+    ],
+    "lvl_min": 25,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Тяжелый боевой автомат из кованого железа, устойчивый к обычному оружию и наделенный огромной сокрушающей силой."
+  },
+  {
+    "id": "crystal-golem",
+    "name": "кристаллический голем",
+    "icon": "💎🤖",
+    "parent_id": "iron-golem",
+    "family": "golem",
+    "category": "heteromorphic",
+    "tier": "rare",
+    "tags": [
+      "construct",
+      "artificial",
+      "golem"
+    ],
+    "lvl_min": 45,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Редкий конструкт из зачарованных минералов и кристаллов, способный отражать враждебную магию обратно во врагов."
+  },
+  {
+    "id": "adamantine-golem",
+    "name": "адамантитовый голем",
+    "icon": "🛡🤖",
+    "parent_id": "crystal-golem",
+    "family": "golem",
+    "category": "heteromorphic",
+    "tier": "rare",
+    "tags": [
+      "construct",
+      "artificial",
+      "golem"
+    ],
+    "lvl_min": 70,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Шедевр магической инженерии из легендарного адамантита. Практически неуязвим для физических и магических атак."
+  },
+  {
+    "id": "raven",
+    "name": "ворон",
+    "icon": "🦅",
+    "parent_id": null,
+    "family": "avian",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "beast",
+      "bird",
+      "aerial"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Умная и осторожная птица с чёрным оперением, служащая разведчиком и вестником тайн в темной магии."
+  },
+  {
+    "id": "falcon",
+    "name": "сокол",
+    "icon": "🦅",
+    "parent_id": null,
+    "family": "avian",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "beast",
+      "bird",
+      "aerial"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Стремительный пернатый хищник с феноменальным зрением, атакующий добычу в молниеносном пикирующем полёте."
+  },
+  {
+    "id": "shark",
+    "name": "акула",
+    "icon": "🦈",
+    "parent_id": null,
+    "family": "aquatic",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "beast",
+      "aquatic",
+      "predator"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Опасный морской хищник с острыми, как бритва, зубами и непревзойдённым чутьем на запах крови в воде."
+  },
+  {
+    "id": "megalodon",
+    "name": "мегалодон",
+    "icon": "🦈👑",
+    "parent_id": "shark",
+    "family": "aquatic",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "beast",
+      "aquatic",
+      "predator",
+      "giant"
+    ],
+    "lvl_min": 25,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Доисторический исполинский хищник глубин, способный перекусывать надвое корабли и морских чудовищ."
+  },
+  {
+    "id": "octopus",
+    "name": "осьминог",
+    "icon": "🐙",
+    "parent_id": null,
+    "family": "aquatic",
+    "category": "heteromorphic",
+    "tier": "basic",
+    "tags": [
+      "beast",
+      "aquatic",
+      "cephalopod"
+    ],
+    "lvl_min": 1,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Разумный головоногий моллюск, обладающий восемью щупальцами с присосками, чернильной защитой и природной маскировкой."
+  },
+  {
+    "id": "giant-octopus",
+    "name": "гигантский осьминог",
+    "icon": "🐙🌊",
+    "parent_id": "octopus",
+    "family": "aquatic",
+    "category": "heteromorphic",
+    "tier": "advanced",
+    "tags": [
+      "beast",
+      "aquatic",
+      "cephalopod",
+      "giant"
+    ],
+    "lvl_min": 20,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Колоссальный глубоководный моллюск, чьи мощные щупальца способны сминать корпуса кораблей и утаскивать их на дно."
+  },
+  {
+    "id": "kraken",
+    "name": "кракен",
+    "icon": "🐙👑",
+    "parent_id": "giant-octopus",
+    "family": "aquatic",
+    "category": "heteromorphic",
+    "tier": "rare",
+    "tags": [
+      "beast",
+      "aquatic",
+      "cephalopod",
+      "mythical"
+    ],
+    "lvl_min": 65,
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "Легендарное чудовище бездны, властвующее над морскими пучинами и способное вызывать чудовищные водовороты."
+  },
+  {
+    "id": "pig",
+    "name": "свинья",
+    "icon": "🐷",
+    "parent_id": null,
+    "family": "beast",
+    "category": "heteromorphic",
+    "tags": [],
+    "lvl_min": 1,
+    "tier": "basic",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "",
+    "base_stats": {
+      "hp": 100,
+      "mp": 30,
+      "atk_phys": 10,
+      "def_phys": 6,
+      "atk_mag": 6,
+      "def_mag": 6,
+      "spd": 3,
+      "init": 5,
+      "crit_chance": 5,
+      "crit_dmg": 50,
+      "res": {}
+    },
+    "attribute_converters": {
+      "str": {
+        "hp": 20,
+        "atk_phys": 10,
+        "def_phys": 8,
+        "crit_dmg": 0
+      },
+      "end": {
+        "hp": 35,
+        "def_phys": 10
+      },
+      "agi": {
+        "spd": 0.1,
+        "init": 2,
+        "atk_phys": 4,
+        "crit_chance": 0
+      },
+      "int": {
+        "mp": 20,
+        "atk_mag": 10,
+        "def_mag": 8
+      }
+    }
+  },
+  {
+    "id": "hog",
+    "name": "кабан",
+    "icon": "🐗",
+    "parent_id": "pig",
+    "family": "beast",
+    "category": "heteromorphic",
+    "tags": [],
+    "lvl_min": 1,
+    "tier": "basic",
+    "skill_points_per_level": 1,
+    "spell_points_per_level": 0,
+    "description": "",
+    "base_stats": {
+      "hp": 100,
+      "mp": 30,
+      "atk_phys": 10,
+      "def_phys": 6,
+      "atk_mag": 6,
+      "def_mag": 6,
+      "spd": 3,
+      "init": 5,
+      "crit_chance": 5,
+      "crit_dmg": 50,
+      "res": {}
+    },
+    "attribute_converters": {
+      "str": {
+        "hp": 20,
+        "atk_phys": 10,
+        "def_phys": 8,
+        "crit_dmg": 0
+      },
+      "end": {
+        "hp": 35,
+        "def_phys": 10
+      },
+      "agi": {
+        "spd": 0.1,
+        "init": 2,
+        "atk_phys": 4,
+        "crit_chance": 0
+      },
+      "int": {
+        "mp": 20,
+        "atk_mag": 10,
+        "def_mag": 8
+      }
+    }
   }
 ]
