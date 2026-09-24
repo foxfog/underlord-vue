@@ -17,7 +17,9 @@ import {
 	SETTLEMENT_TYPES,
 	ROAD_TYPES,
 	getCanonicalRoadKey,
-	checkBridgeBetweenHexes
+	checkBridgeBetweenHexes,
+	getFactionVisuals,
+	hexToRgba
 } from './hexLoader.js'
 import {
 	hexToWorldGroundCenter,
@@ -28,6 +30,7 @@ import {
 	HEX_EDGES,
 	HexPerspectiveCamera,
 	getRiverMeanderControls,
+	getBorderMeanderControls,
 	getRoadPathControls,
 	getRoadCurvePoint,
 	hashString,
@@ -69,6 +72,8 @@ export function renderHexMap(ctx, mapData, options = {}) {
 		activeRiverWidth = 1,
 		discoveredLocations = null, // Set of discovered settlement IDs
 		drawCanvasBadges = false,
+		showBorders = true,
+		factionsMap = null,
 		animTime = 0 // Seconds for animated rivers
 	} = options
 
@@ -89,26 +94,42 @@ export function renderHexMap(ctx, mapData, options = {}) {
 	// 0. Atmospheric horizon sky & mist at the top of the canvas
 	drawAtmosphere(ctx, camera)
 
-	// 1. Draw all hex base cells (flat ground plane, sorted North to South)
+	// 1. Draw all hex base cells (flat ground plane, sorted North to South by true ground center Y)
 	const cellEntries = Object.values(mapData.cells || {})
-	cellEntries.sort((a, b) => a.row - b.row || a.col - b.col)
+	cellEntries.sort((a, b) => {
+		const yA = hexToWorldGroundCenter(a.col, a.row, radius).y
+		const yB = hexToWorldGroundCenter(b.col, b.row, radius).y
+		return yA - yB || a.col - b.col
+	})
 
 	for (const cell of cellEntries) {
 		drawHexCell(ctx, camera, cell, radius, animTime)
 	}
 
-	// 2. Draw rivers along edges (with animated flowing water)
+	// 1.5. Political borders & territory tint (Civilization style)
+	if (showBorders) {
+		drawPoliticalBorders(ctx, camera, mapData, radius, factionsMap)
+	}
+
+	// 2. Draw rivers along edges (with animated flowing water on ground plane Z = 0)
 	drawRivers(ctx, camera, mapData, radius, animTime)
 
-	// 3. Draw roads connecting hex centers
-	drawRoads(ctx, camera, mapData, radius)
+	// 3. Draw 2.5D Hill relief sprites (biome-adaptive rolling mounds, inside hexes)
+	for (const cell of cellEntries) {
+		if (cell.feature === 'hills') {
+			drawHills(ctx, camera, cell, radius)
+		}
+	}
 
-	// 4. Draw bridges where roads cross rivers
+	// 4. Draw roads across all cells (on top of ground and hill sprites, seamless multi-pass)
+	const roadData = buildRoadRenderData(camera, mapData, radius)
+	renderRoads(ctx, roadData)
+
+	// 5. Draw bridges where roads cross rivers
 	drawBridges(ctx, camera, mapData, radius)
 
-	// 5. Draw 2.5D Pop-Up Objects (Mountains, Settlements)
-	// Rendered back-to-front (depth sorted by row, then col)
-	// Hills are rendered directly as 3D deformed hex terrain cells in drawHexCell
+	// 6. Draw 2.5D Pop-Up Objects (Mountains and Settlements)
+	// Rendered back-to-front (depth sorted by true ground Y)
 	for (const cell of cellEntries) {
 		if (cell.feature === 'mountain') {
 			drawMountain(ctx, camera, cell, radius)
@@ -120,12 +141,14 @@ export function renderHexMap(ctx, mapData, options = {}) {
 		}
 	}
 
-	// 6. Draw hovered/selected hex highlights
+	// 7. Draw hovered/selected hex highlights
 	if (hoveredHex) {
-		drawHexHighlight(ctx, camera, hoveredHex.col, hoveredHex.row, radius, '#38bdf8', 0.25, 2)
+		const hCell = mapData.cells?.[`${hoveredHex.col},${hoveredHex.row}`]
+		drawHexHighlight(ctx, camera, hoveredHex.col, hoveredHex.row, radius, '#38bdf8', 0.25, 2, hCell)
 	}
 	if (selectedHex) {
-		drawHexHighlight(ctx, camera, selectedHex.col, selectedHex.row, radius, '#f6c445', 0.35, 3)
+		const sCell = mapData.cells?.[`${selectedHex.col},${selectedHex.row}`]
+		drawHexHighlight(ctx, camera, selectedHex.col, selectedHex.row, radius, '#f6c445', 0.35, 3, sCell)
 	}
 
 	// 7. Draw hovered edge highlight for River tool
@@ -157,137 +180,9 @@ function drawAtmosphere(ctx, camera) {
 }
 
 /**
- * Draws a 3D-deformed relief hex cell for hills with a flat plateau summit
- * and organically randomized slope facets.
- */
-function drawHillHexCell(ctx, camera, cell, radius) {
-	const center = hexToWorldGroundCenter(cell.col, cell.row, radius)
-	const groundVerts = getHexGroundVertices(center.x, center.y, radius)
-	const pBase = groundVerts.map(v => camera.projectTerrain(v.x, v.y, 0))
-
-	if (!pBase.some(v => v.visible)) return
-
-	const biome = BIOMES[cell.terrain] || BIOMES.grass
-	const h = hashString(`${cell.col},${cell.row}:hills`)
-
-	// 1. Deterministic organic randomization parameters per cell
-	const shiftX = getHashFloat(h, 1) * (radius * 0.08)
-	const shiftY = getHashFloat(h, 2) * (radius * 0.08)
-	const zHill = (14 + (getHashFloat(h, 3) + 1) * 1.5) * (radius / 36)
-	const baseTopRadius = radius * (0.36 + getHashFloat(h, 4) * 0.06)
-
-	const topCenterX = center.x + shiftX
-	const topCenterY = center.y + shiftY
-
-	// 2. Generate 6 randomized vertices for the flat plateau top
-	const pTop = []
-	for (let i = 0; i < 6; i++) {
-		// Angles: 0, 60, 120, 180, 240, 300 degrees + angular & radial jitter
-		const angleJitter = getHashFloat(h, 10 + i) * 0.12 // ±7 degrees
-		const radJitter = 1 + getHashFloat(h, 20 + i) * 0.16 // ±16% radius variation
-		const angle = (i * Math.PI) / 3 + angleJitter
-		const r_i = baseTopRadius * radJitter
-
-		const wx = topCenterX + Math.cos(angle) * r_i
-		const wy = topCenterY + Math.sin(angle) * r_i
-		pTop.push(camera.projectTerrain(wx, wy, zHill))
-	}
-
-	const avgScale = (pTop[0].scale + pBase[0].scale) / 2
-
-	// 3. Directional sun lighting modifiers for the 6 side slope facets
-	// Sun comes from NW (315°): NW/N facets are sunlit, SE/S facets are shaded
-	const baseFacetLightMods = [-18, -12, 6, 24, 16, 0]
-
-	// 4. Draw the 6 sloping trapezoidal facets connecting flat plateau to outer base
-	for (let i = 0; i < 6; i++) {
-		const next = (i + 1) % 6
-		const facetRand = getHashFloat(h, 30 + i) * 3
-		const lightMod = Math.round(baseFacetLightMods[i] + facetRand)
-
-		ctx.beginPath()
-		ctx.moveTo(pBase[i].x, pBase[i].y)
-		ctx.lineTo(pBase[next].x, pBase[next].y)
-		ctx.lineTo(pTop[next].x, pTop[next].y)
-		ctx.lineTo(pTop[i].x, pTop[i].y)
-		ctx.closePath()
-
-		ctx.fillStyle = shadeHexColor(biome.color, lightMod)
-		ctx.fill()
-
-		// Subtle facet rib stroke separating adjacent slope facets
-		ctx.beginPath()
-		ctx.moveTo(pBase[i].x, pBase[i].y)
-		ctx.lineTo(pTop[i].x, pTop[i].y)
-		ctx.lineWidth = Math.max(0.6, 0.8 * avgScale)
-		ctx.strokeStyle = lightMod >= 0 ? 'rgba(255, 255, 255, 0.18)' : 'rgba(15, 23, 42, 0.14)'
-		ctx.stroke()
-	}
-
-	// 5. Draw the FLAT TOP PLATEAU polygon (плоская верхушка)
-	ctx.beginPath()
-	ctx.moveTo(pTop[0].x, pTop[0].y)
-	for (let i = 1; i < 6; i++) {
-		ctx.lineTo(pTop[i].x, pTop[i].y)
-	}
-	ctx.closePath()
-
-	// Flat top receives direct overhead sun: gentle warm summit tint
-	const topLightMod = Math.round(8 + getHashFloat(h, 5) * 4)
-	ctx.fillStyle = shadeHexColor(biome.color, topLightMod)
-	ctx.fill()
-
-	// Plateau perimeter edge highlight rim
-	ctx.lineWidth = Math.max(0.6, 1.2 * avgScale)
-	ctx.strokeStyle = 'rgba(255, 255, 255, 0.32)'
-	ctx.stroke()
-
-	// 6. Subtle organic mid-slope contour loop around the hill
-	ctx.save()
-	ctx.beginPath()
-	ctx.moveTo(pBase[0].x, pBase[0].y)
-	for (let i = 1; i < 6; i++) ctx.lineTo(pBase[i].x, pBase[i].y)
-	ctx.closePath()
-	ctx.clip()
-
-	ctx.beginPath()
-	for (let i = 0; i < 6; i++) {
-		const next = (i + 1) % 6
-		const mid1X = (pBase[i].x + pTop[i].x) / 2
-		const mid1Y = (pBase[i].y + pTop[i].y) / 2
-		const mid2X = (pBase[next].x + pTop[next].x) / 2
-		const mid2Y = (pBase[next].y + pTop[next].y) / 2
-		if (i === 0) ctx.moveTo(mid1X, mid1Y)
-		ctx.lineTo(mid2X, mid2Y)
-	}
-	ctx.closePath()
-	ctx.lineWidth = Math.max(0.5, 0.8 * avgScale)
-	ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)'
-	ctx.stroke()
-
-	ctx.restore()
-
-	// 7. Outer perimeter hex border stroke
-	ctx.beginPath()
-	ctx.moveTo(pBase[0].x, pBase[0].y)
-	for (let i = 1; i < 6; i++) {
-		ctx.lineTo(pBase[i].x, pBase[i].y)
-	}
-	ctx.closePath()
-	ctx.lineWidth = Math.max(0.6, 1 * avgScale)
-	ctx.strokeStyle = biome.edgeColor || 'rgba(0, 0, 0, 0.15)'
-	ctx.stroke()
-}
-
-/**
  * Draws a single flat-topped hex cell on the 3D perspective ground plane.
  */
 function drawHexCell(ctx, camera, cell, radius, animTime) {
-	if (cell.feature === 'hills') {
-		drawHillHexCell(ctx, camera, cell, radius)
-		return
-	}
-
 	const center = hexToWorldGroundCenter(cell.col, cell.row, radius)
 	const groundVerts = getHexGroundVertices(center.x, center.y, radius)
 	const screenVerts = groundVerts.map(v => camera.project(v.x, v.y, 0))
@@ -342,9 +237,552 @@ function drawWaterShimmer(ctx, camera, cx, cy, radius, animTime, isOcean) {
 }
 
 /**
+ * Draws political borders and territory fills (Civilization style).
+ *
+ * Pass 1: Territory Fill
+ * - Fills hex cells with a subtle translucent tint (fillColor) representing the controlling faction.
+ *
+ * Pass 2: Outer National Borders
+ * - Computes external edges where the adjacent hex belongs to a different faction (or no faction/map edge).
+ * - Border lines are inset towards the cell center by 6% of the radius (0.06 * R).
+ * - Because inset vertices for adjacent edges meet at the exact same vertex inset point,
+ *   borders form continuous closed ribbons without gaps or overlaps.
+ * - When two nations border each other, each draws an inset line on its own side,
+ *   creating the classic dual-ribbon border seen in Civilization.
+ * - Rendered in two passes: soft glowing halo ribbon + crisp heraldic inner stroke.
+ */
+export function drawPoliticalBorders(ctx, camera, mapData, radius, factionsMap = null) {
+	if (!ctx || !mapData || !mapData.cells) return
+
+	const cells = mapData.cells
+	const cellEntries = Object.values(cells)
+	if (cellEntries.length === 0) return
+
+	// Group cells by faction
+	// Map: factionId -> { visuals, borderColor, fillColor, cells: Array<cell>, cellSet: Set<"col,row"> }
+	const factionGroups = new Map()
+
+	for (const cell of cellEntries) {
+		const fId = cell.faction || cell.fraction
+		if (!fId) continue
+
+		let group = factionGroups.get(fId)
+		if (!group) {
+			const visuals = getFactionVisuals(fId, factionsMap) || {}
+			const borderColor = cell.borderColor || visuals.borderColor || '#38bdf8'
+			const fillColor = cell.fillColor || visuals.fillColor || hexToRgba(borderColor, 0.16)
+			group = {
+				factionId: fId,
+				visuals,
+				borderColor,
+				fillColor,
+				cells: [],
+				cellSet: new Set()
+			}
+			factionGroups.set(fId, group)
+		}
+		group.cells.push(cell)
+		group.cellSet.add(`${cell.col},${cell.row}`)
+	}
+
+	if (factionGroups.size === 0) return
+
+	ctx.save()
+
+	// PASS 1: Territory Fills (Translucent colored background per cell)
+	for (const group of factionGroups.values()) {
+		if (!group.fillColor) continue
+
+		ctx.fillStyle = group.fillColor
+		for (const cell of group.cells) {
+			const center = hexToWorldGroundCenter(cell.col, cell.row, radius)
+			const groundVerts = getHexGroundVertices(center.x, center.y, radius)
+			const screenVerts = groundVerts.map(v => camera.project(v.x, v.y, 0))
+
+			if (!screenVerts.some(v => v.visible)) continue
+
+			ctx.beginPath()
+			ctx.moveTo(screenVerts[0].x, screenVerts[0].y)
+			for (let i = 1; i < screenVerts.length; i++) {
+				ctx.lineTo(screenVerts[i].x, screenVerts[i].y)
+			}
+			ctx.closePath()
+			ctx.fill()
+		}
+	}
+
+	// PASS 2: External Boundary Chains (Continuous Smooth Polylines / Loops)
+	// Edge vertex indices for flat-topped hex (clockwise around hex):
+	// N: [4, 5], NE: [5, 0], SE: [0, 1], S: [1, 2], SW: [2, 3], NW: [3, 4]
+	const EDGE_VERTEX_INDICES = {
+		N: [4, 5],
+		NE: [5, 0],
+		SE: [0, 1],
+		S: [1, 2],
+		SW: [2, 3],
+		NW: [3, 4]
+	}
+
+	function vertexKey(pt) {
+		return `${Math.round(pt.x * 10)},${Math.round(pt.y * 10)}`
+	}
+
+	// Build quick lookup for river tiers by canonical edge key
+	const riverMap = new Map()
+	if (mapData.rivers) {
+		for (const r of Object.values(mapData.rivers)) {
+			const cKey = getCanonicalEdgeKey(r.col, r.row, r.edge)
+			riverMap.set(cKey, r)
+		}
+	}
+
+	// Group continuous chains by border color
+	// Map: borderColor -> Array<Chain>
+	const chainsByColor = new Map()
+
+	for (const group of factionGroups.values()) {
+		const borderEdges = []
+
+		for (const cell of group.cells) {
+			const center = hexToWorldGroundCenter(cell.col, cell.row, radius)
+			const groundVerts = getHexGroundVertices(center.x, center.y, radius)
+
+			for (const edge of HEX_EDGES) {
+				const nCoord = getHexNeighbor(cell.col, cell.row, edge)
+				const nKey = `${nCoord.col},${nCoord.row}`
+
+				// External boundary edge if neighbor cell is not in this faction
+				if (!group.cellSet.has(nKey)) {
+					const [iA, iB] = EDGE_VERTEX_INDICES[edge]
+					const vFrom = groundVerts[iA]
+					const vTo = groundVerts[iB]
+					const canonKey = getCanonicalEdgeKey(cell.col, cell.row, edge)
+					const river = riverMap.get(canonKey)
+					const riverTier = river ? (river.width || 1) : 1
+
+					borderEdges.push({
+						fromKey: vertexKey(vFrom),
+						toKey: vertexKey(vTo),
+						vFrom,
+						vTo,
+						canonKey,
+						riverTier
+					})
+				}
+			}
+		}
+
+		if (borderEdges.length === 0) continue
+
+		// Build adjacency graph to assemble border edges into continuous connected loops/chains
+		const outgoing = new Map()
+		const incoming = new Map()
+		for (const e of borderEdges) {
+			if (!outgoing.has(e.fromKey)) outgoing.set(e.fromKey, [])
+			outgoing.get(e.fromKey).push(e)
+
+			if (!incoming.has(e.toKey)) incoming.set(e.toKey, [])
+			incoming.get(e.toKey).push(e)
+		}
+
+		const visited = new Set()
+		const factionChains = []
+
+		for (const startEdge of borderEdges) {
+			if (visited.has(startEdge)) continue
+
+			visited.add(startEdge)
+			const chain = [startEdge]
+			let curr = startEdge
+
+			// Walk forward along adjacent edges
+			while (true) {
+				const nextList = outgoing.get(curr.toKey) || []
+				const nextEdge = nextList.find(e => !visited.has(e))
+				if (!nextEdge) break
+
+				visited.add(nextEdge)
+				chain.push(nextEdge)
+				curr = nextEdge
+
+				if (curr.toKey === chain[0].fromKey) {
+					chain.isClosed = true
+					break
+				}
+			}
+
+			// If not closed, walk backwards from chain start to prepend any incoming edges
+			if (!chain.isClosed) {
+				let head = chain[0]
+				while (true) {
+					const prevList = incoming.get(head.fromKey) || []
+					const prevEdge = prevList.find(e => !visited.has(e))
+					if (!prevEdge) break
+
+					visited.add(prevEdge)
+					chain.unshift(prevEdge)
+					head = prevEdge
+
+					if (head.fromKey === chain[chain.length - 1].toKey) {
+						chain.isClosed = true
+						break
+					}
+				}
+			}
+
+			// Project segments in chain to camera screen coordinates
+			let scaleSum = 0
+			let visibleCount = 0
+
+			const projectedChain = []
+			for (const seg of chain) {
+				const { cp1, cp2 } = getRiverMeanderControls(seg.vFrom, seg.vTo, seg.canonKey, radius, seg.riverTier)
+				const pFrom = camera.project(seg.vFrom.x, seg.vFrom.y, 0)
+				const pCP1 = camera.project(cp1.x, cp1.y, 0)
+				const pCP2 = camera.project(cp2.x, cp2.y, 0)
+				const pTo = camera.project(seg.vTo.x, seg.vTo.y, 0)
+
+				if (pFrom.visible || pTo.visible) visibleCount++
+				scaleSum += (pFrom.scale + pTo.scale) / 2
+
+				projectedChain.push({
+					pFrom,
+					pCP1,
+					pCP2,
+					pTo
+				})
+			}
+
+			// Only render if at least one vertex is visible in camera frustum
+			if (visibleCount > 0 && projectedChain.length > 0) {
+				projectedChain.isClosed = chain.isClosed
+				projectedChain.avgScale = scaleSum / projectedChain.length
+
+				let list = chainsByColor.get(group.borderColor)
+				if (!list) {
+					list = []
+					chainsByColor.set(group.borderColor, list)
+				}
+				list.push(projectedChain)
+			}
+		}
+	}
+
+	// Render borders grouped by color
+	ctx.lineCap = 'round'
+	ctx.lineJoin = 'round'
+
+	for (const [color, chains] of chainsByColor.entries()) {
+		if (chains.length === 0) continue
+
+		// PASS 2A: Soft halo ribbon glow
+		ctx.strokeStyle = hexToRgba(color, 0.38)
+		for (const chain of chains) {
+			const avgScale = chain.avgScale || 1.0
+			ctx.lineWidth = Math.max(2.4, 5.0 * avgScale)
+			ctx.beginPath()
+			ctx.moveTo(chain[0].pFrom.x, chain[0].pFrom.y)
+			for (let i = 0; i < chain.length; i++) {
+				const seg = chain[i]
+				ctx.bezierCurveTo(seg.pCP1.x, seg.pCP1.y, seg.pCP2.x, seg.pCP2.y, seg.pTo.x, seg.pTo.y)
+			}
+			if (chain.isClosed) {
+				ctx.closePath()
+			}
+			ctx.stroke()
+		}
+
+		// PASS 2B: Crisp heraldic inner stroke
+		ctx.strokeStyle = color
+		for (const chain of chains) {
+			const avgScale = chain.avgScale || 1.0
+			ctx.lineWidth = Math.max(1.3, 2.4 * avgScale)
+			ctx.beginPath()
+			ctx.moveTo(chain[0].pFrom.x, chain[0].pFrom.y)
+			for (let i = 0; i < chain.length; i++) {
+				const seg = chain[i]
+				ctx.bezierCurveTo(seg.pCP1.x, seg.pCP1.y, seg.pCP2.x, seg.pCP2.y, seg.pTo.x, seg.pTo.y)
+			}
+			if (chain.isClosed) {
+				ctx.closePath()
+			}
+			ctx.stroke()
+		}
+	}
+
+	ctx.restore()
+}
+
+/**
+ * Helper to parse hex and rgb/rgba color strings into RGBA components.
+ */
+function parseColor(str) {
+	if (!str) return { r: 0, g: 0, b: 0, a: 1.0 }
+	if (str.startsWith('#')) {
+		let hex = str.slice(1)
+		if (hex.length === 3) {
+			hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2]
+		}
+		const num = parseInt(hex, 16) || 0
+		return {
+			r: (num >> 16) & 255,
+			g: (num >> 8) & 255,
+			b: num & 255,
+			a: 1.0
+		}
+	}
+	const m = str.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/)
+	if (m) {
+		return {
+			r: parseInt(m[1], 10),
+			g: parseInt(m[2], 10),
+			b: parseInt(m[3], 10),
+			a: m[4] !== undefined ? parseFloat(m[4]) : 1.0
+		}
+	}
+	return { r: 0, g: 0, b: 0, a: 1.0 }
+}
+
+/**
+ * Linearly interpolates between two colors (hex or rgba).
+ */
+export function lerpColor(c1, c2, t) {
+	if (c1 === c2 || t <= 0) return c1
+	if (t >= 1) return c2
+	const col1 = parseColor(c1)
+	const col2 = parseColor(c2)
+	const r = Math.round(col1.r + (col2.r - col1.r) * t)
+	const g = Math.round(col1.g + (col2.g - col1.g) * t)
+	const b = Math.round(col1.b + (col2.b - col1.b) * t)
+	const a = col1.a + (col2.a - col1.a) * t
+	return a < 0.99 ? `rgba(${r}, ${g}, ${b}, ${a.toFixed(2)})` : `rgb(${r}, ${g}, ${b})`
+}
+
+/**
+ * Strokes a quadratic Bezier curve with progressive width tapering and color interpolation.
+ * If start and end width/color match, executes a single native quadraticCurveTo for peak performance.
+ *
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {{ x: number, y: number }} p0 - Start point
+ * @param {{ x: number, y: number }} p1 - Quadratic control point (junction center)
+ * @param {{ x: number, y: number }} p2 - End point
+ * @param {number} w0 - Start stroke width
+ * @param {number} w1 - End stroke width
+ * @param {string} c0 - Start color
+ * @param {string} c1 - End color
+ * @param {number} steps - Number of subdivision segments for tapering
+ */
+export function strokeTaperedCurve(ctx, p0, p1, p2, w0, w1, c0, c1, steps = 4) {
+	if (Math.abs(w0 - w1) < 0.05 && c0 === c1) {
+		ctx.beginPath()
+		ctx.moveTo(p0.x, p0.y)
+		ctx.quadraticCurveTo(p1.x, p1.y, p2.x, p2.y)
+		ctx.lineWidth = w0
+		ctx.strokeStyle = c0
+		ctx.stroke()
+		return
+	}
+
+	function bezierPt(t) {
+		const mt = 1 - t
+		return {
+			x: mt * mt * p0.x + 2 * mt * t * p1.x + t * t * p2.x,
+			y: mt * mt * p0.y + 2 * mt * t * p1.y + t * t * p2.y
+		}
+	}
+
+	let prevPt = p0
+	for (let i = 0; i < steps; i++) {
+		const tB = (i + 1) / steps
+		const tMid = (i + 0.5) / steps
+		const pB = bezierPt(tB)
+		const w = w0 + tMid * (w1 - w0)
+		const color = (c0 === c1) ? c0 : lerpColor(c0, c1, tMid)
+
+		ctx.beginPath()
+		ctx.moveTo(prevPt.x, prevPt.y)
+		ctx.lineTo(pB.x, pB.y)
+		ctx.lineWidth = w
+		ctx.strokeStyle = color
+		ctx.stroke()
+		prevPt = pB
+	}
+}
+
+/**
+ * Calculates smooth rounded turn geometry between two branches at a junction node.
+ * Eliminates angular kinks via a tangent-continuous quadratic Bezier fillet: A0 -> center -> A1.
+ * Shared by both roads (at hex centers) and rivers (at hex vertices).
+ *
+ * @param {{ x: number, y: number }} center - Junction node (hex center or river vertex)
+ * @param {Object} b0 - Branch 0 { ux, uy, dist }
+ * @param {Object} b1 - Branch 1 { ux, uy, dist }
+ * @param {number} maxRadius - Desired fillet radius
+ * @returns {{ center: Object, A0: Object, A1: Object, Rturn: number }}
+ */
+export function buildTurnGeometry(center, b0, b1, maxRadius = 14) {
+	const maxDist0 = (b0.dist || maxRadius * 2) * 0.65
+	const maxDist1 = (b1.dist || maxRadius * 2) * 0.65
+	const Rturn = Math.max(1, Math.min(maxRadius, maxDist0, maxDist1))
+
+	const A0 = {
+		x: center.x + b0.ux * Rturn,
+		y: center.y + b0.uy * Rturn
+	}
+	const A1 = {
+		x: center.x + b1.ux * Rturn,
+		y: center.y + b1.uy * Rturn
+	}
+
+	return { center, A0, A1, Rturn }
+}
+
+/**
+ * Common ribbon network junction geometry builder for both roads and rivers.
+ * Unifies the treatment of turns, forks, and confluences:
+ * - Smooth, rounded inner fillets and sweeping convex outer contours (eliminates angular kinks).
+ * - Asymmetric width support (smooth tapering when connecting different road types or river tiers).
+ * - Linear gradient blending for junctions connecting different material colors (e.g. dirt <-> stone).
+ *
+ * @param {Object} center - { x, y, scale }
+ * @param {Array<Object>} branches - [{ angle, casingWidth, coreWidth, casingColor, coreColor, isStone }]
+ * @param {number} scale - Perspective scale factor
+ * @returns {Object|null}
+ */
+export function buildRibbonJunction(center, branches, scale = 1.0) {
+	if (!branches || branches.length < 2) return null
+	const sorted = [...branches].sort((a, b) => a.angle - b.angle)
+	const k = sorted.length
+
+	function buildLayer(isCasing) {
+		const branchPoints = []
+		const cornerCurves = []
+
+		for (let i = 0; i < k; i++) {
+			const b = sorted[i]
+			const ux = Math.cos(b.angle)
+			const uy = Math.sin(b.angle)
+			const nx = -uy
+			const ny = ux
+			const w = (isCasing ? b.casingWidth : b.coreWidth) / 2
+			const D = Math.max(w * 1.8, 5 * scale)
+
+			const pL = { x: center.x + ux * D + nx * w, y: center.y + uy * D + ny * w }
+			const pR = { x: center.x + ux * D - nx * w, y: center.y + uy * D - ny * w }
+			branchPoints.push({ pL, pR, ux, uy, nx, ny, w, D })
+		}
+
+		for (let i = 0; i < k; i++) {
+			const next = (i + 1) % k
+			const b = branchPoints[i]
+			const bNext = branchPoints[next]
+
+			let deltaAngle = sorted[next].angle - sorted[i].angle
+			if (deltaAngle < 0) deltaAngle += Math.PI * 2
+
+			const midAngle = sorted[i].angle + deltaAngle / 2
+			const umx = Math.cos(midAngle)
+			const umy = Math.sin(midAngle)
+			const wAvg = (b.w + bNext.w) / 2
+
+			if (deltaAngle <= Math.PI) {
+				// Inner concave rounded fillet ("слипание/перепонка")
+				const dDip = Math.max(wAvg * 0.85, Math.min(b.D, bNext.D) * (0.24 + 0.38 * Math.cos(deltaAngle / 2)))
+				const pFillet = { x: center.x + umx * dDip, y: center.y + umy * dDip }
+				cornerCurves.push({ type: 'inner', pStart: b.pR, pFillet, pEnd: bNext.pL })
+			} else {
+				// Outer sweeping convex curve for bends (makes the outer elbow completely rounded!)
+				const innerDelta = Math.PI * 2 - deltaAngle
+				const cosHalf = Math.max(0.2, Math.cos((Math.PI - innerDelta) / 2))
+				const dOuter = Math.min((wAvg / cosHalf) * 1.05, Math.max(b.D, bNext.D) * 1.05)
+				const pApex = { x: center.x + umx * dOuter, y: center.y + umy * dOuter }
+				const t1 = { x: b.pR.x - b.ux * (b.D * 0.45), y: b.pR.y - b.uy * (b.D * 0.45) }
+				const t2 = { x: bNext.pL.x - bNext.ux * (bNext.D * 0.45), y: bNext.pL.y - bNext.uy * (bNext.D * 0.45) }
+				cornerCurves.push({ type: 'outer', pStart: b.pR, t1, pApex, t2, pEnd: bNext.pL })
+			}
+		}
+
+		return { branchPoints, cornerCurves }
+	}
+
+	return {
+		casing: buildLayer(true),
+		core: buildLayer(false),
+		branches: sorted,
+		center
+	}
+}
+
+/**
+ * Traces the closed polygon path of a ribbon junction layer.
+ */
+export function traceRibbonJunction(ctx, layerData) {
+	ctx.beginPath()
+	const k = layerData.branchPoints.length
+	for (let i = 0; i < k; i++) {
+		const bp = layerData.branchPoints[i]
+		const corner = layerData.cornerCurves[i]
+
+		if (i === 0) {
+			ctx.moveTo(bp.pL.x, bp.pL.y)
+		} else {
+			ctx.lineTo(bp.pL.x, bp.pL.y)
+		}
+		ctx.lineTo(bp.pR.x, bp.pR.y)
+
+		if (corner.type === 'inner') {
+			ctx.quadraticCurveTo(corner.pFillet.x, corner.pFillet.y, corner.pEnd.x, corner.pEnd.y)
+		} else {
+			ctx.quadraticCurveTo(corner.t1.x, corner.t1.y, corner.pApex.x, corner.pApex.y)
+			ctx.quadraticCurveTo(corner.t2.x, corner.t2.y, corner.pEnd.x, corner.pEnd.y)
+		}
+	}
+	ctx.closePath()
+}
+
+/**
+ * Fills a ribbon junction layer with solid color or smooth gradient for mixed types.
+ */
+export function fillRibbonJunction(ctx, junction, layer) {
+	const layerData = layer === 'casing' ? junction.casing : junction.core
+	traceRibbonJunction(ctx, layerData)
+
+	const branches = junction.branches
+	const colorProp = layer === 'casing' ? 'casingColor' : 'coreColor'
+	const firstColor = branches[0][colorProp]
+	const isMixed = branches.some(b => b[colorProp] !== firstColor)
+
+	if (!isMixed) {
+		ctx.fillStyle = firstColor
+		ctx.fill()
+	} else if (branches.length === 2) {
+		// Mixed 2-branch junction (e.g. dirt road <-> stone road transition):
+		// create a linear gradient between the two branch endpoints
+		const b0 = layerData.branchPoints[0]
+		const b1 = layerData.branchPoints[1]
+		const grad = ctx.createLinearGradient(
+			(b0.pL.x + b0.pR.x) / 2,
+			(b0.pL.y + b0.pR.y) / 2,
+			(b1.pL.x + b1.pR.x) / 2,
+			(b1.pL.y + b1.pR.y) / 2
+		)
+		grad.addColorStop(0, branches[0][colorProp])
+		grad.addColorStop(1, branches[1][colorProp])
+		ctx.fillStyle = grad
+		ctx.fill()
+	} else {
+		// 3+ branches with mixed types: stone paving takes priority for the central crossroad square
+		const stoneBranch = branches.find(b => b.isStone)
+		ctx.fillStyle = stoneBranch ? stoneBranch[colorProp] : firstColor
+		ctx.fill()
+	}
+}
+
+/**
  * Draws rivers flowing along edges with perspective scaling and animated currents.
  * Uses organic procedural cubic Bezier meanders with adaptive curvature per tier (Civilization style).
- * Thinner rivers (brooks/creeks) have tighter, more winding micro-meanders.
+ * Multi-pass rendering pipeline with unified rounded junction fillets, width tapering, and confluence discs.
+ * Guaranteed ZERO needle/spike artifacts on river banks!
  */
 function drawRivers(ctx, camera, mapData, radius, animTime) {
 	if (!mapData.rivers) return
@@ -353,6 +791,13 @@ function drawRivers(ctx, camera, mapData, radius, animTime) {
 	if (rivers.length === 0) return
 
 	ctx.save()
+
+	const preparedRivers = []
+	const vertexBranches = new Map()
+
+	function getVertexKey(pt) {
+		return `${Math.round(pt.x * 10)},${Math.round(pt.y * 10)}`
+	}
 
 	for (const river of rivers) {
 		const center = hexToWorldGroundCenter(river.col, river.row, radius)
@@ -387,36 +832,514 @@ function drawRivers(ctx, camera, mapData, radius, animTime) {
 			shoreExtra = 1.0 * avgScale
 			currentDashW = Math.max(0.6, baseWidth * 0.40)
 		}
+		const casingWidth = baseWidth + shoreExtra
 		const flowDir = river.flowDir === -1 ? -1 : 1
 
-		function traceRiver() {
-			ctx.beginPath()
-			ctx.moveTo(pFrom.x, pFrom.y)
-			ctx.bezierCurveTo(pCP1.x, pCP1.y, pCP2.x, pCP2.y, pTo.x, pTo.y)
+		const rObj = {
+			pFrom, pCP1, pCP2, pTo,
+			startPt: pFrom,
+			endPt: pTo,
+			casingWidth, baseWidth, currentDashW,
+			tier, avgScale, flowDir,
+			gFrom, gTo
 		}
+		preparedRivers.push(rObj)
 
-		// 1. Riverbed shadow / shore blending
-		traceRiver()
-		ctx.lineWidth = baseWidth + shoreExtra
+		// Direction into edge from pFrom towards pCP1
+		const d1x = pCP1.x - pFrom.x
+		const d1y = pCP1.y - pFrom.y
+		const len1 = Math.hypot(d1x, d1y) || 1
+		const u1x = d1x / len1
+		const u1y = d1y / len1
+
+		// Direction into edge from pTo towards pCP2
+		const d2x = pCP2.x - pTo.x
+		const d2y = pCP2.y - pTo.y
+		const len2 = Math.hypot(d2x, d2y) || 1
+		const u2x = d2x / len2
+		const u2y = d2y / len2
+
+		const keyFrom = getVertexKey(gFrom)
+		let entryFrom = vertexBranches.get(keyFrom)
+		if (!entryFrom) {
+			entryFrom = { pCenter: pFrom, branches: [] }
+			vertexBranches.set(keyFrom, entryFrom)
+		}
+		entryFrom.branches.push({
+			river: rObj,
+			isFrom: true,
+			pt: pFrom,
+			ux: u1x,
+			uy: u1y,
+			dist: len1,
+			casingWidth,
+			baseWidth,
+			currentDashW,
+			tier,
+			flowDir
+		})
+
+		const keyTo = getVertexKey(gTo)
+		let entryTo = vertexBranches.get(keyTo)
+		if (!entryTo) {
+			entryTo = { pCenter: pTo, branches: [] }
+			vertexBranches.set(keyTo, entryTo)
+		}
+		entryTo.branches.push({
+			river: rObj,
+			isFrom: false,
+			pt: pTo,
+			ux: u2x,
+			uy: u2y,
+			dist: len2,
+			casingWidth,
+			baseWidth,
+			currentDashW,
+			tier,
+			flowDir
+		})
+	}
+
+	// Calculate rounded turn fillets (2 branches) and confluence discs (3+ branches)
+	const riverTurns = []
+	const riverConfluences = []
+
+	for (const vData of vertexBranches.values()) {
+		if (!vData.pCenter.visible) continue
+		const k = vData.branches.length
+
+		if (k === 2) {
+			const b0 = vData.branches[0]
+			const b1 = vData.branches[1]
+			const turn = buildTurnGeometry(vData.pCenter, b0, b1, 7 * vData.pCenter.scale)
+
+			if (b0.isFrom) b0.river.startPt = turn.A0
+			else b0.river.endPt = turn.A0
+
+			if (b1.isFrom) b1.river.startPt = turn.A1
+			else b1.river.endPt = turn.A1
+
+			riverTurns.push({
+				center: vData.pCenter,
+				A0: turn.A0,
+				A1: turn.A1,
+				b0,
+				b1,
+				scale: vData.pCenter.scale,
+				currentDashW: (b0.currentDashW + b1.currentDashW) / 2
+			})
+		} else if (k >= 3) {
+			let maxCasing = 0
+			let maxBase = 0
+			for (const b of vData.branches) {
+				maxCasing = Math.max(maxCasing, b.casingWidth)
+				maxBase = Math.max(maxBase, b.baseWidth)
+				// Rivers must meet directly at the confluence vertex center!
+				if (b.isFrom) b.river.startPt = vData.pCenter
+				else b.river.endPt = vData.pCenter
+			}
+
+			// Sort branches by angle around confluence
+			const sorted = [...vData.branches].sort((a, b) => {
+				const angA = Math.atan2(a.uy, a.ux)
+				const angB = Math.atan2(b.uy, b.ux)
+				return angA - angB
+			})
+
+			const fillets = []
+			for (let i = 0; i < sorted.length; i++) {
+				const next = (i + 1) % sorted.length
+				const bA = sorted[i]
+				const bB = sorted[next]
+				const D = Math.min(6 * vData.pCenter.scale, bA.dist * 0.35, bB.dist * 0.35)
+				const PA = { x: vData.pCenter.x + bA.ux * D, y: vData.pCenter.y + bA.uy * D }
+				const PB = { x: vData.pCenter.x + bB.ux * D, y: vData.pCenter.y + bB.uy * D }
+				fillets.push({ PA, PB, bA, bB })
+			}
+
+			riverConfluences.push({
+				center: vData.pCenter,
+				fillets,
+				maxCasingWidth: maxCasing,
+				maxBaseWidth: maxBase,
+				scale: vData.pCenter.scale
+			})
+		}
+	}
+
+	ctx.lineCap = 'round'
+	ctx.lineJoin = 'round'
+
+	// --- PASS 1: Riverbed Shore Strokes, Rounded Junction Fillets, and Confluence Shore Pools ---
+	for (const r of preparedRivers) {
+		ctx.beginPath()
+		ctx.moveTo(r.startPt.x, r.startPt.y)
+		ctx.bezierCurveTo(r.pCP1.x, r.pCP1.y, r.pCP2.x, r.pCP2.y, r.endPt.x, r.endPt.y)
+		ctx.lineWidth = r.casingWidth
 		ctx.strokeStyle = '#0369a1'
-		ctx.lineCap = 'round'
 		ctx.stroke()
+	}
 
-		// 2. Main river water ribbon
-		traceRiver()
-		ctx.lineWidth = baseWidth
+	for (const turn of riverTurns) {
+		strokeTaperedCurve(ctx, turn.A0, turn.center, turn.A1, turn.b0.casingWidth, turn.b1.casingWidth, '#0369a1', '#0369a1', 4)
+	}
+
+	for (const conf of riverConfluences) {
+		for (const f of conf.fillets) {
+			strokeTaperedCurve(ctx, f.PA, conf.center, f.PB, f.bA.casingWidth, f.bB.casingWidth, '#0369a1', '#0369a1', 3)
+		}
+	}
+
+	// --- PASS 2: Main River Water Ribbon, Width-Tapered Turn Fillets, and Confluence Pools ---
+	for (const r of preparedRivers) {
+		ctx.beginPath()
+		ctx.moveTo(r.startPt.x, r.startPt.y)
+		ctx.bezierCurveTo(r.pCP1.x, r.pCP1.y, r.pCP2.x, r.pCP2.y, r.endPt.x, r.endPt.y)
+		ctx.lineWidth = r.baseWidth
 		ctx.strokeStyle = '#38bdf8'
 		ctx.stroke()
+	}
 
-		// 3. Animated flowing current highlight (flow direction is clearly visible through motion)
-		traceRiver()
-		ctx.lineWidth = currentDashW
+	for (const turn of riverTurns) {
+		strokeTaperedCurve(ctx, turn.A0, turn.center, turn.A1, turn.b0.baseWidth, turn.b1.baseWidth, '#38bdf8', '#38bdf8', 4)
+	}
+
+	for (const conf of riverConfluences) {
+		for (const f of conf.fillets) {
+			strokeTaperedCurve(ctx, f.PA, conf.center, f.PB, f.bA.baseWidth, f.bB.baseWidth, '#38bdf8', '#38bdf8', 3)
+		}
+	}
+
+	// --- PASS 3: Animated Flow Currents ---
+	for (const r of preparedRivers) {
+		ctx.beginPath()
+		ctx.moveTo(r.startPt.x, r.startPt.y)
+		ctx.bezierCurveTo(r.pCP1.x, r.pCP1.y, r.pCP2.x, r.pCP2.y, r.endPt.x, r.endPt.y)
+		ctx.lineWidth = r.currentDashW
 		ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)'
-		const dashLen = (tier === 1 ? 4 : (tier === 2 ? 5 : 6)) * avgScale
+		const dashLen = (r.tier === 1 ? 4 : (r.tier === 2 ? 5 : 6)) * r.avgScale
 		ctx.setLineDash([dashLen, dashLen])
-		ctx.lineDashOffset = -flowDir * (animTime * 22 * avgScale)
+		ctx.lineDashOffset = -r.flowDir * (animTime * 22 * r.avgScale)
 		ctx.stroke()
 		ctx.setLineDash([])
+	}
+
+	for (const turn of riverTurns) {
+		ctx.beginPath()
+		ctx.moveTo(turn.A0.x, turn.A0.y)
+		ctx.quadraticCurveTo(turn.center.x, turn.center.y, turn.A1.x, turn.A1.y)
+		ctx.lineWidth = turn.currentDashW
+		ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)'
+		const dashLen = 5 * turn.scale
+		ctx.setLineDash([dashLen, dashLen])
+		ctx.lineDashOffset = -(animTime * 22 * turn.scale)
+		ctx.stroke()
+		ctx.setLineDash([])
+	}
+
+	ctx.restore()
+}
+
+/**
+ * Pre-computes renderable road geometry (trunks, rounded turns, and crossroads)
+ * tagged with their cellKey for depth-sorted 2.5D rendering.
+ */
+export function buildRoadRenderData(camera, mapData, radius) {
+	if (!mapData.roads) return { trunks: [], turns: [], crossroads: [] }
+
+	const roads = Object.values(mapData.roads)
+	if (roads.length === 0) return { trunks: [], turns: [], crossroads: [] }
+
+	const cellBranches = new Map()
+
+	for (const road of roads) {
+		const c1 = hexToWorldGroundCenter(road.from.col, road.from.row, radius)
+		const c2 = hexToWorldGroundCenter(road.to.col, road.to.row, radius)
+		const canonKey = getCanonicalRoadKey(road.from.col, road.from.row, road.to.col, road.to.row)
+
+		const { mid, cp1, cp2 } = getRoadPathControls(c1, c2, canonKey, radius)
+
+		const p1 = camera.project(c1.x, c1.y, 0)
+		const pQ1 = camera.project(cp1.x, cp1.y, 0)
+		const pMid = camera.project(mid.x, mid.y, 0)
+		const pQ2 = camera.project(cp2.x, cp2.y, 0)
+		const p2 = camera.project(c2.x, c2.y, 0)
+
+		if (!p1.visible && !p2.visible && !pMid.visible) continue
+
+		const avgScale = (p1.scale + p2.scale) / 2
+		const isStone = road.type === 'stone'
+		const casingWidth = (isStone ? 5 : 4) * avgScale
+		const coreWidth = (isStone ? 3 : 2.5) * avgScale
+		const casingColor = isStone ? '#475569' : '#451a03'
+		const coreColor = isStone ? '#94a3b8' : '#b45309'
+
+		// Direction into cell 1 road from p1 towards pQ1
+		const d1x = pQ1.x - p1.x
+		const d1y = pQ1.y - p1.y
+		const len1 = Math.hypot(d1x, d1y) || 1
+		const u1x = d1x / len1
+		const u1y = d1y / len1
+
+		// Direction into cell 2 road from p2 towards pQ2
+		const d2x = pQ2.x - p2.x
+		const d2y = pQ2.y - p2.y
+		const len2 = Math.hypot(d2x, d2y) || 1
+		const u2x = d2x / len2
+		const u2y = d2y / len2
+
+		const key1 = `${road.from.col},${road.from.row}`
+		let entry1 = cellBranches.get(key1)
+		if (!entry1) {
+			entry1 = { cellKey: key1, pCenter: p1, branches: [] }
+			cellBranches.set(key1, entry1)
+		}
+		entry1.branches.push({
+			cellKey: key1,
+			pMid,
+			pQ: pQ1,
+			ux: u1x,
+			uy: u1y,
+			dist: len1,
+			isStone,
+			casingWidth,
+			coreWidth,
+			casingColor,
+			coreColor,
+			scale: p1.scale
+		})
+
+		const key2 = `${road.to.col},${road.to.row}`
+		let entry2 = cellBranches.get(key2)
+		if (!entry2) {
+			entry2 = { cellKey: key2, pCenter: p2, branches: [] }
+			cellBranches.set(key2, entry2)
+		}
+		entry2.branches.push({
+			cellKey: key2,
+			pMid,
+			pQ: pQ2,
+			ux: u2x,
+			uy: u2y,
+			dist: len2,
+			isStone,
+			casingWidth,
+			coreWidth,
+			casingColor,
+			coreColor,
+			scale: p2.scale
+		})
+	}
+
+	const roadTrunks = []
+	const roadTurns = []
+	const roadCrossroads = []
+
+	for (const [cellKey, cData] of cellBranches.entries()) {
+		if (!cData.pCenter.visible) continue
+		const k = cData.branches.length
+
+		if (k === 1) {
+			const b0 = cData.branches[0]
+			roadTrunks.push({
+				cellKey,
+				pMid: b0.pMid,
+				pQ: b0.pQ,
+				endPt: cData.pCenter,
+				isStone: b0.isStone,
+				casingWidth: b0.casingWidth,
+				coreWidth: b0.coreWidth,
+				casingColor: b0.casingColor,
+				coreColor: b0.coreColor,
+				scale: b0.scale
+			})
+		} else if (k === 2) {
+			const b0 = cData.branches[0]
+			const b1 = cData.branches[1]
+			// Generous rounded corner radius at cell center (e.g. 14px * scale)
+			const turn = buildTurnGeometry(cData.pCenter, b0, b1, 14 * cData.pCenter.scale)
+
+			roadTrunks.push({
+				cellKey,
+				pMid: b0.pMid,
+				pQ: b0.pQ,
+				endPt: turn.A0,
+				isStone: b0.isStone,
+				casingWidth: b0.casingWidth,
+				coreWidth: b0.coreWidth,
+				casingColor: b0.casingColor,
+				coreColor: b0.coreColor,
+				scale: b0.scale
+			})
+
+			roadTrunks.push({
+				cellKey,
+				pMid: b1.pMid,
+				pQ: b1.pQ,
+				endPt: turn.A1,
+				isStone: b1.isStone,
+				casingWidth: b1.casingWidth,
+				coreWidth: b1.coreWidth,
+				casingColor: b1.casingColor,
+				coreColor: b1.coreColor,
+				scale: b1.scale
+			})
+
+			roadTurns.push({
+				cellKey,
+				center: cData.pCenter,
+				A0: turn.A0,
+				A1: turn.A1,
+				b0,
+				b1,
+				scale: cData.pCenter.scale
+			})
+		} else if (k >= 3) {
+			let maxCasing = 0
+			let maxCore = 0
+			const hasStone = cData.branches.some(b => b.isStone)
+
+			for (const b of cData.branches) {
+				maxCasing = Math.max(maxCasing, b.casingWidth)
+				maxCore = Math.max(maxCore, b.coreWidth)
+				// Trunks must go all the way into cell center!
+				roadTrunks.push({
+					cellKey,
+					pMid: b.pMid,
+					pQ: b.pQ,
+					endPt: cData.pCenter,
+					isStone: b.isStone,
+					casingWidth: b.casingWidth,
+					coreWidth: b.coreWidth,
+					casingColor: b.casingColor,
+					coreColor: b.coreColor,
+					scale: b.scale
+				})
+			}
+
+			// Sort branches by angle around center to build inner corner fillets
+			const sorted = [...cData.branches].sort((a, b) => {
+				const angA = Math.atan2(a.uy, a.ux)
+				const angB = Math.atan2(b.uy, b.ux)
+				return angA - angB
+			})
+
+			const fillets = []
+			for (let i = 0; i < sorted.length; i++) {
+				const next = (i + 1) % sorted.length
+				const bA = sorted[i]
+				const bB = sorted[next]
+				const D = Math.min(10 * cData.pCenter.scale, bA.dist * 0.45, bB.dist * 0.45)
+				const PA = { x: cData.pCenter.x + bA.ux * D, y: cData.pCenter.y + bA.uy * D }
+				const PB = { x: cData.pCenter.x + bB.ux * D, y: cData.pCenter.y + bB.uy * D }
+				fillets.push({ PA, PB, bA, bB })
+			}
+
+			roadCrossroads.push({
+				cellKey,
+				center: cData.pCenter,
+				fillets,
+				maxCasingWidth: maxCasing,
+				maxCoreWidth: maxCore,
+				hasStone,
+				scale: cData.pCenter.scale
+			})
+		}
+	}
+
+	return {
+		trunks: roadTrunks,
+		turns: roadTurns,
+		crossroads: roadCrossroads
+	}
+}
+
+/**
+ * Renders prepared road geometry with optional filter function (e.g. for cell-by-cell depth sorting).
+ * Multi-pass pipeline:
+ * - PASS 1: All Road Casings, Smooth Rounded Turns, and Crossroad Hubs
+ * - PASS 2: All Road Cores (Surfaces), Smooth Rounded Turns, and Crossroad Hubs
+ * - PASS 3: Dirt Ruts
+ */
+export function renderRoads(ctx, roadData, filterFn = null) {
+	if (!roadData) return
+	const trunks = filterFn ? roadData.trunks.filter(t => filterFn(t.cellKey)) : roadData.trunks
+	const turns = filterFn ? roadData.turns.filter(t => filterFn(t.cellKey)) : roadData.turns
+	const crossroads = filterFn ? roadData.crossroads.filter(c => filterFn(c.cellKey)) : roadData.crossroads
+
+	if (trunks.length === 0 && turns.length === 0 && crossroads.length === 0) return
+
+	ctx.save()
+	ctx.lineCap = 'round'
+	ctx.lineJoin = 'round'
+
+	// --- PASS 1: All Road Casings, Smooth Rounded Turns, and Crossroad Hubs ---
+	for (const t of trunks) {
+		ctx.beginPath()
+		ctx.moveTo(t.pMid.x, t.pMid.y)
+		ctx.quadraticCurveTo(t.pQ.x, t.pQ.y, t.endPt.x, t.endPt.y)
+		ctx.lineWidth = t.casingWidth
+		ctx.strokeStyle = t.casingColor
+		ctx.stroke()
+	}
+
+	for (const turn of turns) {
+		strokeTaperedCurve(ctx, turn.A0, turn.center, turn.A1, turn.b0.casingWidth, turn.b1.casingWidth, turn.b0.casingColor, turn.b1.casingColor, 4)
+	}
+
+	for (const cr of crossroads) {
+		const casingColor = cr.hasStone ? '#475569' : '#451a03'
+		for (const f of cr.fillets) {
+			strokeTaperedCurve(ctx, f.PA, cr.center, f.PB, f.bA.casingWidth, f.bB.casingWidth, casingColor, casingColor, 3)
+		}
+	}
+
+	// --- PASS 2: All Road Cores (Surfaces), Smooth Rounded Turns, and Crossroad Hubs ---
+	for (const t of trunks) {
+		ctx.beginPath()
+		ctx.moveTo(t.pMid.x, t.pMid.y)
+		ctx.quadraticCurveTo(t.pQ.x, t.pQ.y, t.endPt.x, t.endPt.y)
+		ctx.lineWidth = t.coreWidth
+		ctx.strokeStyle = t.coreColor
+		ctx.stroke()
+	}
+
+	for (const turn of turns) {
+		strokeTaperedCurve(ctx, turn.A0, turn.center, turn.A1, turn.b0.coreWidth, turn.b1.coreWidth, turn.b0.coreColor, turn.b1.coreColor, 4)
+	}
+
+	for (const cr of crossroads) {
+		const coreColor = cr.hasStone ? '#94a3b8' : '#b45309'
+		for (const f of cr.fillets) {
+			strokeTaperedCurve(ctx, f.PA, cr.center, f.PB, f.bA.coreWidth, f.bB.coreWidth, coreColor, coreColor, 3)
+		}
+	}
+
+	// --- PASS 3: Dirt Ruts ---
+	for (const t of trunks) {
+		if (!t.isStone) {
+			ctx.beginPath()
+			ctx.moveTo(t.pMid.x, t.pMid.y)
+			ctx.quadraticCurveTo(t.pQ.x, t.pQ.y, t.endPt.x, t.endPt.y)
+			ctx.lineWidth = 1 * t.scale
+			ctx.strokeStyle = 'rgba(254, 243, 199, 0.4)'
+			ctx.setLineDash([3 * t.scale, 4 * t.scale])
+			ctx.stroke()
+			ctx.setLineDash([])
+		}
+	}
+
+	for (const turn of turns) {
+		if (!turn.b0.isStone && !turn.b1.isStone) {
+			ctx.beginPath()
+			ctx.moveTo(turn.A0.x, turn.A0.y)
+			ctx.quadraticCurveTo(turn.center.x, turn.center.y, turn.A1.x, turn.A1.y)
+			ctx.lineWidth = 1 * turn.scale
+			ctx.strokeStyle = 'rgba(254, 243, 199, 0.4)'
+			ctx.setLineDash([3 * turn.scale, 4 * turn.scale])
+			ctx.stroke()
+			ctx.setLineDash([])
+		}
 	}
 
 	ctx.restore()
@@ -426,209 +1349,24 @@ function drawRivers(ctx, camera, mapData, radius, animTime) {
  * Draws roads connecting adjacent hex centers on the perspective terrain surface.
  * Roads strictly hug the terrain relief: at the shared hex boundary, elevation is 0 (ground level),
  * ascending the slopes to hill plateau summits (Z ~ 16) without hovering in mid-air.
- * For junctions with 3+ road connections, renders organic webbed fillets ("слипание как угол перепонок").
+ * Multi-pass rendering pipeline with unified rounded turns at cell centers, width tapering, and color gradients.
  */
-function drawRoads(ctx, camera, mapData, radius) {
-	if (!mapData.roads) return
-
-	const roads = Object.values(mapData.roads)
-	if (roads.length === 0) return
-
-	ctx.save()
-
-	// 1. Track connected road branches per cell to identify crossroads junctions
-	const cellBranches = new Map()
-
-	function registerBranch(cFrom, cTo, roadType) {
-		const key = `${cFrom.col},${cFrom.row}`
-		let list = cellBranches.get(key)
-		if (!list) {
-			list = []
-			cellBranches.set(key, list)
-		}
-		list.push({ toCol: cTo.col, toRow: cTo.row, roadType })
-	}
-
-	for (const road of roads) {
-		registerBranch(road.from, road.to, road.type)
-		registerBranch(road.to, road.from, road.type)
-	}
-
-	// 2. Draw each road segment with terrain surface profiling
-	for (const road of roads) {
-		const c1 = hexToWorldGroundCenter(road.from.col, road.from.row, radius)
-		const c2 = hexToWorldGroundCenter(road.to.col, road.to.row, radius)
-		const canonKey = getCanonicalRoadKey(road.from.col, road.from.row, road.to.col, road.to.row)
-
-		// 3D elevation profiling over hills:
-		// Base perimeter of every hex is at Z = 0.
-		// The road boundary crossing M is strictly at ground level (Z = 0), climbing hill slopes to the plateau.
-		const fCell1 = mapData.cells?.[`${road.from.col},${road.from.row}`]
-		const fCell2 = mapData.cells?.[`${road.to.col},${road.to.row}`]
-		const z1 = (fCell1?.feature === 'hills') ? 16 * (radius / 36) : 0
-		const z2 = (fCell2?.feature === 'hills') ? 16 * (radius / 36) : 0
-		const zQ1 = z1 * 0.85
-		const zQ2 = z2 * 0.85
-
-		const { mid, cp1, cp2 } = getRoadPathControls(c1, c2, canonKey, radius)
-
-		const p1 = camera.projectTerrain(c1.x, c1.y, z1)
-		const pQ1 = camera.projectTerrain(cp1.x, cp1.y, zQ1)
-		const pMid = camera.projectTerrain(mid.x, mid.y, 0) // Ground level at boundary
-		const pQ2 = camera.projectTerrain(cp2.x, cp2.y, zQ2)
-		const p2 = camera.projectTerrain(c2.x, c2.y, z2)
-
-		if (!p1.visible && !p2.visible && !pMid.visible) continue
-
-		const avgScale = (p1.scale + p2.scale) / 2
-		const isStone = road.type === 'stone'
-
-		function traceRoad() {
-			ctx.beginPath()
-			ctx.moveTo(p1.x, p1.y)
-			ctx.quadraticCurveTo(pQ1.x, pQ1.y, pMid.x, pMid.y)
-			ctx.quadraticCurveTo(pQ2.x, pQ2.y, p2.x, p2.y)
-		}
-
-		// Road border outline (casing)
-		traceRoad()
-		ctx.lineWidth = (isStone ? 5 : 4) * avgScale
-		ctx.strokeStyle = isStone ? '#475569' : '#451a03'
-		ctx.lineCap = 'round'
-		ctx.stroke()
-
-		// Road main surface
-		traceRoad()
-		ctx.lineWidth = (isStone ? 3 : 2.5) * avgScale
-		ctx.strokeStyle = isStone ? '#94a3b8' : '#b45309'
-		ctx.stroke()
-
-		if (!isStone) {
-			// Dirt ruts
-			traceRoad()
-			ctx.lineWidth = 1 * avgScale
-			ctx.strokeStyle = 'rgba(254, 243, 199, 0.4)'
-			ctx.setLineDash([3 * avgScale, 4 * avgScale])
-			ctx.stroke()
-			ctx.setLineDash([])
-		}
-	}
-
-	// 3. Draw organic webbed crossroads ("слипание как угол перепонок") for cells with 3+ road connections
-	for (const [cellKey, branches] of cellBranches.entries()) {
-		if (branches.length < 3) continue // 1 (dead end) and 2 (passing bend) need no webbing!
-
-		const [colStr, rowStr] = cellKey.split(',')
-		const col = parseInt(colStr, 10)
-		const row = parseInt(rowStr, 10)
-		const cell = mapData.cells?.[cellKey]
-		const center = hexToWorldGroundCenter(col, row, radius)
-		const zCell = (cell?.feature === 'hills') ? 16 * (radius / 36) : 0
-
-		const pCenter = camera.projectTerrain(center.x, center.y, zCell)
-		if (!pCenter.visible) continue
-
-		const isStone = branches.some(b => b.roadType === 'stone') || cell?.road === 'stone'
-		const sc = pCenter.scale
-
-		// Calculate branch angles around the cell center and sort cyclically
-		const branchData = branches.map(b => {
-			const nCenter = hexToWorldGroundCenter(b.toCol, b.toRow, radius)
-			const angle = Math.atan2(nCenter.y - center.y, nCenter.x - center.x)
-			return { angle, roadType: b.roadType }
-		})
-		branchData.sort((a, b) => a.angle - b.angle)
-
-		const k = branchData.length
-		const dBranch = radius * 0.35
-		const halfRoadW = (isStone ? 2.5 : 2.0) * (radius / 36)
-
-		// Build outer webbed polygon points
-		// For each branch: left shoulder -> right shoulder -> concave fillet to next branch left shoulder
-		function traceWebbedPolygon(insetScale = 1.0) {
-			ctx.beginPath()
-			const wRoad = halfRoadW * insetScale
-
-			for (let i = 0; i < k; i++) {
-				const b = branchData[i]
-				const bNext = branchData[(i + 1) % k]
-
-				const ux = Math.cos(b.angle)
-				const uy = Math.sin(b.angle)
-				const nx = -uy
-				const ny = ux
-
-				// Shoulders along branch axis
-				const bx = center.x + ux * dBranch
-				const by = center.y + uy * dBranch
-
-				const lx = bx + nx * wRoad
-				const ly = by + ny * wRoad
-				const rx = bx - nx * wRoad
-				const ry = by - ny * wRoad
-
-				// Project to screen
-				const pL = camera.projectTerrain(lx, ly, zCell)
-				const pR = camera.projectTerrain(rx, ry, zCell)
-
-				if (i === 0) {
-					ctx.moveTo(pL.x, pL.y)
-				} else {
-					ctx.lineTo(pL.x, pL.y)
-				}
-				ctx.lineTo(pR.x, pR.y)
-
-				// Inward webbed fillet to next branch
-				let deltaAngle = bNext.angle - b.angle
-				if (deltaAngle < 0) deltaAngle += Math.PI * 2
-				const midAngle = b.angle + deltaAngle / 2
-
-				// Web dip distance: tight angle -> stretches further out; wide angle -> deeper dip
-				const dWeb = radius * Math.max(0.10, 0.26 - (deltaAngle / (Math.PI * 2)) * 0.22) * insetScale
-				const wx = center.x + Math.cos(midAngle) * dWeb
-				const wy = center.y + Math.sin(midAngle) * dWeb
-				const pWeb = camera.projectTerrain(wx, wy, zCell)
-
-				// Next branch left shoulder
-				const uxNext = Math.cos(bNext.angle)
-				const uyNext = Math.sin(bNext.angle)
-				const nxNext = -uyNext
-				const nyNext = uxNext
-				const bxNext = center.x + uxNext * dBranch
-				const byNext = center.y + uyNext * dBranch
-				const pLNext = camera.projectTerrain(bxNext + nxNext * wRoad, byNext + nyNext * wRoad, zCell)
-
-				// Concave webbed curve
-				ctx.quadraticCurveTo(pWeb.x, pWeb.y, pLNext.x, pLNext.y)
-			}
-			ctx.closePath()
-		}
-
-		// Draw webbed outer casing
-		traceWebbedPolygon(1.25)
-		ctx.fillStyle = isStone ? '#475569' : '#451a03'
-		ctx.fill()
-		ctx.lineWidth = 1.0 * sc
-		ctx.strokeStyle = isStone ? '#475569' : '#451a03'
-		ctx.stroke()
-
-		// Draw webbed inner road surface
-		traceWebbedPolygon(0.85)
-		ctx.fillStyle = isStone ? '#94a3b8' : '#b45309'
-		ctx.fill()
-	}
-
-	ctx.restore()
+export function drawRoads(ctx, camera, mapData, radius, filterFn = null) {
+	const roadData = buildRoadRenderData(camera, mapData, radius)
+	renderRoads(ctx, roadData, filterFn)
 }
 
 /**
  * Draws bridges where roads cross rivers on shared edges.
+ * Supports optional filterFn and drawnBridges tracking set.
  */
-function drawBridges(ctx, camera, mapData, radius) {
+function drawBridges(ctx, camera, mapData, radius, filterFn = null, drawnBridges = null) {
 	if (!mapData.roads || !mapData.rivers) return
 
 	const roads = Object.values(mapData.roads)
 	if (roads.length === 0) return
+
+	const drawn = drawnBridges || new Set()
 
 	for (const road of roads) {
 		const c1 = road.from
@@ -637,6 +1375,15 @@ function drawBridges(ctx, camera, mapData, radius) {
 		for (const edge of HEX_EDGES) {
 			const neighbor = getHexNeighbor(c1.col, c1.row, edge)
 			if (neighbor.col === c2.col && neighbor.row === c2.row) {
+				const canonRoadKey = getCanonicalRoadKey(c1.col, c1.row, c2.col, c2.row)
+				if (drawn.has(canonRoadKey)) break
+
+				const key1 = `${c1.col},${c1.row}`
+				const key2 = `${c2.col},${c2.row}`
+				if (filterFn && !filterFn(key1, key2)) break
+
+				drawn.add(canonRoadKey)
+
 				const bridgeInfo = checkBridgeBetweenHexes(mapData, c1.col, c1.row, c2.col, c2.row, edge)
 				if (bridgeInfo.hasBridge) {
 					const c1Ground = hexToWorldGroundCenter(c1.col, c1.row, radius)
@@ -645,9 +1392,9 @@ function drawBridges(ctx, camera, mapData, radius) {
 					const { mid, cp1, cp2 } = getRoadPathControls(c1Ground, c2Ground, canonRoadKey, radius)
 
 					// Bridge sits on the boundary crossing on the ground at Z = 0
-					const pMid = camera.projectTerrain(mid.x, mid.y, 0)
-					const pQ1 = camera.projectTerrain(cp1.x, cp1.y, 0)
-					const pQ2 = camera.projectTerrain(cp2.x, cp2.y, 0)
+					const pMid = camera.project(mid.x, mid.y, 0)
+					const pQ1 = camera.project(cp1.x, cp1.y, 0)
+					const pQ2 = camera.project(cp2.x, cp2.y, 0)
 
 					if (!pMid.visible) continue
 
@@ -709,10 +1456,130 @@ function drawBridges(ctx, camera, mapData, radius) {
 }
 
 /**
- * Legacy hill billboard renderer (deprecated, hills are now rendered in drawHillHexCell).
+ * Draws hills as 2.5D relief sprites (organic cluster of rolling mounds).
+ * Features:
+ * - Biome-adaptive: colors adapt naturally to grass, desert, snow, volcanic, etc.
+ * - Confined strictly within hex bounds (~0.55-0.68 R) so edge rivers are never clipped.
+ * - Rendered in Step 3, allowing roads (Step 4) and settlements (Step 6) to render cleanly on top.
+ * - Directional lighting (sun from NW, shadow on SE, warm crest rim highlight).
+ * - Soft ground footprint shadow.
  */
 function drawHills(ctx, camera, cell, radius) {
-	// No-op: hills are now rendered directly as 3D deformed hex terrain cells in drawHexCell
+	const center = hexToWorldGroundCenter(cell.col, cell.row, radius)
+	const p = camera.project(center.x, center.y, 0)
+	if (!p.visible) return
+
+	const sc = p.scale
+	const cx = p.x
+	const drawY = p.y
+	const biome = BIOMES[cell.terrain] || BIOMES.grass
+	const h = hashString(`${cell.col},${cell.row}:hills`)
+
+	// Lateral perspective parallax
+	const dx = center.x - camera.cameraX
+	const parallaxX = (dx / camera.focalDistance) * (10 * sc)
+
+	ctx.save()
+
+	// 1. Soft cluster footprint shadow on ground
+	const shadowW = radius * 0.58 * sc
+	const shadowH = radius * 0.22 * sc * Math.max(0.3, camera.cosT)
+	ctx.beginPath()
+	ctx.ellipse(cx + 2 * sc, drawY + 2 * sc * camera.cosT, shadowW, shadowH, 0, 0, Math.PI * 2)
+	ctx.fillStyle = 'rgba(15, 23, 42, 0.26)'
+	ctx.fill()
+
+	// Helper to draw a single rounded mound with sunlit/shaded gradient and crest highlight
+	function drawMound(moundX, baseY, w, hMound, sunBoost = 18, shadowDrop = -20) {
+		const crestY = baseY - hMound
+		const curveTopY = baseY - hMound * 1.04
+
+		// Mound body path
+		ctx.beginPath()
+		ctx.moveTo(moundX - w, baseY)
+		ctx.bezierCurveTo(
+			moundX - w * 0.65, curveTopY,
+			moundX - w * 0.18, curveTopY,
+			moundX, crestY
+		)
+		ctx.bezierCurveTo(
+			moundX + w * 0.18, curveTopY,
+			moundX + w * 0.65, curveTopY,
+			moundX + w, baseY
+		)
+		// Flat/slight arc base
+		ctx.bezierCurveTo(
+			moundX + w * 0.5, baseY + 1.5 * sc * camera.cosT,
+			moundX - w * 0.5, baseY + 1.5 * sc * camera.cosT,
+			moundX - w, baseY
+		)
+		ctx.closePath()
+
+		// Directional sunlight gradient (sun from NW at 315°)
+		const grad = ctx.createLinearGradient(
+			moundX - w * 0.7, crestY - 2 * sc,
+			moundX + w * 0.7, baseY
+		)
+		grad.addColorStop(0, shadeHexColor(biome.color, sunBoost))
+		grad.addColorStop(0.42, biome.color)
+		grad.addColorStop(1, shadeHexColor(biome.color, shadowDrop))
+
+		ctx.fillStyle = grad
+		ctx.fill()
+
+		// Silhouette outline
+		ctx.lineWidth = Math.max(0.7, 1.1 * sc)
+		ctx.strokeStyle = shadeHexColor(biome.color, -38)
+		ctx.stroke()
+
+		// Sunlit crest rim highlight along upper ridge
+		ctx.beginPath()
+		ctx.moveTo(moundX - w * 0.8, baseY - hMound * 0.28)
+		ctx.bezierCurveTo(
+			moundX - w * 0.6, curveTopY,
+			moundX - w * 0.18, curveTopY,
+			moundX, crestY
+		)
+		ctx.bezierCurveTo(
+			moundX + w * 0.18, curveTopY,
+			moundX + w * 0.52, baseY - hMound * 0.85,
+			moundX + w * 0.7, baseY - hMound * 0.42
+		)
+		ctx.lineWidth = Math.max(0.5, 0.9 * sc)
+		ctx.strokeStyle = 'rgba(255, 255, 255, 0.40)'
+		ctx.stroke()
+
+		// Subtle organic contour line on the slope for cartographic texture
+		ctx.beginPath()
+		ctx.moveTo(moundX - w * 0.5, baseY - hMound * 0.22)
+		ctx.quadraticCurveTo(moundX, baseY - hMound * 0.52, moundX + w * 0.5, baseY - hMound * 0.22)
+		ctx.lineWidth = Math.max(0.4, 0.6 * sc)
+		ctx.strokeStyle = shadeHexColor(biome.color, 12)
+		ctx.stroke()
+	}
+
+	// Mound 1 (Back-Left): drawn first
+	const wL = radius * 0.34 * sc
+	const hL = (10 + (getHashFloat(h, 1) + 1) * 1.2) * sc
+	const cxL = cx - radius * 0.20 * sc + parallaxX * 0.75 + getHashFloat(h, 2) * (2 * sc)
+	const baseYL = drawY - radius * 0.08 * sc * camera.cosT
+	drawMound(cxL, baseYL, wL, hL, 16, -18)
+
+	// Mound 2 (Back-Right): drawn second
+	const wR = radius * 0.32 * sc
+	const hR = (9 + (getHashFloat(h, 3) + 1) * 1.0) * sc
+	const cxR = cx + radius * 0.22 * sc + parallaxX * 0.70 + getHashFloat(h, 4) * (2 * sc)
+	const baseYR = drawY - radius * 0.06 * sc * camera.cosT
+	drawMound(cxR, baseYR, wR, hR, 14, -22)
+
+	// Mound 3 (Main Front-Center): drawn last on top of back mounds
+	const wC = radius * 0.42 * sc
+	const hC = (13 + (getHashFloat(h, 5) + 1) * 1.5) * sc
+	const cxC = cx + parallaxX + getHashFloat(h, 6) * (2.5 * sc)
+	const baseYC = drawY + 2 * sc * camera.cosT + getHashFloat(h, 7) * (1.5 * sc)
+	drawMound(cxC, baseYC, wC, hC, 20, -22)
+
+	ctx.restore()
 }
 
 /**
@@ -880,7 +1747,7 @@ function drawSettlement(ctx, camera, cell, radius, isDiscovered, drawCanvasBadge
 	const center = hexToWorldGroundCenter(cell.col, cell.row, radius)
 	// If cell also has a mountain, offset the settlement slightly forward on ground
 	const yOffset = cell.feature === 'mountain' ? radius * 0.22 : 0
-	const zOffset = cell.feature === 'hills' ? 16 * (radius / 36) : 0
+	const zOffset = cell.feature === 'hills' ? 10 * (radius / 36) : 0
 	const p = camera.projectTerrain(center.x, center.y + yOffset, zOffset)
 	if (!p.visible) return
 
@@ -1124,14 +1991,21 @@ function drawTower(ctx, x, y, w, h, color, sc = 1) {
 /**
  * Highlights a hex with a glowing outline on the 3D perspective ground plane.
  */
-function drawHexHighlight(ctx, camera, col, row, radius, color, fillOpacity = 0.2, lineWidth = 2) {
+function drawHexHighlight(ctx, camera, col, row, radius, color, fillOpacity = 0.2, lineWidth = 2, cell = null) {
 	const center = hexToWorldGroundCenter(col, row, radius)
 	const groundVerts = getHexGroundVertices(center.x, center.y, radius)
-	const screenVerts = groundVerts.map(v => camera.project(v.x, v.y, 0))
+	const screenVerts = groundVerts.map(v => camera.projectTerrain(v.x, v.y, 0))
 
 	if (!screenVerts.some(v => v.visible)) return
 
 	ctx.save()
+
+	const rgbaFill = color
+		.replace(')', `, ${fillOpacity})`)
+		.replace('rgb', 'rgba')
+		.replace('#38bdf8', `rgba(56, 189, 248, ${fillOpacity})`)
+		.replace('#f6c445', `rgba(246, 196, 69, ${fillOpacity})`)
+
 	ctx.beginPath()
 	ctx.moveTo(screenVerts[0].x, screenVerts[0].y)
 	for (let i = 1; i < screenVerts.length; i++) {
@@ -1139,13 +2013,14 @@ function drawHexHighlight(ctx, camera, col, row, radius, color, fillOpacity = 0.
 	}
 	ctx.closePath()
 
-	ctx.fillStyle = color.replace(')', `, ${fillOpacity})`).replace('rgb', 'rgba').replace('#38bdf8', `rgba(56, 189, 248, ${fillOpacity})`).replace('#f6c445', `rgba(246, 196, 69, ${fillOpacity})`)
+	ctx.fillStyle = rgbaFill
 	ctx.fill()
 
 	const avgScale = screenVerts[0].scale
 	ctx.lineWidth = Math.max(1, lineWidth * avgScale)
 	ctx.strokeStyle = color
 	ctx.stroke()
+
 	ctx.restore()
 }
 

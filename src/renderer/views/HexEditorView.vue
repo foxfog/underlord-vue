@@ -36,6 +36,14 @@
 			</div>
 
 			<div class="header-right">
+				<button
+					class="editor-btn"
+					:class="{ '__active': showBordersFilter, 'editor-btn-secondary': !showBordersFilter }"
+					@click="showBordersFilter = !showBordersFilter"
+					:title="showBordersFilter ? 'Скрыть границы государств' : 'Показать границы государств'"
+				>
+					<span>🏳️ Границы: {{ showBordersFilter ? 'ВКЛ' : 'ВЫКЛ' }}</span>
+				</button>
 				<button class="editor-btn editor-btn-secondary" @click="openExportModal">
 					<span>💾 Экспорт JSON</span>
 				</button>
@@ -99,6 +107,15 @@
 								stroke="#334155"
 								stroke-width="2"
 								filter="url(#hexShadow)"
+							/>
+
+							<!-- Faction Territory Tint & Border in SVG Preview -->
+							<polygon
+								v-if="previewHexData.factionVisuals"
+								:points="previewHexData.pointsStr"
+								:fill="selectedCell.fillColor || previewHexData.factionVisuals.fillColor"
+								:stroke="selectedCell.borderColor || previewHexData.factionVisuals.borderColor"
+								stroke-width="2.5"
 							/>
 
 							<!-- Relief Features -->
@@ -398,6 +415,30 @@
 								</div>
 							</div>
 						</div>
+
+						<!-- Faction / Nation (Civilization Borders) -->
+						<div class="inspector-section-block">
+							<div class="section-block-title">
+								<span>🏳️ Государство / Фракция</span>
+								<button
+									v-if="selectedCell.faction"
+									class="btn-del-sm"
+									@click="selectedCell.faction = null; selectedCell.borderColor = null; selectedCell.fillColor = null"
+								>
+									Снять
+								</button>
+							</div>
+
+							<div class="inspector-field">
+								<label class="field-label">Принадлежность:</label>
+								<select v-model="selectedCell.faction" class="inspector-select">
+									<option :value="null">-- Нейтральные земли --</option>
+									<option v-for="f in factionsList" :key="f.id" :value="f.id">
+										{{ f.icon }} {{ f.name }}
+									</option>
+								</select>
+							</div>
+						</div>
 					</div>
 				</div>
 
@@ -433,6 +474,62 @@
 								@click="brushRadius = r"
 							>
 								{{ r }} гекс{{ r > 1 ? 'а' : '' }}
+							</button>
+						</div>
+					</div>
+
+					<!-- Tool 2: Factions & Borders (Civilization) -->
+					<div v-if="activeTool === 'faction'" class="tool-section">
+						<div class="section-title">Границы и территории (Civilization)</div>
+						<p class="section-desc">
+							Клик по гексу привязывает его к фракции. Границы между государствами отрисовываются стилизованными геральдическими линиями.
+						</p>
+
+						<div class="sub-label">Радиус кисти:</div>
+						<div class="num-selector">
+							<button
+								v-for="r in [1, 2, 3]"
+								:key="r"
+								class="num-btn"
+								:class="{ __active: factionBrushRadius === r }"
+								@click="factionBrushRadius = r"
+							>
+								{{ r }} гекс{{ r > 1 ? 'а' : '' }}
+							</button>
+						</div>
+
+						<div class="sub-label" style="margin-top: 0.8em;">Выберите фракцию / государство:</div>
+						<div class="palette-grid faction-palette-grid">
+							<button
+								class="palette-btn"
+								:class="{ __active: selectedFactionId === null }"
+								@click="selectedFactionId = null"
+								title="Очистить принадлежность (Нейтральные земли)"
+							>
+								<span class="neutral-swatch">⬜</span>
+								<span class="palette-name">Нейтрально</span>
+							</button>
+
+							<button
+								v-for="f in factionsList"
+								:key="f.id"
+								class="palette-btn faction-palette-btn"
+								:class="{ __active: selectedFactionId === f.id }"
+								@click="selectedFactionId = f.id"
+								:style="{
+									borderColor: selectedFactionId === f.id ? (f.borderColor || '#38bdf8') : undefined
+								}"
+							>
+								<span
+									class="faction-swatch"
+									:style="{
+										backgroundColor: f.fillColor || hexToRgba(f.borderColor || '#38bdf8', 0.22),
+										borderColor: f.borderColor || '#38bdf8'
+									}"
+								>
+									{{ f.icon }}
+								</span>
+								<span class="palette-name">{{ f.name }}</span>
 							</button>
 						</div>
 					</div>
@@ -594,6 +691,8 @@
 					:active-settlement-type="selectedSettlementType"
 					:selected-hex="selectedHexCoord"
 					:pitch="mapPitch"
+					:show-borders="showBordersFilter"
+					:factions-map="factionsList"
 					@pitch-change="p => mapPitch = p"
 					@hex-click="onHexClick"
 					@edge-click="onEdgeClick"
@@ -675,7 +774,9 @@ import {
 	getRiverOnEdge,
 	getRiverDataOnEdge,
 	syncRoadsForCell,
-	rebuildAllRoadConnections
+	rebuildAllRoadConnections,
+	getFactionVisuals,
+	hexToRgba
 } from '@/utils/hexmap/hexLoader.js'
 import {
 	HEX_EDGES,
@@ -688,6 +789,7 @@ import {
 	getEdgeFlowDirectionName
 } from '@/utils/hexmap/hexCoords.js'
 import defaultNewWorldHex from '@data/hexmaps/newworld_hex.json'
+import fractionsData from '@data/fractions/fractions.json'
 
 const router = useRouter()
 const canvasRef = ref(null)
@@ -711,10 +813,28 @@ watch(mapPitch, (newP) => {
 	}
 })
 
+// Factions & Borders State (Civilization Style)
+const fractionsRaw = Array.isArray(fractionsData) ? fractionsData : Object.values(fractionsData || {})
+const factionsList = computed(() => {
+	return fractionsRaw.map(f => {
+		const visuals = getFactionVisuals(f.id, fractionsRaw)
+		return {
+			id: f.id,
+			name: f.name || visuals?.name || f.id,
+			icon: f.icon || visuals?.icon || '🏳️',
+			type: f.type || 'faction',
+			borderColor: visuals?.borderColor || '#38bdf8',
+			fillColor: visuals?.fillColor || 'rgba(56, 189, 248, 0.16)'
+		}
+	})
+})
 
+const selectedFactionId = ref('re-estize')
+const factionBrushRadius = ref(1)
+const showBordersFilter = ref(true)
 
 // Active Tools
-const activeTool = ref('select') // 'select' | 'biome' | 'mountain' | 'hills' | 'river' | 'road' | 'settlement' | 'eraser'
+const activeTool = ref('select') // 'select' | 'biome' | 'faction' | 'mountain' | 'hills' | 'river' | 'road' | 'settlement' | 'eraser'
 const selectedBiome = ref('grass')
 const brushRadius = ref(1)
 const selectedMountainRadius = ref(1)
@@ -742,6 +862,7 @@ const newMapForm = ref({
 const toolsList = [
 	{ id: 'select', name: 'Инспектор', icon: '🔍', desc: 'Выбор и редактирование гекса' },
 	{ id: 'biome', name: 'Биом', icon: '🌿', desc: 'Нанесение покрытия (трава, вода, пустыня, снег)' },
+	{ id: 'faction', name: 'Фракции', icon: '🏳️', desc: 'Границы государств и территории (стиль Civilization)' },
 	{ id: 'hills', name: 'Холмы', icon: '⛰️', desc: 'Установка холмов' },
 	{ id: 'mountain', name: 'Горы', icon: '🏔️', desc: 'Горные пики и массивы (радиус 1..3)' },
 	{ id: 'river', name: 'Реки', icon: '🌊', desc: 'Реки по граням гексов (ширина 1..3)' },
@@ -762,6 +883,11 @@ const selectedCell = computed(() => {
 	if (!selectedHexCoord.value) return null
 	const key = `${selectedHexCoord.value.col},${selectedHexCoord.value.row}`
 	return mapData.value?.cells?.[key] || null
+})
+
+const selectedFactionVisuals = computed(() => {
+	if (!selectedCell.value?.faction) return null
+	return getFactionVisuals(selectedCell.value.faction, fractionsRaw)
 })
 
 const biomeColor = computed(() => {
@@ -841,7 +967,8 @@ const previewHexData = computed(() => {
 		cy,
 		vertices,
 		pointsStr,
-		edges
+		edges,
+		factionVisuals: selectedFactionVisuals.value
 	}
 })
 
@@ -1029,6 +1156,22 @@ function onHexClick({ col, row, cell, isRightClick }) {
 			}
 			break
 		}
+		case 'faction': {
+			const radius = factionBrushRadius.value || 1
+			const targetHexes = getHexesInRadius(col, row, radius)
+			for (const h of targetHexes) {
+				if (h.col < 0 || h.col >= mapData.value.cols || h.row < 0 || h.row >= mapData.value.rows) continue
+				const c = getOrCreateCell(h.col, h.row)
+				if (selectedFactionId.value === null) {
+					c.faction = null
+					c.borderColor = null
+					c.fillColor = null
+				} else {
+					c.faction = selectedFactionId.value
+				}
+			}
+			break
+		}
 	}
 }
 
@@ -1064,9 +1207,18 @@ function onEdgeClick({ col, row, edge, width }) {
 function eraseHex(col, row) {
 	const k = `${col},${row}`
 	if (mapData.value.cells[k]) {
-		mapData.value.cells[k].settlement = null
-		mapData.value.cells[k].feature = 'none'
-		mapData.value.cells[k].road = 'none'
+		if (activeTool.value === 'faction') {
+			mapData.value.cells[k].faction = null
+			mapData.value.cells[k].borderColor = null
+			mapData.value.cells[k].fillColor = null
+		} else {
+			mapData.value.cells[k].settlement = null
+			mapData.value.cells[k].feature = 'none'
+			mapData.value.cells[k].road = 'none'
+			mapData.value.cells[k].faction = null
+			mapData.value.cells[k].borderColor = null
+			mapData.value.cells[k].fillColor = null
+		}
 	}
 	syncRoadsForCell(mapData.value, col, row)
 }
@@ -1246,6 +1398,13 @@ function downloadJson() {
 	background: #334155;
 	border-color: #f6c445;
 	color: #f6c445;
+}
+
+.editor-btn.__active {
+	background: #1e3a5f;
+	border-color: #38bdf8;
+	color: #38bdf8;
+	box-shadow: 0 0 0.4em rgba(56, 189, 248, 0.4);
 }
 
 .editor-btn-primary {
@@ -1652,6 +1811,39 @@ function downloadJson() {
 	height: 1.2em;
 	border-radius: 0.2em;
 	border: 1px solid rgba(0, 0, 0, 0.4);
+}
+
+.faction-palette-grid {
+	grid-template-columns: 1fr;
+	max-height: 18em;
+	overflow-y: auto;
+	padding-right: 0.2em;
+}
+
+.faction-palette-btn {
+	justify-content: flex-start;
+}
+
+.faction-swatch {
+	width: 1.6em;
+	height: 1.6em;
+	border-radius: 0.2em;
+	border: 1px solid #38bdf8;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 0.85em;
+	flex-shrink: 0;
+}
+
+.neutral-swatch {
+	width: 1.6em;
+	height: 1.6em;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 0.85em;
+	flex-shrink: 0;
 }
 
 .num-selector {

@@ -19,6 +19,8 @@ export const OPPOSITE_EDGE = Object.freeze({
 
 export const DEFAULT_HEX_RADIUS = 36
 export const DEFAULT_HEX_TILT = 0.70
+export const DEFAULT_HEX_MIN_ZOOM = 0.5
+export const DEFAULT_HEX_MAX_ZOOM = 3.75
 
 /**
  * Returns neighbor coordinate for a given hex and edge in odd-q flat-topped system.
@@ -233,22 +235,22 @@ export class HexPerspectiveCamera {
 
 /**
  * Calculates dynamic perspective pitch angle based on camera zoom.
- * - Minimum pitch at zoom-out (distance / удаление, zoom = 0.4): 0° (flat map).
- * - Maximum pitch at zoom-in (close-up / приближение, zoom = 3.0): 60°.
+ * - Minimum pitch at zoom-out (distance / удаление, zoom = 0.5): 0° (flat map).
+ * - Maximum pitch at zoom-in (close-up / приближение, zoom = 3.75): 60°.
  *
- * @param {number} zoom - Current camera zoom level (0.4 .. 3.0)
+ * @param {number} zoom - Current camera zoom level (0.5 .. 3.75)
  * @param {number} minPitch - Minimum pitch angle at zoom-out (default 0)
  * @param {number} maxPitch - Maximum pitch angle at zoom-in (default 60)
- * @param {number} minZoom - Zoom level for minPitch (default 0.4)
- * @param {number} maxZoom - Zoom level for maxPitch (default 3.0)
+ * @param {number} minZoom - Zoom level for minPitch (default 0.5)
+ * @param {number} maxZoom - Zoom level for maxPitch (default 3.75)
  * @returns {number} Dynamic pitch angle clamped between minPitch and maxPitch
  */
 export function calculateDynamicPitch(
 	zoom = 1.0,
 	minPitch = 0,
 	maxPitch = 60,
-	minZoom = 0.4,
-	maxZoom = 3.0
+	minZoom = DEFAULT_HEX_MIN_ZOOM,
+	maxZoom = DEFAULT_HEX_MAX_ZOOM
 ) {
 	const safeZoom = Math.max(minZoom, Math.min(maxZoom, zoom))
 	const logMin = Math.log(minZoom)
@@ -535,11 +537,48 @@ export function getHashFloat(hash, seed = 0) {
  * @returns {{ cp1: { x: number, y: number }, cp2: { x: number, y: number } }}
  */
 export function getRiverMeanderControls(from, to, canonKey, radius = DEFAULT_HEX_RADIUS, tier = 1) {
-	const dx = to.x - from.x
-	const dy = to.y - from.y
-	const len = Math.hypot(dx, dy) || 1
-	const ux = dx / len
-	const uy = dy / len
+	let cnx = 0
+	let cny = 1
+	let cux = 1
+	let cuy = 0
+	let canFrom = null
+
+	if (canonKey && canonKey.includes(':')) {
+		const parts = canonKey.split(':')
+		const coords = parts[0]?.split(',')
+		if (coords && coords.length === 2 && parts[1]) {
+			const c0 = Number(coords[0])
+			const r0 = Number(coords[1])
+			const e0 = parts[1]
+			const center0 = hexToWorldGroundCenter(c0, r0, radius)
+			const gv0 = getHexGroundVertices(center0.x, center0.y, radius)
+			const ep0 = getHexEdgeEndpoints(gv0, e0)
+			canFrom = ep0.from
+			const cdx = ep0.to.x - ep0.from.x
+			const cdy = ep0.to.y - ep0.from.y
+			const clen = Math.hypot(cdx, cdy) || 1
+			cux = cdx / clen
+			cuy = cdy / clen
+			cnx = -cuy
+			cny = cux
+		}
+	}
+
+	if (!canFrom) {
+		const edx = to.x - from.x
+		const edy = to.y - from.y
+		const elen = Math.hypot(edx, edy) || 1
+		cux = edx / elen
+		cuy = edy / elen
+		cnx = -cuy
+		cny = cux
+	}
+
+	const edx = to.x - from.x
+	const edy = to.y - from.y
+	const elen = Math.hypot(edx, edy) || 1
+	const ux = edx / elen
+	const uy = edy / elen
 	const nx = -uy
 	const ny = ux
 
@@ -566,16 +605,51 @@ export function getRiverMeanderControls(from, to, canonKey, radius = DEFAULT_HEX
 	const offset1 = (h1 >= 0 ? baseAmp + Math.abs(h1) * varAmp : -baseAmp - Math.abs(h1) * varAmp) * radius
 	const offset2 = (-Math.sign(offset1 || 1) * (baseAmp + Math.abs(h2) * varAmp)) * radius
 
-	const cp1 = {
-		x: from.x + ux * (len * 0.35) + nx * offset1,
-		y: from.y + uy * (len * 0.35) + ny * offset1
-	}
-	const cp2 = {
-		x: from.x + ux * (len * 0.65) + nx * offset2,
-		y: from.y + uy * (len * 0.65) + ny * offset2
-	}
+	// Check traversal direction relative to canonical edge orientation
+	const dot = edx * cux + edy * cuy
 
-	return { cp1, cp2 }
+	if (dot >= 0) {
+		// Forward traversal along canonical edge
+		return {
+			cp1: {
+				x: from.x + ux * (elen * 0.35) + nx * offset1,
+				y: from.y + uy * (elen * 0.35) + ny * offset1
+			},
+			cp2: {
+				x: from.x + ux * (elen * 0.65) + nx * offset2,
+				y: from.y + uy * (elen * 0.65) + ny * offset2
+			}
+		}
+	} else {
+		// Reverse traversal: identical physical curve in reverse
+		return {
+			cp1: {
+				x: from.x + ux * (elen * 0.35) - nx * offset2,
+				y: from.y + uy * (elen * 0.35) - ny * offset2
+			},
+			cp2: {
+				x: from.x + ux * (elen * 0.65) - nx * offset1,
+				y: from.y + uy * (elen * 0.65) - ny * offset1
+			}
+		}
+	}
+}
+
+/**
+ * Calculates cubic Bezier control points for an organic procedural Civ-style country border.
+ *
+ * Fully unified with the river meander curve generator so that country borders running
+ * along rivers share the exact same contours, bends, and harmonic undulations.
+ *
+ * @param {{ x: number, y: number }} from - Edge start vertex
+ * @param {{ x: number, y: number }} to - Edge end vertex
+ * @param {string} canonKey - Canonical edge key e.g. "4,7:SE"
+ * @param {number} radius - Hex radius
+ * @param {number} tier - River width tier for meander amplitude scaling (default 1)
+ * @returns {{ cp1: { x: number, y: number }, cp2: { x: number, y: number } }}
+ */
+export function getBorderMeanderControls(from, to, canonKey, radius = DEFAULT_HEX_RADIUS, tier = 1) {
+	return getRiverMeanderControls(from, to, canonKey, radius, tier)
 }
 
 /**

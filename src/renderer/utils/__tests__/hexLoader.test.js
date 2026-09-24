@@ -3,6 +3,9 @@ import {
 	BIOMES,
 	SETTLEMENT_TYPES,
 	ROAD_TYPES,
+	FACTION_PRESETS,
+	getFactionVisuals,
+	hexToRgba,
 	normalizeHexMapData,
 	getCanonicalRoadKey,
 	getRiverOnEdge,
@@ -11,6 +14,15 @@ import {
 	syncRoadsForCell,
 	rebuildAllRoadConnections
 } from '../hexmap/hexLoader'
+import {
+	hexToWorldGroundCenter,
+	getHexGroundVertices,
+	getHexEdgeEndpoints
+} from '../hexmap/hexCoords'
+import {
+	drawPoliticalBorders,
+	renderHexMap
+} from '../hexmap/hexRenderer'
 import rawNewWorldHex from '@data/hexmaps/newworld_hex.json'
 
 describe('HexLoader & Map Data', () => {
@@ -147,5 +159,148 @@ describe('HexLoader & Map Data', () => {
 		expect(map.roads[roadKey1]).toBeUndefined()
 		expect(map.roads[roadKey2]).toBeUndefined()
 		expect(Object.keys(map.roads).length).toBe(0)
+	})
+
+	it('newworld_hex has a continuous, unbroken river chain from source to mouth', () => {
+		const map = normalizeHexMapData(rawNewWorldHex)
+		const riverEntries = Object.values(map.rivers)
+		expect(riverEntries.length).toBe(17)
+
+		// Map vertices to verify that every internal joint is shared by exactly 2 river edges
+		const vertexMap = new Map()
+		for (const r of riverEntries) {
+			const center = hexToWorldGroundCenter(r.col, r.row)
+			const gv = getHexGroundVertices(center.x, center.y)
+			const ep = getHexEdgeEndpoints(gv, r.edge)
+			const kFrom = `${Math.round(ep.from.x * 10)},${Math.round(ep.from.y * 10)}`
+			const kTo = `${Math.round(ep.to.x * 10)},${Math.round(ep.to.y * 10)}`
+			vertexMap.set(kFrom, (vertexMap.get(kFrom) || 0) + 1)
+			vertexMap.set(kTo, (vertexMap.get(kTo) || 0) + 1)
+		}
+
+		let endpointsCount = 0
+		let jointCount = 0
+		for (const count of vertexMap.values()) {
+			if (count === 1) endpointsCount++
+			if (count >= 2) jointCount++
+		}
+
+		// Single continuous river with 1 source, 1 mouth, and 16 seamless internal joints
+		expect(endpointsCount).toBe(2)
+		expect(jointCount).toBe(16)
+	})
+
+	it('provides Civilization-style faction presets and resolves visuals accurately', () => {
+		expect(FACTION_PRESETS['re-estize']).toBeDefined()
+		expect(FACTION_PRESETS['re-estize'].borderColor).toBe('#2563eb')
+		expect(FACTION_PRESETS['baharuth'].borderColor).toBe('#dc2626')
+		expect(FACTION_PRESETS['slane-theocracy'].borderColor).toBe('#eab308')
+		expect(FACTION_PRESETS['roble'].borderColor).toBe('#94a3b8')
+		expect(FACTION_PRESETS['sorcerer-kingdom'].borderColor).toBe('#a855f7')
+		expect(FACTION_PRESETS['nazarick'].borderColor).toBe('#6366f1')
+
+		// Resolves known preset
+		const reEstize = getFactionVisuals('re-estize')
+		expect(reEstize.name).toBe('Королевство Ре-Эстиз')
+		expect(reEstize.icon).toBe('👑')
+		expect(reEstize.borderColor).toBe('#2563eb')
+		expect(reEstize.fillColor).toContain('rgba(37, 99, 235')
+
+		// Resolves custom faction object
+		const customFactions = [
+			{ id: 'custom-clan', name: 'Клан Теней', icon: '🗡️', color: '#10b981' }
+		]
+		const clan = getFactionVisuals('custom-clan', customFactions)
+		expect(clan.name).toBe('Клан Теней')
+		expect(clan.icon).toBe('🗡️')
+		expect(clan.borderColor).toBe('#10b981')
+		expect(clan.fillColor).toContain('rgba(16, 185, 129')
+
+		// Fallback for unknown ID
+		const unknown = getFactionVisuals('mysterious-realm')
+		expect(unknown.name).toBe('mysterious-realm')
+		expect(unknown.icon).toBe('🏳️')
+		expect(unknown.borderColor).toContain('hsl(')
+
+		// Returns null for empty faction
+		expect(getFactionVisuals(null)).toBeNull()
+	})
+
+	it('normalizes hex cells preserving faction, borderColor, and fillColor', () => {
+		const raw = {
+			cols: 3,
+			rows: 3,
+			cells: {
+				'0,0': { col: 0, row: 0, terrain: 'grass', faction: 're-estize' },
+				'1,0': { col: 1, row: 0, terrain: 'plains', fraction: 'baharuth', borderColor: '#ff0000', fillColor: 'rgba(255,0,0,0.3)' }
+			}
+		}
+
+		const map = normalizeHexMapData(raw)
+		expect(map.cells['0,0'].faction).toBe('re-estize')
+		expect(map.cells['0,0'].borderColor).toBeNull()
+
+		// Legacy 'fraction' converted to 'faction', custom colors preserved
+		expect(map.cells['1,0'].faction).toBe('baharuth')
+		expect(map.cells['1,0'].borderColor).toBe('#ff0000')
+		expect(map.cells['1,0'].fillColor).toBe('rgba(255,0,0,0.3)')
+
+		// Unassigned cell has null faction
+		expect(map.cells['0,1'].faction).toBeNull()
+	})
+
+	it('newworld_hex.json contains canon factions across major nations', () => {
+		const map = normalizeHexMapData(rawNewWorldHex)
+		const factionCounts = {}
+		for (const cell of Object.values(map.cells)) {
+			if (cell.faction) {
+				factionCounts[cell.faction] = (factionCounts[cell.faction] || 0) + 1
+			}
+		}
+
+		expect(factionCounts['re-estize']).toBeGreaterThan(50)
+		expect(factionCounts['baharuth']).toBeGreaterThan(50)
+		expect(factionCounts['slane-theocracy']).toBeGreaterThan(40)
+		expect(factionCounts['roble']).toBeGreaterThan(20)
+		expect(factionCounts['nazarick']).toBeGreaterThan(0)
+		expect(factionCounts['carne-village']).toBeGreaterThan(0)
+	})
+
+	it('renders political borders and honors showBorders toggle without errors', () => {
+		const map = normalizeHexMapData({
+			cols: 4,
+			rows: 4,
+			cells: {
+				'1,1': { col: 1, row: 1, terrain: 'grass', faction: 're-estize' },
+				'2,1': { col: 2, row: 1, terrain: 'grass', faction: 'baharuth' }
+			}
+		})
+
+		const mockCtx = {
+			canvas: { width: 800, height: 600 },
+			save: () => {},
+			restore: () => {},
+			beginPath: () => {},
+			closePath: () => {},
+			moveTo: () => {},
+			lineTo: () => {},
+			stroke: () => {},
+			fill: () => {},
+			clearRect: () => {},
+			setLineDash: () => {},
+			createLinearGradient: () => ({ addColorStop: () => {} }),
+			quadraticCurveTo: () => {},
+			bezierCurveTo: () => {}
+		}
+
+		// Renders cleanly with showBorders = true
+		expect(() => {
+			renderHexMap(mockCtx, map, { showBorders: true })
+		}).not.toThrow()
+
+		// Renders cleanly with showBorders = false (hidden filter)
+		expect(() => {
+			renderHexMap(mockCtx, map, { showBorders: false })
+		}).not.toThrow()
 	})
 })

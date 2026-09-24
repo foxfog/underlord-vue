@@ -265,21 +265,24 @@
       "row": 4,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "2,5": {
       "col": 2,
       "row": 5,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "hills"
+      "feature": "hills",
+      "faction": "re-estize"
     },
     "2,6": {
       "col": 2,
       "row": 6,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "2,7": {
       "col": 2,
@@ -363,91 +366,104 @@
       "row": 2,
       "terrain": "water",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "3,3": {
       "col": 3,
       "row": 3,
       "terrain": "water",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "3,4": {
       "col": 3,
       "row": 4,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "3,5": {
       "col": 3,
       "row": 5,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "3,6": {
       "col": 3,
       "row": 6,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "3,7": {
       "col": 3,
       "row": 7,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "3,8": {
       "col": 3,
       "row": 8,
       "terrain": "water",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "3,9": {
       "col": 3,
       "row": 9,
       "terrain": "water",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "3,10": {
       "col": 3,
       "row": 10,
       "terrain": "water",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "3,11": {
       "col": 3,
       "row": 11,
       "terrain": "water",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "roble"
     },
     "3,12": {
       "col": 3,
       "row": 12,
       "terrain": "water",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "roble"
     },
     "3,13": {
       "col": 3,
       "row": 13,
       "terrain": "water",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "roble"
     },
     "3,14": {
       "col": 3,
       "row": 14,
       "terrain": "water",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "roble"
     },
     "3,15": {
       "col": 3,
@@ -475,35 +491,40 @@
       "row": 2,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "4,3": {
       "col": 4,
       "row": 3,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "4,4": {
       "col": 4,
       "row": 4,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "4,5": {
       "col": 4,
       "row": 5,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "4,6": {
       "col": 4,
       "row": 6,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "4,7": {
       "col": 4,
@@ -517,56 +538,64 @@
         "type": "walled_city",
         "description": "Величественная столица королевства Рэ-Эстиз, окруженная тройным кольцом стен.",
         "hasLocalMap": false
-      }
+      },
+      "faction": "re-estize"
     },
     "4,8": {
       "col": 4,
       "row": 8,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "4,9": {
       "col": 4,
       "row": 9,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "4,10": {
       "col": 4,
       "row": 10,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "4,11": {
       "col": 4,
       "row": 11,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "roble"
     },
     "4,12": {
       "col": 4,
       "row": 12,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "roble"
     },
     "4,13": {
       "col": 4,
       "row": 13,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "roble"
     },
     "4,14": {
       "col": 4,
       "row": 14,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "roble"
     },
     "4,15": {
       "col": 4,
@@ -594,91 +623,104 @@
       "row": 2,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "5,3": {
       "col": 5,
       "row": 3,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "5,4": {
       "col": 5,
       "row": 4,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "5,5": {
       "col": 5,
       "row": 5,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "5,6": {
       "col": 5,
       "row": 6,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "5,7": {
       "col": 5,
       "row": 7,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "5,8": {
       "col": 5,
       "row": 8,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "5,9": {
       "col": 5,
       "row": 9,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "5,10": {
       "col": 5,
       "row": 10,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "5,11": {
       "col": 5,
       "row": 11,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "roble"
     },
     "5,12": {
       "col": 5,
       "row": 12,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "roble"
     },
     "5,13": {
       "col": 5,
       "row": 13,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "roble"
     },
     "5,14": {
       "col": 5,
       "row": 14,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "roble"
     },
     "5,15": {
       "col": 5,
@@ -706,91 +748,104 @@
       "row": 2,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "6,3": {
       "col": 6,
       "row": 3,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "6,4": {
       "col": 6,
       "row": 4,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "6,5": {
       "col": 6,
       "row": 5,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "6,6": {
       "col": 6,
       "row": 6,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "6,7": {
       "col": 6,
       "row": 7,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "6,8": {
       "col": 6,
       "row": 8,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "6,9": {
       "col": 6,
       "row": 9,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "6,10": {
       "col": 6,
       "row": 10,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "6,11": {
       "col": 6,
       "row": 11,
       "terrain": "water",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "roble"
     },
     "6,12": {
       "col": 6,
       "row": 12,
       "terrain": "water",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "roble"
     },
     "6,13": {
       "col": 6,
       "row": 13,
       "terrain": "water",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "roble"
     },
     "6,14": {
       "col": 6,
       "row": 14,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "roble"
     },
     "6,15": {
       "col": 6,
@@ -818,98 +873,112 @@
       "row": 2,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "7,3": {
       "col": 7,
       "row": 3,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "7,4": {
       "col": 7,
       "row": 4,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "7,5": {
       "col": 7,
       "row": 5,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "7,6": {
       "col": 7,
       "row": 6,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "7,7": {
       "col": 7,
       "row": 7,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "7,8": {
       "col": 7,
       "row": 8,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "7,9": {
       "col": 7,
       "row": 9,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "7,10": {
       "col": 7,
       "row": 10,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "7,11": {
       "col": 7,
       "row": 11,
       "terrain": "water",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "roble"
     },
     "7,12": {
       "col": 7,
       "row": 12,
       "terrain": "water",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "roble"
     },
     "7,13": {
       "col": 7,
       "row": 13,
       "terrain": "water",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "roble"
     },
     "7,14": {
       "col": 7,
       "row": 14,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "roble"
     },
     "7,15": {
       "col": 7,
       "row": 15,
       "terrain": "water",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "roble"
     },
     "8,0": {
       "col": 8,
@@ -930,98 +999,112 @@
       "row": 2,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "8,3": {
       "col": 8,
       "row": 3,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "8,4": {
       "col": 8,
       "row": 4,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "8,5": {
       "col": 8,
       "row": 5,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "8,6": {
       "col": 8,
       "row": 6,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "8,7": {
       "col": 8,
       "row": 7,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "hills"
+      "feature": "hills",
+      "faction": "re-estize"
     },
     "8,8": {
       "col": 8,
       "row": 8,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "nazarick"
     },
     "8,9": {
       "col": 8,
       "row": 9,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "8,10": {
       "col": 8,
       "row": 10,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "8,11": {
       "col": 8,
       "row": 11,
       "terrain": "water",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "roble"
     },
     "8,12": {
       "col": 8,
       "row": 12,
       "terrain": "water",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "roble"
     },
     "8,13": {
       "col": 8,
       "row": 13,
       "terrain": "water",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "roble"
     },
     "8,14": {
       "col": 8,
       "row": 14,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "roble"
     },
     "8,15": {
       "col": 8,
       "row": 15,
       "terrain": "water",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "roble"
     },
     "9,0": {
       "col": 9,
@@ -1042,42 +1125,48 @@
       "row": 2,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "9,3": {
       "col": 9,
       "row": 3,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "9,4": {
       "col": 9,
       "row": 4,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "9,5": {
       "col": 9,
       "row": 5,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "9,6": {
       "col": 9,
       "row": 6,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "9,7": {
       "col": 9,
       "row": 7,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "9,8": {
       "col": 9,
@@ -1091,56 +1180,64 @@
         "type": "fortress",
         "description": "Великая Подземная Гробница Назарик, скрытая холмами и чарами иллюзий.",
         "hasLocalMap": false
-      }
+      },
+      "faction": "nazarick"
     },
     "9,9": {
       "col": 9,
       "row": 9,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "9,10": {
       "col": 9,
       "row": 10,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "9,11": {
       "col": 9,
       "row": 11,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "roble"
     },
     "9,12": {
       "col": 9,
       "row": 12,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "roble"
     },
     "9,13": {
       "col": 9,
       "row": 13,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "roble"
     },
     "9,14": {
       "col": 9,
       "row": 14,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "roble"
     },
     "9,15": {
       "col": 9,
       "row": 15,
       "terrain": "water",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "roble"
     },
     "10,0": {
       "col": 10,
@@ -1161,63 +1258,72 @@
       "row": 2,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "10,3": {
       "col": 10,
       "row": 3,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "10,4": {
       "col": 10,
       "row": 4,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "hills"
+      "feature": "hills",
+      "faction": "re-estize"
     },
     "10,5": {
       "col": 10,
       "row": 5,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "10,6": {
       "col": 10,
       "row": 6,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "10,7": {
       "col": 10,
       "row": 7,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "10,8": {
       "col": 10,
       "row": 8,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "10,9": {
       "col": 10,
       "row": 9,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "10,10": {
       "col": 10,
       "row": 10,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "10,11": {
       "col": 10,
@@ -1301,7 +1407,8 @@
       "row": 6,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "carne-village"
     },
     "11,7": {
       "col": 11,
@@ -1317,63 +1424,72 @@
         "localMapId": "carne",
         "sceneId": "carne_village_entrance",
         "description": "Деревня на опушке Великого Леса Тоб. Защищена воинами Назарика."
-      }
+      },
+      "faction": "carne-village"
     },
     "11,8": {
       "col": 11,
       "row": 8,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "11,9": {
       "col": 11,
       "row": 9,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "11,10": {
       "col": 11,
       "row": 10,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "re-estize"
     },
     "11,11": {
       "col": 11,
       "row": 11,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "11,12": {
       "col": 11,
       "row": 12,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "11,13": {
       "col": 11,
       "row": 13,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "11,14": {
       "col": 11,
       "row": 14,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "11,15": {
       "col": 11,
       "row": 15,
       "terrain": "water",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "12,0": {
       "col": 12,
@@ -1408,7 +1524,8 @@
       "row": 4,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "great-tribe"
     },
     "12,5": {
       "col": 12,
@@ -1422,14 +1539,16 @@
         "type": "town",
         "description": "Дремучий бескрайний лес, обитель Мудрого Короля Леса и гигантских зверей.",
         "hasLocalMap": false
-      }
+      },
+      "faction": "great-tribe"
     },
     "12,6": {
       "col": 12,
       "row": 6,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "great-tribe"
     },
     "12,7": {
       "col": 12,
@@ -1464,42 +1583,48 @@
         "type": "walled_city",
         "description": "Город-крепость на стыке трех государств, окруженный тремя концентрическими стенами.",
         "hasLocalMap": false
-      }
+      },
+      "faction": "re-estize"
     },
     "12,11": {
       "col": 12,
       "row": 11,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "12,12": {
       "col": 12,
       "row": 12,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "12,13": {
       "col": 12,
       "row": 13,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "12,14": {
       "col": 12,
       "row": 14,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "12,15": {
       "col": 12,
       "row": 15,
       "terrain": "water",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "13,0": {
       "col": 13,
@@ -1534,21 +1659,24 @@
       "row": 4,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "great-tribe"
     },
     "13,5": {
       "col": 13,
       "row": 5,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "great-tribe"
     },
     "13,6": {
       "col": 13,
       "row": 6,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "great-tribe"
     },
     "13,7": {
       "col": 13,
@@ -1583,35 +1711,40 @@
       "row": 11,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "13,12": {
       "col": 13,
       "row": 12,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "13,13": {
       "col": 13,
       "row": 13,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "13,14": {
       "col": 13,
       "row": 14,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "13,15": {
       "col": 13,
       "row": 15,
       "terrain": "water",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "14,0": {
       "col": 14,
@@ -1632,21 +1765,24 @@
       "row": 2,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "14,3": {
       "col": 14,
       "row": 3,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "14,4": {
       "col": 14,
       "row": 4,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "14,5": {
       "col": 14,
@@ -1694,42 +1830,48 @@
       "row": 10,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "14,11": {
       "col": 14,
       "row": 11,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "14,12": {
       "col": 14,
       "row": 12,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "14,13": {
       "col": 14,
       "row": 13,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "14,14": {
       "col": 14,
       "row": 14,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "14,15": {
       "col": 14,
       "row": 15,
       "terrain": "water",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "15,0": {
       "col": 15,
@@ -1743,105 +1885,120 @@
       "row": 1,
       "terrain": "snow",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "15,2": {
       "col": 15,
       "row": 2,
       "terrain": "snow",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "15,3": {
       "col": 15,
       "row": 3,
       "terrain": "snow",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "15,4": {
       "col": 15,
       "row": 4,
       "terrain": "snow",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "15,5": {
       "col": 15,
       "row": 5,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "15,6": {
       "col": 15,
       "row": 6,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "15,7": {
       "col": 15,
       "row": 7,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "15,8": {
       "col": 15,
       "row": 8,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "15,9": {
       "col": 15,
       "row": 9,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "15,10": {
       "col": 15,
       "row": 10,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "15,11": {
       "col": 15,
       "row": 11,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "15,12": {
       "col": 15,
       "row": 12,
       "terrain": "desert",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "15,13": {
       "col": 15,
       "row": 13,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "15,14": {
       "col": 15,
       "row": 14,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "15,15": {
       "col": 15,
       "row": 15,
       "terrain": "water",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "16,0": {
       "col": 16,
@@ -1855,7 +2012,8 @@
       "row": 1,
       "terrain": "snow",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "16,2": {
       "col": 16,
@@ -1863,7 +2021,8 @@
       "terrain": "snow",
       "elevation": 2,
       "feature": "mountain",
-      "mountainRadius": 2
+      "mountainRadius": 2,
+      "faction": "baharuth"
     },
     "16,3": {
       "col": 16,
@@ -1871,7 +2030,8 @@
       "terrain": "snow",
       "elevation": 2,
       "feature": "mountain",
-      "mountainRadius": 3
+      "mountainRadius": 3,
+      "faction": "baharuth"
     },
     "16,4": {
       "col": 16,
@@ -1879,14 +2039,16 @@
       "terrain": "grass",
       "elevation": 2,
       "feature": "mountain",
-      "mountainRadius": 2
+      "mountainRadius": 2,
+      "faction": "baharuth"
     },
     "16,5": {
       "col": 16,
       "row": 5,
       "terrain": "grass",
       "elevation": 1,
-      "feature": "hills"
+      "feature": "hills",
+      "faction": "baharuth"
     },
     "16,6": {
       "col": 16,
@@ -1894,7 +2056,8 @@
       "terrain": "grass",
       "elevation": 2,
       "feature": "mountain",
-      "mountainRadius": 1
+      "mountainRadius": 1,
+      "faction": "baharuth"
     },
     "16,7": {
       "col": 16,
@@ -1902,63 +2065,72 @@
       "terrain": "grass",
       "elevation": 2,
       "feature": "mountain",
-      "mountainRadius": 1
+      "mountainRadius": 1,
+      "faction": "baharuth"
     },
     "16,8": {
       "col": 16,
       "row": 8,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "16,9": {
       "col": 16,
       "row": 9,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "16,10": {
       "col": 16,
       "row": 10,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "16,11": {
       "col": 16,
       "row": 11,
       "terrain": "desert",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "16,12": {
       "col": 16,
       "row": 12,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "16,13": {
       "col": 16,
       "row": 13,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "16,14": {
       "col": 16,
       "row": 14,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "16,15": {
       "col": 16,
       "row": 15,
       "terrain": "water",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "17,0": {
       "col": 17,
@@ -1972,7 +2144,8 @@
       "row": 1,
       "terrain": "snow",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "17,2": {
       "col": 17,
@@ -1980,7 +2153,8 @@
       "terrain": "snow",
       "elevation": 2,
       "feature": "mountain",
-      "mountainRadius": 1
+      "mountainRadius": 1,
+      "faction": "baharuth"
     },
     "17,3": {
       "col": 17,
@@ -1988,91 +2162,104 @@
       "terrain": "snow",
       "elevation": 2,
       "feature": "mountain",
-      "mountainRadius": 2
+      "mountainRadius": 2,
+      "faction": "baharuth"
     },
     "17,4": {
       "col": 17,
       "row": 4,
       "terrain": "grass",
       "elevation": 1,
-      "feature": "hills"
+      "feature": "hills",
+      "faction": "baharuth"
     },
     "17,5": {
       "col": 17,
       "row": 5,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "17,6": {
       "col": 17,
       "row": 6,
       "terrain": "grass",
       "elevation": 1,
-      "feature": "hills"
+      "feature": "hills",
+      "faction": "baharuth"
     },
     "17,7": {
       "col": 17,
       "row": 7,
       "terrain": "grass",
       "elevation": 1,
-      "feature": "hills"
+      "feature": "hills",
+      "faction": "baharuth"
     },
     "17,8": {
       "col": 17,
       "row": 8,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "17,9": {
       "col": 17,
       "row": 9,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "17,10": {
       "col": 17,
       "row": 10,
       "terrain": "grass",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "17,11": {
       "col": 17,
       "row": 11,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "17,12": {
       "col": 17,
       "row": 12,
       "terrain": "desert",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "17,13": {
       "col": 17,
       "row": 13,
       "terrain": "desert",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "17,14": {
       "col": 17,
       "row": 14,
       "terrain": "desert",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "17,15": {
       "col": 17,
       "row": 15,
       "terrain": "water",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "18,0": {
       "col": 18,
@@ -2086,105 +2273,120 @@
       "row": 1,
       "terrain": "snow",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "18,2": {
       "col": 18,
       "row": 2,
       "terrain": "snow",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "18,3": {
       "col": 18,
       "row": 3,
       "terrain": "plains",
       "elevation": 1,
-      "feature": "hills"
+      "feature": "hills",
+      "faction": "baharuth"
     },
     "18,4": {
       "col": 18,
       "row": 4,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "18,5": {
       "col": 18,
       "row": 5,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "18,6": {
       "col": 18,
       "row": 6,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "18,7": {
       "col": 18,
       "row": 7,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "18,8": {
       "col": 18,
       "row": 8,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "18,9": {
       "col": 18,
       "row": 9,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "18,10": {
       "col": 18,
       "row": 10,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "18,11": {
       "col": 18,
       "row": 11,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "18,12": {
       "col": 18,
       "row": 12,
       "terrain": "desert",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "18,13": {
       "col": 18,
       "row": 13,
       "terrain": "desert",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "18,14": {
       "col": 18,
       "row": 14,
       "terrain": "desert",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "18,15": {
       "col": 18,
       "row": 15,
       "terrain": "desert",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "19,0": {
       "col": 19,
@@ -2198,28 +2400,32 @@
       "row": 1,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "19,2": {
       "col": 19,
       "row": 2,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "19,3": {
       "col": 19,
       "row": 3,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "19,4": {
       "col": 19,
       "row": 4,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "19,5": {
       "col": 19,
@@ -2233,77 +2439,88 @@
         "type": "fortress",
         "description": "Земли Бахарутской Империи под властью Кровавого Императора Зиркнифа.",
         "hasLocalMap": false
-      }
+      },
+      "faction": "baharuth"
     },
     "19,6": {
       "col": 19,
       "row": 6,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "19,7": {
       "col": 19,
       "row": 7,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "19,8": {
       "col": 19,
       "row": 8,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "19,9": {
       "col": 19,
       "row": 9,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "19,10": {
       "col": 19,
       "row": 10,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "19,11": {
       "col": 19,
       "row": 11,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "19,12": {
       "col": 19,
       "row": 12,
       "terrain": "desert",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "19,13": {
       "col": 19,
       "row": 13,
       "terrain": "desert",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "19,14": {
       "col": 19,
       "row": 14,
       "terrain": "desert",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "19,15": {
       "col": 19,
       "row": 15,
       "terrain": "desert",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "20,0": {
       "col": 20,
@@ -2317,105 +2534,120 @@
       "row": 1,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "20,2": {
       "col": 20,
       "row": 2,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "20,3": {
       "col": 20,
       "row": 3,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "20,4": {
       "col": 20,
       "row": 4,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "20,5": {
       "col": 20,
       "row": 5,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "20,6": {
       "col": 20,
       "row": 6,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "20,7": {
       "col": 20,
       "row": 7,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "20,8": {
       "col": 20,
       "row": 8,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "20,9": {
       "col": 20,
       "row": 9,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "20,10": {
       "col": 20,
       "row": 10,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "20,11": {
       "col": 20,
       "row": 11,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "20,12": {
       "col": 20,
       "row": 12,
       "terrain": "desert",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "20,13": {
       "col": 20,
       "row": 13,
       "terrain": "desert",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "20,14": {
       "col": 20,
       "row": 14,
       "terrain": "desert",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "20,15": {
       "col": 20,
       "row": 15,
       "terrain": "desert",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "21,0": {
       "col": 21,
@@ -2429,105 +2661,120 @@
       "row": 1,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "21,2": {
       "col": 21,
       "row": 2,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "21,3": {
       "col": 21,
       "row": 3,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "21,4": {
       "col": 21,
       "row": 4,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "21,5": {
       "col": 21,
       "row": 5,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "21,6": {
       "col": 21,
       "row": 6,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "21,7": {
       "col": 21,
       "row": 7,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "21,8": {
       "col": 21,
       "row": 8,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "21,9": {
       "col": 21,
       "row": 9,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "21,10": {
       "col": 21,
       "row": 10,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "21,11": {
       "col": 21,
       "row": 11,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "21,12": {
       "col": 21,
       "row": 12,
       "terrain": "desert",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "21,13": {
       "col": 21,
       "row": 13,
       "terrain": "desert",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "21,14": {
       "col": 21,
       "row": 14,
       "terrain": "desert",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "21,15": {
       "col": 21,
       "row": 15,
       "terrain": "desert",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "22,0": {
       "col": 22,
@@ -2541,105 +2788,120 @@
       "row": 1,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "22,2": {
       "col": 22,
       "row": 2,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "22,3": {
       "col": 22,
       "row": 3,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "22,4": {
       "col": 22,
       "row": 4,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "22,5": {
       "col": 22,
       "row": 5,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "22,6": {
       "col": 22,
       "row": 6,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "22,7": {
       "col": 22,
       "row": 7,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "22,8": {
       "col": 22,
       "row": 8,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "22,9": {
       "col": 22,
       "row": 9,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "baharuth"
     },
     "22,10": {
       "col": 22,
       "row": 10,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "22,11": {
       "col": 22,
       "row": 11,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "22,12": {
       "col": 22,
       "row": 12,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "22,13": {
       "col": 22,
       "row": 13,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "22,14": {
       "col": 22,
       "row": 14,
       "terrain": "plains",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "22,15": {
       "col": 22,
       "row": 15,
       "terrain": "desert",
       "elevation": 0,
-      "feature": "none"
+      "feature": "none",
+      "faction": "slane-theocracy"
     },
     "23,0": {
       "col": 23,
@@ -2761,10 +3023,22 @@
       "edge": "SW",
       "width": 1
     },
+    "13,5:NW": {
+      "col": 13,
+      "row": 5,
+      "edge": "NW",
+      "width": 1
+    },
     "13,5:SW": {
       "col": 13,
       "row": 5,
       "edge": "SW",
+      "width": 2
+    },
+    "13,6:NW": {
+      "col": 13,
+      "row": 6,
+      "edge": "NW",
       "width": 2
     },
     "13,6:SW": {
@@ -2773,10 +3047,22 @@
       "edge": "SW",
       "width": 2
     },
+    "13,7:NW": {
+      "col": 13,
+      "row": 7,
+      "edge": "NW",
+      "width": 2
+    },
     "13,7:SW": {
       "col": 13,
       "row": 7,
       "edge": "SW",
+      "width": 3
+    },
+    "13,8:NW": {
+      "col": 13,
+      "row": 8,
+      "edge": "NW",
       "width": 3
     },
     "13,8:SW": {
@@ -2791,17 +3077,41 @@
       "edge": "SE",
       "width": 3
     },
+    "12,10:NE": {
+      "col": 12,
+      "row": 10,
+      "edge": "NE",
+      "width": 3
+    },
     "12,10:SE": {
       "col": 12,
       "row": 10,
       "edge": "SE",
       "width": 3
     },
+    "13,10:SW": {
+      "col": 13,
+      "row": 10,
+      "edge": "SW",
+      "width": 2
+    },
     "13,10:S": {
       "col": 13,
       "row": 10,
       "edge": "S",
       "width": 2
+    },
+    "13,10:SE": {
+      "col": 13,
+      "row": 10,
+      "edge": "SE",
+      "width": 1
+    },
+    "14,10:S": {
+      "col": 14,
+      "row": 10,
+      "edge": "S",
+      "width": 1
     },
     "14,10:SE": {
       "col": 14,

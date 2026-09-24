@@ -44,6 +44,14 @@
 			<button class="hex-nav-btn" title="Приблизить" @click="zoomIn">➕</button>
 			<button class="hex-nav-btn" title="Отдалить" @click="zoomOut">➖</button>
 			<button class="hex-nav-btn" title="Сбросить камеру и центрировать" @click="resetCamera">🎯</button>
+			<button
+				class="hex-nav-btn"
+				:class="{ '__active': localShowBorders }"
+				:title="localShowBorders ? 'Скрыть границы государств' : 'Показать границы государств'"
+				@click="toggleBorders"
+			>
+				🏳️
+			</button>
 		</div>
 
 		<!-- Hovered Hex Mini Info Pill (Bottom-Left) -->
@@ -55,6 +63,9 @@
 			</span>
 			<span v-if="hoveredHexInfo.settlement" class="info-settlement">
 				🏰 {{ hoveredHexInfo.settlement.name }}
+			</span>
+			<span v-if="hoveredHexInfo.factionInfo" class="info-faction" :style="{ color: hoveredHexInfo.factionInfo.borderColor }">
+				{{ hoveredHexInfo.factionInfo.icon }} {{ hoveredHexInfo.factionInfo.name }}
 			</span>
 		</div>
 	</div>
@@ -68,12 +79,15 @@ import {
 	hexToWorldGroundCenter,
 	HexPerspectiveCamera,
 	calculateDynamicPitch,
-	DEFAULT_HEX_RADIUS
+	DEFAULT_HEX_RADIUS,
+	DEFAULT_HEX_MIN_ZOOM,
+	DEFAULT_HEX_MAX_ZOOM
 } from '@/utils/hexmap/hexCoords.js'
 import {
 	BIOMES,
 	SETTLEMENT_TYPES,
-	normalizeHexMapData
+	normalizeHexMapData,
+	getFactionVisuals
 } from '@/utils/hexmap/hexLoader.js'
 import { renderHexMap } from '@/utils/hexmap/hexRenderer.js'
 
@@ -121,6 +135,14 @@ const props = defineProps({
 	pitch: {
 		type: Number,
 		default: 45
+	},
+	showBorders: {
+		type: Boolean,
+		default: true
+	},
+	factionsMap: {
+		type: [Array, Object],
+		default: null
 	}
 })
 
@@ -131,7 +153,9 @@ const emit = defineEmits([
 	'settlement-click',
 	'brush-apply',
 	'pitch-change',
-	'update:pitch'
+	'update:pitch',
+	'update:showBorders',
+	'borders-toggle'
 ])
 
 const containerRef = ref(null)
@@ -139,14 +163,26 @@ const canvasRef = ref(null)
 const canvasWidth = ref(1920)
 const canvasHeight = ref(1080)
 
-// Camera State (3D Perspective with dynamic zoom-pitch coupling: min 0° at 0.4x zoom, max 60° at 3.0x zoom)
+// Borders State
+const localShowBorders = ref(props.showBorders)
+watch(() => props.showBorders, (val) => {
+	localShowBorders.value = val
+})
+
+function toggleBorders() {
+	localShowBorders.value = !localShowBorders.value
+	emit('update:showBorders', localShowBorders.value)
+	emit('borders-toggle', localShowBorders.value)
+}
+
+// Camera State (3D Perspective with dynamic zoom-pitch coupling: min 0° at 0.5x zoom, max 60° at 3.75x zoom)
 const cameraX = ref(0)
 const cameraY = ref(0)
 const zoom = ref(1.0)
 const pitch = ref(
 	props.pitch !== undefined && props.pitch !== null
 		? Math.max(0, Math.min(60, props.pitch))
-		: calculateDynamicPitch(zoom.value, 0, 60, 0.4, 3.0)
+		: calculateDynamicPitch(zoom.value)
 )
 const isDragging = ref(false)
 const isTilting = ref(false)
@@ -188,13 +224,20 @@ const hoveredHexInfo = computed(() => {
 		featureName = `Гора (R=${cell.mountainRadius || 1})`
 	}
 
+	let factionInfo = null
+	const fId = cell.faction || cell.fraction
+	if (fId) {
+		factionInfo = getFactionVisuals(fId, props.factionsMap)
+	}
+
 	return {
 		col: c,
 		row: r,
 		terrainName: biome.name,
 		feature: cell.feature,
 		featureName,
-		settlement: cell.settlement
+		settlement: cell.settlement,
+		factionInfo
 	}
 })
 
@@ -228,7 +271,7 @@ const visibleSettlementBadges = computed(() => {
 		// 3D Ground Center of the hex
 		const center = hexToWorldGroundCenter(cell.col, cell.row, radius)
 		const yOffset = cell.feature === 'mountain' ? radius * 0.22 : 0
-		const zOffset = cell.feature === 'hills' ? 16 * (radius / 36) : 0
+		const zOffset = cell.feature === 'hills' ? 10 * (radius / 36) : 0
 
 		// Ground anchor point beneath the buildings
 		const anchorGroundY = center.y + yOffset + radius * 0.38
@@ -531,9 +574,9 @@ function onPointerLeave() {
 }
 
 function applyZoom(newZoom) {
-	const clampedZoom = Math.min(3.0, Math.max(0.4, newZoom))
+	const clampedZoom = Math.min(DEFAULT_HEX_MAX_ZOOM, Math.max(DEFAULT_HEX_MIN_ZOOM, newZoom))
 	zoom.value = clampedZoom
-	const newPitch = calculateDynamicPitch(clampedZoom, 0, 60, 0.4, 3.0)
+	const newPitch = calculateDynamicPitch(clampedZoom)
 	if (newPitch !== pitch.value) {
 		pitch.value = newPitch
 		emit('pitch-change', pitch.value)
@@ -589,7 +632,7 @@ function resetCamera() {
 	const centerGround = hexToWorldGroundCenter(Math.floor(cols / 2), Math.floor(rows / 2), radius)
 
 	zoom.value = 1.0
-	pitch.value = calculateDynamicPitch(1.0, 0, 60, 0.4, 3.0)
+	pitch.value = calculateDynamicPitch(1.0)
 	cameraX.value = centerGround.x
 	cameraY.value = centerGround.y
 	emit('pitch-change', pitch.value)
@@ -638,6 +681,8 @@ function renderLoop(currentTime) {
 		activeRiverWidth: props.activeRiverWidth,
 		discoveredLocations: discoveredSet.value,
 		drawCanvasBadges: false,
+		showBorders: localShowBorders.value,
+		factionsMap: props.factionsMap,
 		animTime: elapsedSec
 	})
 
@@ -732,7 +777,12 @@ defineExpose({
 	transform: translateY(-0.05em);
 }
 
-
+.hex-nav-btn.__active {
+	background: #1e293b;
+	border-color: #38bdf8;
+	color: #38bdf8;
+	box-shadow: 0 0 0.5em rgba(56, 189, 248, 0.4);
+}
 
 .hex-canvas-info-pill {
 	position: absolute;
@@ -768,6 +818,16 @@ defineExpose({
 .info-settlement {
 	color: #4ade80;
 	font-weight: bold;
+}
+
+.info-faction {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.3em;
+	font-weight: bold;
+	background: rgba(0, 0, 0, 0.25);
+	padding: 0.1em 0.4em;
+	border-radius: 0.2em;
 }
 
 /* HTML Settlement Badges Overlay Layer */

@@ -7,7 +7,8 @@ import {
 	getHexNeighbor,
 	HEX_EDGES,
 	DEFAULT_HEX_RADIUS,
-	DEFAULT_HEX_TILT
+	DEFAULT_HEX_TILT,
+	hashString
 } from './hexCoords.js'
 
 export const BIOMES = Object.freeze({
@@ -31,6 +32,161 @@ export const ROAD_TYPES = Object.freeze({
 	dirt: { id: 'dirt', name: 'Гравийная дорога', color: '#8d6e63', width: 2.5, dash: [4, 2] },
 	stone: { id: 'stone', name: 'Каменная дорога', color: '#cbd5e1', width: 3.5, border: '#475569' }
 })
+
+/**
+ * Standard preset styling for major New World factions/nations (Civilization style).
+ */
+export const FACTION_PRESETS = Object.freeze({
+	're-estize': {
+		id: 're-estize',
+		name: 'Королевство Ре-Эстиз',
+		icon: '👑',
+		borderColor: '#2563eb', // Royal Blue
+		fillColor: 'rgba(37, 99, 235, 0.16)'
+	},
+	'baharuth': {
+		id: 'baharuth',
+		name: 'Империя Бахарут',
+		icon: '🦅',
+		borderColor: '#dc2626', // Imperial Crimson
+		fillColor: 'rgba(220, 38, 38, 0.16)'
+	},
+	'slane-theocracy': {
+		id: 'slane-theocracy',
+		name: 'Слейновская Теократия',
+		icon: '☀️',
+		borderColor: '#eab308', // Solar Gold
+		fillColor: 'rgba(234, 179, 8, 0.16)'
+	},
+	'roble': {
+		id: 'roble',
+		name: 'Святое Королевство Робл',
+		icon: '🕊️',
+		borderColor: '#94a3b8', // Holy White/Silver
+		fillColor: 'rgba(241, 245, 249, 0.20)'
+	},
+	'sorcerer-kingdom': {
+		id: 'sorcerer-kingdom',
+		name: 'Колдовское Королевство',
+		icon: '👑',
+		borderColor: '#a855f7', // Sorcerer Purple
+		fillColor: 'rgba(168, 85, 247, 0.18)'
+	},
+	'nazarick': {
+		id: 'nazarick',
+		name: 'Великая Гробница Назарик',
+		icon: '🏰',
+		borderColor: '#6366f1', // Indigo Dark
+		fillColor: 'rgba(99, 102, 241, 0.18)'
+	},
+	'ainz-ooal-gown': {
+		id: 'ainz-ooal-gown',
+		name: 'Аинз Оал Гоун',
+		icon: '⚔️',
+		borderColor: '#6366f1',
+		fillColor: 'rgba(99, 102, 241, 0.18)'
+	},
+	'agrand-council': {
+		id: 'agrand-council',
+		name: 'Союз Агранд',
+		icon: '🐉',
+		borderColor: '#06b6d4', // Dragon Azure
+		fillColor: 'rgba(6, 182, 212, 0.16)'
+	},
+	'dragon-kingdom': {
+		id: 'dragon-kingdom',
+		name: 'Драконье Королевство',
+		icon: '🐲',
+		borderColor: '#10b981', // Emerald
+		fillColor: 'rgba(16, 185, 129, 0.16)'
+	},
+	'dwarven-kingdom': {
+		id: 'dwarven-kingdom',
+		name: 'Королевство гномов',
+		icon: '⚒️',
+		borderColor: '#d97706', // Dwarven Bronze
+		fillColor: 'rgba(217, 119, 6, 0.16)'
+	},
+	'great-tribe': {
+		id: 'great-tribe',
+		name: 'Большое племя',
+		icon: '🦎',
+		borderColor: '#14b8a6', // Teal
+		fillColor: 'rgba(20, 184, 166, 0.16)'
+	},
+	'demi-human-alliance': {
+		id: 'demi-human-alliance',
+		name: 'Альянс полулюдей',
+		icon: '🐺',
+		borderColor: '#f97316', // Ochre Orange
+		fillColor: 'rgba(249, 115, 22, 0.16)'
+	},
+	'carne-village': {
+		id: 'carne-village',
+		name: 'Деревня Карн',
+		icon: '🏡',
+		borderColor: '#84cc16', // Lime green
+		fillColor: 'rgba(132, 204, 22, 0.18)'
+	}
+})
+
+/**
+ * Converts a hex or rgb string into an rgba string with custom alpha.
+ */
+export function hexToRgba(hexStr, alpha = 0.16) {
+	if (!hexStr) return `rgba(56, 189, 248, ${alpha})`
+	if (hexStr.startsWith('rgba')) return hexStr
+	if (hexStr.startsWith('rgb(')) return hexStr.replace('rgb(', 'rgba(').replace(')', `, ${alpha})`)
+	let c = hexStr.replace('#', '')
+	if (c.length === 3) c = c[0] + c[0] + c[1] + c[1] + c[2] + c[2]
+	const num = parseInt(c, 16)
+	if (isNaN(num)) return `rgba(56, 189, 248, ${alpha})`
+	const r = (num >> 16) & 255
+	const g = (num >> 8) & 255
+	const b = num & 255
+	return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
+
+/**
+ * Resolves visual properties (name, icon, borderColor, fillColor) for a faction ID.
+ */
+export function getFactionVisuals(factionId, customFactions = null) {
+	if (!factionId) return null
+	if (customFactions) {
+		const f = Array.isArray(customFactions)
+			? customFactions.find(x => x.id === factionId)
+			: customFactions[factionId]
+		if (f) {
+			const preset = FACTION_PRESETS[factionId] || {}
+			const bColor = f.borderColor || f.color || preset.borderColor || '#38bdf8'
+			let fColor = f.fillColor
+			if (!fColor) {
+				if (f.color && f.color.startsWith('rgba')) fColor = f.color
+				else if (f.color) fColor = hexToRgba(f.color, 0.16)
+				else fColor = preset.fillColor || 'rgba(56, 189, 248, 0.16)'
+			}
+			return {
+				id: f.id,
+				name: f.name || preset.name || factionId,
+				icon: f.icon || preset.icon || '🏳️',
+				borderColor: bColor,
+				fillColor: fColor
+			}
+		}
+	}
+	if (FACTION_PRESETS[factionId]) {
+		return FACTION_PRESETS[factionId]
+	}
+	const h = hashString(factionId)
+	const hue = ((h % 360) + 360) % 360
+	return {
+		id: factionId,
+		name: factionId,
+		icon: '🏳️',
+		borderColor: `hsl(${hue}, 70%, 50%)`,
+		fillColor: `hsla(${hue}, 70%, 50%, 0.16)`
+	}
+}
 
 /**
  * Normalizes hex map data ensuring robust arrays/objects for cells, rivers, and roads.
@@ -62,6 +218,9 @@ export function normalizeHexMapData(raw) {
 				feature: c.feature || 'none', // 'none' | 'hills' | 'mountain'
 				mountainRadius: Number(c.mountainRadius) || 1, // 1..3
 				road: (c.road && ROAD_TYPES[c.road]) ? c.road : 'none',
+				faction: c.faction || c.fraction || null,
+				borderColor: c.borderColor || null,
+				fillColor: c.fillColor || null,
 				settlement: c.settlement ? {
 					id: c.settlement.id || `settlement_${col}_${row}`,
 					name: c.settlement.name || 'Поселение',
@@ -89,6 +248,9 @@ export function normalizeHexMapData(raw) {
 					feature: 'none',
 					mountainRadius: 1,
 					road: 'none',
+					faction: null,
+					borderColor: null,
+					fillColor: null,
 					settlement: null
 				}
 			}

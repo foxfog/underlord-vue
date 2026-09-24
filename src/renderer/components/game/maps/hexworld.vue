@@ -6,6 +6,9 @@
 			:map-data="mapData"
 			:read-only="true"
 			:discovered-locations="discoveredSettlementIds"
+			:show-borders="showBorders"
+			:factions-map="fractionsData"
+			@update:show-borders="val => showBorders = val"
 			@settlement-click="onSettlementClick"
 			@hex-click="onHexClick"
 		/>
@@ -57,6 +60,9 @@ import {
 	SETTLEMENT_TYPES
 } from '@/utils/hexmap/hexLoader.js'
 import newWorldHexJson from '@data/hexmaps/newworld_hex.json'
+import fractionsData from '@data/fractions/fractions.json'
+
+const showBorders = ref(true)
 
 const props = defineProps({
 	currentLocation: {
