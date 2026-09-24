@@ -4,6 +4,9 @@ import {
 	getObjectScreenPos,
 	DEFAULT_WALL_HEIGHT,
 	WALL_EDGES,
+	LEGACY_WALL_EDGES,
+	normalizeWallEdge,
+	toLegacyWallEdge,
 	percentToSubTile,
 	subTileToPercent
 } from '../isometric/isoCoords'
@@ -15,38 +18,47 @@ import {
 
 describe('Isometric Tile Layers & Walls Geometry', () => {
 	it('defines standard wall edges', () => {
-		expect(WALL_EDGES).toEqual(['NW', 'NE', 'SW', 'SE'])
+		expect(WALL_EDGES).toEqual(['N', 'E', 'S', 'W'])
+		expect(LEGACY_WALL_EDGES).toEqual(['NW', 'NE', 'SW', 'SE'])
 		expect(DEFAULT_WALL_HEIGHT).toBe(1.5)
+		expect(normalizeWallEdge('NW')).toBe('W')
+		expect(normalizeWallEdge('NE')).toBe('N')
+		expect(toLegacyWallEdge('W')).toBe('NW')
+		expect(toLegacyWallEdge('N')).toBe('NE')
 	})
 
-	it('calculates 4 vertices for NW wall edge with height', () => {
+	it('calculates 4 vertices for W and NW wall edge with height', () => {
 		// Tile at (0, 0, 0), tileWidth=64, tileHeight=32, heightStep=16, wallHeight=2 -> wallH=32
 		// Center = (0, 0).
 		// Left = (-32, 0), Top = (0, -16).
-		// NW edge runs from Left to Top.
+		// W / NW edge runs from Left to Top.
 		// baseA = (-32, 0), baseB = (0, -16)
 		// TopLeft = (-32, -32), TopRight = (0, -48), BottomRight = (0, -16), BottomLeft = (-32, 0)
-		const poly = getWallPolygon(0, 0, 0, 'NW', 2, 0, 0, 64, 32, 16)
-		expect(poly).toHaveLength(4)
-		expect(poly[0]).toEqual({ x: -32, y: -32 })
-		expect(poly[1]).toEqual({ x: 0, y: -48 })
-		expect(poly[2]).toEqual({ x: 0, y: -16 })
-		expect(poly[3]).toEqual({ x: -32, y: 0 })
+		const polyLegacy = getWallPolygon(0, 0, 0, 'NW', 2, 0, 0, 64, 32, 16)
+		const polyCanonical = getWallPolygon(0, 0, 0, 'W', 2, 0, 0, 64, 32, 16)
+		expect(polyLegacy).toEqual(polyCanonical)
+		expect(polyCanonical).toHaveLength(4)
+		expect(polyCanonical[0]).toEqual({ x: -32, y: -32 })
+		expect(polyCanonical[1]).toEqual({ x: 0, y: -48 })
+		expect(polyCanonical[2]).toEqual({ x: 0, y: -16 })
+		expect(polyCanonical[3]).toEqual({ x: -32, y: 0 })
 	})
 
-	it('calculates 4 vertices for NE wall edge with height', () => {
+	it('calculates 4 vertices for N and NE wall edge with height', () => {
 		// Tile at (0, 0, 0), tileWidth=64, tileHeight=32, heightStep=16, wallHeight=2 -> wallH=32
 		// Center = (0, 0).
 		// Top = (0, -16), Right = (32, 0).
-		// NE edge runs from Top to Right.
+		// N / NE edge runs from Top to Right.
 		// baseA = (0, -16), baseB = (32, 0)
 		// TopLeft = (0, -48), TopRight = (32, -32), BottomRight = (32, 0), BottomLeft = (0, -16)
-		const poly = getWallPolygon(0, 0, 0, 'NE', 2, 0, 0, 64, 32, 16)
-		expect(poly).toHaveLength(4)
-		expect(poly[0]).toEqual({ x: 0, y: -48 })
-		expect(poly[1]).toEqual({ x: 32, y: -32 })
-		expect(poly[2]).toEqual({ x: 32, y: 0 })
-		expect(poly[3]).toEqual({ x: 0, y: -16 })
+		const polyLegacy = getWallPolygon(0, 0, 0, 'NE', 2, 0, 0, 64, 32, 16)
+		const polyCanonical = getWallPolygon(0, 0, 0, 'N', 2, 0, 0, 64, 32, 16)
+		expect(polyLegacy).toEqual(polyCanonical)
+		expect(polyCanonical).toHaveLength(4)
+		expect(polyCanonical[0]).toEqual({ x: 0, y: -48 })
+		expect(polyCanonical[1]).toEqual({ x: 32, y: -32 })
+		expect(polyCanonical[2]).toEqual({ x: 32, y: 0 })
+		expect(polyCanonical[3]).toEqual({ x: 0, y: -16 })
 	})
 
 	it('calculates screen positions for nested object attachments with sub-tile offsets', () => {
@@ -79,6 +91,18 @@ describe('Wall-based Pathfinding & Collision', () => {
 		expect(isStepBlockedByWall(tileA, tileB)).toBe(true)
 		// Opposite direction: from tileB to tileA, crossing tileA.NW
 		expect(isStepBlockedByWall(tileB, tileA)).toBe(true)
+	})
+
+	it('blocks movement when moving through a solid wall with canonical edge keys (W, N, S, E)', () => {
+		const tileA = { x: 0, y: 0, z: 0, walls: { W: { type: 'stone_wall', solid: true } } }
+		const tileB = { x: -1, y: 0, z: 0 } // Moving W / NW
+		expect(isStepBlockedByWall(tileA, tileB)).toBe(true)
+		expect(isStepBlockedByWall(tileB, tileA)).toBe(true)
+
+		const tileNorth = { x: 0, y: 0, z: 0, walls: { N: { type: 'stone_wall', solid: true } } }
+		const tileAbove = { x: 0, y: -1, z: 0 } // Moving N / NE
+		expect(isStepBlockedByWall(tileNorth, tileAbove)).toBe(true)
+		expect(isStepBlockedByWall(tileAbove, tileNorth)).toBe(true)
 	})
 
 	it('allows movement when door is open and blocks when closed', () => {

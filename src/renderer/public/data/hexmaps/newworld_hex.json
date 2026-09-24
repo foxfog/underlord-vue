@@ -1,0 +1,3024 @@
+{
+  "id": "newworld_hex",
+  "name": "Новый Мир (Гексагональная карта)",
+  "description": "Тактическая гексагональная карта Нового Мира с рельефом, реками, дорогами и ключевыми поселениями.",
+  "cols": 24,
+  "rows": 16,
+  "hexRadius": 36,
+  "tilt": 0.7,
+  "pitch": 45,
+  "cells": {
+    "0,0": {
+      "col": 0,
+      "row": 0,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "0,1": {
+      "col": 0,
+      "row": 1,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "0,2": {
+      "col": 0,
+      "row": 2,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "0,3": {
+      "col": 0,
+      "row": 3,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "0,4": {
+      "col": 0,
+      "row": 4,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "0,5": {
+      "col": 0,
+      "row": 5,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "0,6": {
+      "col": 0,
+      "row": 6,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "0,7": {
+      "col": 0,
+      "row": 7,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "0,8": {
+      "col": 0,
+      "row": 8,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "0,9": {
+      "col": 0,
+      "row": 9,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "0,10": {
+      "col": 0,
+      "row": 10,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "0,11": {
+      "col": 0,
+      "row": 11,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "0,12": {
+      "col": 0,
+      "row": 12,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "0,13": {
+      "col": 0,
+      "row": 13,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "0,14": {
+      "col": 0,
+      "row": 14,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "0,15": {
+      "col": 0,
+      "row": 15,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "1,0": {
+      "col": 1,
+      "row": 0,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "1,1": {
+      "col": 1,
+      "row": 1,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "1,2": {
+      "col": 1,
+      "row": 2,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "1,3": {
+      "col": 1,
+      "row": 3,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "1,4": {
+      "col": 1,
+      "row": 4,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "1,5": {
+      "col": 1,
+      "row": 5,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "1,6": {
+      "col": 1,
+      "row": 6,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "1,7": {
+      "col": 1,
+      "row": 7,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "1,8": {
+      "col": 1,
+      "row": 8,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "1,9": {
+      "col": 1,
+      "row": 9,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "1,10": {
+      "col": 1,
+      "row": 10,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "1,11": {
+      "col": 1,
+      "row": 11,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "1,12": {
+      "col": 1,
+      "row": 12,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "1,13": {
+      "col": 1,
+      "row": 13,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "1,14": {
+      "col": 1,
+      "row": 14,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "1,15": {
+      "col": 1,
+      "row": 15,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "2,0": {
+      "col": 2,
+      "row": 0,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "2,1": {
+      "col": 2,
+      "row": 1,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "2,2": {
+      "col": 2,
+      "row": 2,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "2,3": {
+      "col": 2,
+      "row": 3,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "2,4": {
+      "col": 2,
+      "row": 4,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "2,5": {
+      "col": 2,
+      "row": 5,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "hills"
+    },
+    "2,6": {
+      "col": 2,
+      "row": 6,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "2,7": {
+      "col": 2,
+      "row": 7,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "2,8": {
+      "col": 2,
+      "row": 8,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "2,9": {
+      "col": 2,
+      "row": 9,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "2,10": {
+      "col": 2,
+      "row": 10,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "2,11": {
+      "col": 2,
+      "row": 11,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "2,12": {
+      "col": 2,
+      "row": 12,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "2,13": {
+      "col": 2,
+      "row": 13,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "2,14": {
+      "col": 2,
+      "row": 14,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "2,15": {
+      "col": 2,
+      "row": 15,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "3,0": {
+      "col": 3,
+      "row": 0,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "3,1": {
+      "col": 3,
+      "row": 1,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "3,2": {
+      "col": 3,
+      "row": 2,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "3,3": {
+      "col": 3,
+      "row": 3,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "3,4": {
+      "col": 3,
+      "row": 4,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "3,5": {
+      "col": 3,
+      "row": 5,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "3,6": {
+      "col": 3,
+      "row": 6,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "3,7": {
+      "col": 3,
+      "row": 7,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "3,8": {
+      "col": 3,
+      "row": 8,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "3,9": {
+      "col": 3,
+      "row": 9,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "3,10": {
+      "col": 3,
+      "row": 10,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "3,11": {
+      "col": 3,
+      "row": 11,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "3,12": {
+      "col": 3,
+      "row": 12,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "3,13": {
+      "col": 3,
+      "row": 13,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "3,14": {
+      "col": 3,
+      "row": 14,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "3,15": {
+      "col": 3,
+      "row": 15,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "4,0": {
+      "col": 4,
+      "row": 0,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "4,1": {
+      "col": 4,
+      "row": 1,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "4,2": {
+      "col": 4,
+      "row": 2,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "4,3": {
+      "col": 4,
+      "row": 3,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "4,4": {
+      "col": 4,
+      "row": 4,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "4,5": {
+      "col": 4,
+      "row": 5,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "4,6": {
+      "col": 4,
+      "row": 6,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "4,7": {
+      "col": 4,
+      "row": 7,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none",
+      "settlement": {
+        "id": "re_estize_capital",
+        "name": "Столица Рэ-Эстиз",
+        "type": "walled_city",
+        "description": "Величественная столица королевства Рэ-Эстиз, окруженная тройным кольцом стен.",
+        "hasLocalMap": false
+      }
+    },
+    "4,8": {
+      "col": 4,
+      "row": 8,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "4,9": {
+      "col": 4,
+      "row": 9,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "4,10": {
+      "col": 4,
+      "row": 10,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "4,11": {
+      "col": 4,
+      "row": 11,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "4,12": {
+      "col": 4,
+      "row": 12,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "4,13": {
+      "col": 4,
+      "row": 13,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "4,14": {
+      "col": 4,
+      "row": 14,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "4,15": {
+      "col": 4,
+      "row": 15,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "5,0": {
+      "col": 5,
+      "row": 0,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "5,1": {
+      "col": 5,
+      "row": 1,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "5,2": {
+      "col": 5,
+      "row": 2,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "5,3": {
+      "col": 5,
+      "row": 3,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "5,4": {
+      "col": 5,
+      "row": 4,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "5,5": {
+      "col": 5,
+      "row": 5,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "5,6": {
+      "col": 5,
+      "row": 6,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "5,7": {
+      "col": 5,
+      "row": 7,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "5,8": {
+      "col": 5,
+      "row": 8,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "5,9": {
+      "col": 5,
+      "row": 9,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "5,10": {
+      "col": 5,
+      "row": 10,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "5,11": {
+      "col": 5,
+      "row": 11,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "5,12": {
+      "col": 5,
+      "row": 12,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "5,13": {
+      "col": 5,
+      "row": 13,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "5,14": {
+      "col": 5,
+      "row": 14,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "5,15": {
+      "col": 5,
+      "row": 15,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "6,0": {
+      "col": 6,
+      "row": 0,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "6,1": {
+      "col": 6,
+      "row": 1,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "6,2": {
+      "col": 6,
+      "row": 2,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "6,3": {
+      "col": 6,
+      "row": 3,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "6,4": {
+      "col": 6,
+      "row": 4,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "6,5": {
+      "col": 6,
+      "row": 5,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "6,6": {
+      "col": 6,
+      "row": 6,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "6,7": {
+      "col": 6,
+      "row": 7,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "6,8": {
+      "col": 6,
+      "row": 8,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "6,9": {
+      "col": 6,
+      "row": 9,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "6,10": {
+      "col": 6,
+      "row": 10,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "6,11": {
+      "col": 6,
+      "row": 11,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "6,12": {
+      "col": 6,
+      "row": 12,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "6,13": {
+      "col": 6,
+      "row": 13,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "6,14": {
+      "col": 6,
+      "row": 14,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "6,15": {
+      "col": 6,
+      "row": 15,
+      "terrain": "ocean",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "7,0": {
+      "col": 7,
+      "row": 0,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "7,1": {
+      "col": 7,
+      "row": 1,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "7,2": {
+      "col": 7,
+      "row": 2,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "7,3": {
+      "col": 7,
+      "row": 3,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "7,4": {
+      "col": 7,
+      "row": 4,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "7,5": {
+      "col": 7,
+      "row": 5,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "7,6": {
+      "col": 7,
+      "row": 6,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "7,7": {
+      "col": 7,
+      "row": 7,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "7,8": {
+      "col": 7,
+      "row": 8,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "7,9": {
+      "col": 7,
+      "row": 9,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "7,10": {
+      "col": 7,
+      "row": 10,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "7,11": {
+      "col": 7,
+      "row": 11,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "7,12": {
+      "col": 7,
+      "row": 12,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "7,13": {
+      "col": 7,
+      "row": 13,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "7,14": {
+      "col": 7,
+      "row": 14,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "7,15": {
+      "col": 7,
+      "row": 15,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "8,0": {
+      "col": 8,
+      "row": 0,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "8,1": {
+      "col": 8,
+      "row": 1,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "8,2": {
+      "col": 8,
+      "row": 2,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "8,3": {
+      "col": 8,
+      "row": 3,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "8,4": {
+      "col": 8,
+      "row": 4,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "8,5": {
+      "col": 8,
+      "row": 5,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "8,6": {
+      "col": 8,
+      "row": 6,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "8,7": {
+      "col": 8,
+      "row": 7,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "hills"
+    },
+    "8,8": {
+      "col": 8,
+      "row": 8,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "8,9": {
+      "col": 8,
+      "row": 9,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "8,10": {
+      "col": 8,
+      "row": 10,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "8,11": {
+      "col": 8,
+      "row": 11,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "8,12": {
+      "col": 8,
+      "row": 12,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "8,13": {
+      "col": 8,
+      "row": 13,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "8,14": {
+      "col": 8,
+      "row": 14,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "8,15": {
+      "col": 8,
+      "row": 15,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "9,0": {
+      "col": 9,
+      "row": 0,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "9,1": {
+      "col": 9,
+      "row": 1,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "9,2": {
+      "col": 9,
+      "row": 2,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "9,3": {
+      "col": 9,
+      "row": 3,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "9,4": {
+      "col": 9,
+      "row": 4,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "9,5": {
+      "col": 9,
+      "row": 5,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "9,6": {
+      "col": 9,
+      "row": 6,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "9,7": {
+      "col": 9,
+      "row": 7,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "9,8": {
+      "col": 9,
+      "row": 8,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "hills",
+      "settlement": {
+        "id": "great_tomb_nazarick",
+        "name": "Гробница Назарик",
+        "type": "fortress",
+        "description": "Великая Подземная Гробница Назарик, скрытая холмами и чарами иллюзий.",
+        "hasLocalMap": false
+      }
+    },
+    "9,9": {
+      "col": 9,
+      "row": 9,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "9,10": {
+      "col": 9,
+      "row": 10,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "9,11": {
+      "col": 9,
+      "row": 11,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "9,12": {
+      "col": 9,
+      "row": 12,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "9,13": {
+      "col": 9,
+      "row": 13,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "9,14": {
+      "col": 9,
+      "row": 14,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "9,15": {
+      "col": 9,
+      "row": 15,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "10,0": {
+      "col": 10,
+      "row": 0,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "10,1": {
+      "col": 10,
+      "row": 1,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "10,2": {
+      "col": 10,
+      "row": 2,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "10,3": {
+      "col": 10,
+      "row": 3,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "10,4": {
+      "col": 10,
+      "row": 4,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "hills"
+    },
+    "10,5": {
+      "col": 10,
+      "row": 5,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "10,6": {
+      "col": 10,
+      "row": 6,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "10,7": {
+      "col": 10,
+      "row": 7,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "10,8": {
+      "col": 10,
+      "row": 8,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "10,9": {
+      "col": 10,
+      "row": 9,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "10,10": {
+      "col": 10,
+      "row": 10,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "10,11": {
+      "col": 10,
+      "row": 11,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "10,12": {
+      "col": 10,
+      "row": 12,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "10,13": {
+      "col": 10,
+      "row": 13,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "10,14": {
+      "col": 10,
+      "row": 14,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "10,15": {
+      "col": 10,
+      "row": 15,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "11,0": {
+      "col": 11,
+      "row": 0,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "11,1": {
+      "col": 11,
+      "row": 1,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "11,2": {
+      "col": 11,
+      "row": 2,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "11,3": {
+      "col": 11,
+      "row": 3,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "11,4": {
+      "col": 11,
+      "row": 4,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "11,5": {
+      "col": 11,
+      "row": 5,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "11,6": {
+      "col": 11,
+      "row": 6,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "11,7": {
+      "col": 11,
+      "row": 7,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none",
+      "settlement": {
+        "id": "carne_village",
+        "name": "Деревня Карн",
+        "type": "village",
+        "hasLocalMap": true,
+        "localMapId": "carne",
+        "sceneId": "carne_village_entrance",
+        "description": "Деревня на опушке Великого Леса Тоб. Защищена воинами Назарика."
+      }
+    },
+    "11,8": {
+      "col": 11,
+      "row": 8,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "11,9": {
+      "col": 11,
+      "row": 9,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "11,10": {
+      "col": 11,
+      "row": 10,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "11,11": {
+      "col": 11,
+      "row": 11,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "11,12": {
+      "col": 11,
+      "row": 12,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "11,13": {
+      "col": 11,
+      "row": 13,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "11,14": {
+      "col": 11,
+      "row": 14,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "11,15": {
+      "col": 11,
+      "row": 15,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "12,0": {
+      "col": 12,
+      "row": 0,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "12,1": {
+      "col": 12,
+      "row": 1,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "12,2": {
+      "col": 12,
+      "row": 2,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "12,3": {
+      "col": 12,
+      "row": 3,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "12,4": {
+      "col": 12,
+      "row": 4,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "12,5": {
+      "col": 12,
+      "row": 5,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "hills",
+      "settlement": {
+        "id": "tob_forest",
+        "name": "Великий Лес Тоб",
+        "type": "town",
+        "description": "Дремучий бескрайний лес, обитель Мудрого Короля Леса и гигантских зверей.",
+        "hasLocalMap": false
+      }
+    },
+    "12,6": {
+      "col": 12,
+      "row": 6,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "12,7": {
+      "col": 12,
+      "row": 7,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "12,8": {
+      "col": 12,
+      "row": 8,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "12,9": {
+      "col": 12,
+      "row": 9,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "12,10": {
+      "col": 12,
+      "row": 10,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none",
+      "settlement": {
+        "id": "e_rantel",
+        "name": "Крепость Э-Рантэл",
+        "type": "walled_city",
+        "description": "Город-крепость на стыке трех государств, окруженный тремя концентрическими стенами.",
+        "hasLocalMap": false
+      }
+    },
+    "12,11": {
+      "col": 12,
+      "row": 11,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "12,12": {
+      "col": 12,
+      "row": 12,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "12,13": {
+      "col": 12,
+      "row": 13,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "12,14": {
+      "col": 12,
+      "row": 14,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "12,15": {
+      "col": 12,
+      "row": 15,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "13,0": {
+      "col": 13,
+      "row": 0,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "13,1": {
+      "col": 13,
+      "row": 1,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "13,2": {
+      "col": 13,
+      "row": 2,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "13,3": {
+      "col": 13,
+      "row": 3,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "13,4": {
+      "col": 13,
+      "row": 4,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "13,5": {
+      "col": 13,
+      "row": 5,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "13,6": {
+      "col": 13,
+      "row": 6,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "13,7": {
+      "col": 13,
+      "row": 7,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "13,8": {
+      "col": 13,
+      "row": 8,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "13,9": {
+      "col": 13,
+      "row": 9,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "13,10": {
+      "col": 13,
+      "row": 10,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "13,11": {
+      "col": 13,
+      "row": 11,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "13,12": {
+      "col": 13,
+      "row": 12,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "13,13": {
+      "col": 13,
+      "row": 13,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "13,14": {
+      "col": 13,
+      "row": 14,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "13,15": {
+      "col": 13,
+      "row": 15,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "14,0": {
+      "col": 14,
+      "row": 0,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "14,1": {
+      "col": 14,
+      "row": 1,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "14,2": {
+      "col": 14,
+      "row": 2,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "14,3": {
+      "col": 14,
+      "row": 3,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "14,4": {
+      "col": 14,
+      "row": 4,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "14,5": {
+      "col": 14,
+      "row": 5,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "14,6": {
+      "col": 14,
+      "row": 6,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none",
+      "settlement": {
+        "id": "adventurer_camp",
+        "name": "Лагерь авантюристов",
+        "type": "camp",
+        "description": "Полевой опорный лагерь гильдии авантюристов у речной переправы."
+      }
+    },
+    "14,7": {
+      "col": 14,
+      "row": 7,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "14,8": {
+      "col": 14,
+      "row": 8,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "14,9": {
+      "col": 14,
+      "row": 9,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "14,10": {
+      "col": 14,
+      "row": 10,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "14,11": {
+      "col": 14,
+      "row": 11,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "14,12": {
+      "col": 14,
+      "row": 12,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "14,13": {
+      "col": 14,
+      "row": 13,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "14,14": {
+      "col": 14,
+      "row": 14,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "14,15": {
+      "col": 14,
+      "row": 15,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "15,0": {
+      "col": 15,
+      "row": 0,
+      "terrain": "snow",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "15,1": {
+      "col": 15,
+      "row": 1,
+      "terrain": "snow",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "15,2": {
+      "col": 15,
+      "row": 2,
+      "terrain": "snow",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "15,3": {
+      "col": 15,
+      "row": 3,
+      "terrain": "snow",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "15,4": {
+      "col": 15,
+      "row": 4,
+      "terrain": "snow",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "15,5": {
+      "col": 15,
+      "row": 5,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "15,6": {
+      "col": 15,
+      "row": 6,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "15,7": {
+      "col": 15,
+      "row": 7,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "15,8": {
+      "col": 15,
+      "row": 8,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "15,9": {
+      "col": 15,
+      "row": 9,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "15,10": {
+      "col": 15,
+      "row": 10,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "15,11": {
+      "col": 15,
+      "row": 11,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "15,12": {
+      "col": 15,
+      "row": 12,
+      "terrain": "desert",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "15,13": {
+      "col": 15,
+      "row": 13,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "15,14": {
+      "col": 15,
+      "row": 14,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "15,15": {
+      "col": 15,
+      "row": 15,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "16,0": {
+      "col": 16,
+      "row": 0,
+      "terrain": "snow",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "16,1": {
+      "col": 16,
+      "row": 1,
+      "terrain": "snow",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "16,2": {
+      "col": 16,
+      "row": 2,
+      "terrain": "snow",
+      "elevation": 2,
+      "feature": "mountain",
+      "mountainRadius": 2
+    },
+    "16,3": {
+      "col": 16,
+      "row": 3,
+      "terrain": "snow",
+      "elevation": 2,
+      "feature": "mountain",
+      "mountainRadius": 3
+    },
+    "16,4": {
+      "col": 16,
+      "row": 4,
+      "terrain": "grass",
+      "elevation": 2,
+      "feature": "mountain",
+      "mountainRadius": 2
+    },
+    "16,5": {
+      "col": 16,
+      "row": 5,
+      "terrain": "grass",
+      "elevation": 1,
+      "feature": "hills"
+    },
+    "16,6": {
+      "col": 16,
+      "row": 6,
+      "terrain": "grass",
+      "elevation": 2,
+      "feature": "mountain",
+      "mountainRadius": 1
+    },
+    "16,7": {
+      "col": 16,
+      "row": 7,
+      "terrain": "grass",
+      "elevation": 2,
+      "feature": "mountain",
+      "mountainRadius": 1
+    },
+    "16,8": {
+      "col": 16,
+      "row": 8,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "16,9": {
+      "col": 16,
+      "row": 9,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "16,10": {
+      "col": 16,
+      "row": 10,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "16,11": {
+      "col": 16,
+      "row": 11,
+      "terrain": "desert",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "16,12": {
+      "col": 16,
+      "row": 12,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "16,13": {
+      "col": 16,
+      "row": 13,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "16,14": {
+      "col": 16,
+      "row": 14,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "16,15": {
+      "col": 16,
+      "row": 15,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "17,0": {
+      "col": 17,
+      "row": 0,
+      "terrain": "snow",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "17,1": {
+      "col": 17,
+      "row": 1,
+      "terrain": "snow",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "17,2": {
+      "col": 17,
+      "row": 2,
+      "terrain": "snow",
+      "elevation": 2,
+      "feature": "mountain",
+      "mountainRadius": 1
+    },
+    "17,3": {
+      "col": 17,
+      "row": 3,
+      "terrain": "snow",
+      "elevation": 2,
+      "feature": "mountain",
+      "mountainRadius": 2
+    },
+    "17,4": {
+      "col": 17,
+      "row": 4,
+      "terrain": "grass",
+      "elevation": 1,
+      "feature": "hills"
+    },
+    "17,5": {
+      "col": 17,
+      "row": 5,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "17,6": {
+      "col": 17,
+      "row": 6,
+      "terrain": "grass",
+      "elevation": 1,
+      "feature": "hills"
+    },
+    "17,7": {
+      "col": 17,
+      "row": 7,
+      "terrain": "grass",
+      "elevation": 1,
+      "feature": "hills"
+    },
+    "17,8": {
+      "col": 17,
+      "row": 8,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "17,9": {
+      "col": 17,
+      "row": 9,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "17,10": {
+      "col": 17,
+      "row": 10,
+      "terrain": "grass",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "17,11": {
+      "col": 17,
+      "row": 11,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "17,12": {
+      "col": 17,
+      "row": 12,
+      "terrain": "desert",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "17,13": {
+      "col": 17,
+      "row": 13,
+      "terrain": "desert",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "17,14": {
+      "col": 17,
+      "row": 14,
+      "terrain": "desert",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "17,15": {
+      "col": 17,
+      "row": 15,
+      "terrain": "water",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "18,0": {
+      "col": 18,
+      "row": 0,
+      "terrain": "snow",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "18,1": {
+      "col": 18,
+      "row": 1,
+      "terrain": "snow",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "18,2": {
+      "col": 18,
+      "row": 2,
+      "terrain": "snow",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "18,3": {
+      "col": 18,
+      "row": 3,
+      "terrain": "plains",
+      "elevation": 1,
+      "feature": "hills"
+    },
+    "18,4": {
+      "col": 18,
+      "row": 4,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "18,5": {
+      "col": 18,
+      "row": 5,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "18,6": {
+      "col": 18,
+      "row": 6,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "18,7": {
+      "col": 18,
+      "row": 7,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "18,8": {
+      "col": 18,
+      "row": 8,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "18,9": {
+      "col": 18,
+      "row": 9,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "18,10": {
+      "col": 18,
+      "row": 10,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "18,11": {
+      "col": 18,
+      "row": 11,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "18,12": {
+      "col": 18,
+      "row": 12,
+      "terrain": "desert",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "18,13": {
+      "col": 18,
+      "row": 13,
+      "terrain": "desert",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "18,14": {
+      "col": 18,
+      "row": 14,
+      "terrain": "desert",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "18,15": {
+      "col": 18,
+      "row": 15,
+      "terrain": "desert",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "19,0": {
+      "col": 19,
+      "row": 0,
+      "terrain": "snow",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "19,1": {
+      "col": 19,
+      "row": 1,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "19,2": {
+      "col": 19,
+      "row": 2,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "19,3": {
+      "col": 19,
+      "row": 3,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "19,4": {
+      "col": 19,
+      "row": 4,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "19,5": {
+      "col": 19,
+      "row": 5,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none",
+      "settlement": {
+        "id": "baharuth_empire",
+        "name": "Империя Бахарут",
+        "type": "fortress",
+        "description": "Земли Бахарутской Империи под властью Кровавого Императора Зиркнифа.",
+        "hasLocalMap": false
+      }
+    },
+    "19,6": {
+      "col": 19,
+      "row": 6,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "19,7": {
+      "col": 19,
+      "row": 7,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "19,8": {
+      "col": 19,
+      "row": 8,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "19,9": {
+      "col": 19,
+      "row": 9,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "19,10": {
+      "col": 19,
+      "row": 10,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "19,11": {
+      "col": 19,
+      "row": 11,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "19,12": {
+      "col": 19,
+      "row": 12,
+      "terrain": "desert",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "19,13": {
+      "col": 19,
+      "row": 13,
+      "terrain": "desert",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "19,14": {
+      "col": 19,
+      "row": 14,
+      "terrain": "desert",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "19,15": {
+      "col": 19,
+      "row": 15,
+      "terrain": "desert",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "20,0": {
+      "col": 20,
+      "row": 0,
+      "terrain": "snow",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "20,1": {
+      "col": 20,
+      "row": 1,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "20,2": {
+      "col": 20,
+      "row": 2,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "20,3": {
+      "col": 20,
+      "row": 3,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "20,4": {
+      "col": 20,
+      "row": 4,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "20,5": {
+      "col": 20,
+      "row": 5,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "20,6": {
+      "col": 20,
+      "row": 6,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "20,7": {
+      "col": 20,
+      "row": 7,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "20,8": {
+      "col": 20,
+      "row": 8,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "20,9": {
+      "col": 20,
+      "row": 9,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "20,10": {
+      "col": 20,
+      "row": 10,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "20,11": {
+      "col": 20,
+      "row": 11,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "20,12": {
+      "col": 20,
+      "row": 12,
+      "terrain": "desert",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "20,13": {
+      "col": 20,
+      "row": 13,
+      "terrain": "desert",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "20,14": {
+      "col": 20,
+      "row": 14,
+      "terrain": "desert",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "20,15": {
+      "col": 20,
+      "row": 15,
+      "terrain": "desert",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "21,0": {
+      "col": 21,
+      "row": 0,
+      "terrain": "snow",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "21,1": {
+      "col": 21,
+      "row": 1,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "21,2": {
+      "col": 21,
+      "row": 2,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "21,3": {
+      "col": 21,
+      "row": 3,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "21,4": {
+      "col": 21,
+      "row": 4,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "21,5": {
+      "col": 21,
+      "row": 5,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "21,6": {
+      "col": 21,
+      "row": 6,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "21,7": {
+      "col": 21,
+      "row": 7,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "21,8": {
+      "col": 21,
+      "row": 8,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "21,9": {
+      "col": 21,
+      "row": 9,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "21,10": {
+      "col": 21,
+      "row": 10,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "21,11": {
+      "col": 21,
+      "row": 11,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "21,12": {
+      "col": 21,
+      "row": 12,
+      "terrain": "desert",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "21,13": {
+      "col": 21,
+      "row": 13,
+      "terrain": "desert",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "21,14": {
+      "col": 21,
+      "row": 14,
+      "terrain": "desert",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "21,15": {
+      "col": 21,
+      "row": 15,
+      "terrain": "desert",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "22,0": {
+      "col": 22,
+      "row": 0,
+      "terrain": "snow",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "22,1": {
+      "col": 22,
+      "row": 1,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "22,2": {
+      "col": 22,
+      "row": 2,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "22,3": {
+      "col": 22,
+      "row": 3,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "22,4": {
+      "col": 22,
+      "row": 4,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "22,5": {
+      "col": 22,
+      "row": 5,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "22,6": {
+      "col": 22,
+      "row": 6,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "22,7": {
+      "col": 22,
+      "row": 7,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "22,8": {
+      "col": 22,
+      "row": 8,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "22,9": {
+      "col": 22,
+      "row": 9,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "22,10": {
+      "col": 22,
+      "row": 10,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "22,11": {
+      "col": 22,
+      "row": 11,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "22,12": {
+      "col": 22,
+      "row": 12,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "22,13": {
+      "col": 22,
+      "row": 13,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "22,14": {
+      "col": 22,
+      "row": 14,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "22,15": {
+      "col": 22,
+      "row": 15,
+      "terrain": "desert",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "23,0": {
+      "col": 23,
+      "row": 0,
+      "terrain": "snow",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "23,1": {
+      "col": 23,
+      "row": 1,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "23,2": {
+      "col": 23,
+      "row": 2,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "23,3": {
+      "col": 23,
+      "row": 3,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "23,4": {
+      "col": 23,
+      "row": 4,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "23,5": {
+      "col": 23,
+      "row": 5,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "23,6": {
+      "col": 23,
+      "row": 6,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "23,7": {
+      "col": 23,
+      "row": 7,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "23,8": {
+      "col": 23,
+      "row": 8,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "23,9": {
+      "col": 23,
+      "row": 9,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "23,10": {
+      "col": 23,
+      "row": 10,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "23,11": {
+      "col": 23,
+      "row": 11,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "23,12": {
+      "col": 23,
+      "row": 12,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "23,13": {
+      "col": 23,
+      "row": 13,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "23,14": {
+      "col": 23,
+      "row": 14,
+      "terrain": "plains",
+      "elevation": 0,
+      "feature": "none"
+    },
+    "23,15": {
+      "col": 23,
+      "row": 15,
+      "terrain": "desert",
+      "elevation": 0,
+      "feature": "none"
+    }
+  },
+  "rivers": {
+    "13,4:SW": {
+      "col": 13,
+      "row": 4,
+      "edge": "SW",
+      "width": 1
+    },
+    "13,5:SW": {
+      "col": 13,
+      "row": 5,
+      "edge": "SW",
+      "width": 2
+    },
+    "13,6:SW": {
+      "col": 13,
+      "row": 6,
+      "edge": "SW",
+      "width": 2
+    },
+    "13,7:SW": {
+      "col": 13,
+      "row": 7,
+      "edge": "SW",
+      "width": 3
+    },
+    "13,8:SW": {
+      "col": 13,
+      "row": 8,
+      "edge": "SW",
+      "width": 3
+    },
+    "12,9:SE": {
+      "col": 12,
+      "row": 9,
+      "edge": "SE",
+      "width": 3
+    },
+    "12,10:SE": {
+      "col": 12,
+      "row": 10,
+      "edge": "SE",
+      "width": 3
+    },
+    "13,10:S": {
+      "col": 13,
+      "row": 10,
+      "edge": "S",
+      "width": 2
+    },
+    "14,10:SE": {
+      "col": 14,
+      "row": 10,
+      "edge": "SE",
+      "width": 1
+    }
+  },
+  "roads": {
+    "4,7:5,7": {
+      "from": {
+        "col": 4,
+        "row": 7
+      },
+      "to": {
+        "col": 5,
+        "row": 7
+      },
+      "type": "stone"
+    },
+    "5,7:6,7": {
+      "from": {
+        "col": 5,
+        "row": 7
+      },
+      "to": {
+        "col": 6,
+        "row": 7
+      },
+      "type": "stone"
+    },
+    "6,7:7,7": {
+      "from": {
+        "col": 6,
+        "row": 7
+      },
+      "to": {
+        "col": 7,
+        "row": 7
+      },
+      "type": "stone"
+    },
+    "7,7:8,7": {
+      "from": {
+        "col": 7,
+        "row": 7
+      },
+      "to": {
+        "col": 8,
+        "row": 7
+      },
+      "type": "stone"
+    },
+    "8,7:9,7": {
+      "from": {
+        "col": 8,
+        "row": 7
+      },
+      "to": {
+        "col": 9,
+        "row": 7
+      },
+      "type": "stone"
+    },
+    "9,7:10,8": {
+      "from": {
+        "col": 9,
+        "row": 7
+      },
+      "to": {
+        "col": 10,
+        "row": 8
+      },
+      "type": "stone"
+    },
+    "10,8:11,8": {
+      "from": {
+        "col": 10,
+        "row": 8
+      },
+      "to": {
+        "col": 11,
+        "row": 8
+      },
+      "type": "stone"
+    },
+    "11,8:12,9": {
+      "from": {
+        "col": 11,
+        "row": 8
+      },
+      "to": {
+        "col": 12,
+        "row": 9
+      },
+      "type": "stone"
+    },
+    "12,9:12,10": {
+      "from": {
+        "col": 12,
+        "row": 9
+      },
+      "to": {
+        "col": 12,
+        "row": 10
+      },
+      "type": "stone"
+    },
+    "9,8:10,8": {
+      "from": {
+        "col": 9,
+        "row": 8
+      },
+      "to": {
+        "col": 10,
+        "row": 8
+      },
+      "type": "dirt"
+    },
+    "11,7:11,8": {
+      "from": {
+        "col": 11,
+        "row": 7
+      },
+      "to": {
+        "col": 11,
+        "row": 8
+      },
+      "type": "dirt"
+    },
+    "12,10:13,10": {
+      "from": {
+        "col": 12,
+        "row": 10
+      },
+      "to": {
+        "col": 13,
+        "row": 10
+      },
+      "type": "stone"
+    },
+    "13,10:14,6": {
+      "from": {
+        "col": 13,
+        "row": 10
+      },
+      "to": {
+        "col": 14,
+        "row": 6
+      },
+      "type": "dirt"
+    },
+    "13,10:14,11": {
+      "from": {
+        "col": 13,
+        "row": 10
+      },
+      "to": {
+        "col": 14,
+        "row": 11
+      },
+      "type": "dirt"
+    },
+    "14,6:15,5": {
+      "from": {
+        "col": 14,
+        "row": 6
+      },
+      "to": {
+        "col": 15,
+        "row": 5
+      },
+      "type": "stone"
+    },
+    "15,5:16,5": {
+      "from": {
+        "col": 15,
+        "row": 5
+      },
+      "to": {
+        "col": 16,
+        "row": 5
+      },
+      "type": "stone"
+    },
+    "16,5:17,5": {
+      "from": {
+        "col": 16,
+        "row": 5
+      },
+      "to": {
+        "col": 17,
+        "row": 5
+      },
+      "type": "stone"
+    },
+    "17,5:18,5": {
+      "from": {
+        "col": 17,
+        "row": 5
+      },
+      "to": {
+        "col": 18,
+        "row": 5
+      },
+      "type": "stone"
+    },
+    "18,5:19,5": {
+      "from": {
+        "col": 18,
+        "row": 5
+      },
+      "to": {
+        "col": 19,
+        "row": 5
+      },
+      "type": "stone"
+    }
+  }
+}

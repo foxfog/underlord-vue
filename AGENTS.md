@@ -38,7 +38,7 @@
 * [Сценарные действия и UI (`docs/ui/UIControl.md`)](docs/ui/UIControl.md) — затемнения `fade`, очистка `clearCharacters`, хоткеи `H` и удержание `Ctrl` (скип).
 * [Диалоговая система (`docs/ui/DialogueSystem.md`)](docs/ui/DialogueSystem.md) — тайпрайтер, автоскрытие UI (`DIALOGUE_HIDE_UI_CONFIG`).
 * [Персонажи и спрайты (`docs/characters/BodyStructure.md`)](docs/characters/BodyStructure.md) — структура `body.json`, `values.json`, слоты `equipment.json`.
-* [Студия спрайтов и риггинга (`docs/characters/CharacterRigStudio.md`)](docs/characters/CharacterRigStudio.md) — Live2D-Lite студия, дробление тела, 2D-стикер глаз, повороты, анимации, пресеты.
+* [Студия спрайтов и риггинга (`docs/characters/CharacterRigStudio.md`)](docs/characters/CharacterRigStudio.md) — Live2D-Lite студия, дробление тела, 2D-стикер глаз, повороты, анимации, 2.5D изометрический риг, проекция вращения суставов, пресеты.
 * [Квесты и журнал (`useQuests.js`)](docs/systems/QuestsSystem.md) — древовидная иерархия (`parentId`), задачи (`tasks`), сюжетные заметки.
 * [Инвентарь и экипировка (`docs/systems/Inventory.md`)](docs/systems/Inventory.md) — слоты экипировки, контекстное меню предметов.
 * [Энциклопедия и персонажи (`docs/systems/EncyclopediaSystem.md`)](docs/systems/EncyclopediaSystem.md) — карточки NPC, модульные блоки `{ id, title, text }`, симпатии `*_symp`.
@@ -53,6 +53,7 @@
 * [Система безымянных мобов (`docs/systems/MobSystem.md`)](docs/systems/MobSystem.md) — расчёт статов из рас/классов, звёздность 1★–5★, экипировка по тирам, скалирование, агро/сон.
 * [Редактор сценариев и сторилейна (`docs/systems/StorylineEditorSystem.md`)](docs/systems/StorylineEditorSystem.md) — визуальный редактор сюжета, дерево папок/файлов, инспектор экшенов (диалоги, сцены, выборы, звук), прямой JSON-режим.
 * [Характеристики, расовые скейлы, эволюция и экипировка (`docs/systems/CharacterStatsSystem.md`)](docs/systems/CharacterStatsSystem.md) — начальные base_stats рас, атрибуты STR/END/AGI/INT, переработчики, активная раса (Дракон $\to$ Лич), 5-шаговый конвейер пассивок и экипировки.
+* [Гексагональная тактическая карта и редактор (`docs/systems/HexMapSystem.md`)](docs/systems/HexMapSystem.md) — тактическая flat-topped 2.5D карта, реки по граням в стиле Civilization (ширина 1–3), горные массивы R1–3, холмы, поселения, дороги с авто-мостами, визуальный редактор.
 
 ---
 

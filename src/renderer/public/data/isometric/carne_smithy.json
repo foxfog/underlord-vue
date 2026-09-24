@@ -17,7 +17,7 @@
     "x": 0,
     "y": 2,
     "z": 0,
-    "facing": "NW"
+    "facing": "W"
   },
   "terrain": {
     "palette": [
@@ -30,69 +30,69 @@
   "overrides": {
     "-3,-3": {
       "walls": {
-        "NW": { "type": "wall-dark", "solid": true },
-        "NE": { "type": "wall-dark-e", "solid": true }
+        "W": { "type": "wall-dark", "solid": true },
+        "N": { "type": "wall-dark-e", "solid": true }
       }
     },
     "-2,-3": {
       "walls": {
-        "NW": { "type": "wall-dark", "solid": true }
+        "N": { "type": "wall-dark-e", "solid": true }
       }
     },
     "-1,-3": {
       "walls": {
-        "NW": { "type": "wall-dark", "solid": true }
+        "N": { "type": "wall-dark-e", "solid": true }
       }
     },
     "0,-3": {
       "walls": {
-        "NW": { "type": "wall-dark", "solid": true }
+        "N": { "type": "wall-dark-e", "solid": true }
       }
     },
     "1,-3": {
       "walls": {
-        "NW": { "type": "wall-dark", "solid": true }
+        "N": { "type": "wall-dark-e", "solid": true }
       }
     },
     "2,-3": {
       "walls": {
-        "NW": { "type": "wall-dark", "solid": true }
+        "N": { "type": "wall-dark-e", "solid": true }
       }
     },
     "3,-3": {
       "walls": {
-        "NW": { "type": "wall-dark", "solid": true },
-        "NE": { "type": "wall-dark-e", "solid": true }
+        "N": { "type": "wall-dark-e", "solid": true },
+        "E": { "type": "wall-dark-s", "solid": true }
       }
     },
     "3,-2": {
       "walls": {
-        "NE": { "type": "wall-dark-e", "solid": true }
+        "E": { "type": "wall-dark-s", "solid": true }
       }
     },
     "3,-1": {
       "walls": {
-        "NE": { "type": "wall-dark-e", "solid": true }
+        "E": { "type": "wall-dark-s", "solid": true }
       }
     },
     "3,0": {
       "walls": {
-        "NE": { "type": "wall-dark-e", "solid": true }
+        "E": { "type": "wall-dark-s", "solid": true }
       }
     },
     "3,1": {
       "walls": {
-        "NE": { "type": "wall-dark-e", "solid": true }
+        "E": { "type": "wall-dark-s", "solid": true }
       }
     },
     "3,2": {
       "walls": {
-        "NE": { "type": "wall-dark-e", "solid": true }
+        "E": { "type": "wall-dark-s", "solid": true }
       }
     },
     "3,3": {
       "walls": {
-        "NE": { "type": "wall-dark-e", "solid": true }
+        "E": { "type": "wall-dark-s", "solid": true }
       }
     }
   },

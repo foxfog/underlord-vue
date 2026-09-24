@@ -6,12 +6,31 @@
  */
 
 import { buildAssetUrl } from './isoSprites.js'
+import { normalizeWallEdge } from './isoCoords.js'
+import { normalizeFacing } from './isoFacing.js'
 import defaultTilesCatalog from '@data/isometric/tiles.json'
 import defaultObjectsCatalog from '@data/isometric/objects.json'
 
 let tilesCatalog = defaultTilesCatalog.tiles || {}
 let objectsCatalog = defaultObjectsCatalog.objects || {}
 let catalogLoaded = false
+
+/**
+ * Normalizes wall edge keys in a tile's walls object to canonical 'N', 'E', 'S', 'W'.
+ */
+export function normalizeTileWalls(walls) {
+	if (!walls || typeof walls !== 'object') return undefined
+	const result = {}
+	let hasAny = false
+	for (const [edge, val] of Object.entries(walls)) {
+		if (val) {
+			const norm = normalizeWallEdge(edge)
+			result[norm] = val
+			hasAny = true
+		}
+	}
+	return hasAny ? result : undefined
+}
 
 /**
  * Loads tiles and objects catalog files (via fetch in runtime or uses imported defaults).
@@ -539,7 +558,7 @@ export function normalizeLocationData(raw, activeLevelId = 'level-1') {
 
 					const isDoor = def?.type === 'door' || obj.id?.startsWith('door') || obj.type === 'door'
 					const isWall = def?.type === 'wall' || obj.id?.startsWith('wall') || obj.type === 'wall'
-					const edge = def?.edge || obj.edge || (isDoor ? 'NE' : 'NW')
+					const edge = normalizeWallEdge(def?.edge || obj.edge || (isDoor ? 'N' : 'W'))
 
 					if (isWall || isDoor) {
 						const targetTile = tiles.find((t) => t.x === gx && t.y === gy)
@@ -599,7 +618,7 @@ export function normalizeLocationData(raw, activeLevelId = 'level-1') {
 							type: def?.id || cell.type || 'slab',
 							texture: def?.id || cell.texture || null,
 							walkable: def?.walkable !== undefined ? def.walkable : cell.walkable !== false,
-							walls: cell.walls || {}
+							walls: normalizeTileWalls(cell.walls) || {}
 						})
 					})
 				} else if (row && typeof row === 'object') {
@@ -614,7 +633,7 @@ export function normalizeLocationData(raw, activeLevelId = 'level-1') {
 						type: def?.id || row.type || 'slab',
 						texture: def?.id || row.texture || null,
 						walkable: def?.walkable !== undefined ? def.walkable : row.walkable !== false,
-						walls: row.walls || {}
+						walls: normalizeTileWalls(row.walls) || {}
 					})
 				}
 			})
@@ -630,7 +649,7 @@ export function normalizeLocationData(raw, activeLevelId = 'level-1') {
 
 				const isDoor = def?.type === 'door' || obj.id?.startsWith('door')
 				const isWall = def?.type === 'wall' || obj.id?.startsWith('wall')
-				const edge = def?.edge || obj.edge || (isDoor ? 'NE' : 'NW')
+				const edge = normalizeWallEdge(def?.edge || obj.edge || (isDoor ? 'N' : 'W'))
 
 				// If object is a wall or door, attach to the corresponding tile's walls object
 				if (isWall || isDoor) {
@@ -676,6 +695,7 @@ export function normalizeLocationData(raw, activeLevelId = 'level-1') {
 			const gx = t.cord ? t.cord[0] : t.x
 			const gy = t.cord ? t.cord[1] : t.y
 			const def = getTileDef(t.id || t.type || t.texture)
+			const walls = normalizeTileWalls(t.walls)
 			return {
 				...t,
 				x: gx,
@@ -683,7 +703,8 @@ export function normalizeLocationData(raw, activeLevelId = 'level-1') {
 				z: t.z || 0,
 				type: t.type || def?.id || 'grass',
 				texture: t.texture || def?.id || null,
-				walkable: def?.walkable !== undefined ? def.walkable : t.walkable !== false
+				walkable: def?.walkable !== undefined ? def.walkable : t.walkable !== false,
+				...(walls ? { walls } : {})
 			}
 		})
 
@@ -723,7 +744,7 @@ export function normalizeLocationData(raw, activeLevelId = 'level-1') {
 			x: c.cord ? c.cord[0] : c.x,
 			y: c.cord ? c.cord[1] : c.y,
 			z: c.z || 0,
-			facing: c.facing || 'SE'
+			facing: normalizeFacing(c.facing || 'E')
 		}))
 	}
 
@@ -746,9 +767,14 @@ export function normalizeLocationData(raw, activeLevelId = 'level-1') {
 	let defaultSpawn = data.defaultSpawn
 	if (!defaultSpawn) {
 		if (characters.length > 0) {
-			defaultSpawn = { x: characters[0].x, y: characters[0].y, z: characters[0].z || 0, facing: 'SE' }
+			defaultSpawn = { x: characters[0].x, y: characters[0].y, z: characters[0].z || 0, facing: normalizeFacing(characters[0].facing || 'E') }
 		} else {
-			defaultSpawn = { x: 0, y: 0, z: 0, facing: 'SE' }
+			defaultSpawn = { x: 0, y: 0, z: 0, facing: 'E' }
+		}
+	} else {
+		defaultSpawn = {
+			...defaultSpawn,
+			facing: normalizeFacing(defaultSpawn.facing || 'E')
 		}
 	}
 

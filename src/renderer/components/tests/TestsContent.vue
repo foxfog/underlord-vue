@@ -76,6 +76,10 @@ function launchStorylineEditor() {
 	router.push('/test/storyline-editor')
 }
 
+function launchHexEditor() {
+	router.push('/test/hex-editor')
+}
+
 const testCards = [
 	{
 		id: 'iso-tester',
@@ -148,6 +152,15 @@ const testCards = [
 		tags: ['Сторилейн', 'Дерево папок', 'Экшены', 'JSON'],
 		btnText: 'Открыть редактор →',
 		action: launchStorylineEditor
+	},
+	{
+		id: 'hex-editor',
+		icon: '⬡',
+		title: 'Редактор гексагональных карт',
+		desc: 'Тактический 2.5D гекс-рельеф: реки Civ по граням (ширина 1-3), горные массивы R1-3, холмы, поселения, дороги и мосты.',
+		tags: ['Гексы 2.5D', 'Реки Civ', 'Горы R1-3', 'Дороги и мосты'],
+		btnText: 'Открыть редактор →',
+		action: launchHexEditor
 	}
 ]
 </script>

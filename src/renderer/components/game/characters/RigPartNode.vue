@@ -44,6 +44,10 @@
 				:eye-offset="eyeOffset"
 				:show-bones="showBones"
 				:get-effective-part-image="getEffectivePartImage"
+				:is-isometric="isIsometric"
+				:is-isometric-rotation="isIsometricRotation"
+				:isometric-rotation-mode="isometricRotationMode"
+				:isometric-tilt-angle="isometricTiltAngle"
 				@select-part="emit('select-part', $event)"
 				@part-loaded="emit('part-loaded', $event)"
 				@part-img-error="emit('part-img-error', $event)"
@@ -119,6 +123,22 @@ const props = defineProps({
 	getEffectivePartImage: {
 		type: Function,
 		default: null
+	},
+	isIsometric: {
+		type: Boolean,
+		default: false
+	},
+	isIsometricRotation: {
+		type: Boolean,
+		default: true
+	},
+	isometricRotationMode: {
+		type: String,
+		default: 'trapezoid'
+	},
+	isometricTiltAngle: {
+		type: Number,
+		default: 26.565
 	}
 })
 
@@ -192,7 +212,24 @@ const computedPartStyle = computed(() => {
 	const transforms = []
 
 	if (rot) {
-		transforms.push(`rotate(${rot}deg)`)
+		if (props.isIsometric && props.isIsometricRotation) {
+			const rotRad = (rot * Math.PI) / 180
+			const tiltAngle = Number(props.isometricTiltAngle) || 26.565
+			if (props.isometricRotationMode === 'dimetric') {
+				// 2:1 Affine Dimetric Projection: elliptical skew and scale along isometric angle
+				const skew = -Math.sin(rotRad * 2) * (tiltAngle * 0.55)
+				const scaleY = (0.75 + 0.25 * Math.cos(rotRad)).toFixed(3)
+				transforms.push(`rotate(${rot}deg) skewX(${skew.toFixed(2)}deg) scaleY(${scaleY})`)
+			} else {
+				// 3D Isometric Perspective Trapezoid Projection:
+				// Pitch and yaw along the isometric 2:1 inclination angle with perspective foreshortening
+				const pitch = Math.sin(rotRad) * tiltAngle
+				const yaw = Math.sin(rotRad) * (tiltAngle * 0.5)
+				transforms.push(`perspective(500px) rotateX(${pitch.toFixed(2)}deg) rotateY(${yaw.toFixed(2)}deg) rotateZ(${rot}deg)`)
+			}
+		} else {
+			transforms.push(`rotate(${rot}deg)`)
+		}
 	}
 
 	if (trans && (trans.x || trans.y)) {
@@ -231,7 +268,8 @@ const partClasses = computed(() => {
 		`_part-${props.spriteName}`,
 		{
 			'_body': isRootPart.value,
-			'__selected': props.selectedPartName === props.spriteName
+			'__selected': props.selectedPartName === props.spriteName,
+			'__is-isometric': props.isIsometric
 		}
 	]
 })
@@ -280,5 +318,12 @@ const partClasses = computed(() => {
 	padding: 0.1em 0.3em;
 	border-radius: 0.2em;
 	white-space: nowrap;
+}
+
+/* Isometric Pixel Art crispness */
+.rig-part-node.__is-isometric,
+.rig-part-node.__is-isometric .part-sprite-img {
+	image-rendering: pixelated;
+	image-rendering: crisp-edges;
 }
 </style>

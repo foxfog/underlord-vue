@@ -1,6 +1,7 @@
 {
 	"id": "carne-chief",
 	"name": "Староста Карна",
+	"character_type": "individual",
 	"surname": "",
 	"nickname": "",
 	"title": "Староста деревни Карн",

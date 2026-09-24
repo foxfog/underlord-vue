@@ -303,48 +303,52 @@ const staticRenderQueue = computed(() => {
 		})
 
 		if (tile.walls) {
-			if (tile.walls.NW) {
+			const wallW = tile.walls.W || tile.walls.NW
+			if (wallW) {
 				queue.push({
 					type: 'wall',
-					edge: 'NW',
+					edge: 'W',
 					tileX: tile.x,
 					tileY: tile.y,
 					tileZ: tile.z || 0,
 					depthKey: getDepthSortKey(tile.x, tile.y, tile.z || 0, 1),
-					data: tile.walls.NW
+					data: wallW
 				})
 			}
-			if (tile.walls.NE) {
+			const wallN = tile.walls.N || tile.walls.NE
+			if (wallN) {
 				queue.push({
 					type: 'wall',
-					edge: 'NE',
+					edge: 'N',
 					tileX: tile.x,
 					tileY: tile.y,
 					tileZ: tile.z || 0,
 					depthKey: getDepthSortKey(tile.x, tile.y, tile.z || 0, 1),
-					data: tile.walls.NE
+					data: wallN
 				})
 			}
-			if (tile.walls.SW) {
+			const wallS = tile.walls.S || tile.walls.SW
+			if (wallS) {
 				queue.push({
 					type: 'wall',
-					edge: 'SW',
+					edge: 'S',
 					tileX: tile.x,
 					tileY: tile.y,
 					tileZ: tile.z || 0,
 					depthKey: getDepthSortKey(tile.x, tile.y, tile.z || 0, 6),
-					data: tile.walls.SW
+					data: wallS
 				})
 			}
-			if (tile.walls.SE) {
+			const wallE = tile.walls.E || tile.walls.SE
+			if (wallE) {
 				queue.push({
 					type: 'wall',
-					edge: 'SE',
+					edge: 'E',
 					tileX: tile.x,
 					tileY: tile.y,
 					tileZ: tile.z || 0,
 					depthKey: getDepthSortKey(tile.x, tile.y, tile.z || 0, 6),
-					data: tile.walls.SE
+					data: wallE
 				})
 			}
 		}
@@ -950,7 +954,7 @@ function onMouseMove(e) {
 		// Check door on tile walls
 		let doorFound = null
 		if (picked.walls) {
-			for (const edge of ['NW', 'NE', 'SW', 'SE']) {
+			for (const edge of ['N', 'E', 'S', 'W', 'NW', 'NE', 'SW', 'SE']) {
 				if (picked.walls[edge]?.door) {
 					doorFound = { wall: picked.walls[edge], edge, tile: picked }
 					break
@@ -1105,7 +1109,7 @@ function onMouseUp(e) {
 
 	// Check if clicked a door on target tile walls
 	if (target.walls) {
-		for (const edge of ['NW', 'NE', 'SW', 'SE']) {
+		for (const edge of ['N', 'E', 'S', 'W', 'NW', 'NE', 'SW', 'SE']) {
 			const w = target.walls[edge]
 			if (w && w.door) {
 				if (isPlayerNear(target)) {
@@ -1434,10 +1438,10 @@ function movePlayerAlongPath(path, onComplete = null) {
 
 		const next = path[currentStep]
 		// Determine facing
-		if (next.x > player.value.x) player.value.facing = 'SE'
-		else if (next.x < player.value.x) player.value.facing = 'NW'
-		else if (next.y > player.value.y) player.value.facing = 'SW'
-		else if (next.y < player.value.y) player.value.facing = 'NE'
+		if (next.x > player.value.x) player.value.facing = 'E'
+		else if (next.x < player.value.x) player.value.facing = 'W'
+		else if (next.y > player.value.y) player.value.facing = 'S'
+		else if (next.y < player.value.y) player.value.facing = 'N'
 
 		player.value.x = next.x
 		player.value.y = next.y
@@ -1973,7 +1977,7 @@ function drawWall(ctx, wall, edge, tileX, tileY, tileZ, tileW, tileH, heightStep
 		heightStep
 	)
 
-	const isLit = edge === 'NE' || edge === 'SE'
+	const isLit = edge === 'N' || edge === 'NE' || edge === 'E' || edge === 'SE'
 	let fillColor = isLit ? '#64748b' : '#475569'
 	let strokeColor = isLit ? '#475569' : '#334155'
 
@@ -2110,8 +2114,8 @@ function renderObjectGraphic(ctx, obj, pos, tileW, tileH, heightStep) {
 	ctx.save()
 	ctx.translate(pos.x, pos.y)
 
-	// Horizontal flip for NW / SW orientations
-	const isFlipped = obj.facing === 'NW' || obj.facing === 'SW'
+	// Horizontal flip for W / NW / S / SW orientations
+	const isFlipped = obj.facing === 'W' || obj.facing === 'NW' || obj.facing === 'S' || obj.facing === 'SW'
 	if (isFlipped) {
 		ctx.scale(-1, 1)
 	}

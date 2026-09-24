@@ -5,53 +5,66 @@
  */
 
 export const FACING_VECTORS = Object.freeze({
+	// Canonical isometric directions (N is Up-Right)
+	N: { du: Math.SQRT1_2, dv: -Math.SQRT1_2 },
+	E: { du: Math.SQRT1_2, dv: Math.SQRT1_2 },
+	S: { du: -Math.SQRT1_2, dv: Math.SQRT1_2 },
+	W: { du: -Math.SQRT1_2, dv: -Math.SQRT1_2 },
+	// Backward-compatible aliases
+	NE: { du: Math.SQRT1_2, dv: -Math.SQRT1_2 },
 	SE: { du: Math.SQRT1_2, dv: Math.SQRT1_2 },
 	SW: { du: -Math.SQRT1_2, dv: Math.SQRT1_2 },
-	NW: { du: -Math.SQRT1_2, dv: -Math.SQRT1_2 },
-	NE: { du: Math.SQRT1_2, dv: -Math.SQRT1_2 },
-	// Cardinal fallback directions
-	S: { du: 0, dv: 1 },
-	N: { du: 0, dv: -1 },
-	E: { du: 1, dv: 0 },
-	W: { du: -1, dv: 0 }
+	NW: { du: -Math.SQRT1_2, dv: -Math.SQRT1_2 }
 })
 
 export const OPPOSITE_FACING = Object.freeze({
-	SE: 'NW',
-	NW: 'SE',
-	SW: 'NE',
-	NE: 'SW',
-	S: 'N',
 	N: 'S',
+	S: 'N',
 	E: 'W',
-	W: 'E'
+	W: 'E',
+	NE: 'SW',
+	SW: 'NE',
+	SE: 'NW',
+	NW: 'SE'
 })
 
 export const FACING_LABELS = Object.freeze({
+	N: 'Север (N) ↗',
+	E: 'Восток (E) ↘',
+	S: 'Юг (S) ↙',
+	W: 'Запад (W) ↖',
+	NE: 'Север (NE) ↗',
 	SE: 'Юго-Восток (SE) ↘',
 	SW: 'Юго-Запад (SW) ↙',
-	NW: 'Северо-Запад (NW) ↖',
-	NE: 'Северо-Восток (NE) ↗',
-	S: 'Юг (S) ↓',
-	N: 'Север (N) ↑',
-	E: 'Восток (E) →',
-	W: 'Запад (W) ←'
+	NW: 'Северо-Запад (NW) ↖'
 })
+
+/**
+ * Normalizes any facing string to canonical 'N' | 'E' | 'S' | 'W'.
+ */
+export function normalizeFacing(facing = 'E') {
+	const key = String(facing || 'E').toUpperCase()
+	if (key === 'N' || key === 'NE') return 'N'
+	if (key === 'E' || key === 'SE') return 'E'
+	if (key === 'S' || key === 'SW') return 'S'
+	if (key === 'W' || key === 'NW') return 'W'
+	return 'E'
+}
 
 /**
  * Normalizes facing string and returns (u, v) direction vector.
  */
 export function getFacingVector(facing = 'SE') {
 	const key = String(facing || 'SE').toUpperCase()
-	return FACING_VECTORS[key] || FACING_VECTORS.SE
+	return FACING_VECTORS[key] || FACING_VECTORS.E || FACING_VECTORS.SE
 }
 
 /**
- * Returns the opposite facing direction (e.g. SE -> NW).
+ * Returns the opposite facing direction (e.g. SE -> NW, N -> S).
  */
 export function getOppositeFacing(facing = 'SE') {
 	const key = String(facing || 'SE').toUpperCase()
-	return OPPOSITE_FACING[key] || 'NW'
+	return OPPOSITE_FACING[key] || 'W'
 }
 
 /**

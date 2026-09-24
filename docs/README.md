@@ -32,6 +32,7 @@
 * [Система безымянных мобов, звёздности и энкаунтеров (Mob System)](./systems/MobSystem.md)
 * [Редактор сценариев и сторилейна (Storyline Editor System)](./systems/StorylineEditorSystem.md)
 * [Характеристики, расовые скейлы, эволюция и экипировка (Character Stats System)](./systems/CharacterStatsSystem.md)
+* [Гексагональная тактическая карта и редактор (Hex Map System)](./systems/HexMapSystem.md)
 
 ## 🤖 Разработка и Агенты
 * [Руководство для ИИ-агентов и правила адаптивной верстки (AGENTS.md)](../AGENTS.md)

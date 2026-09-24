@@ -42,7 +42,7 @@
   "overrides": {
     "-1,-5": {
       "walls": {
-        "NW": {
+        "N": {
           "type": "stone_wall",
           "height": 1.5,
           "solid": true
@@ -51,7 +51,7 @@
     },
     "0,-5": {
       "walls": {
-        "NW": {
+        "N": {
           "type": "wood_wall",
           "door": true,
           "open": false,
@@ -61,7 +61,7 @@
     },
     "1,-5": {
       "walls": {
-        "NW": {
+        "N": {
           "type": "stone_wall",
           "height": 1.5,
           "solid": true

@@ -542,4 +542,108 @@ describe('useCharacterRigStudio Composable', () => {
 		expect(characterData.value.mc.partAnimations['arm_left'].styles.transform).toBe('rotate(45deg)')
 		expect(characterData.value.mc.partAnimations['head']).toBeDefined()
 	})
+
+	describe('Isometric Rig Studio Features', () => {
+		it('locks characterScale to 1.0 in isometric mode and restores 2D scale when switching back', () => {
+			studio.characterScale.value = 1.35
+			expect(studio.characterScale.value).toBe(1.35)
+
+			studio.viewMode.value = 'isometric'
+			expect(studio.characterScale.value).toBe(1.0)
+
+			studio.viewMode.value = 'default'
+			expect(studio.characterScale.value).toBe(1.35)
+		})
+
+		it('has isometric rotation enabled by default with trapezoid mode and 26.565 tilt', () => {
+			expect(studio.isIsometricRotation.value).toBe(true)
+			expect(studio.isometricRotationMode.value).toBe('trapezoid')
+			expect(studio.isometricTiltAngle.value).toBeCloseTo(26.565, 3)
+		})
+
+		it('calculates isometric projected rotation in trapezoid (3D perspective) mode', () => {
+			const transform = studio.calculateIsometricRotationTransform(45, {
+				isIsometric: true,
+				isRotationEnabled: true,
+				mode: 'trapezoid',
+				tilt: 26.565
+			})
+			expect(transform).toContain('perspective(500px)')
+			expect(transform).toContain('rotateX(')
+			expect(transform).toContain('rotateY(')
+			expect(transform).toContain('rotateZ(45deg)')
+		})
+
+		it('calculates isometric projected rotation in dimetric (2:1 affine) mode', () => {
+			const transform = studio.calculateIsometricRotationTransform(45, {
+				isIsometric: true,
+				isRotationEnabled: true,
+				mode: 'dimetric',
+				tilt: 26.565
+			})
+			expect(transform).toContain('rotate(45deg)')
+			expect(transform).toContain('skewX(')
+			expect(transform).toContain('scaleY(')
+		})
+
+		it('falls back to flat 2D rotation when isometric rotation is disabled', () => {
+			const transform = studio.calculateIsometricRotationTransform(45, {
+				isIsometric: true,
+				isRotationEnabled: false
+			})
+			expect(transform).toBe('rotate(45deg)')
+		})
+
+		it('provides BUILTIN_ISO_ANIMATIONS in isometric mode', () => {
+			studio.viewMode.value = 'isometric'
+			const isoIds = studio.allAnimations.value.map((a) => a.id)
+			expect(isoIds).toContain('iso_idle')
+			expect(isoIds).toContain('iso_walk')
+			expect(isoIds).toContain('iso_attack')
+			expect(isoIds).toContain('iso_hit')
+		})
+
+		it('evaluates isometric walk animation tracks correctly', () => {
+			studio.viewMode.value = 'isometric'
+			studio.bodyParts['body'] = { image: 'iso_body.png', parent: null }
+			studio.bodyParts['arm_left'] = { image: 'iso_arm.png', parent: 'body' }
+
+			const isoWalk = studio.BUILTIN_ISO_ANIMATIONS.find((a) => a.id === 'iso_walk')
+			expect(isoWalk).toBeDefined()
+
+			// Evaluate at start t=0: arm_left rotate=-22
+			studio.evaluateCustomAnimation(isoWalk, 0)
+			expect(studio.partRotations['arm_left']).toBeCloseTo(-22, 1)
+
+			// Evaluate at mid t=0.4: arm_left rotate=22
+			studio.evaluateCustomAnimation(isoWalk, 0.4)
+			expect(studio.partRotations['arm_left']).toBeCloseTo(22, 1)
+		})
+
+		it('supports decomposing single body into isometric parts in isometric mode', () => {
+			studio.viewMode.value = 'isometric'
+			studio.selectedCharacterId.value = 'mc'
+			studio.bodyParts['body'] = { image: 'char.png', parent: null, offset: { x: 0, y: 0 } }
+
+			studio.decomposeSingleBody()
+			expect(studio.bodyParts['head']).toBeDefined()
+			expect(studio.bodyParts['head'].image).toContain('isometric/head.png')
+			expect(studio.bodyParts['arm_left']).toBeDefined()
+			expect(studio.bodyParts['arm_left'].image).toContain('isometric/arm_left.png')
+			expect(studio.bodyParts['arm_right']).toBeDefined()
+			expect(studio.bodyParts['arm_right'].image).toContain('isometric/arm_right.png')
+		})
+
+		it('supports isometric emotion overrides and getEffectivePartImage', () => {
+			studio.viewMode.value = 'isometric'
+			studio.bodyParts['head'] = { image: 'char_head.png', parent: 'body', offset: { x: 0, y: 0 } }
+
+			studio.setEmotionOverride('happy', 'head', 'char_head_happy.png')
+			studio.setEmotion('happy')
+			expect(studio.getEffectivePartImage('head')).toBe('char_head_happy.png')
+
+			studio.setEmotion('default')
+			expect(studio.getEffectivePartImage('head')).toBe('char_head.png')
+		})
+	})
 })

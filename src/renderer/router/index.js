@@ -76,6 +76,12 @@ const router = createRouter({
 			name: 'storyline-editor',
 			path: '/test/storyline-editor',
 			component: () => import('@/views/StorylineEditorView.vue')
+		},
+		{
+			id: 12,
+			name: 'hex-editor',
+			path: '/test/hex-editor',
+			component: () => import('@/views/HexEditorView.vue')
 		}
 	]
 })

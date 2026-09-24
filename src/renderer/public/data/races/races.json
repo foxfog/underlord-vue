@@ -26,52 +26,35 @@
       "atk_phys": 10,
       "def_phys": 6,
       "atk_mag": 6,
-      "def_mag": 3,
+      "def_mag": 6,
       "spd": 3,
       "init": 5,
-      "crit_chance": 1,
-      "crit_dmg": 5,
-      "res": {
-        "physical": 1
-      }
+      "crit_chance": 5,
+      "crit_dmg": 50,
+      "res": {}
     },
     "attribute_converters": {
       "str": {
-        "hp": 3,
-        "atk_phys": 5,
-        "def_phys": 2.5,
-        "crit_dmg": 0.5,
-        "res": {
-          "physical": 0.1
-        }
+        "hp": 20,
+        "atk_phys": 10,
+        "def_phys": 8
       },
       "end": {
-        "hp": 20,
-        "mp": 5,
+        "hp": 35,
+        "def_phys": 10,
         "res": {
-          "physical": 0.5,
-          "water": 0.1,
-          "fire": 0.1,
-          "cold": 0.1,
-          "lightning": 0.1,
-          "poison": 0.1,
-          "holy": 0.1,
-          "dark": 0.1
+          "physical": 1
         }
       },
       "agi": {
-        "atk_phys": 3,
-        "def_phys": 1,
-        "crit_chance": 0.5,
-        "crit_dmg": 1,
-        "init": 2
+        "spd": 0.1,
+        "init": 2,
+        "atk_phys": 4
       },
       "int": {
-        "mp": 10,
-        "atk_mag": 5,
-        "def_mag": 4,
-        "init": 1,
-        "crit_chance": 0.1
+        "mp": 20,
+        "atk_mag": 10,
+        "def_mag": 8
       }
     }
   },
@@ -129,10 +112,10 @@
       "def_phys": 4,
       "atk_mag": 12,
       "def_mag": 8,
-      "spd": 3,
+      "spd": 4,
       "init": 8,
-      "crit_chance": 1,
-      "crit_dmg": 8,
+      "crit_chance": 8,
+      "crit_dmg": 50,
       "res": {
         "nature": 10,
         "physical": -5,
@@ -141,10 +124,25 @@
       }
     },
     "attribute_converters": {
-      "str": {},
-      "end": {},
-      "agi": {},
-      "int": {}
+      "str": {
+        "hp": 15,
+        "atk_phys": 8,
+        "def_phys": 7
+      },
+      "end": {
+        "hp": 25,
+        "def_phys": 8
+      },
+      "agi": {
+        "spd": 0.15,
+        "init": 3,
+        "atk_phys": 6
+      },
+      "int": {
+        "mp": 30,
+        "atk_mag": 15,
+        "def_mag": 10
+      }
     },
     "description": "Древний лесной народ с длинными ушами и врождённым сродством к стихиям природы. Обладают долголетием, острым зрением и мастерством владения луком."
   },

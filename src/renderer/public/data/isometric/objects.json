@@ -2,9 +2,9 @@
   "objects": {
     "wall": {
       "id": "wall",
-      "name": "Стена (NW)",
+      "name": "Стена (W ↖)",
       "type": "wall",
-      "edge": "NW",
+      "edge": "W",
       "tags": ["blocking", "wall", "stone"],
       "solid": true,
       "image": {
@@ -17,10 +17,10 @@
     },
     "wall-e": {
       "id": "wall-e",
-      "name": "Стена Восток (NE)",
+      "name": "Стена Север (N ↗)",
       "type": "wall",
-      "edge": "NE",
-      "tags": ["blocking", "wall", "stone", "east"],
+      "edge": "N",
+      "tags": ["blocking", "wall", "stone", "north", "east"],
       "solid": true,
       "image": {
         "url": "images/sprites/isometric/tiles/wall/wall-e.png",
@@ -32,10 +32,10 @@
     },
     "wall-s": {
       "id": "wall-s",
-      "name": "Стена Юг (SE)",
+      "name": "Стена Восток (E ↘)",
       "type": "wall",
-      "edge": "SE",
-      "tags": ["blocking", "wall", "stone", "south"],
+      "edge": "E",
+      "tags": ["blocking", "wall", "stone", "east", "south"],
       "solid": true,
       "image": {
         "url": "images/sprites/isometric/tiles/wall/wall-s.png",
@@ -47,10 +47,10 @@
     },
     "wall-w": {
       "id": "wall-w",
-      "name": "Стена Запад (SW)",
+      "name": "Стена Юг (S ↙)",
       "type": "wall",
-      "edge": "SW",
-      "tags": ["blocking", "wall", "stone", "west"],
+      "edge": "S",
+      "tags": ["blocking", "wall", "stone", "south", "west"],
       "solid": true,
       "image": {
         "url": "images/sprites/isometric/tiles/wall/wall-w.png",
@@ -62,9 +62,9 @@
     },
     "wall-dark": {
       "id": "wall-dark",
-      "name": "Темная стена (NW)",
+      "name": "Темная стена (W ↖)",
       "type": "wall",
-      "edge": "NW",
+      "edge": "W",
       "tags": ["blocking", "wall", "stone", "dark"],
       "solid": true,
       "image": {
@@ -76,10 +76,10 @@
     },
     "wall-dark-e": {
       "id": "wall-dark-e",
-      "name": "Темная стена Восток (NE)",
+      "name": "Темная стена Север (N ↗)",
       "type": "wall",
-      "edge": "NE",
-      "tags": ["blocking", "wall", "stone", "dark", "east"],
+      "edge": "N",
+      "tags": ["blocking", "wall", "stone", "dark", "north", "east"],
       "solid": true,
       "image": {
         "url": "images/sprites/isometric/tiles/wall/wall-dark-e.png",
@@ -90,10 +90,10 @@
     },
     "wall-dark-s": {
       "id": "wall-dark-s",
-      "name": "Темная стена Юг (SE)",
+      "name": "Темная стена Восток (E ↘)",
       "type": "wall",
-      "edge": "SE",
-      "tags": ["blocking", "wall", "stone", "dark", "south"],
+      "edge": "E",
+      "tags": ["blocking", "wall", "stone", "dark", "east", "south"],
       "solid": true,
       "image": {
         "url": "images/sprites/isometric/tiles/wall/wall-dark-s.png",
@@ -104,10 +104,10 @@
     },
     "wall-dark-w": {
       "id": "wall-dark-w",
-      "name": "Темная стена Запад (SW)",
+      "name": "Темная стена Юг (S ↙)",
       "type": "wall",
-      "edge": "SW",
-      "tags": ["blocking", "wall", "stone", "dark", "west"],
+      "edge": "S",
+      "tags": ["blocking", "wall", "stone", "dark", "south", "west"],
       "solid": true,
       "image": {
         "url": "images/sprites/isometric/tiles/wall/wall-dark-w.png",
@@ -118,9 +118,9 @@
     },
     "wall-1": {
       "id": "wall-1",
-      "name": "Базовая стена",
+      "name": "Базовая стена (W ↖)",
       "type": "wall",
-      "edge": "NW",
+      "edge": "W",
       "tags": ["blocking", "wall"],
       "solid": true,
       "image": {
@@ -132,10 +132,10 @@
     },
     "wall-3": {
       "id": "wall-3",
-      "name": "Стена Восток (NE)",
+      "name": "Стена Север (N ↗)",
       "type": "wall",
-      "edge": "NE",
-      "tags": ["blocking", "wall", "east"],
+      "edge": "N",
+      "tags": ["blocking", "wall", "north", "east"],
       "solid": true,
       "image": {
         "url": "images/sprites/isometric/tiles/wall/wall-dark-e.png",
@@ -146,10 +146,10 @@
     },
     "wall-4": {
       "id": "wall-4",
-      "name": "Стена Юг (SE)",
+      "name": "Стена Восток (E ↘)",
       "type": "wall",
-      "edge": "SE",
-      "tags": ["blocking", "wall", "south"],
+      "edge": "E",
+      "tags": ["blocking", "wall", "east", "south"],
       "solid": true,
       "image": {
         "url": "images/sprites/isometric/tiles/wall/wall-dark-s.png",
@@ -160,10 +160,10 @@
     },
     "wall-5": {
       "id": "wall-5",
-      "name": "Стена Запад (SW)",
+      "name": "Стена Юг (S ↙)",
       "type": "wall",
-      "edge": "SW",
-      "tags": ["blocking", "wall", "west"],
+      "edge": "S",
+      "tags": ["blocking", "wall", "south", "west"],
       "solid": true,
       "image": {
         "url": "images/sprites/isometric/tiles/wall/wall-dark-w.png",
@@ -174,10 +174,10 @@
     },
     "wall-7": {
       "id": "wall-7",
-      "name": "Стена Восток Альт",
+      "name": "Стена Север Альт (N ↗)",
       "type": "wall",
-      "edge": "NE",
-      "tags": ["blocking", "wall", "east"],
+      "edge": "N",
+      "tags": ["blocking", "wall", "north", "east"],
       "solid": true,
       "image": {
         "url": "images/sprites/isometric/tiles/wall/wall-e.png",
@@ -188,10 +188,10 @@
     },
     "wall-8": {
       "id": "wall-8",
-      "name": "Стена Юг Альт",
+      "name": "Стена Восток Альт (E ↘)",
       "type": "wall",
-      "edge": "SE",
-      "tags": ["blocking", "wall", "south"],
+      "edge": "E",
+      "tags": ["blocking", "wall", "east", "south"],
       "solid": true,
       "image": {
         "url": "images/sprites/isometric/tiles/wall/wall-s.png",
@@ -202,9 +202,9 @@
     },
     "door-e": {
       "id": "door-e",
-      "name": "Дверь Восток (NE)",
+      "name": "Дверь Север (N ↗)",
       "type": "door",
-      "edge": "NE",
+      "edge": "N",
       "tags": ["door", "interactive"],
       "solid": true,
       "interactive": true,

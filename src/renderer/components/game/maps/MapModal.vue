@@ -26,6 +26,15 @@
 					>
 						🌍 Мир
 					</button>
+					<button
+						v-if="isNewWorld"
+						class="map-modal__level-btn"
+						:class="{ _active: activeLevel === 'hex' }"
+						@click="switchLevel('hex')"
+						title="Гексагональная тактическая карта (L)"
+					>
+						⬡ Гексы
+					</button>
 				</div>
 
 				<div class="map-modal__controls">
@@ -122,10 +131,11 @@ const mapComponents = {
 	default: defineAsyncComponent(() => import('./default.vue')),
 	cybercity: defineAsyncComponent(() => import('./cybercity.vue')),
 	newworld: defineAsyncComponent(() => import('./newworld.vue')),
-	carne: defineAsyncComponent(() => import('./carne.vue'))
+	carne: defineAsyncComponent(() => import('./carne.vue')),
+	hexworld: defineAsyncComponent(() => import('./hexworld.vue'))
 }
 
-const activeLevel = ref('local') // 'local' | 'world'
+const activeLevel = ref('local') // 'local' | 'world' | 'hex'
 
 const isNewWorld = computed(() => {
 	const g = effectiveGlobalData.value
@@ -158,6 +168,9 @@ const hasLevelToggle = computed(() => {
 })
 
 const activeMapName = computed(() => {
+	if (activeLevel.value === 'hex') {
+		return 'hexworld'
+	}
 	if (activeLevel.value === 'world') {
 		return currentWorldMap.value
 	}
@@ -170,6 +183,9 @@ const mapComponent = computed(() => {
 })
 
 const modalTitle = computed(() => {
+	if (activeLevel.value === 'hex') {
+		return 'Тактическая карта: Новый Мир (Гексы)'
+	}
 	if (activeLevel.value === 'world') {
 		return 'Карта мира: Новый Мир'
 	}
@@ -222,7 +238,16 @@ function onKeyDown(e) {
 	if (!props.isVisible) return
 	if (e.key === 'l' || e.key === 'L' || e.key === 'д' || e.key === 'Д') {
 		if (hasLevelToggle.value) {
-			switchLevel(activeLevel.value === 'local' ? 'world' : 'local')
+			if (isNewWorld.value) {
+				const cycle = {
+					local: 'world',
+					world: 'hex',
+					hex: 'local'
+				}
+				switchLevel(cycle[activeLevel.value] || 'local')
+			} else {
+				switchLevel(activeLevel.value === 'local' ? 'world' : 'local')
+			}
 		}
 	}
 }

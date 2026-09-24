@@ -1,6 +1,7 @@
 {
 	"id": "default",
 	"name": "Дефолтный персонаж",
+	"character_type": "mob",
 	"surname": "",
 	"nickname": "",
 	"title": "",

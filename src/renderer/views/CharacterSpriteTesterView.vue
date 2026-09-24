@@ -62,13 +62,14 @@
 			<div class="header-right">
 				<button
 					class="action-btn __save"
-					title="Сохранить структуру частей тела в body.json"
+					:title="viewMode === 'isometric' ? 'Сохранить структуру частей тела в iso_body.json' : 'Сохранить структуру частей тела в body.json'"
 					@click="saveBodyJson"
 				>
 					<span>💾</span>
-					<span>Сохранить body.json</span>
+					<span>{{ viewMode === 'isometric' ? 'Сохранить iso_body.json' : 'Сохранить body.json' }}</span>
 				</button>
 				<button
+					v-if="viewMode !== 'isometric'"
 					class="action-btn __save-alt"
 					title="Сохранить визуальный скейл (size) в values.json"
 					@click="saveValuesJson"
@@ -317,34 +318,77 @@
 				>
 					<div class="iso-tile-ground">
 						<!-- Isometric 64x32 diamond tile ground -->
-						<div class="iso-diamond-grid"></div>
-						<!-- Isometric character sprite -->
+						<div v-if="showGrid" class="iso-diamond-grid"></div>
+						<!-- Isometric character rig root (Strictly pixel art 1:1, no biometric scale!) -->
 						<div
-							class="iso-sprite-wrap"
-							:class="{ '__flip-x': isoFlipped }"
-							:style="{ scale: characterScale }"
+							class="char character-rig-root iso-character-rig-root"
+							ref="charRigRef"
+							:class="[
+								`char-${selectedCharacterId}`,
+								{ '__flip-x': isoFlipped }
+							]"
 						>
-							<img
-								:src="isometricSpriteSrc"
-								class="iso-sprite-img"
-								alt="Isometric character"
-								draggable="false"
-								@error="onIsoImgError"
-							/>
+							<div class="char-body char-body-canvas iso-char-body-canvas" ref="charBodyCanvasRef">
+								<!-- Recursive Isometric Sprites via RigPartNode -->
+								<template
+									v-for="(sprite, name) in spritesByParent[null]"
+									:key="name"
+								>
+									<RigPartNode
+										:sprite="sprite"
+										:sprite-name="name"
+										:character-id="selectedCharacterId"
+										:sprites="bodyParts"
+										:sprites-by-parent="spritesByParent"
+										:selected-part-name="selectedPartName"
+										:part-pivots="partPivots"
+										:part-rotations="partRotations"
+										:part-translations="partTranslations"
+										:part-scales="partScales"
+										:part-custom-styles="partCustomStyles"
+										:animated-sprites="animatedSprites"
+										:eye-offset="eyeLinkedOffset"
+										:show-bones="showBones"
+										:is-isometric="true"
+										:is-isometric-rotation="isIsometricRotation"
+										:isometric-rotation-mode="isometricRotationMode"
+										:isometric-tilt-angle="isometricTiltAngle"
+										:get-effective-part-image="getEffectivePartImage"
+										@select-part="onPartClick"
+										@part-loaded="scheduleUpdatePartCenters"
+										@part-img-error="onPartImgError($event.event, $event.name)"
+									/>
+								</template>
+							</div>
 						</div>
 					</div>
 
 					<div class="iso-controls-panel">
-						<span class="icp-label">Спрайт изометрии:</span>
-						<code class="icp-path">{{ isometricSpriteSrc }}</code>
+						<div class="icp-info-row">
+							<span class="icp-badge">🎲 Изометрия</span>
+							<span class="icp-pixel-notice">Пиксельная графика 1:1 (скейлинг отключен)</span>
+							<span v-if="isIsometricRotation" class="icp-rot-badge" title="Поворот суставов проецируется с учетом изометрического угла">
+								📐 Изо-поворот ({{ isometricRotationMode === 'trapezoid' ? '3D Трапеция' : '2:1 Диметрия' }})
+							</span>
+						</div>
 						<div class="icp-actions">
 							<button
 								type="button"
 								class="iso-flip-btn"
 								:class="{ __active: isoFlipped }"
+								title="Отразить спрайт персонажа по горизонтали"
 								@click="isoFlipped = !isoFlipped"
 							>
 								↔️ Отразить горизонтально
+							</button>
+							<button
+								type="button"
+								class="iso-rot-toggle-btn"
+								:class="{ __active: isIsometricRotation }"
+								:title="isIsometricRotation ? 'Отключить изометрический поворот (использовать плоский 2D)' : 'Включить изометрический поворот суставов'"
+								@click="isIsometricRotation = !isIsometricRotation"
+							>
+								📐 {{ isIsometricRotation ? 'Изо-поворот: ВКЛ' : 'Изо-поворот: ВЫКЛ' }}
 							</button>
 						</div>
 					</div>
@@ -1003,6 +1047,65 @@
 						</div>
 					</div>
 
+					<!-- Isometric Rotation Configuration Card (visible in isometric mode) -->
+					<div v-if="viewMode === 'isometric'" class="sidebar-section-card iso-rot-settings-card">
+						<div class="ssc-header">
+							<span class="ssc-title">📐 Изометрический поворот суставов</span>
+							<label class="studio-switch-label">
+								<input
+									type="checkbox"
+									v-model="isIsometricRotation"
+									class="studio-checkbox"
+								/>
+								<span class="ssl-text">{{ isIsometricRotation ? 'ВКЛ' : 'ВЫКЛ' }}</span>
+							</label>
+						</div>
+						<p class="iso-rot-hint">
+							По умолчанию поворот суставов (плечи, локти, оружие) учитывает угол наклона 2:1 изометрии и создаёт трапециевидное перспективное сжатие.
+						</p>
+						<div v-if="isIsometricRotation" class="iso-rot-controls">
+							<div class="control-field">
+								<label class="field-label">Тип проекции вращения:</label>
+								<select v-model="isometricRotationMode" class="studio-select">
+									<option value="trapezoid">Трапециевидная (3D Perspective)</option>
+									<option value="dimetric">Диметрическая (2:1 Сжатие и Сдвиг)</option>
+								</select>
+							</div>
+							<div class="control-field">
+								<div class="field-label-row">
+									<label class="field-label">Угол наклона изометрии:</label>
+									<span class="field-val">{{ Number(isometricTiltAngle).toFixed(2) }}°</span>
+								</div>
+								<div class="field-range-row">
+									<input
+										v-model.number="isometricTiltAngle"
+										type="range"
+										min="15"
+										max="45"
+										step="0.5"
+										class="studio-range"
+									/>
+									<button
+										type="button"
+										class="mini-btn"
+										title="Стандартный угол 2:1 изометрии (26.565°)"
+										@click="isometricTiltAngle = 26.565"
+									>
+										26.57° (2:1)
+									</button>
+									<button
+										type="button"
+										class="mini-btn"
+										title="Угол 30°"
+										@click="isometricTiltAngle = 30"
+									>
+										30°
+									</button>
+								</div>
+							</div>
+						</div>
+					</div>
+
 					<!-- Animation Library & Creator -->
 					<div class="sidebar-section-card">
 						<div class="ssc-header">
@@ -1471,8 +1574,27 @@
 						</div>
 					</div>
 
-					<!-- Visual Scale & Target Height Fit -->
-					<div class="sidebar-section-card">
+					<!-- Isometric Mode Notice Banner -->
+					<div v-if="viewMode === 'isometric'" class="sidebar-section-card iso-scale-disabled-card">
+						<div class="ssc-header">
+							<span class="ssc-title">🔒 Масштабирование в изометрии</span>
+						</div>
+						<div class="isdc-banner">
+							<span class="isdc-icon">🎮</span>
+							<div class="isdc-content">
+								<strong class="isdc-title">Скейлинг отключен для пиксельной графики</strong>
+								<p class="isdc-desc">
+									В изометрии масштаб зафиксирован на <strong>1.000x</strong>. Рост и пропорции персонажей определяются исключительно физическим разрешением самих спрайтов (1:1 пиксели).
+								</p>
+							</div>
+						</div>
+						<div class="isdc-hint">
+							💡 Для детального осмотра пиксельной сетки используйте масштабирование холста (кнопки зума «+» и «-» на верхней панели сцены).
+						</div>
+					</div>
+
+					<!-- Visual Scale & Target Height Fit (2D VN mode) -->
+					<div v-else class="sidebar-section-card">
 						<div class="ssc-header">
 							<span class="ssc-title">Масштабирование визуала (Scale)</span>
 						</div>
@@ -1706,7 +1828,12 @@ const {
 	evaluateCustomAnimation,
 	exportAnimationToJson,
 	saveBodyJson,
-	saveValuesJson
+	saveValuesJson,
+	isIsometricRotation,
+	isometricRotationMode,
+	isometricTiltAngle,
+	saveIsoBodyJson,
+	saveIsoAnimationsJson
 } = useCharacterRigStudio()
 
 // Viewport & Display state
@@ -2993,62 +3120,205 @@ onMounted(async () => {
 	box-shadow: 0 1em 2em rgba(0, 0, 0, 0.6);
 }
 
-.iso-sprite-wrap {
-	position: absolute;
-	bottom: 2.5em;
-	display: flex;
-	align-items: flex-end;
-	justify-content: center;
-	transform-origin: bottom center;
+.iso-character-rig-root {
+	position: absolute !important;
+	bottom: 2.2em !important;
+	left: 50% !important;
+	height: auto !important;
+	width: auto !important;
+	transform: translateX(-50%) !important;
+	transform-origin: bottom center !important;
+	display: flex !important;
+	align-items: flex-end !important;
+	justify-content: center !important;
+	image-rendering: pixelated !important;
+	image-rendering: crisp-edges !important;
 }
 
-.iso-sprite-wrap.__flip-x {
-	transform: scaleX(-1);
+.iso-character-rig-root.__flip-x {
+	transform: translateX(-50%) scaleX(-1) !important;
 }
 
-.iso-sprite-img {
+.iso-char-body-canvas {
+	position: relative !important;
+	height: 10em !important;
+	width: auto !important;
+	--char-height: 10em;
+	--iso-char-height: 10em;
+	display: flex !important;
+	align-items: flex-end !important;
+	justify-content: center !important;
+	image-rendering: pixelated !important;
+	image-rendering: crisp-edges !important;
+}
+
+.iso-char-body-canvas :deep(.part-sprite-img) {
 	height: 10em;
 	width: auto;
+	image-rendering: pixelated !important;
+	image-rendering: crisp-edges !important;
 	filter: drop-shadow(0 0.4em 0.8em rgba(0, 0, 0, 0.7));
-	pointer-events: none;
-	-webkit-user-drag: none;
-	user-select: none;
 }
 
 .iso-controls-panel {
 	position: absolute;
-	bottom: 2em;
-	background: rgba(14, 20, 32, 0.85);
-	border: 1px solid rgba(255, 255, 255, 0.12);
+	bottom: 1.5em;
+	background: rgba(14, 20, 32, 0.9);
+	border: 1px solid rgba(246, 196, 69, 0.3);
 	border-radius: 0.5em;
-	padding: 0.8em 1.2em;
+	padding: 0.6em 1.2em;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	gap: 0.5em;
+	box-shadow: 0 0.5em 1.5em rgba(0, 0, 0, 0.6);
+	z-index: 20;
 }
 
-.icp-label {
-	font-size: 0.8em;
+.icp-info-row {
+	display: flex;
+	align-items: center;
+	gap: 0.6em;
+	flex-wrap: wrap;
+	justify-content: center;
+}
+
+.icp-badge {
+	font-size: 0.75em;
+	background: rgba(246, 196, 69, 0.15);
+	color: #f6c445;
+	border: 1px solid rgba(246, 196, 69, 0.35);
+	padding: 0.15em 0.5em;
+	border-radius: 0.3em;
+	font-weight: bold;
+}
+
+.icp-pixel-notice {
+	font-size: 0.72em;
 	color: #94a3b8;
 }
 
-.icp-path {
-	font-size: 0.75em;
-	color: #f6c445;
-	background: rgba(0, 0, 0, 0.4);
-	padding: 0.2em 0.5em;
+.icp-rot-badge {
+	font-size: 0.72em;
+	background: rgba(16, 185, 129, 0.15);
+	color: #34d399;
+	border: 1px solid rgba(16, 185, 129, 0.3);
+	padding: 0.15em 0.5em;
 	border-radius: 0.3em;
 }
 
-.iso-flip-btn {
+.icp-actions {
+	display: flex;
+	align-items: center;
+	gap: 0.6em;
+}
+
+.iso-flip-btn,
+.iso-rot-toggle-btn {
 	background: rgba(255, 255, 255, 0.08);
 	border: 1px solid rgba(255, 255, 255, 0.18);
 	color: #cbd5e1;
 	border-radius: 0.3em;
-	padding: 0.3em 0.8em;
-	font-size: 0.8em;
+	padding: 0.35em 0.8em;
+	font-size: 0.78em;
 	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.iso-flip-btn:hover,
+.iso-rot-toggle-btn:hover {
+	background: rgba(255, 255, 255, 0.15);
+	border-color: rgba(246, 196, 69, 0.5);
+	color: #f6c445;
+}
+
+.iso-flip-btn.__active,
+.iso-rot-toggle-btn.__active {
+	background: rgba(246, 196, 69, 0.2);
+	border-color: #f6c445;
+	color: #f6c445;
+	font-weight: bold;
+}
+
+/* Isometric Rotation Settings Card */
+.iso-rot-settings-card {
+	border-color: rgba(246, 196, 69, 0.35);
+	background: rgba(246, 196, 69, 0.04);
+}
+
+.studio-switch-label {
+	display: flex;
+	align-items: center;
+	gap: 0.4em;
+	cursor: pointer;
+}
+
+.ssl-text {
+	font-size: 0.75em;
+	font-weight: bold;
+	color: #f6c445;
+}
+
+.iso-rot-hint {
+	font-size: 0.75em;
+	color: #94a3b8;
+	margin: 0 0 0.8em 0;
+	line-height: 1.4;
+}
+
+.iso-rot-controls {
+	display: flex;
+	flex-direction: column;
+	gap: 0.8em;
+}
+
+/* Isometric Disabled Scale Banner */
+.iso-scale-disabled-card {
+	border-color: rgba(100, 116, 139, 0.35);
+}
+
+.isdc-banner {
+	display: flex;
+	gap: 0.7em;
+	align-items: flex-start;
+	background: rgba(15, 23, 42, 0.6);
+	padding: 0.8em;
+	border-radius: 0.4em;
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	margin-bottom: 0.8em;
+}
+
+.isdc-icon {
+	font-size: 1.4em;
+	flex-shrink: 0;
+}
+
+.isdc-content {
+	display: flex;
+	flex-direction: column;
+	gap: 0.3em;
+}
+
+.isdc-title {
+	font-size: 0.85em;
+	color: #f8fafc;
+}
+
+.isdc-desc {
+	font-size: 0.75em;
+	color: #94a3b8;
+	margin: 0;
+	line-height: 1.4;
+}
+
+.isdc-hint {
+	font-size: 0.73em;
+	color: #cbd5e1;
+	background: rgba(246, 196, 69, 0.08);
+	border: 1px solid rgba(246, 196, 69, 0.2);
+	border-radius: 0.3em;
+	padding: 0.5em 0.8em;
+	line-height: 1.4;
 }
 
 .iso-flip-btn.__active {

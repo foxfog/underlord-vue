@@ -75,13 +75,33 @@
 					class="form-select"
 					@change="onCharacterSelect"
 				>
-					<option
-						v-for="char in characters"
-						:key="char.id"
-						:value="char.id"
-					>
-						{{ char.name }} ({{ char.id }})
-					</option>
+					<optgroup v-if="individualCharacters.length > 0" label="👤 Индивидуальные персонажи">
+						<option
+							v-for="char in individualCharacters"
+							:key="char.id"
+							:value="char.id"
+						>
+							{{ char.name }} ({{ char.id }})
+						</option>
+					</optgroup>
+					<optgroup v-if="mobCharacters.length > 0" label="👾 Мобы и безымянные NPC">
+						<option
+							v-for="char in mobCharacters"
+							:key="char.id"
+							:value="char.id"
+						>
+							{{ char.name }} ({{ char.id }})
+						</option>
+					</optgroup>
+					<template v-if="individualCharacters.length === 0 && mobCharacters.length === 0">
+						<option
+							v-for="char in characters"
+							:key="char.id"
+							:value="char.id"
+						>
+							{{ char.name }} ({{ char.id }})
+						</option>
+					</template>
 					<option value="_custom_">-- Ввести свой ID персонажа --</option>
 				</select>
 			</div>
@@ -332,6 +352,14 @@ const subStepsList = computed(() => {
 		model.value.steps = []
 	}
 	return model.value.steps
+})
+
+const individualCharacters = computed(() => {
+	return (props.characters || []).filter((c) => (c.character_type || 'individual') !== 'mob')
+})
+
+const mobCharacters = computed(() => {
+	return (props.characters || []).filter((c) => c.character_type === 'mob')
 })
 
 watch(

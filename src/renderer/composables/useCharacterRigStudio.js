@@ -1,4 +1,4 @@
-import { ref, computed, reactive, onUnmounted, getCurrentInstance } from 'vue'
+import { ref, computed, reactive, onUnmounted, getCurrentInstance, watch } from 'vue'
 
 export function useCharacterRigStudio() {
 	// Active character selection
@@ -24,9 +24,59 @@ export function useCharacterRigStudio() {
 
 	// Scale, Height & Root Avatar Offset
 	const characterScale = ref(1.0)
+	const vnScale = ref(1.0)
 	const baseHeightCm = ref(175)
 	const effectiveHeightCm = computed(() => Math.round(baseHeightCm.value * characterScale.value))
 	const rootOffset = reactive({ x: 0, y: 0 })
+
+	// Isometric Rig, Projections & Scaling
+	const isIsometricRotation = ref(true) // Enabled by default as requested by user
+	const isometricRotationMode = ref('trapezoid') // 'trapezoid' (3D perspective) | 'dimetric' (2:1 affine)
+	const isometricTiltAngle = ref(26.565) // 2:1 dimetric grid angle arctan(0.5) = 26.565 deg
+	const vnBodyParts = reactive({})
+	const isoBodyParts = reactive({})
+	const vnCustomAnimations = ref([])
+	const isoCustomAnimations = ref([])
+	const vnEmotionOverrides = reactive({})
+	const isoEmotionOverrides = reactive({})
+
+	function copyParts(src, target) {
+		Object.keys(target).forEach((k) => delete target[k])
+		for (const [k, v] of Object.entries(src)) {
+			target[k] = JSON.parse(JSON.stringify(v))
+		}
+	}
+
+	function copyEmotions(src, target) {
+		Object.keys(target).forEach((k) => delete target[k])
+		for (const [k, v] of Object.entries(src)) {
+			target[k] = JSON.parse(JSON.stringify(v))
+		}
+	}
+
+	// Calculate isometric rotation transform with 3D trapezoidal perspective or 2:1 dimetric projection
+	function calculateIsometricRotationTransform(
+		rot,
+		{ isIsometric = true, isRotationEnabled = true, mode = 'trapezoid', tilt = 26.565 } = {}
+	) {
+		if (!rot) return ''
+		if (!isIsometric || !isRotationEnabled) {
+			return `rotate(${rot}deg)`
+		}
+		const rotRad = (rot * Math.PI) / 180
+		const tiltAngle = Number(tilt) || 26.565
+		if (mode === 'dimetric') {
+			// 2:1 Affine Dimetric Projection: elliptical skew and scale along isometric angle
+			const skew = -Math.sin(rotRad * 2) * (tiltAngle * 0.55)
+			const scaleY = (0.75 + 0.25 * Math.cos(rotRad)).toFixed(3)
+			return `rotate(${rot}deg) skewX(${skew.toFixed(2)}deg) scaleY(${scaleY})`
+		}
+		// 'trapezoid': 3D Isometric Perspective Trapezoid Projection
+		// Pitch and yaw along the isometric 2:1 inclination angle with perspective foreshortening
+		const pitch = Math.sin(rotRad) * tiltAngle
+		const yaw = Math.sin(rotRad) * (tiltAngle * 0.5)
+		return `perspective(500px) rotateX(${pitch.toFixed(2)}deg) rotateY(${yaw.toFixed(2)}deg) rotateZ(${rot}deg)`
+	}
 
 	function adjustRootOffset(axis, delta) {
 		rootOffset[axis] = Number((rootOffset[axis] + delta).toFixed(2))
@@ -302,13 +352,180 @@ export function useCharacterRigStudio() {
 		}
 	]
 
+	const BUILTIN_ISO_ANIMATIONS = [
+		{
+			id: 'iso_idle',
+			name: 'Изометрическое дыхание (Idle)',
+			icon: '🧘',
+			group: 'Изометрия',
+			desc: 'Покачивание корпуса на изометрическом тайле с легким наклоном суставов',
+			duration: 1.6,
+			repeat: 'loop',
+			timingMode: 'timeline',
+			tracks: [
+				{
+					target: 'body',
+					targetMode: 'single',
+					keyframes: [
+						{ time: 0, transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 0.8, transform: { rotate: 1.5, translateX: 0, translateY: -2.0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 1.6, transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' }
+					]
+				},
+				{
+					target: 'head',
+					targetMode: 'single',
+					keyframes: [
+						{ time: 0, transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 0.8, transform: { rotate: -1.2, translateX: 0, translateY: 0.8, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 1.6, transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' }
+					]
+				},
+				{
+					target: 'arm_left',
+					targetMode: 'single',
+					keyframes: [
+						{ time: 0, transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 0.8, transform: { rotate: 3, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 1.6, transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' }
+					]
+				},
+				{
+					target: 'arm_right',
+					targetMode: 'single',
+					keyframes: [
+						{ time: 0, transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 0.8, transform: { rotate: -3, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 1.6, transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' }
+					]
+				}
+			]
+		},
+		{
+			id: 'iso_walk',
+			name: 'Изометрический шаг (Walk)',
+			icon: '🚶',
+			group: 'Изометрия',
+			desc: 'Шаг вдоль изометрической оси с покачиванием корпуса и взмахом рук',
+			duration: 0.8,
+			repeat: 'loop',
+			timingMode: 'timeline',
+			tracks: [
+				{
+					target: 'body',
+					targetMode: 'single',
+					keyframes: [
+						{ time: 0, transform: { rotate: 0, translateX: -1.5, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 0.2, transform: { rotate: -1, translateX: 0, translateY: -3.0, scale: 1 }, easing: 'ease-out' },
+						{ time: 0.4, transform: { rotate: 0, translateX: 1.5, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 0.6, transform: { rotate: 1, translateX: 0, translateY: -3.0, scale: 1 }, easing: 'ease-out' },
+						{ time: 0.8, transform: { rotate: 0, translateX: -1.5, translateY: 0, scale: 1 }, easing: 'ease-in-out' }
+					]
+				},
+				{
+					target: 'arm_left',
+					targetMode: 'single',
+					keyframes: [
+						{ time: 0, transform: { rotate: -22, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 0.4, transform: { rotate: 22, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 0.8, transform: { rotate: -22, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' }
+					]
+				},
+				{
+					target: 'arm_right',
+					targetMode: 'single',
+					keyframes: [
+						{ time: 0, transform: { rotate: 22, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 0.4, transform: { rotate: -22, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 0.8, transform: { rotate: 22, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' }
+					]
+				},
+				{
+					target: 'head',
+					targetMode: 'single',
+					keyframes: [
+						{ time: 0, transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 0.4, transform: { rotate: 1.5, translateX: 0, translateY: 1.0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 0.8, transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' }
+					]
+				}
+			]
+		},
+		{
+			id: 'iso_attack',
+			name: 'Изометрическая атака (Attack)',
+			icon: '⚔️',
+			group: 'Изометрия',
+			desc: 'Замах и резкий выпад с трапециевидным поворотом сустава по изометрической оси',
+			duration: 0.7,
+			repeat: 'once',
+			timingMode: 'timeline',
+			tracks: [
+				{
+					target: 'body',
+					targetMode: 'single',
+					keyframes: [
+						{ time: 0, transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 0.2, transform: { rotate: -4, translateX: -2, translateY: -1, scale: 1 }, easing: 'ease-in' },
+						{ time: 0.38, transform: { rotate: 6, translateX: 5, translateY: 2.5, scale: 1 }, easing: 'ease-out' },
+						{ time: 0.7, transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' }
+					]
+				},
+				{
+					target: 'arm_left',
+					targetMode: 'hierarchy',
+					keyframes: [
+						{ time: 0, transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 0.2, transform: { rotate: -45, translateX: -1, translateY: -2, scale: 1 }, easing: 'ease-in' },
+						{ time: 0.38, transform: { rotate: 65, translateX: 3, translateY: 2, scale: 1 }, easing: 'ease-out' },
+						{ time: 0.7, transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' }
+					]
+				}
+			]
+		},
+		{
+			id: 'iso_hit',
+			name: 'Получение урона (Hit)',
+			icon: '💥',
+			group: 'Изометрия',
+			desc: 'Отскок и отдача назад вдоль изометрической плоскости',
+			duration: 0.5,
+			repeat: 'once',
+			timingMode: 'timeline',
+			tracks: [
+				{
+					target: 'body',
+					targetMode: 'single',
+					keyframes: [
+						{ time: 0, transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-out' },
+						{ time: 0.12, transform: { rotate: -8, translateX: -5, translateY: -2, scale: 1 }, easing: 'ease-out' },
+						{ time: 0.3, transform: { rotate: 2, translateX: -1, translateY: 0.5, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 0.5, transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' }
+					]
+				},
+				{
+					target: 'head',
+					targetMode: 'single',
+					keyframes: [
+						{ time: 0, transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-out' },
+						{ time: 0.12, transform: { rotate: -15, translateX: -2, translateY: -1, scale: 1 }, easing: 'ease-out' },
+						{ time: 0.5, transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' }
+					]
+				}
+			]
+		}
+	]
 
 	const allAnimations = computed(() => {
+		if (viewMode.value === 'isometric') {
+			return [...BUILTIN_ISO_ANIMATIONS, ...customAnimations.value]
+		}
 		return [...BUILTIN_ANIMATIONS, ...customAnimations.value]
 	})
 
 	const animationGroups = computed(() => {
-		const set = new Set(['all', 'Базовые'])
+		const baseGroup = viewMode.value === 'isometric' ? 'Изометрия' : 'Базовые'
+		const set = new Set(['all', baseGroup])
 		customAnimations.value.forEach((a) => {
 			if (a.group) set.add(a.group)
 		})
@@ -373,7 +590,12 @@ export function useCharacterRigStudio() {
 			'arm2 right.png',
 			'arm3 right.png',
 			'default.png',
-			'isometric/char.png'
+			'isometric/char.png',
+			'isometric/head.png',
+			'isometric/arm_left.png',
+			'isometric/arm_right.png',
+			'isometric/weapon.png',
+			'icometric/char.png'
 		]
 
 		for (const fn of defaultFilenames) {
@@ -392,6 +614,16 @@ export function useCharacterRigStudio() {
 					for (const file of res.files) {
 						if (/\.(png|jpe?g|webp|gif)$/i.test(file)) {
 							const path = `images/sprites/characters/${charId}/${file}`
+							if (!imgs.includes(path)) imgs.push(path)
+						}
+					}
+				}
+				// Also check isometric subdirectory
+				const isoRes = await window.electronAPI.dataEditor.listFiles(`../../public/images/sprites/characters/${charId}/isometric`)
+				if (isoRes.success && Array.isArray(isoRes.files)) {
+					for (const file of isoRes.files) {
+						if (/\.(png|jpe?g|webp|gif)$/i.test(file)) {
+							const path = `images/sprites/characters/${charId}/isometric/${file}`
 							if (!imgs.includes(path)) imgs.push(path)
 						}
 					}
@@ -421,6 +653,62 @@ export function useCharacterRigStudio() {
 		}
 	}
 
+	// Switch viewMode between 2D VN Rig and Isometric Pixel Rig
+	function switchViewMode(newMode, oldMode) {
+		if (newMode === oldMode) return
+		stopAnimation()
+
+		if (newMode === 'isometric') {
+			// Snapshot current 2D VN state
+			copyParts(bodyParts, vnBodyParts)
+			vnCustomAnimations.value = JSON.parse(JSON.stringify(customAnimations.value))
+			copyEmotions(emotionOverrides, vnEmotionOverrides)
+			vnScale.value = characterScale.value
+
+			// Populate active with isometric state
+			copyParts(isoBodyParts, bodyParts)
+			customAnimations.value = JSON.parse(JSON.stringify(isoCustomAnimations.value))
+			copyEmotions(isoEmotionOverrides, emotionOverrides)
+
+			// Locking scale to 1.0 (Pixel art 1:1, no biometric scaling)
+			characterScale.value = 1.0
+		} else {
+			// Snapshot current isometric state
+			copyParts(bodyParts, isoBodyParts)
+			isoCustomAnimations.value = JSON.parse(JSON.stringify(customAnimations.value))
+			copyEmotions(emotionOverrides, isoEmotionOverrides)
+
+			// Populate active with 2D VN state
+			copyParts(vnBodyParts, bodyParts)
+			customAnimations.value = JSON.parse(JSON.stringify(vnCustomAnimations.value))
+			copyEmotions(vnEmotionOverrides, emotionOverrides)
+
+			// Restore 2D biometric scale
+			characterScale.value = vnScale.value || Number(characterValues.value?.size ?? 1.0)
+		}
+
+		// Reset posing
+		resetPose()
+
+		// Re-initialize rotations and pivots for parts
+		for (const name of Object.keys(bodyParts)) {
+			if (partRotations[name] === undefined) partRotations[name] = 0
+			if (partPivots[name] === undefined) partPivots[name] = defaultPivotForPart(name)
+		}
+
+		if (!bodyParts[selectedPartName.value]) {
+			selectedPartName.value = Object.keys(bodyParts)[0] || 'body'
+		}
+	}
+
+	watch(
+		viewMode,
+		(newMode, oldMode) => {
+			switchViewMode(newMode, oldMode)
+		},
+		{ flush: 'sync' }
+	)
+
 	// Load specific character
 	async function selectCharacter(charId) {
 		isLoading.value = true
@@ -436,15 +724,15 @@ export function useCharacterRigStudio() {
 			}
 			characterValues.value = values || { id: charId, name: charId, size: 1 }
 			baseHeightCm.value = characterValues.value.height || characterValues.value.height_cm || 175
-			characterScale.value = Number(characterValues.value.size ?? characterValues.value.scale ?? 1.0)
+			const loadedScale = Number(characterValues.value.size ?? characterValues.value.scale ?? 1.0)
+			vnScale.value = loadedScale
 			rootOffset.x = Number(characterValues.value.root_offset?.x || 0)
 			rootOffset.y = Number(characterValues.value.root_offset?.y || 0)
 
-			// Load body.json
+			// 1. Load 2D body.json
 			let body = await readDataFile(`characters/${charId}/body.json`)
 			if (!body) {
 				if (charId === 'default') {
-					// Default body fallback
 					body = {
 						body: { image: 'images/sprites/characters/default/body.png' },
 						head: { image: 'images/sprites/characters/default/head.png', parent: 'body', offset: { x: 13, y: -26 } },
@@ -456,19 +744,68 @@ export function useCharacterRigStudio() {
 						arm3_right: { image: 'images/sprites/characters/default/arm3 right.png', parent: 'arm2_right', offset: { x: -74, y: -77 } }
 					}
 				} else {
-					// Check if single image exists
 					body = {
 						body: { image: `images/sprites/characters/${charId}/default.png` }
 					}
 				}
 			}
 
-			// Populate reactive bodyParts
+			// Populate vnBodyParts
+			Object.keys(vnBodyParts).forEach((k) => delete vnBodyParts[k])
+			for (const [name, part] of Object.entries(body)) {
+				vnBodyParts[name] = {
+					image: part.image || '',
+					parent: part.parent || null,
+					zindex: part.zindex ?? part['z-index'] ?? 0,
+					offset: {
+						x: part.offset?.x ?? 0,
+						y: part.offset?.y ?? 0
+					}
+				}
+			}
+
+			// 2. Load Isometric iso_body.json
+			let isoBody = await readDataFile(`characters/${charId}/iso_body.json`)
+			if (!isoBody) {
+				if (body && body.isometric) {
+					isoBody = body.isometric
+				} else {
+					isoBody = {
+						body: {
+							image: `images/sprites/characters/${charId}/isometric/char.png`,
+							parent: null,
+							zindex: 0,
+							offset: { x: 0, y: 0 }
+						}
+					}
+				}
+			}
+
+			// Populate isoBodyParts
+			Object.keys(isoBodyParts).forEach((k) => delete isoBodyParts[k])
+			for (const [name, part] of Object.entries(isoBody)) {
+				isoBodyParts[name] = {
+					image: part.image || '',
+					parent: part.parent || null,
+					zindex: part.zindex ?? part['z-index'] ?? 0,
+					offset: {
+						x: part.offset?.x ?? 0,
+						y: part.offset?.y ?? 0
+					}
+				}
+			}
+
+			// 3. Load Animations for both modes
+			await loadAnimationsJson(charId)
+			await loadIsoAnimationsJson(charId)
+
+			// 4. Populate active bodyParts based on current viewMode
 			Object.keys(bodyParts).forEach((k) => delete bodyParts[k])
 			Object.keys(partRotations).forEach((k) => delete partRotations[k])
 			Object.keys(partPivots).forEach((k) => delete partPivots[k])
 
-			for (const [name, part] of Object.entries(body)) {
+			const activeSource = viewMode.value === 'isometric' ? isoBodyParts : vnBodyParts
+			for (const [name, part] of Object.entries(activeSource)) {
 				bodyParts[name] = {
 					image: part.image || '',
 					parent: part.parent || null,
@@ -482,11 +819,17 @@ export function useCharacterRigStudio() {
 				partPivots[name] = defaultPivotForPart(name)
 			}
 
+			if (viewMode.value === 'isometric') {
+				customAnimations.value = JSON.parse(JSON.stringify(isoCustomAnimations.value))
+				characterScale.value = 1.0 // Strictly locked to 1.0 in isometric pixel art mode
+			} else {
+				customAnimations.value = JSON.parse(JSON.stringify(vnCustomAnimations.value))
+				characterScale.value = vnScale.value
+			}
+
 			if (!bodyParts[selectedPartName.value]) {
 				selectedPartName.value = Object.keys(bodyParts)[0] || 'body'
 			}
-
-			await loadAnimationsJson(charId)
 
 			stopAnimation()
 		} catch (err) {
@@ -548,6 +891,42 @@ export function useCharacterRigStudio() {
 	// Split body into head and arms if only single body exists
 	function decomposeSingleBody() {
 		const charId = selectedCharacterId.value
+		if (viewMode.value === 'isometric') {
+			if (!bodyParts['head']) {
+				bodyParts['head'] = {
+					image: `images/sprites/characters/${charId}/isometric/head.png`,
+					parent: 'body',
+					zindex: 1,
+					offset: { x: 0, y: -45 }
+				}
+				partRotations['head'] = 0
+				partPivots['head'] = { x: 50, y: 80 }
+			}
+			if (!bodyParts['arm_left']) {
+				bodyParts['arm_left'] = {
+					image: `images/sprites/characters/${charId}/isometric/arm_left.png`,
+					parent: 'body',
+					zindex: 2,
+					offset: { x: 25, y: -15 }
+				}
+				partRotations['arm_left'] = 0
+				partPivots['arm_left'] = { x: 20, y: 20 }
+			}
+			if (!bodyParts['arm_right']) {
+				bodyParts['arm_right'] = {
+					image: `images/sprites/characters/${charId}/isometric/arm_right.png`,
+					parent: 'body',
+					zindex: -1,
+					offset: { x: -25, y: -15 }
+				}
+				partRotations['arm_right'] = 0
+				partPivots['arm_right'] = { x: 80, y: 20 }
+			}
+			copyParts(bodyParts, isoBodyParts)
+			setStatus('Изометрическое тело разделено на части (голова, руки)!')
+			return
+		}
+
 		// Add head
 		if (!bodyParts['head']) {
 			bodyParts['head'] = {
@@ -581,6 +960,7 @@ export function useCharacterRigStudio() {
 			partRotations['arm_right'] = 0
 			partPivots['arm_right'] = defaultPivotForPart('arm_right')
 		}
+		copyParts(bodyParts, vnBodyParts)
 		setStatus('Тело разделено на составные части (голова, руки)!')
 	}
 
@@ -611,6 +991,11 @@ export function useCharacterRigStudio() {
 			}
 			partRotations[arm3] = 0
 			partPivots[arm3] = defaultPivotForPart(arm3)
+		}
+		if (viewMode.value === 'isometric') {
+			copyParts(bodyParts, isoBodyParts)
+		} else {
+			copyParts(bodyParts, vnBodyParts)
 		}
 		setStatus(`Рука (${side}) разделена на плечо, предплечье и кисть!`)
 	}
@@ -649,19 +1034,24 @@ export function useCharacterRigStudio() {
 		} else {
 			delete emotionOverrides[emotionId][partName]
 		}
+		if (viewMode.value === 'isometric') {
+			copyEmotions(emotionOverrides, isoEmotionOverrides)
+		} else {
+			copyEmotions(emotionOverrides, vnEmotionOverrides)
+		}
 	}
 
 	// Resolve image for a part with emotion and view overrides
 	function getEffectivePartImage(partName) {
-		// Back view override
-		if (isBackView.value && backSpriteOverrides[partName]) {
+		// Back view override (VN 2D only)
+		if (viewMode.value !== 'isometric' && isBackView.value && backSpriteOverrides[partName]) {
 			return backSpriteOverrides[partName]
 		}
-		// Inverted view override
-		if (orientation.value === 'inverted' && invertedSpriteOverrides[partName]) {
+		// Inverted view override (VN 2D only)
+		if (viewMode.value !== 'isometric' && orientation.value === 'inverted' && invertedSpriteOverrides[partName]) {
 			return invertedSpriteOverrides[partName]
 		}
-		// Emotion override
+		// Emotion override (both modes)
 		if (currentEmotion.value !== 'default' && emotionOverrides[currentEmotion.value]?.[partName]) {
 			return emotionOverrides[currentEmotion.value][partName]
 		}
@@ -713,28 +1103,73 @@ export function useCharacterRigStudio() {
 		setStatus('Поза сброшена в исходное положение')
 	}
 
-	// Custom animations persistence (characters/[charId]/animations.json)
+	// Custom animations persistence (characters/[charId]/animations.json and characters/[charId]/iso_animations.json)
 	async function loadAnimationsJson(charId = selectedCharacterId.value) {
 		try {
 			const data = await readDataFile(`characters/${charId}/animations.json`)
 			if (data && Array.isArray(data)) {
-				customAnimations.value = data
+				vnCustomAnimations.value = data
 			} else if (data && Array.isArray(data.animations)) {
-				customAnimations.value = data.animations
+				vnCustomAnimations.value = data.animations
 			} else {
-				customAnimations.value = []
+				vnCustomAnimations.value = []
+			}
+			if (viewMode.value !== 'isometric') {
+				customAnimations.value = JSON.parse(JSON.stringify(vnCustomAnimations.value))
 			}
 		} catch (err) {
 			console.warn(`[useCharacterRigStudio] No animations.json for ${charId}:`, err)
-			customAnimations.value = []
+			vnCustomAnimations.value = []
+			if (viewMode.value !== 'isometric') {
+				customAnimations.value = []
+			}
 		}
 	}
 
+	async function loadIsoAnimationsJson(charId = selectedCharacterId.value) {
+		try {
+			const data = await readDataFile(`characters/${charId}/iso_animations.json`)
+			if (data && Array.isArray(data)) {
+				isoCustomAnimations.value = data
+			} else if (data && Array.isArray(data.animations)) {
+				isoCustomAnimations.value = data.animations
+			} else {
+				isoCustomAnimations.value = []
+			}
+			if (viewMode.value === 'isometric') {
+				customAnimations.value = JSON.parse(JSON.stringify(isoCustomAnimations.value))
+			}
+		} catch (err) {
+			console.warn(`[useCharacterRigStudio] No iso_animations.json for ${charId}:`, err)
+			isoCustomAnimations.value = []
+			if (viewMode.value === 'isometric') {
+				customAnimations.value = []
+			}
+		}
+	}
+
+	async function saveIsoAnimationsJson() {
+		const charId = selectedCharacterId.value
+		const rawPayload = JSON.parse(JSON.stringify(customAnimations.value))
+		const success = await writeDataFile(`characters/${charId}/iso_animations.json`, rawPayload)
+		if (success) {
+			isoCustomAnimations.value = JSON.parse(JSON.stringify(customAnimations.value))
+			setStatus(`Изометрические анимации сохранены в characters/${charId}/iso_animations.json`)
+		} else {
+			setStatus(`Ошибка сохранения iso_animations.json`, 'error')
+		}
+		return success
+	}
+
 	async function saveAnimationsJson() {
+		if (viewMode.value === 'isometric') {
+			return await saveIsoAnimationsJson()
+		}
 		const charId = selectedCharacterId.value
 		const rawPayload = JSON.parse(JSON.stringify(customAnimations.value))
 		const success = await writeDataFile(`characters/${charId}/animations.json`, rawPayload)
 		if (success) {
+			vnCustomAnimations.value = JSON.parse(JSON.stringify(customAnimations.value))
 			setStatus(`Анимации сохранены в characters/${charId}/animations.json`)
 		} else {
 			setStatus(`Ошибка сохранения animations.json`, 'error')
@@ -1296,8 +1731,36 @@ export function useCharacterRigStudio() {
 		return jsonString
 	}
 
-	// Save body.json
+	async function saveIsoBodyJson() {
+		const charId = selectedCharacterId.value
+		const jsonToSave = {}
+		for (const [name, p] of Object.entries(bodyParts)) {
+			const item = { image: p.image }
+			if (p.parent) item.parent = p.parent
+			if (p.zindex !== 0 && p.zindex !== undefined) item.zindex = p.zindex
+			if (p.offset && (p.offset.x !== 0 || p.offset.y !== 0)) {
+				item.offset = { x: Number(p.offset.x), y: Number(p.offset.y) }
+			}
+			jsonToSave[name] = item
+		}
+
+		try {
+			await writeDataFile(`characters/${charId}/iso_body.json`, jsonToSave)
+			copyParts(bodyParts, isoBodyParts)
+			setStatus(`Файл characters/${charId}/iso_body.json успешно сохранен!`)
+			return true
+		} catch (err) {
+			console.error('Ошибка сохранения iso_body.json:', err)
+			setStatus(`Ошибка сохранения iso_body.json: ${err.message}`, 'error')
+			return false
+		}
+	}
+
+	// Save body.json (saves iso_body.json in isometric mode, body.json in 2D mode)
 	async function saveBodyJson() {
+		if (viewMode.value === 'isometric') {
+			return await saveIsoBodyJson()
+		}
 		const charId = selectedCharacterId.value
 		const jsonToSave = {}
 		for (const [name, p] of Object.entries(bodyParts)) {
@@ -1316,15 +1779,22 @@ export function useCharacterRigStudio() {
 
 		try {
 			await writeDataFile(`characters/${charId}/body.json`, jsonToSave)
+			copyParts(bodyParts, vnBodyParts)
 			setStatus(`Файл characters/${charId}/body.json успешно сохранен!`)
+			return true
 		} catch (err) {
 			console.error('Ошибка сохранения body.json:', err)
 			setStatus(`Ошибка сохранения body.json: ${err.message}`, 'error')
+			return false
 		}
 	}
 
 	// Save values.json (with updated visual size / scale and root avatar offset, preserving canonical biometric height)
 	async function saveValuesJson() {
+		if (viewMode.value === 'isometric') {
+			setStatus('В изометрии скейлинг отключен (пиксельная графика 1:1) и не сохраняется в values.json', 'info')
+			return { success: true, skipped: true }
+		}
 		const charId = selectedCharacterId.value
 		try {
 			const scaledSize = Number(characterScale.value.toFixed(3))
@@ -1336,9 +1806,11 @@ export function useCharacterRigStudio() {
 			}
 			await writeDataFile(`characters/${charId}/values.json`, characterValues.value)
 			setStatus(`Скейл (${scaledSize}x) и смещение аватара сохранены в values.json!`)
+			return { success: true }
 		} catch (err) {
 			console.error('Ошибка сохранения values.json:', err)
 			setStatus(`Ошибка сохранения values.json: ${err.message}`, 'error')
+			return { success: false, error: err }
 		}
 	}
 
@@ -1371,6 +1843,16 @@ export function useCharacterRigStudio() {
 		rootOffset,
 		adjustRootOffset,
 		resetRootOffset,
+		// Isometric State & Projections
+		isIsometricRotation,
+		isometricRotationMode,
+		isometricTiltAngle,
+		isoBodyParts,
+		vnBodyParts,
+		isoCustomAnimations,
+		vnCustomAnimations,
+		isoEmotionOverrides,
+		BUILTIN_ISO_ANIMATIONS,
 		// Emotions
 		EMOTIONS_LIST,
 		currentEmotion,
@@ -1419,6 +1901,9 @@ export function useCharacterRigStudio() {
 		getDescendants,
 		loadAnimationsJson,
 		saveAnimationsJson,
+		loadIsoAnimationsJson,
+		saveIsoAnimationsJson,
+		saveIsoBodyJson,
 		createAnimation,
 		updateAnimation,
 		deleteAnimation,
@@ -1426,6 +1911,8 @@ export function useCharacterRigStudio() {
 		exportAnimationToJson,
 		saveBodyJson,
 		saveValuesJson,
+		calculateIsometricRotationTransform,
+		switchViewMode,
 		setStatus
 	}
 }

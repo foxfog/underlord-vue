@@ -285,18 +285,22 @@ export function getWallSpritePath(edge, wall) {
 	}
 
 	switch (edge) {
+		case 'W':
 		case 'NW':
 			return isDark
 				? 'images/sprites/isometric/tiles/wall/wall-dark.png'
 				: 'images/sprites/isometric/tiles/wall/wall.png'
+		case 'N':
 		case 'NE':
 			return isDark
 				? 'images/sprites/isometric/tiles/wall/wall-dark-e.png'
 				: 'images/sprites/isometric/tiles/wall/wall-e.png'
+		case 'E':
 		case 'SE':
 			return isDark
 				? 'images/sprites/isometric/tiles/wall/wall-dark-s.png'
 				: 'images/sprites/isometric/tiles/wall/wall-s.png'
+		case 'S':
 		case 'SW':
 			return isDark
 				? 'images/sprites/isometric/tiles/wall/wall-dark-w.png'
@@ -309,7 +313,7 @@ export function getWallSpritePath(edge, wall) {
 /**
  * Retrieves the loaded Image object for a wall on a specific edge.
  *
- * @param {'NW'|'NE'|'SW'|'SE'} edge
+ * @param {'N'|'E'|'S'|'W'|'NW'|'NE'|'SW'|'SE'} edge
  * @param {Object} wall
  * @returns {HTMLImageElement|null}
  */

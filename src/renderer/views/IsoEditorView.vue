@@ -265,15 +265,16 @@
 					</div>
 
 					<div class="sub-label" style="margin-top: 0.8em;">Ориентация:</div>
-					<div class="facing-buttons">
+					<div class="edge-selector-grid">
 						<button
-							v-for="dir in ['SE', 'SW', 'NE', 'NW']"
-							:key="dir"
-							class="facing-btn"
-							:class="{ __active: selectedObjectFacing === dir }"
-							@click="selectedObjectFacing = dir"
+							v-for="dir in facingDirections"
+							:key="dir.id"
+							class="edge-btn"
+							:class="{ __active: normalizeFacing(selectedObjectFacing) === dir.id }"
+							@click="selectedObjectFacing = dir.id"
+							:title="dir.title"
 						>
-							{{ dir }}
+							{{ dir.label }}
 						</button>
 					</div>
 				</div>
@@ -284,13 +285,14 @@
 					<div class="sub-label">Ребро клетки:</div>
 					<div class="edge-selector-grid">
 						<button
-							v-for="edge in ['NW', 'NE', 'SW', 'SE']"
-							:key="edge"
+							v-for="edge in wallEdgesList"
+							:key="edge.id"
 							class="edge-btn"
-							:class="{ __active: selectedWallEdge === edge }"
-							@click="selectedWallEdge = edge"
+							:class="{ __active: normalizeWallEdge(selectedWallEdge) === edge.id }"
+							@click="selectedWallEdge = edge.id"
+							:title="edge.title"
 						>
-							{{ edge }}
+							{{ edge.label }}
 						</button>
 					</div>
 
@@ -484,20 +486,20 @@
 						<span>Стены и двери (Walls)</span>
 					</div>
 					<div class="walls-edges-list">
-						<div v-for="edge in ['NW', 'NE', 'SW', 'SE']" :key="edge" class="wall-edge-card">
+						<div v-for="edgeDef in wallEdgesList" :key="edgeDef.id" class="wall-edge-card">
 							<div class="wall-card-header">
-								<span class="wall-edge-tag">{{ edge }}</span>
-								<span v-if="selectedTileData.walls && selectedTileData.walls[edge]" class="wall-type-tag">
-									{{ getWallBadgeText(selectedTileData.walls[edge]) }}
+								<span class="wall-edge-tag" :title="edgeDef.title">{{ edgeDef.label }}</span>
+								<span v-if="getTileWall(selectedTileData, edgeDef.id)" class="wall-type-tag">
+									{{ getWallBadgeText(getTileWall(selectedTileData, edgeDef.id)) }}
 								</span>
 								<span v-else class="wall-none-tag">Нет стены</span>
 
 								<div class="wall-card-btn-box">
 									<button
-										v-if="selectedTileData.walls && selectedTileData.walls[edge]"
+										v-if="getTileWall(selectedTileData, edgeDef.id)"
 										class="wall-card-del-btn"
 										title="Удалить стену"
-										@click="removeWallFromEdge(edge)"
+										@click="removeWallFromEdge(edgeDef.id)"
 									>
 										✕
 									</button>
@@ -505,7 +507,7 @@
 										v-else
 										class="wall-card-add-btn"
 										title="Добавить стену"
-										@click="addWallToEdge(edge)"
+										@click="addWallToEdge(edgeDef.id)"
 									>
 										➕
 									</button>
@@ -513,13 +515,13 @@
 							</div>
 
 							<!-- Wall details if present -->
-							<div v-if="selectedTileData.walls && selectedTileData.walls[edge]" class="wall-card-body">
+							<div v-if="getTileWall(selectedTileData, edgeDef.id)" class="wall-card-body">
 								<div class="wall-body-row">
 									<label class="field-label-sm">Тип:</label>
 									<select
-										:value="selectedTileData.walls[edge].door ? 'door' : selectedTileData.walls[edge].type"
+										:value="getTileWall(selectedTileData, edgeDef.id).door ? 'door' : getTileWall(selectedTileData, edgeDef.id).type"
 										class="inspector-select-sm"
-										@change="onWallTypeChange(edge, $event.target.value)"
+										@change="onWallTypeChange(edgeDef.id, $event.target.value)"
 									>
 										<option value="stone_wall">Каменная стена</option>
 										<option value="wood_wall">Деревянная стена</option>
@@ -527,9 +529,9 @@
 										<option value="fence">Забор / Плетень</option>
 									</select>
 								</div>
-								<div v-if="selectedTileData.walls[edge].door" class="wall-body-row">
+								<div v-if="getTileWall(selectedTileData, edgeDef.id).door" class="wall-body-row">
 									<label class="field-checkbox-label-sm">
-										<input type="checkbox" v-model="selectedTileData.walls[edge].open" />
+										<input type="checkbox" v-model="getTileWall(selectedTileData, edgeDef.id).open" />
 										<span>Дверь открыта</span>
 									</label>
 								</div>
@@ -583,15 +585,16 @@
 
 					<div class="inspector-field-row">
 						<label class="field-label">Ориентация:</label>
-						<div class="z-buttons">
+						<div class="z-buttons" style="grid-template-columns: repeat(4, 1fr);">
 							<button
-								v-for="f in ['SE', 'SW', 'NE', 'NW']"
-								:key="f"
+								v-for="dir in facingDirections"
+								:key="dir.id"
 								class="z-btn"
-								:class="{ __active: (selectedNode.facing || 'SE') === f }"
-								@click="selectedNode.facing = f"
+								:class="{ __active: normalizeFacing(selectedNode.facing || 'E') === dir.id }"
+								@click="selectedNode.facing = dir.id"
+								:title="dir.title"
 							>
-								{{ f }}
+								{{ dir.label }}
 							</button>
 						</div>
 					</div>
@@ -1147,8 +1150,11 @@ import {
 	percentToSubTile,
 	subTileToPercent,
 	calculateDirectionalBounds,
-	calculateAnchorBounds
+	calculateAnchorBounds,
+	normalizeWallEdge,
+	toLegacyWallEdge
 } from '@/utils/isometric/isoCoords'
+import { normalizeFacing } from '@/utils/isometric/isoFacing.js'
 import {
 	loadCatalogs,
 	normalizeLocationData,
@@ -1181,14 +1187,29 @@ const mapCache = {
 	mc_apartment: mcApartmentJson
 }
 
+// Canonical directions definitions for 2.5D Isometric editor
+const wallEdgesList = [
+	{ id: 'N', label: 'N ↗', title: 'Северная грань (N ↗ / Вверх-Вправо)' },
+	{ id: 'E', label: 'E ↘', title: 'Восточная грань (E ↘ / Вниз-Вправо)' },
+	{ id: 'S', label: 'S ↙', title: 'Южная грань (S ↙ / Вниз-Влево)' },
+	{ id: 'W', label: 'W ↖', title: 'Западная грань (W ↖ / Вверх-Влево)' }
+]
+
+const facingDirections = [
+	{ id: 'N', label: 'N ↗', title: 'Север (Вверх-Вправо ↗)' },
+	{ id: 'E', label: 'E ↘', title: 'Восток (Вниз-Вправо ↘)' },
+	{ id: 'S', label: 'S ↙', title: 'Юг (Вниз-Влево ↙)' },
+	{ id: 'W', label: 'W ↖', title: 'Запад (Вверх-Влево ↖)' }
+]
+
 // Active tools
 const activeTool = ref('select') // 'select' | 'tile' | 'elevation' | 'object' | 'wall' | 'spawn' | 'eraser'
 const selectedTileType = ref('stone_terrace')
 const elevationMode = ref('raise')
 const exactZ = ref(1)
 const selectedObjectType = ref('weed')
-const selectedObjectFacing = ref('SE')
-const selectedWallEdge = ref('NW')
+const selectedObjectFacing = ref('E')
+const selectedWallEdge = ref('N')
 const selectedWallType = ref('stone_wall')
 const selectedWallHeight = ref(1.5)
 const showHeights = ref(false)
@@ -1403,7 +1424,7 @@ const hybridJsonText = computed(() => {
 		gridWidth: bounds.maxX - bounds.minX + 1,
 		gridHeight: bounds.maxY - bounds.minY + 1,
 		bounds,
-		defaultSpawn: mapData.value.defaultSpawn || { x: 0, y: 0, z: 0, facing: 'SE' },
+		defaultSpawn: mapData.value.defaultSpawn || { x: 0, y: 0, z: 0, facing: 'E' },
 		terrain
 	}
 
@@ -1609,6 +1630,13 @@ function confirmAddObject() {
 }
 
 // Wall edge helpers
+function getTileWall(tile, edge) {
+	if (!tile?.walls) return null
+	const norm = normalizeWallEdge(edge)
+	const legacy = toLegacyWallEdge(edge)
+	return tile.walls[norm] || tile.walls[legacy] || null
+}
+
 function getWallBadgeText(wall) {
 	if (!wall) return 'Нет'
 	if (wall.door) return wall.open ? 'Дверь (откр)' : 'Дверь (закр)'
@@ -1620,7 +1648,10 @@ function getWallBadgeText(wall) {
 function addWallToEdge(edge) {
 	if (!selectedTileData.value) return
 	selectedTileData.value.walls = selectedTileData.value.walls || {}
-	selectedTileData.value.walls[edge] = {
+	const norm = normalizeWallEdge(edge)
+	const legacy = toLegacyWallEdge(edge)
+	delete selectedTileData.value.walls[legacy]
+	selectedTileData.value.walls[norm] = {
 		type: 'stone_wall',
 		height: 1.5,
 		solid: true,
@@ -1631,18 +1662,22 @@ function addWallToEdge(edge) {
 
 function removeWallFromEdge(edge) {
 	if (!selectedTileData.value?.walls) return
-	delete selectedTileData.value.walls[edge]
+	const norm = normalizeWallEdge(edge)
+	const legacy = toLegacyWallEdge(edge)
+	delete selectedTileData.value.walls[norm]
+	delete selectedTileData.value.walls[legacy]
 	if (Object.keys(selectedTileData.value.walls).length === 0) {
 		delete selectedTileData.value.walls
 	}
 }
 
 function onWallTypeChange(edge, type) {
-	if (!selectedTileData.value?.walls?.[edge]) return
+	const wall = getTileWall(selectedTileData.value, edge)
+	if (!wall) return
 	const isDoor = type === 'door'
-	selectedTileData.value.walls[edge].type = isDoor ? 'wood_wall' : type
-	selectedTileData.value.walls[edge].door = isDoor
-	if (!isDoor) delete selectedTileData.value.walls[edge].open
+	wall.type = isDoor ? 'wood_wall' : type
+	wall.door = isDoor
+	if (!isDoor) delete wall.open
 }
 
 function onLoadSelectedMap() {
@@ -1811,14 +1846,17 @@ function handleTileClick({ tile }) {
 			mapData.value.tiles.push(targetTile)
 		}
 		targetTile.walls = targetTile.walls || {}
-		if (targetTile.walls[selectedWallEdge.value]) {
-			delete targetTile.walls[selectedWallEdge.value]
+		const normEdge = normalizeWallEdge(selectedWallEdge.value)
+		const legacyEdge = toLegacyWallEdge(selectedWallEdge.value)
+		if (targetTile.walls[normEdge] || targetTile.walls[legacyEdge]) {
+			delete targetTile.walls[normEdge]
+			delete targetTile.walls[legacyEdge]
 			if (Object.keys(targetTile.walls).length === 0) {
 				delete targetTile.walls
 			}
 		} else {
 			const isDoor = selectedWallType.value === 'door'
-			targetTile.walls[selectedWallEdge.value] = {
+			targetTile.walls[normEdge] = {
 				type: isDoor ? 'wood_wall' : selectedWallType.value,
 				height: selectedWallHeight.value,
 				solid: true,
@@ -1913,7 +1951,7 @@ function handleTileClick({ tile }) {
 			x: tile.x,
 			y: tile.y,
 			z: targetTile.z || 0,
-			facing: 'SE'
+			facing: 'E'
 		}
 	} else if (activeTool.value === 'eraser') {
 		if (targetTile) {
@@ -2014,7 +2052,7 @@ function confirmCreateNewMap() {
 		gridWidth: w,
 		gridHeight: h,
 		bounds: { minX, maxX, minY, maxY },
-		defaultSpawn: { x: 0, y: 0, z: 0, facing: 'SE' },
+		defaultSpawn: { x: 0, y: 0, z: 0, facing: 'E' },
 		tiles: generatedTiles,
 		objects: [],
 		exits: []

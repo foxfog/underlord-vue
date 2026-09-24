@@ -35,6 +35,35 @@ const basePath = ref('src/renderer/public/data/')
 const statusMessage = ref(null)
 let statusTimeout = null
 
+export const CHARACTER_TYPE_OPTIONS = [
+	{
+		id: 'individual',
+		label: 'Индивидуальный',
+		shortLabel: 'Индивидуальный',
+		icon: '👤',
+		description: 'Уникальный сюжетный персонаж / NPC с биографией и диалогами'
+	},
+	{
+		id: 'mob',
+		label: 'Моб / Безымянный',
+		shortLabel: 'Моб',
+		icon: '👾',
+		description: 'Безымянный противник, стражник или рядовой NPC'
+	}
+]
+
+export function getCharacterTypeLabel(type) {
+	const opt = CHARACTER_TYPE_OPTIONS.find((t) => t.id === type)
+	return opt ? opt.label : 'Индивидуальный'
+}
+
+export function getCharacterTypeIcon(type) {
+	const opt = CHARACTER_TYPE_OPTIONS.find((t) => t.id === type)
+	return opt ? opt.icon : '👤'
+}
+
+const characterTypeFilter = ref('all') // 'all' | 'individual' | 'mob'
+
 export const GENDER_OPTIONS = [
 	{ id: 'male', label: 'Мужской', shortLabel: 'М', icon: '♂️' },
 	{ id: 'female', label: 'Женский', shortLabel: 'Ж', icon: '♀️' },
@@ -218,7 +247,9 @@ export function useDataEditor() {
 						)
 						return {
 							id: charId,
+							character_type: values.character_type || 'individual',
 							...values,
+							character_type: values.character_type || 'individual',
 							sprites: bodyData || null,
 							equipment: Array.isArray(equipmentData) ? equipmentData : [],
 							equipmentBySlot
@@ -406,6 +437,7 @@ export function useDataEditor() {
 				return {
 					id: '',
 					name: '',
+					character_type: 'individual',
 					surname: '',
 					nickname: '',
 					title: '',
@@ -527,6 +559,9 @@ export function useDataEditor() {
 
 	function startCreate(presetData = {}) {
 		const newEntity = { ...createEmptyEntity(activeTab.value), ...presetData }
+		if (activeTab.value === 'characters' && characterTypeFilter.value !== 'all' && !presetData.character_type) {
+			newEntity.character_type = characterTypeFilter.value
+		}
 		const pids = parseParentIds(newEntity.parent_id)
 		if (pids.length > 0 && (activeTab.value === 'classes' || activeTab.value === 'races')) {
 			const parent = entities.value[activeTab.value]?.find((e) => pids.includes(e.id))
@@ -555,6 +590,7 @@ export function useDataEditor() {
 		const cloned = JSON.parse(JSON.stringify(entity))
 
 		if (activeTab.value === 'characters') {
+			if (!cloned.character_type) cloned.character_type = 'individual'
 			if (!cloned.gender) cloned.gender = 'male'
 			if (!Array.isArray(cloned.races)) cloned.races = []
 			if (!Array.isArray(cloned.classs)) cloned.classs = []
@@ -1142,6 +1178,9 @@ export function useDataEditor() {
 		}
 
 		if (type === 'characters') {
+			copy.character_type = ['individual', 'mob'].includes(copy.character_type)
+				? copy.character_type
+				: 'individual'
 			if (typeof copy.names === 'string') {
 				copy.names = copy.names
 					.split(',')
@@ -1584,7 +1623,15 @@ export function useDataEditor() {
 			return globalTags.value.filter((t) => t.toLowerCase().includes(q))
 		}
 
-		const list = entities.value[activeTab.value] || []
+		let list = entities.value[activeTab.value] || []
+
+		if (activeTab.value === 'characters' && characterTypeFilter.value !== 'all') {
+			list = list.filter((char) => {
+				const charType = char.character_type || 'individual'
+				return charType === characterTypeFilter.value
+			})
+		}
+
 		if (!q) return list
 
 		return list.filter((item) => {
@@ -1632,6 +1679,25 @@ export function useDataEditor() {
 		})
 	})
 
+	const characterCountsByType = computed(() => {
+		const chars = entities.value.characters || []
+		let individual = 0
+		let mob = 0
+		for (const c of chars) {
+			const type = c.character_type || 'individual'
+			if (type === 'mob') {
+				mob++
+			} else {
+				individual++
+			}
+		}
+		return {
+			all: chars.length,
+			individual,
+			mob
+		}
+	})
+
 	const counts = computed(() => ({
 		characters: entities.value.characters.length,
 		classes: entities.value.classes.length,
@@ -1646,6 +1712,7 @@ export function useDataEditor() {
 		characters: [
 			'id',
 			'name',
+			'character_type',
 			'surname',
 			'nickname',
 			'title',
@@ -1676,7 +1743,18 @@ export function useDataEditor() {
 			'abilities',
 			'skills',
 			'class_levels',
-			'race_levels'
+			'race_levels',
+			'height',
+			'age',
+			'blood_type',
+			'body_build',
+			'hair_color',
+			'eye_color',
+			'distinguishing_features',
+			'biometry_notes',
+			'active_race',
+			'attributes',
+			'free_attribute_points'
 		],
 		classes: ['id', 'name', 'icon', 'parent_id', 'category', 'tier', 'grid_tier', 'skill_points_per_level', 'spell_points_per_level', 'tags', 'lvl_min', 'description', 'skill_branches', 'skills'],
 		fractions: ['id', 'name', 'icon', 'type', 'parent_id', 'grid_tier', 'tags', 'description'],
@@ -2110,6 +2188,11 @@ export function useDataEditor() {
 		moveTagDown,
 		reorderItems,
 		setStatus,
+		characterTypeFilter,
+		characterCountsByType,
+		CHARACTER_TYPE_OPTIONS,
+		getCharacterTypeLabel,
+		getCharacterTypeIcon,
 		GENDER_OPTIONS,
 		EQUIPMENT_SLOTS_LIST,
 		getGenderLabel,

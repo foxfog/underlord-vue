@@ -44,11 +44,12 @@ export function useStorylineEditor() {
 
 	// Registries and Suggestions
 	const availableCharacters = ref([
-		{ id: 'mc', name: 'Главный герой (Анон)', avatar: 'images/sprites/characters/mc/char.png' },
-		{ id: 'momonga', name: 'Момонга (Аинз Оал Гоун)', avatar: 'images/sprites/characters/momonga/char.png' },
-		{ id: 'albedo', name: 'Альбедо', avatar: 'images/sprites/characters/albedo/char.png' },
-		{ id: 'enri', name: 'Энри Эммот', avatar: 'images/sprites/characters/enri/char.png' },
-		{ id: 'carne-chief', name: 'Староста Карна', avatar: 'images/sprites/characters/carne-chief/char.png' }
+		{ id: 'mc', name: 'Главный герой (Анон)', avatar: 'images/sprites/characters/mc/char.png', character_type: 'individual' },
+		{ id: 'momonga', name: 'Момонга (Аинз Оал Гоун)', avatar: 'images/sprites/characters/momonga/char.png', character_type: 'individual' },
+		{ id: 'albedo', name: 'Альбедо', avatar: 'images/sprites/characters/albedo/char.png', character_type: 'individual' },
+		{ id: 'enri', name: 'Энри Эммот', avatar: 'images/sprites/characters/enri/char.png', character_type: 'individual' },
+		{ id: 'carne-chief', name: 'Староста Карна', avatar: 'images/sprites/characters/carne-chief/char.png', character_type: 'individual' },
+		{ id: 'default', name: 'Дефолтный персонаж', avatar: 'images/sprites/characters/default/isometric/char.png', character_type: 'mob' }
 	])
 
 	const availableScenes = ref([
@@ -123,11 +124,46 @@ export function useStorylineEditor() {
 
 			// Fallback if listTree is not available or in web/testing mode
 			fileTree.value = createFallbackTree(activeLocale.value)
+			await loadAvailableCharacters()
 		} catch (err) {
 			console.error('Ошибка при загрузке дерева файлов:', err)
 			setStatus(`Ошибка чтения файлов: ${err.message}`, 'error')
 		} finally {
 			isLoadingTree.value = false
+		}
+	}
+
+	async function loadAvailableCharacters() {
+		try {
+			if (typeof window !== 'undefined' && window.electronAPI?.dataEditor?.readFile) {
+				const reg = await window.electronAPI.dataEditor.readFile('characters/characters.json')
+				if (reg?.success && Array.isArray(reg.data?.characters) && reg.data.characters.length > 0) {
+					const loaded = await Promise.all(
+						reg.data.characters.map(async (id) => {
+							try {
+								const res = await window.electronAPI.dataEditor.readFile(`characters/${id}/values.json`)
+								if (res?.success && res.data) {
+									return {
+										id,
+										name: res.data.name || id,
+										avatar: res.data.icon || `images/sprites/characters/${id}/char.png`,
+										character_type: res.data.character_type || 'individual'
+									}
+								}
+							} catch (e) {
+								// ignore individual read errors
+							}
+							return null
+						})
+					)
+					const valid = loaded.filter(Boolean)
+					if (valid.length > 0) {
+						availableCharacters.value = valid
+					}
+				}
+			}
+		} catch (err) {
+			console.warn('[useStorylineEditor] Failed to load characters:', err)
 		}
 	}
 

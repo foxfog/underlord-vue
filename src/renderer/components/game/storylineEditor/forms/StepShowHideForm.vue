@@ -39,9 +39,21 @@
 				class="form-select"
 				@change="emitUpdate"
 			>
-				<option v-for="char in characters" :key="char.id" :value="char.id">
-					{{ char.name }} ({{ char.id }})
-				</option>
+				<optgroup v-if="individualCharacters.length > 0" label="👤 Индивидуальные персонажи">
+					<option v-for="char in individualCharacters" :key="char.id" :value="char.id">
+						{{ char.name }} ({{ char.id }})
+					</option>
+				</optgroup>
+				<optgroup v-if="mobCharacters.length > 0" label="👾 Мобы и безымянные NPC">
+					<option v-for="char in mobCharacters" :key="char.id" :value="char.id">
+						{{ char.name }} ({{ char.id }})
+					</option>
+				</optgroup>
+				<template v-if="individualCharacters.length === 0 && mobCharacters.length === 0">
+					<option v-for="char in characters" :key="char.id" :value="char.id">
+						{{ char.name }} ({{ char.id }})
+					</option>
+				</template>
 			</select>
 		</div>
 
@@ -102,7 +114,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 
 const props = defineProps({
 	step: {
@@ -120,6 +132,14 @@ const emit = defineEmits(['update'])
 const model = ref({ ...props.step })
 const leftPos = ref(20)
 const fromLeftPos = ref(-25)
+
+const individualCharacters = computed(() => {
+	return (props.characters || []).filter((c) => (c.character_type || 'individual') !== 'mob')
+})
+
+const mobCharacters = computed(() => {
+	return (props.characters || []).filter((c) => c.character_type === 'mob')
+})
 
 watch(
 	() => props.step,

@@ -9,7 +9,50 @@ export const DEFAULT_TILE_WIDTH = 64
 export const DEFAULT_TILE_HEIGHT = 32
 export const DEFAULT_HEIGHT_STEP = 16
 export const DEFAULT_WALL_HEIGHT = 1.5
-export const WALL_EDGES = ['NW', 'NE', 'SW', 'SE']
+export const WALL_EDGES = ['N', 'E', 'S', 'W']
+export const LEGACY_WALL_EDGES = ['NW', 'NE', 'SW', 'SE']
+
+/**
+ * Normalizes any edge representation ('N', 'NE', 'W', 'NW', etc.) to canonical 'N' | 'E' | 'S' | 'W'.
+ * In 2.5D isometry:
+ * - N: Up-Right (↗, legacy 'NE')
+ * - E: Down-Right (↘, legacy 'SE')
+ * - S: Down-Left (↙, legacy 'SW')
+ * - W: Up-Left (↖, legacy 'NW')
+ */
+export function normalizeWallEdge(edge) {
+	if (!edge) return 'W'
+	const e = String(edge).toUpperCase()
+	switch (e) {
+		case 'N':
+		case 'NE':
+			return 'N'
+		case 'E':
+		case 'SE':
+			return 'E'
+		case 'S':
+		case 'SW':
+			return 'S'
+		case 'W':
+		case 'NW':
+		default:
+			return 'W'
+	}
+}
+
+/**
+ * Converts canonical 'N'|'E'|'S'|'W' to legacy 'NE'|'SE'|'SW'|'NW'.
+ */
+export function toLegacyWallEdge(edge) {
+	const n = normalizeWallEdge(edge)
+	switch (n) {
+		case 'N': return 'NE'
+		case 'E': return 'SE'
+		case 'S': return 'SW'
+		case 'W': return 'NW'
+		default: return 'NW'
+	}
+}
 
 /**
  * Converts 3D isometric grid coordinates (x, y, z) to 2D screen coordinates.
@@ -92,7 +135,7 @@ export function getTilePolygon(
  * @param {number} x - Grid X
  * @param {number} y - Grid Y
  * @param {number} [z=0] - Grid Z elevation
- * @param {'NW'|'NE'|'SW'|'SE'} edge - Tile edge where the wall is placed
+ * @param {'N'|'E'|'S'|'W'|'NW'|'NE'|'SW'|'SE'} edge - Tile edge where the wall is placed
  * @param {number} [wallHeight=DEFAULT_WALL_HEIGHT] - Wall height in height steps
  * @param {number} [originX=0]
  * @param {number} [originY=0]
@@ -105,7 +148,7 @@ export function getWallPolygon(
 	x,
 	y,
 	z = 0,
-	edge = 'NW',
+	edge = 'W',
 	wallHeight = DEFAULT_WALL_HEIGHT,
 	originX = 0,
 	originY = 0,
@@ -127,18 +170,22 @@ export function getWallPolygon(
 	let baseB
 
 	switch (edge) {
+		case 'W':
 		case 'NW':
 			baseA = left
 			baseB = top
 			break
+		case 'N':
 		case 'NE':
 			baseA = top
 			baseB = right
 			break
+		case 'S':
 		case 'SW':
 			baseA = left
 			baseB = bottom
 			break
+		case 'E':
 		case 'SE':
 		default:
 			baseA = bottom

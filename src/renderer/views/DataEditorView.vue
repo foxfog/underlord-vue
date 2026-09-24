@@ -376,8 +376,42 @@
 							</button>
 						</div>
 
+						<!-- Character Type Filter Buttons (when activeTab === 'characters') -->
+						<div v-if="activeTab === 'characters'" class="char-type-filter-bar">
+							<button
+								type="button"
+								class="char-type-filter-btn"
+								:class="{ __active: characterTypeFilter === 'all' }"
+								title="Показать всех персонажей и мобов"
+								@click="characterTypeFilter = 'all'"
+							>
+								<span>Все</span>
+								<span class="ct-filter-count">{{ characterCountsByType.all }}</span>
+							</button>
+							<button
+								type="button"
+								class="char-type-filter-btn"
+								:class="{ __active: characterTypeFilter === 'individual' }"
+								title="Показать только индивидуальных сюжетных персонажей"
+								@click="characterTypeFilter = 'individual'"
+							>
+								<span>👤 Индивидуальные</span>
+								<span class="ct-filter-count">{{ characterCountsByType.individual }}</span>
+							</button>
+							<button
+								type="button"
+								class="char-type-filter-btn"
+								:class="{ __active: characterTypeFilter === 'mob' }"
+								title="Показать только мобов и безымянных противников"
+								@click="characterTypeFilter = 'mob'"
+							>
+								<span>👾 Мобы</span>
+								<span class="ct-filter-count">{{ characterCountsByType.mob }}</span>
+							</button>
+						</div>
+
 						<button class="editor-btn editor-btn-primary add-entity-btn" @click="onStartCreate">
-							<span>➕ Создать {{ currentTypeLabel.toLowerCase() }}</span>
+							<span>➕ Создать {{ activeTab === 'characters' && characterTypeFilter === 'mob' ? 'моба' : currentTypeLabel.toLowerCase() }}</span>
 						</button>
 					</div>
 
@@ -391,7 +425,7 @@
 							v-if="filteredList.length === 0"
 							class="empty-list-notice"
 						>
-							{{ searchQuery ? 'Ничего не найдено по вашему запросу' : 'Список пуст' }}
+							{{ searchQuery ? 'Ничего не найдено по вашему запросу' : (activeTab === 'characters' && characterTypeFilter === 'mob' ? 'Список мобов пуст' : (activeTab === 'characters' && characterTypeFilter === 'individual' ? 'Список индивидуальных персонажей пуст' : 'Список пуст')) }}
 						</div>
 
 						<div
@@ -490,6 +524,13 @@
 								<div class="card-badges-row">
 									<!-- Character Relations -->
 									<template v-if="activeTab === 'characters'">
+										<span
+											class="rel-badge __char-type"
+											:class="'__' + (item.character_type || 'individual')"
+											:title="(item.character_type === 'mob') ? 'Моб / Безымянный противник' : 'Индивидуальный сюжетный персонаж'"
+										>
+											{{ item.character_type === 'mob' ? '👾 Моб' : '👤 Индив.' }}
+										</span>
 										<span
 											class="rel-badge __gender"
 											:class="'__' + (item.gender || 'male')"
@@ -1056,6 +1097,32 @@
 										>
 											<span class="rarity-btn-icon">{{ r.icon }}</span>
 											<span class="rarity-btn-label">{{ r.label }}</span>
+										</button>
+									</div>
+								</div>
+							</div>
+
+							<!-- CHARACTERS: TYPE SELECTOR (Individual vs Mob) -->
+							<div v-if="activeTab === 'characters'" class="field-row">
+								<div class="form-field">
+									<label class="field-label">
+										Категория персонажа (Character Type) <span class="req-star">*</span>
+									</label>
+									<div class="char-type-selector-row">
+										<button
+											v-for="t in CHARACTER_TYPE_OPTIONS"
+											:key="'char-type-' + t.id"
+											type="button"
+											class="char-type-option-btn"
+											:class="{ __selected: (selectedEntity.character_type || 'individual') === t.id, ['__' + t.id]: true }"
+											@click="selectedEntity.character_type = t.id"
+										>
+											<span class="char-type-opt-icon">{{ t.icon }}</span>
+											<div class="char-type-opt-text">
+												<span class="char-type-opt-label">{{ t.label }}</span>
+												<span class="char-type-opt-desc">{{ t.description }}</span>
+											</div>
+											<span v-if="(selectedEntity.character_type || 'individual') === t.id" class="char-type-opt-check">✔</span>
 										</button>
 									</div>
 								</div>
@@ -3114,6 +3181,11 @@ const {
 	moveTagDown,
 	reorderItems,
 	setStatus,
+	characterTypeFilter,
+	characterCountsByType,
+	CHARACTER_TYPE_OPTIONS,
+	getCharacterTypeLabel,
+	getCharacterTypeIcon,
 	GENDER_OPTIONS,
 	EQUIPMENT_SLOTS_LIST,
 	getGenderLabel,
@@ -3964,12 +4036,23 @@ function switchTab(tabId) {
 	activeCharacterSubTab.value = 'profile'
 	cancelEdit()
 	searchQuery.value = ''
+	if (tabId !== 'characters') {
+		characterTypeFilter.value = 'all'
+	}
 	selectedTagForInspector.value = null
 }
 
 function onStartCreate() {
 	activeCharacterSubTab.value = 'profile'
-	startCreate()
+	const preset = {}
+	if (activeTab.value === 'characters') {
+		if (characterTypeFilter.value === 'mob') {
+			preset.character_type = 'mob'
+		} else if (characterTypeFilter.value === 'individual') {
+			preset.character_type = 'individual'
+		}
+	}
+	startCreate(preset)
 }
 
 function onSelectEntity(item) {
@@ -4798,6 +4881,55 @@ function removeSkill(skillId) {
 	color: #ffffff;
 }
 
+.char-type-filter-bar {
+	display: flex;
+	align-items: center;
+	gap: 0.35em;
+	background: rgba(0, 0, 0, 0.4);
+	padding: 0.25em;
+	border-radius: 0.4em;
+	border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.char-type-filter-btn {
+	flex: 1;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.35em;
+	padding: 0.35em 0.5em;
+	border: 1px solid transparent;
+	border-radius: 0.3em;
+	background: transparent;
+	color: #94a3b8;
+	font-size: 0.75em;
+	font-family: Kurale, sans-serif;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.15s ease;
+	white-space: nowrap;
+}
+
+.char-type-filter-btn:hover {
+	color: #e2e8f0;
+	background: rgba(255, 255, 255, 0.06);
+}
+
+.char-type-filter-btn.__active {
+	background: rgba(59, 130, 246, 0.2);
+	border-color: rgba(59, 130, 246, 0.5);
+	color: #93c5fd;
+	font-weight: bold;
+}
+
+.char-type-filter-btn .ct-filter-count {
+	font-size: 0.85em;
+	padding: 0.05em 0.4em;
+	border-radius: 0.6em;
+	background: rgba(0, 0, 0, 0.35);
+	color: inherit;
+}
+
 .add-entity-btn {
 	width: 100%;
 }
@@ -5099,6 +5231,19 @@ function removeSkill(skillId) {
 .rel-badge.__slot {
 	background: rgba(0, 0, 0, 0.3);
 	color: #cbd5e1;
+}
+
+.rel-badge.__char-type.__individual {
+	background: rgba(59, 130, 246, 0.2);
+	color: #93c5fd;
+	border-color: rgba(59, 130, 246, 0.35);
+}
+
+.rel-badge.__char-type.__mob {
+	background: rgba(168, 85, 247, 0.2);
+	color: #e9d5ff;
+	border-color: rgba(168, 85, 247, 0.4);
+	font-weight: bold;
 }
 
 .rel-badge.__gender {
@@ -5722,6 +5867,83 @@ function removeSkill(skillId) {
 .clear-filter-link-btn:hover {
 	background: rgba(239, 68, 68, 0.15);
 	color: #fca5a5;
+}
+
+.char-type-selector-row {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(14em, 1fr));
+	gap: 0.6em;
+}
+
+.char-type-option-btn {
+	display: flex;
+	align-items: center;
+	gap: 0.7em;
+	padding: 0.6em 0.9em;
+	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	border-radius: 0.45em;
+	color: #94a3b8;
+	font-family: Kurale, sans-serif;
+	cursor: pointer;
+	text-align: left;
+	transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.15s, box-shadow 0.2s;
+}
+
+.char-type-option-btn:hover {
+	background: rgba(255, 255, 255, 0.08);
+	border-color: rgba(255, 255, 255, 0.25);
+	color: #ffffff;
+}
+
+.char-type-option-btn.__selected {
+	transform: translateY(-0.05em);
+}
+
+.char-type-option-btn.__selected.__individual {
+	background: rgba(59, 130, 246, 0.2);
+	border-color: #3b82f6;
+	color: #bfdbfe;
+	box-shadow: 0 0 0.6em rgba(59, 130, 246, 0.25);
+}
+
+.char-type-option-btn.__selected.__mob {
+	background: rgba(168, 85, 247, 0.2);
+	border-color: #a855f7;
+	color: #e9d5ff;
+	box-shadow: 0 0 0.6em rgba(168, 85, 247, 0.25);
+}
+
+.char-type-opt-icon {
+	font-size: 1.5em;
+	flex-shrink: 0;
+}
+
+.char-type-opt-text {
+	display: flex;
+	flex-direction: column;
+	gap: 0.15em;
+	flex: 1;
+	min-width: 0;
+}
+
+.char-type-opt-label {
+	font-size: 0.9em;
+	font-weight: 600;
+	color: #f1f5f9;
+}
+
+.char-type-opt-desc {
+	font-size: 0.72em;
+	color: #94a3b8;
+	line-height: 1.3;
+}
+
+.char-type-opt-check {
+	font-size: 0.95em;
+	font-weight: bold;
+	color: #38bdf8;
+	flex-shrink: 0;
 }
 
 .gender-selector-row {

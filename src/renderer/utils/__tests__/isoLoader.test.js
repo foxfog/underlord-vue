@@ -29,7 +29,7 @@ describe('isoLoader', () => {
 			const wallDef = getObjectDef('wall-e')
 			expect(wallDef).toBeDefined()
 			expect(wallDef.type).toBe('wall')
-			expect(wallDef.edge).toBe('NE')
+			expect(wallDef.edge).toBe('N')
 
 			const doorDef = getObjectDef('door-e')
 			expect(doorDef).toBeDefined()
@@ -117,14 +117,14 @@ describe('isoLoader', () => {
 
 			// Check wall attachment to tile
 			const wallTile = normalized.tiles.find((t) => t.x === 0 && t.y === -1)
-			expect(wallTile.walls.NE).toBeDefined()
-			expect(wallTile.walls.NE.solid).toBe(true)
+			expect(wallTile.walls.N).toBeDefined()
+			expect(wallTile.walls.N.solid).toBe(true)
 
 			// Check door attachment to tile
 			const doorTile = normalized.tiles.find((t) => t.x === 0 && t.y === 0)
-			expect(doorTile.walls.NE).toBeDefined()
-			expect(doorTile.walls.NE.door).toBe(true)
-			expect(doorTile.walls.NE.open).toBe(false)
+			expect(doorTile.walls.N).toBeDefined()
+			expect(doorTile.walls.N.door).toBe(true)
+			expect(doorTile.walls.N.open).toBe(false)
 
 			// Check furniture object
 			expect(normalized.objects.length).toBe(1)

@@ -983,6 +983,75 @@ describe('useDataEditor Composable', () => {
 			expect(charCall[1].blood_type).toBe('Отсутствует (Нежить)')
 			expect(charCall[1].age).toBe('Нежить')
 		})
+
+		it('separates characters into individual and mobs with characterTypeFilter and characterCountsByType', async () => {
+			editor.activeTab.value = 'characters'
+			editor.entities.value.characters = [
+				{ id: 'mc', name: 'Анон', character_type: 'individual' },
+				{ id: 'momonga', name: 'Момонга', character_type: 'individual' },
+				{ id: 'albedo', name: 'Альбедо', character_type: 'individual' },
+				{ id: 'goblin', name: 'Гоблин', character_type: 'mob' },
+				{ id: 'skeleton', name: 'Скелет', character_type: 'mob' },
+				{ id: 'legacy_hero', name: 'Герой без типа' } // should default to individual
+			]
+
+			// Initial: all characters
+			editor.characterTypeFilter.value = 'all'
+			expect(editor.filteredList.value).toHaveLength(6)
+
+			// Counts by type
+			expect(editor.characterCountsByType.value).toEqual({
+				all: 6,
+				individual: 4,
+				mob: 2
+			})
+
+			// Filter: only individual
+			editor.characterTypeFilter.value = 'individual'
+			expect(editor.filteredList.value).toHaveLength(4)
+			expect(editor.filteredList.value.map((c) => c.id)).toEqual(['mc', 'momonga', 'albedo', 'legacy_hero'])
+
+			// Filter: only mobs
+			editor.characterTypeFilter.value = 'mob'
+			expect(editor.filteredList.value).toHaveLength(2)
+			expect(editor.filteredList.value.map((c) => c.id)).toEqual(['goblin', 'skeleton'])
+
+			// Combined with search query
+			editor.searchQuery.value = 'Скелет'
+			expect(editor.filteredList.value).toHaveLength(1)
+			expect(editor.filteredList.value[0].id).toBe('skeleton')
+
+			editor.searchQuery.value = ''
+			editor.characterTypeFilter.value = 'all'
+		})
+
+		it('presets character_type when creating entity and normalizes character_type on save', async () => {
+			editor.activeTab.value = 'characters'
+
+			// When filter is 'mob', startCreate defaults character_type to 'mob'
+			editor.characterTypeFilter.value = 'mob'
+			editor.startCreate()
+			expect(editor.selectedEntity.value.character_type).toBe('mob')
+
+			// When filter is 'individual', startCreate defaults to 'individual'
+			editor.characterTypeFilter.value = 'individual'
+			editor.startCreate()
+			expect(editor.selectedEntity.value.character_type).toBe('individual')
+
+			// Save mob entity
+			const newMob = {
+				id: 'wolf_mob',
+				name: 'Лютый волк',
+				character_type: 'mob'
+			}
+			await editor.saveEntity('characters', newMob)
+			const saved = editor.entities.value.characters.find((c) => c.id === 'wolf_mob')
+			expect(saved).toBeDefined()
+			expect(saved.character_type).toBe('mob')
+
+			// Reset filter
+			editor.characterTypeFilter.value = 'all'
+		})
 	})
 })
 

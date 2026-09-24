@@ -57,17 +57,17 @@ export function isStepBlockedByWall(fromTile, toTile) {
 	const toWalls = toTile.walls || {}
 
 	if (dx === -1 && dy === 0) {
-		// Moving NW: crosses NW of fromTile or SE of toTile
-		if (isWallSolid(fromWalls.NW) || isWallSolid(toWalls.SE)) return true
+		// Moving W / NW: crosses W of fromTile or E of toTile
+		if (isWallSolid(fromWalls.W || fromWalls.NW) || isWallSolid(toWalls.E || toWalls.SE)) return true
 	} else if (dx === 0 && dy === -1) {
-		// Moving NE: crosses NE of fromTile or SW of toTile
-		if (isWallSolid(fromWalls.NE) || isWallSolid(toWalls.SW)) return true
+		// Moving N / NE: crosses N of fromTile or S of toTile
+		if (isWallSolid(fromWalls.N || fromWalls.NE) || isWallSolid(toWalls.S || toWalls.SW)) return true
 	} else if (dx === 1 && dy === 0) {
-		// Moving SE: crosses SE of fromTile or NW of toTile
-		if (isWallSolid(fromWalls.SE) || isWallSolid(toWalls.NW)) return true
+		// Moving E / SE: crosses E of fromTile or W of toTile
+		if (isWallSolid(fromWalls.E || fromWalls.SE) || isWallSolid(toWalls.W || toWalls.NW)) return true
 	} else if (dx === 0 && dy === 1) {
-		// Moving SW: crosses SW of fromTile or NE of toTile
-		if (isWallSolid(fromWalls.SW) || isWallSolid(toWalls.NE)) return true
+		// Moving S / SW: crosses S of fromTile or N of toTile
+		if (isWallSolid(fromWalls.S || fromWalls.SW) || isWallSolid(toWalls.N || toWalls.NE)) return true
 	}
 
 	return false

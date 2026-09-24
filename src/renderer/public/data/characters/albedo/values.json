@@ -1,6 +1,7 @@
 {
 	"id": "albedo",
 	"name": "Альбедо",
+	"character_type": "individual",
 	"nickname": "",
 	"title": "",
 	"names": [
