@@ -8,13 +8,39 @@
 					<span>Меню</span>
 				</button>
 
-				<div class="header-map-title">
+				<!-- Location / Map Loader Selector (analogous to IsoEditorView) -->
+				<div class="header-selector-box">
+					<span class="selector-icon">📂</span>
+					<label class="selector-label">Карта:</label>
+					<select
+						v-model="selectedMapId"
+						class="editor-select"
+						@change="onLoadSelectedMap"
+					>
+						<option
+							v-for="item in availableMaps"
+							:key="item.id"
+							:value="item.id"
+						>
+							{{ item.name }}
+						</option>
+					</select>
+				</div>
+
+				<div
+					class="header-map-title map-title-clickable"
+					title="Кликните, чтобы изменить размер сетки карты"
+					@click="openResizeModal"
+				>
 					<span class="map-icon">⬡</span>
 					<span class="map-name">{{ mapData.name || 'Новая гексагональная карта' }}</span>
 					<span class="map-badge">{{ mapData.cols }}×{{ mapData.rows }}</span>
 				</div>
 
-				<button class="editor-btn editor-btn-action" @click="openNewMapModal">
+				<button class="editor-btn editor-btn-action" @click="openResizeModal" title="Изменить размер сетки карты">
+					<span>📐 Размер сетки</span>
+				</button>
+				<button class="editor-btn editor-btn-secondary" @click="openNewMapModal">
 					<span>➕ Новая карта</span>
 				</button>
 			</div>
@@ -44,8 +70,18 @@
 				>
 					<span>🏳️ Границы: {{ showBordersFilter ? 'ВКЛ' : 'ВЫКЛ' }}</span>
 				</button>
-				<button class="editor-btn editor-btn-secondary" @click="openExportModal">
-					<span>💾 Экспорт JSON</span>
+				<button
+					class="editor-btn editor-btn-save"
+					:class="{ '__dirty': isDirty }"
+					:disabled="isSaving"
+					title="Сохранить карту на диск в @data/hexmaps/ (Ctrl+S)"
+					@click="saveCurrentMap"
+				>
+					<span class="btn-icon">💾</span>
+					<span>{{ isSaving ? 'Сохранение...' : (isDirty ? 'Сохранить *' : 'Сохранить') }}</span>
+				</button>
+				<button class="editor-btn editor-btn-secondary" @click="openExportModal" title="Экспорт и скачивание JSON">
+					<span>📄 Экспорт JSON</span>
 				</button>
 			</div>
 		</header>
@@ -322,7 +358,7 @@
 
 						<div class="inspector-field">
 							<label class="field-label">Биом:</label>
-							<select v-model="selectedCell.terrain" class="inspector-select">
+							<select v-model="selectedCell.terrain" class="inspector-select" @change="markDirty">
 								<option v-for="b in biomesList" :key="b.id" :value="b.id">
 									{{ b.name }}
 								</option>
@@ -331,7 +367,7 @@
 
 						<div class="inspector-field">
 							<label class="field-label">Рельеф:</label>
-							<select v-model="selectedCell.feature" class="inspector-select">
+							<select v-model="selectedCell.feature" class="inspector-select" @change="markDirty">
 								<option value="none">Равнина (Без рельефа)</option>
 								<option value="hills">Холмы</option>
 								<option value="mountain">Гора</option>
@@ -355,7 +391,7 @@
 									:key="r"
 									class="num-btn"
 									:class="{ __active: (selectedCell.mountainRadius || 1) === r }"
-									@click="selectedCell.mountainRadius = r"
+									@click="selectedCell.mountainRadius = r; markDirty()"
 								>
 									{{ r }}
 								</button>
@@ -369,7 +405,7 @@
 								<button
 									v-if="selectedCell.settlement"
 									class="btn-del-sm"
-									@click="selectedCell.settlement = null"
+									@click="selectedCell.settlement = null; markDirty()"
 								>
 									Удалить
 								</button>
@@ -385,7 +421,7 @@
 							<div v-if="selectedCell.settlement" class="settlement-edit-fields">
 								<div class="inspector-field">
 									<label class="field-label">Тип:</label>
-									<select v-model="selectedCell.settlement.type" class="inspector-select">
+									<select v-model="selectedCell.settlement.type" class="inspector-select" @change="markDirty">
 										<option v-for="s in settlementTypesList" :key="s.id" :value="s.id">
 											{{ s.icon }} {{ s.name }}
 										</option>
@@ -394,24 +430,24 @@
 
 								<div class="inspector-field">
 									<label class="field-label">Имя:</label>
-									<input v-model="selectedCell.settlement.name" class="inspector-input" />
+									<input v-model="selectedCell.settlement.name" class="inspector-input" @input="markDirty" />
 								</div>
 
 								<div class="inspector-field">
 									<label class="field-label">Описание:</label>
-									<textarea v-model="selectedCell.settlement.description" class="inspector-textarea"></textarea>
+									<textarea v-model="selectedCell.settlement.description" class="inspector-textarea" @input="markDirty"></textarea>
 								</div>
 
 								<div class="inspector-field">
 									<label class="field-checkbox-label">
-										<input type="checkbox" v-model="selectedCell.settlement.hasLocalMap" />
+										<input type="checkbox" v-model="selectedCell.settlement.hasLocalMap" @change="markDirty" />
 										<span>Есть локальная карта</span>
 									</label>
 								</div>
 
 								<div v-if="selectedCell.settlement.hasLocalMap" class="inspector-field">
 									<label class="field-label">ID локальной карты:</label>
-									<input v-model="selectedCell.settlement.localMapId" class="inspector-input" placeholder="carne" />
+									<input v-model="selectedCell.settlement.localMapId" class="inspector-input" placeholder="carne" @input="markDirty" />
 								</div>
 							</div>
 						</div>
@@ -423,7 +459,7 @@
 								<button
 									v-if="selectedCell.faction"
 									class="btn-del-sm"
-									@click="selectedCell.faction = null; selectedCell.borderColor = null; selectedCell.fillColor = null"
+									@click="selectedCell.faction = null; selectedCell.borderColor = null; selectedCell.fillColor = null; markDirty()"
 								>
 									Снять
 								</button>
@@ -431,7 +467,7 @@
 
 							<div class="inspector-field">
 								<label class="field-label">Принадлежность:</label>
-								<select v-model="selectedCell.faction" class="inspector-select">
+								<select v-model="selectedCell.faction" class="inspector-select" @change="markDirty">
 									<option :value="null">-- Нейтральные земли --</option>
 									<option v-for="f in factionsList" :key="f.id" :value="f.id">
 										{{ f.icon }} {{ f.name }}
@@ -709,6 +745,10 @@
 				</div>
 				<div class="modal-body">
 					<div class="form-group">
+						<label class="form-label">ID карты (имя файла):</label>
+						<input v-model="newMapForm.id" class="form-input" placeholder="например: my_custom_map" />
+					</div>
+					<div class="form-group">
 						<label class="form-label">Название карты:</label>
 						<input v-model="newMapForm.name" class="form-input" placeholder="Название" />
 					</div>
@@ -736,6 +776,288 @@
 			</div>
 		</div>
 
+		<!-- Modal: Resize Current Map -->
+		<div v-if="showResizeModal" class="modal-backdrop">
+			<div class="modal-card modal-card-wide resize-modal-card">
+				<div class="modal-header">
+					<div class="modal-title-wrap">
+						<span class="modal-title-icon">📐</span>
+						<div>
+							<h3 class="modal-title">Изменение размера сетки карты</h3>
+							<p class="modal-subtitle">
+								Координаты существующих гексов и мировой ноль (0, 0) сохраняются. Выберите способ расширения:
+							</p>
+						</div>
+					</div>
+					<button class="btn-close" @click="showResizeModal = false">×</button>
+				</div>
+
+				<div class="modal-body resize-modal-body">
+					<!-- Mode Switcher Tabs -->
+					<div class="resize-mode-tabs">
+						<button
+							class="resize-mode-tab"
+							:class="{ __active: resizeForm.mode === 'sides' }"
+							@click="resizeForm.mode = 'sides'"
+						>
+							🧭 По 4 сторонам (Север / Юг / Запад / Восток)
+						</button>
+						<button
+							class="resize-mode-tab"
+							:class="{ __active: resizeForm.mode === 'anchor' }"
+							@click="resizeForm.mode = 'anchor'"
+						>
+							⚓ Размер и Якорь (3×3)
+						</button>
+					</div>
+
+					<!-- Current vs New Bounds Comparison Card -->
+					<div class="resize-comparison-card">
+						<div class="resize-comp-row">
+							<span class="resize-comp-label">Текущие границы:</span>
+							<strong class="resize-comp-val">
+								{{ currentMapBounds.cols }} × {{ currentMapBounds.rows }}
+								<span class="resize-comp-coords">
+									(Колонки: [{{ currentMapBounds.minCol }}..{{ currentMapBounds.maxCol }}], Ряды: [{{ currentMapBounds.minRow }}..{{ currentMapBounds.maxRow }}])
+								</span>
+							</strong>
+						</div>
+						<div class="resize-comp-row">
+							<span class="resize-comp-label">Новые границы:</span>
+							<strong class="resize-comp-val __new">
+								{{ previewResizeBounds.cols }} × {{ previewResizeBounds.rows }}
+								<span class="resize-comp-coords">
+									(Колонки: [{{ previewResizeBounds.minCol }}..{{ previewResizeBounds.maxCol }}], Ряды: [{{ previewResizeBounds.minRow }}..{{ previewResizeBounds.maxRow }}])
+								</span>
+							</strong>
+						</div>
+						<div class="resize-comp-hint">
+							🎯 Мировой ноль (0, 0) остаётся неизменным. Все существующие реки, дороги и поселения сохранят свои позиции.
+						</div>
+					</div>
+
+					<!-- Mode: Sides (4 Directions) -->
+					<div v-if="resizeForm.mode === 'sides'" class="resize-sides-container">
+						<div class="resize-sides-grid">
+							<!-- North (-Y) -->
+							<div class="resize-side-card resize-side-north">
+								<div class="resize-side-header">
+									<span class="resize-side-icon">⬆️</span>
+									<span class="resize-side-title">Север (-Y, ряды сверху)</span>
+									<span class="resize-side-delta" :class="{ __plus: resizeForm.north > 0, __minus: resizeForm.north < 0 }">
+										{{ resizeForm.north > 0 ? `+${resizeForm.north}` : resizeForm.north }}
+									</span>
+								</div>
+								<div class="resize-side-controls">
+									<div class="resize-delta-buttons">
+										<button class="side-step-btn" @click="stepSideDelta('north', -5)">-5</button>
+										<button class="side-step-btn" @click="stepSideDelta('north', -1)">-1</button>
+										<input v-model.number="resizeForm.north" type="number" class="side-num-input" />
+										<button class="side-step-btn" @click="stepSideDelta('north', +1)">+1</button>
+										<button class="side-step-btn" @click="stepSideDelta('north', +5)">+5</button>
+									</div>
+								</div>
+							</div>
+
+							<!-- West (-X) and East (+X) in middle row -->
+							<div class="resize-sides-mid-row">
+								<!-- West (-X) -->
+								<div class="resize-side-card resize-side-west">
+									<div class="resize-side-header">
+										<span class="resize-side-icon">⬅️</span>
+										<span class="resize-side-title">Запад (-X, колонки слева)</span>
+										<span class="resize-side-delta" :class="{ __plus: resizeForm.west > 0, __minus: resizeForm.west < 0 }">
+											{{ resizeForm.west > 0 ? `+${resizeForm.west}` : resizeForm.west }}
+										</span>
+									</div>
+									<div class="resize-side-controls">
+										<div class="resize-delta-buttons">
+											<button class="side-step-btn" @click="stepSideDelta('west', -5)">-5</button>
+											<button class="side-step-btn" @click="stepSideDelta('west', -1)">-1</button>
+											<input v-model.number="resizeForm.west" type="number" class="side-num-input" />
+											<button class="side-step-btn" @click="stepSideDelta('west', +1)">+1</button>
+											<button class="side-step-btn" @click="stepSideDelta('west', +5)">+5</button>
+										</div>
+									</div>
+								</div>
+
+								<!-- Center mini-map representation -->
+								<div class="resize-center-preview">
+									<span class="center-origin-badge">(0,0)</span>
+									<button class="editor-btn editor-btn-secondary center-reset-btn" @click="resetSideDeltas" title="Сбросить все смещения">
+										🔄 Сброс
+									</button>
+								</div>
+
+								<!-- East (+X) -->
+								<div class="resize-side-card resize-side-east">
+									<div class="resize-side-header">
+										<span class="resize-side-icon">➡️</span>
+										<span class="resize-side-title">Восток (+X, колонки справа)</span>
+										<span class="resize-side-delta" :class="{ __plus: resizeForm.east > 0, __minus: resizeForm.east < 0 }">
+											{{ resizeForm.east > 0 ? `+${resizeForm.east}` : resizeForm.east }}
+										</span>
+									</div>
+									<div class="resize-side-controls">
+										<div class="resize-delta-buttons">
+											<button class="side-step-btn" @click="stepSideDelta('east', -5)">-5</button>
+											<button class="side-step-btn" @click="stepSideDelta('east', -1)">-1</button>
+											<input v-model.number="resizeForm.east" type="number" class="side-num-input" />
+											<button class="side-step-btn" @click="stepSideDelta('east', +1)">+1</button>
+											<button class="side-step-btn" @click="stepSideDelta('east', +5)">+5</button>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<!-- South (+Y) -->
+							<div class="resize-side-card resize-side-south">
+								<div class="resize-side-header">
+									<span class="resize-side-icon">⬇️</span>
+									<span class="resize-side-title">Юг (+Y, ряды снизу)</span>
+									<span class="resize-side-delta" :class="{ __plus: resizeForm.south > 0, __minus: resizeForm.south < 0 }">
+										{{ resizeForm.south > 0 ? `+${resizeForm.south}` : resizeForm.south }}
+									</span>
+								</div>
+								<div class="resize-side-controls">
+									<div class="resize-delta-buttons">
+										<button class="side-step-btn" @click="stepSideDelta('south', -5)">-5</button>
+										<button class="side-step-btn" @click="stepSideDelta('south', -1)">-1</button>
+										<input v-model.number="resizeForm.south" type="number" class="side-num-input" />
+										<button class="side-step-btn" @click="stepSideDelta('south', +1)">+1</button>
+										<button class="side-step-btn" @click="stepSideDelta('south', +5)">+5</button>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Mode: Anchor (Target dimensions & 3x3 grid) -->
+					<div v-if="resizeForm.mode === 'anchor'" class="resize-anchor-container">
+						<div class="form-row-two">
+							<div class="form-col">
+								<label class="form-sublabel">Колонки (Ширина):</label>
+								<input
+									v-model.number="resizeForm.cols"
+									type="number"
+									min="1"
+									max="500"
+									class="form-input"
+								/>
+							</div>
+							<div class="form-col">
+								<label class="form-sublabel">Ряды (Высота):</label>
+								<input
+									v-model.number="resizeForm.rows"
+									type="number"
+									min="1"
+									max="500"
+									class="form-input"
+								/>
+							</div>
+						</div>
+
+						<!-- Presets & Step -->
+						<div class="form-group">
+							<label class="form-sublabel">Быстрый шаг:</label>
+							<div class="resize-step-buttons">
+								<button class="editor-btn editor-btn-secondary" @click="stepResize(-2)">
+									➖ -2 по краям
+								</button>
+								<button class="editor-btn editor-btn-secondary" @click="stepResize(+2)">
+									➕ +2 по краям
+								</button>
+								<button class="editor-btn editor-btn-secondary" @click="stepResize(-10)">
+									➖ -10
+								</button>
+								<button class="editor-btn editor-btn-secondary" @click="stepResize(+10)">
+									➕ +10
+								</button>
+							</div>
+						</div>
+
+						<div class="form-group">
+							<label class="form-sublabel">Пресеты размеров:</label>
+							<div class="resize-presets-grid">
+								<button
+									v-for="p in [
+										{ w: 24, h: 16 },
+										{ w: 32, h: 22 },
+										{ w: 40, h: 26 },
+										{ w: 48, h: 32 },
+										{ w: 60, h: 40 }
+									]"
+									:key="`${p.w}x${p.h}`"
+									class="preset-btn"
+									:class="{ __active: resizeForm.cols === p.w && resizeForm.rows === p.h }"
+									@click="setResizePreset(p.w, p.h)"
+								>
+									{{ p.w }}×{{ p.h }}
+								</button>
+							</div>
+						</div>
+
+						<!-- 3x3 Anchor Matrix -->
+						<div class="form-group">
+							<label class="form-sublabel">Точка привязки (Якорь 3×3):</label>
+							<div class="anchor-grid-matrix">
+								<button
+									v-for="anc in [
+										{ id: 'top-left', label: '↖️', title: 'Сверху-слева' },
+										{ id: 'top', label: '⬆️', title: 'Сверху' },
+										{ id: 'top-right', label: '↗️', title: 'Сверху-справа' },
+										{ id: 'left', label: '⬅️', title: 'Слева' },
+										{ id: 'center', label: '⏺️', title: 'По центру' },
+										{ id: 'right', label: '➡️', title: 'Справа' },
+										{ id: 'bottom-left', label: '↙️', title: 'Снизу-слева' },
+										{ id: 'bottom', label: '⬇️', title: 'Снизу' },
+										{ id: 'bottom-right', label: '↘️', title: 'Снизу-справа' }
+									]"
+									:key="anc.id"
+									class="anchor-btn"
+									:class="{ __active: resizeForm.anchor === anc.id }"
+									:title="anc.title"
+									@click="resizeForm.anchor = anc.id"
+								>
+									{{ anc.label }}
+								</button>
+							</div>
+						</div>
+					</div>
+
+					<!-- Fill Options -->
+					<div class="form-group">
+						<label class="form-label">При расширении сетки заполнить новые клетки:</label>
+						<select v-model="resizeForm.fillTerrain" class="form-select">
+							<option v-for="b in biomesList" :key="b.id" :value="b.id">
+								{{ b.icon }} {{ b.name }}
+							</option>
+						</select>
+					</div>
+
+					<!-- Warning when shrinking -->
+					<div
+						v-if="prunedCellsCount > 0 || prunedSettlementsCount > 0"
+						class="resize-shrink-warning"
+					>
+						⚠️ Внимание: при уменьшении сетки будут безвозвратно удалены:
+						<strong>{{ prunedCellsCount }} гексов</strong>
+						<span v-if="prunedSettlementsCount > 0"> и <strong>{{ prunedSettlementsCount }} поселений</strong></span>,
+						выходящих за новые границы!
+					</div>
+				</div>
+
+				<div class="modal-footer">
+					<button class="editor-btn editor-btn-primary" @click="confirmResizeMap">
+						Применить размер
+					</button>
+					<button class="editor-btn editor-btn-secondary" @click="showResizeModal = false">
+						Отмена
+					</button>
+				</div>
+			</div>
+		</div>
+
 		<!-- Modal: Export JSON -->
 		<div v-if="showExportModal" class="modal-backdrop">
 			<div class="modal-card modal-card-wide">
@@ -757,11 +1079,25 @@
 				</div>
 			</div>
 		</div>
+
+		<!-- Status Toast Notification -->
+		<Transition name="toast">
+			<div
+				v-if="statusMessage"
+				class="status-toast"
+				:class="`__${statusMessage.type}`"
+			>
+				<span class="toast-icon">
+					{{ statusMessage.type === 'error' ? '❌' : statusMessage.type === 'warning' ? '⚠️' : statusMessage.type === 'success' ? '✅' : 'ℹ️' }}
+				</span>
+				<span class="toast-text">{{ statusMessage.text }}</span>
+			</div>
+		</Transition>
 	</div>
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import HexCanvas from '@/components/game/hexmap/HexCanvas.vue'
 import {
@@ -786,7 +1122,9 @@ import {
 	hexDistance,
 	getHexVertices,
 	getHexEdgeEndpoints,
-	getEdgeFlowDirectionName
+	getEdgeFlowDirectionName,
+	calculateDirectionalBounds,
+	calculateAnchorBounds
 } from '@/utils/hexmap/hexCoords.js'
 import defaultNewWorldHex from '@data/hexmaps/newworld_hex.json'
 import fractionsData from '@data/fractions/fractions.json'
@@ -803,13 +1141,41 @@ const edgeLabels = {
 	NW: 'Сев.-Запад (NW)'
 }
 
+// Available Maps Registry and Session Cache (analogous to IsoEditorView)
+const availableMaps = ref([
+	{ id: 'newworld_hex', name: 'Новый Мир (Тактическая)' }
+])
+const selectedMapId = ref('newworld_hex')
+const mapCache = {
+	newworld_hex: defaultNewWorldHex
+}
+
 // Current Map State
 const mapData = ref(normalizeHexMapData(JSON.parse(JSON.stringify(defaultNewWorldHex))))
 const mapPitch = ref(mapData.value?.pitch || 45)
 
+const isDirty = ref(false)
+const isSaving = ref(false)
+const statusMessage = ref(null)
+let toastTimeout = null
+
+function showToast(text, type = 'info', duration = 3000) {
+	if (toastTimeout) clearTimeout(toastTimeout)
+	statusMessage.value = { text, type }
+	toastTimeout = setTimeout(() => {
+		statusMessage.value = null
+		toastTimeout = null
+	}, duration)
+}
+
+function markDirty() {
+	isDirty.value = true
+}
+
 watch(mapPitch, (newP) => {
 	if (mapData.value) {
 		mapData.value.pitch = newP
+		markDirty()
 	}
 })
 
@@ -849,10 +1215,85 @@ const selectedHexCoord = ref(null)
 
 // Modals State
 const showNewModal = ref(false)
+const showResizeModal = ref(false)
 const showExportModal = ref(false)
 const copyStatus = ref('Копировать в буфер')
 
+const resizeForm = ref({
+	mode: 'sides', // 'sides' | 'anchor'
+	north: 0,
+	south: 0,
+	west: 0,
+	east: 0,
+	cols: 24,
+	rows: 16,
+	anchor: 'center',
+	fillTerrain: 'water'
+})
+
+const currentMapBounds = computed(() => {
+	const b = mapData.value?.bounds
+	const minCol = b?.minCol !== undefined ? b.minCol : 0
+	const maxCol = b?.maxCol !== undefined ? b.maxCol : ((mapData.value?.cols || 20) - 1)
+	const minRow = b?.minRow !== undefined ? b.minRow : 0
+	const maxRow = b?.maxRow !== undefined ? b.maxRow : ((mapData.value?.rows || 15) - 1)
+	return {
+		minCol,
+		maxCol,
+		minRow,
+		maxRow,
+		cols: maxCol - minCol + 1,
+		rows: maxRow - minRow + 1
+	}
+})
+
+const previewResizeBounds = computed(() => {
+	const cur = currentMapBounds.value
+	if (resizeForm.value.mode === 'sides') {
+		return calculateDirectionalBounds(cur, {
+			north: resizeForm.value.north,
+			south: resizeForm.value.south,
+			west: resizeForm.value.west,
+			east: resizeForm.value.east
+		})
+	}
+	return calculateAnchorBounds(
+		cur,
+		Math.max(1, parseInt(resizeForm.value.cols, 10) || cur.cols),
+		Math.max(1, parseInt(resizeForm.value.rows, 10) || cur.rows),
+		resizeForm.value.anchor
+	)
+})
+
+const prunedCellsCount = computed(() => {
+	const b = previewResizeBounds.value
+	let count = 0
+	for (const cell of Object.values(mapData.value?.cells || {})) {
+		if (cell.col < b.minCol || cell.col > b.maxCol || cell.row < b.minRow || cell.row > b.maxRow) {
+			count++
+		}
+	}
+	return count
+})
+
+const prunedSettlementsCount = computed(() => {
+	const b = previewResizeBounds.value
+	let count = 0
+	for (const cell of Object.values(mapData.value?.cells || {})) {
+		if (cell.settlement && (cell.col < b.minCol || cell.col > b.maxCol || cell.row < b.minRow || cell.row > b.maxRow)) {
+			count++
+		}
+	}
+	return count
+})
+
+function isHexInBounds(col, row) {
+	const b = currentMapBounds.value
+	return col >= b.minCol && col <= b.maxCol && row >= b.minRow && row <= b.maxRow
+}
+
 const newMapForm = ref({
+	id: 'custom_hex_map',
 	name: 'Новая гексагональная карта',
 	cols: 20,
 	rows: 15,
@@ -1003,6 +1444,7 @@ function toggleEdgeRiver(edge) {
 			flowDir: 1
 		}
 	}
+	markDirty()
 }
 
 function flipEdgeRiverDirection(edge) {
@@ -1012,6 +1454,7 @@ function flipEdgeRiverDirection(edge) {
 	const key = getCanonicalEdgeKey(col, row, edge)
 	if (mapData.value.rivers[key]) {
 		mapData.value.rivers[key].flowDir = mapData.value.rivers[key].flowDir === -1 ? 1 : -1
+		markDirty()
 	}
 }
 
@@ -1031,6 +1474,7 @@ function setEdgeRiverWidth(edge, width) {
 			flowDir: 1
 		}
 	}
+	markDirty()
 }
 
 function removeEdgeRiver(edge) {
@@ -1039,6 +1483,7 @@ function removeEdgeRiver(edge) {
 	const row = selectedCell.value.row
 	const key = getCanonicalEdgeKey(col, row, edge)
 	delete mapData.value.rivers[key]
+	markDirty()
 }
 
 function onPreviewEdgeClick(edge) {
@@ -1060,6 +1505,7 @@ function onPreviewEdgeClick(edge) {
 		// Toggle/flip direction when clicked directly in preview!
 		existing.flowDir = existing.flowDir === -1 ? 1 : -1
 	}
+	markDirty()
 }
 
 const exportedJsonText = computed(() => {
@@ -1067,6 +1513,10 @@ const exportedJsonText = computed(() => {
 })
 
 function returnToHome() {
+	if (isDirty.value) {
+		const confirmed = window.confirm('У вас есть несохранённые изменения. Вы действительно хотите выйти в меню?')
+		if (!confirmed) return
+	}
 	router.push('/home')
 }
 
@@ -1109,25 +1559,28 @@ function onHexClick({ col, row, cell, isRightClick }) {
 			// Apply biome with brush radius
 			const targetHexes = getHexesInRadius(col, row, brushRadius.value)
 			for (const h of targetHexes) {
-				if (h.col < 0 || h.col >= mapData.value.cols || h.row < 0 || h.row >= mapData.value.rows) continue
+				if (!isHexInBounds(h.col, h.row)) continue
 				const c = getOrCreateCell(h.col, h.row)
 				c.terrain = selectedBiome.value
 			}
+			markDirty()
 			break
 		}
 		case 'hills': {
 			targetCell.feature = targetCell.feature === 'hills' ? 'none' : 'hills'
+			markDirty()
 			break
 		}
 		case 'mountain': {
 			const radius = selectedMountainRadius.value
 			const targetHexes = getHexesInRadius(col, row, radius)
 			for (const h of targetHexes) {
-				if (h.col < 0 || h.col >= mapData.value.cols || h.row < 0 || h.row >= mapData.value.rows) continue
+				if (!isHexInBounds(h.col, h.row)) continue
 				const c = getOrCreateCell(h.col, h.row)
 				c.feature = 'mountain'
 				c.mountainRadius = radius
 			}
+			markDirty()
 			break
 		}
 		case 'road': {
@@ -1135,7 +1588,7 @@ function onHexClick({ col, row, cell, isRightClick }) {
 			const radius = brushRadius.value || 1
 			const targetHexes = getHexesInRadius(col, row, radius)
 			for (const h of targetHexes) {
-				if (h.col < 0 || h.col >= mapData.value.cols || h.row < 0 || h.row >= mapData.value.rows) continue
+				if (!isHexInBounds(h.col, h.row)) continue
 				const c = getOrCreateCell(h.col, h.row)
 				if (c.road === selectedRoadType.value) {
 					c.road = 'none'
@@ -1144,6 +1597,7 @@ function onHexClick({ col, row, cell, isRightClick }) {
 				}
 				syncRoadsForCell(mapData.value, h.col, h.row)
 			}
+			markDirty()
 			break
 		}
 		case 'settlement': {
@@ -1154,13 +1608,14 @@ function onHexClick({ col, row, cell, isRightClick }) {
 				description: newSettlementDesc.value || '',
 				hasLocalMap: false
 			}
+			markDirty()
 			break
 		}
 		case 'faction': {
 			const radius = factionBrushRadius.value || 1
 			const targetHexes = getHexesInRadius(col, row, radius)
 			for (const h of targetHexes) {
-				if (h.col < 0 || h.col >= mapData.value.cols || h.row < 0 || h.row >= mapData.value.rows) continue
+				if (!isHexInBounds(h.col, h.row)) continue
 				const c = getOrCreateCell(h.col, h.row)
 				if (selectedFactionId.value === null) {
 					c.faction = null
@@ -1170,6 +1625,7 @@ function onHexClick({ col, row, cell, isRightClick }) {
 					c.faction = selectedFactionId.value
 				}
 			}
+			markDirty()
 			break
 		}
 	}
@@ -1179,6 +1635,7 @@ function onEdgeClick({ col, row, edge, width }) {
 	const key = getCanonicalEdgeKey(col, row, edge)
 	if (activeTool.value === 'eraser') {
 		delete mapData.value.rivers[key]
+		markDirty()
 		return
 	}
 
@@ -1201,6 +1658,7 @@ function onEdgeClick({ col, row, edge, width }) {
 				flowDir: 1
 			}
 		}
+		markDirty()
 	}
 }
 
@@ -1221,11 +1679,13 @@ function eraseHex(col, row) {
 		}
 	}
 	syncRoadsForCell(mapData.value, col, row)
+	markDirty()
 }
 
 function onRoadPropertyChange() {
 	if (!selectedCell.value) return
 	syncRoadsForCell(mapData.value, selectedCell.value.col, selectedCell.value.row)
+	markDirty()
 }
 
 function addSettlementToSelected() {
@@ -1237,22 +1697,170 @@ function addSettlementToSelected() {
 		description: '',
 		hasLocalMap: false
 	}
+	markDirty()
 }
 
 function openNewMapModal() {
+	if (isDirty.value) {
+		const confirmed = window.confirm('У вас есть несохранённые изменения. Создать новую карту поверх текущей?')
+		if (!confirmed) return
+	}
+	newMapForm.value = {
+		id: `hexmap_${Date.now().toString(36)}`,
+		name: 'Новая гексагональная карта',
+		cols: 20,
+		rows: 15,
+		baseTerrain: 'grass'
+	}
 	showNewModal.value = true
 }
 
 function confirmCreateNewMap() {
+	const cleanId = (newMapForm.value.id || '').trim().toLowerCase().replace(/[^a-z0-9_-]/gi, '_') || `hexmap_${Date.now().toString(36)}`
 	mapData.value = createDefaultHexMap(
 		newMapForm.value.cols,
 		newMapForm.value.rows,
 		newMapForm.value.baseTerrain
 	)
-	mapData.value.name = newMapForm.value.name
+	mapData.value.id = cleanId
+	mapData.value.name = newMapForm.value.name || cleanId
 	mapData.value.pitch = mapPitch.value
 	selectedHexCoord.value = null
+
+	const cleanPayload = JSON.parse(JSON.stringify(mapData.value))
+	mapCache[cleanId] = cleanPayload
+
+	if (!availableMaps.value.some(m => m.id === cleanId)) {
+		availableMaps.value.push({
+			id: cleanId,
+			name: mapData.value.name
+		})
+	}
+	selectedMapId.value = cleanId
+	markDirty()
 	showNewModal.value = false
+	canvasRef.value?.resetCamera?.()
+	showToast(`Создана новая карта: ${mapData.value.name}`, 'info')
+}
+
+// Map Resizing System
+function openResizeModal() {
+	const b = currentMapBounds.value
+	resizeForm.value.mode = 'sides'
+	resetSideDeltas()
+	resizeForm.value.cols = b.cols
+	resizeForm.value.rows = b.rows
+	resizeForm.value.anchor = 'center'
+	resizeForm.value.fillTerrain = 'water'
+	showResizeModal.value = true
+}
+
+function resetSideDeltas() {
+	resizeForm.value.north = 0
+	resizeForm.value.south = 0
+	resizeForm.value.west = 0
+	resizeForm.value.east = 0
+}
+
+function stepSideDelta(side, delta) {
+	if (typeof resizeForm.value[side] !== 'number') {
+		resizeForm.value[side] = 0
+	}
+	resizeForm.value[side] += delta
+}
+
+function setResizePreset(cols, rows) {
+	resizeForm.value.cols = cols
+	resizeForm.value.rows = rows
+}
+
+function stepResize(delta) {
+	let nc = (parseInt(resizeForm.value.cols, 10) || 20) + delta
+	let nr = (parseInt(resizeForm.value.rows, 10) || 15) + delta
+	if (nc < 1) nc = 1
+	if (nr < 1) nr = 1
+	if (nc > 500) nc = 500
+	if (nr > 500) nr = 500
+	resizeForm.value.cols = nc
+	resizeForm.value.rows = nr
+}
+
+function confirmResizeMap() {
+	const b = previewResizeBounds.value
+	const newMinCol = b.minCol
+	const newMaxCol = b.maxCol
+	const newMinRow = b.minRow
+	const newMaxRow = b.maxRow
+	const newCols = b.cols
+	const newRows = b.rows
+
+	// 1. Prune cells out of bounds
+	const newCells = {}
+	for (const [key, cell] of Object.entries(mapData.value.cells || {})) {
+		if (cell.col >= newMinCol && cell.col <= newMaxCol && cell.row >= newMinRow && cell.row <= newMaxRow) {
+			newCells[key] = cell
+		}
+	}
+
+	// 2. Prune rivers where both adjacent cells are out of bounds
+	const newRivers = {}
+	for (const [key, river] of Object.entries(mapData.value.rivers || {})) {
+		const neighbor = getHexNeighbor(river.col, river.row, river.edge)
+		const selfIn = river.col >= newMinCol && river.col <= newMaxCol && river.row >= newMinRow && river.row <= newMaxRow
+		const neighborIn = neighbor.col >= newMinCol && neighbor.col <= newMaxCol && neighbor.row >= newMinRow && neighbor.row <= newMaxRow
+		if (selfIn || neighborIn) {
+			newRivers[key] = river
+		}
+	}
+
+	// 3. Prune roads if either end is out of bounds
+	const newRoads = {}
+	for (const [key, road] of Object.entries(mapData.value.roads || {})) {
+		const fromIn = road.from.col >= newMinCol && road.from.col <= newMaxCol && road.from.row >= newMinRow && road.from.row <= newMaxRow
+		const toIn = road.to.col >= newMinCol && road.to.col <= newMaxCol && road.to.row >= newMinRow && road.to.row <= newMaxRow
+		if (fromIn && toIn) {
+			newRoads[key] = road
+		}
+	}
+
+	// 4. Fill empty cells in new bounds with chosen fillTerrain
+	const fillTerrain = resizeForm.value.fillTerrain || 'water'
+	for (let c = newMinCol; c <= newMaxCol; c++) {
+		for (let r = newMinRow; r <= newMaxRow; r++) {
+			const k = `${c},${r}`
+			if (!newCells[k]) {
+				newCells[k] = {
+					col: c,
+					row: r,
+					terrain: fillTerrain,
+					elevation: 0,
+					feature: 'none',
+					mountainRadius: 1,
+					road: 'none',
+					faction: null,
+					borderColor: null,
+					fillColor: null,
+					settlement: null
+				}
+			}
+		}
+	}
+
+	mapData.value.cells = newCells
+	mapData.value.rivers = newRivers
+	mapData.value.roads = newRoads
+	mapData.value.cols = newCols
+	mapData.value.rows = newRows
+	mapData.value.bounds = {
+		minCol: newMinCol,
+		maxCol: newMaxCol,
+		minRow: newMinRow,
+		maxRow: newMaxRow
+	}
+
+	rebuildAllRoadConnections(mapData.value)
+	markDirty()
+	showResizeModal.value = false
 	canvasRef.value?.resetCamera?.()
 }
 
@@ -1282,6 +1890,191 @@ function downloadJson() {
 	a.click()
 	URL.revokeObjectURL(url)
 }
+
+// Map Loading, Selection & Saving System (analogous to IsoEditorView)
+async function refreshAvailableMaps() {
+	if (typeof window !== 'undefined' && window.electronAPI?.dataEditor?.listFiles) {
+		try {
+			const res = await window.electronAPI.dataEditor.listFiles('hexmaps')
+			if (res.success && Array.isArray(res.files)) {
+				const jsonFiles = res.files.filter(f => typeof f === 'string' && f.endsWith('.json'))
+				for (const file of jsonFiles) {
+					const mapId = file.replace(/\.json$/, '')
+					if (!availableMaps.value.some(m => m.id === mapId)) {
+						let mapName = mapId === 'newworld_hex' ? 'Новый Мир (Тактическая)' : mapId
+						try {
+							const readRes = await window.electronAPI.dataEditor.readFile(`hexmaps/${file}`)
+							if (readRes.success && readRes.data) {
+								mapCache[mapId] = readRes.data
+								if (readRes.data.name) {
+									mapName = readRes.data.name
+								}
+							}
+						} catch (e) {
+							console.warn('[HexEditorView] Failed to read map details for', file, e)
+						}
+						availableMaps.value.push({ id: mapId, name: mapName })
+					}
+				}
+			}
+		} catch (err) {
+			console.warn('[HexEditorView] Error scanning hexmaps folder:', err)
+		}
+	}
+
+	// Also discover custom maps from localStorage (for web / dev mode)
+	if (typeof localStorage !== 'undefined') {
+		for (let i = 0; i < localStorage.length; i++) {
+			const k = localStorage.key(i)
+			if (k && k.startsWith('hexmap_')) {
+				const mapId = k.replace('hexmap_', '')
+				if (!availableMaps.value.some(m => m.id === mapId)) {
+					try {
+						const parsed = JSON.parse(localStorage.getItem(k))
+						mapCache[mapId] = parsed
+						availableMaps.value.push({
+							id: mapId,
+							name: parsed.name || mapId
+						})
+					} catch (e) {}
+				}
+			}
+		}
+	}
+}
+
+async function loadMapById(mapId) {
+	if (!mapId) return
+	let rawData = mapCache[mapId]
+
+	if (!rawData && typeof window !== 'undefined' && window.electronAPI?.dataEditor?.readFile) {
+		try {
+			const res = await window.electronAPI.dataEditor.readFile(`hexmaps/${mapId}.json`)
+			if (res.success && res.data) {
+				rawData = res.data
+				mapCache[mapId] = rawData
+			}
+		} catch (err) {
+			console.error('[HexEditorView] Error reading map from disk:', err)
+		}
+	}
+
+	if (!rawData && typeof localStorage !== 'undefined') {
+		const local = localStorage.getItem(`hexmap_${mapId}`)
+		if (local) {
+			try {
+				rawData = JSON.parse(local)
+				mapCache[mapId] = rawData
+			} catch (e) {}
+		}
+	}
+
+	if (!rawData && mapId === 'newworld_hex') {
+		rawData = defaultNewWorldHex
+		mapCache[mapId] = rawData
+	}
+
+	if (rawData) {
+		mapData.value = normalizeHexMapData(JSON.parse(JSON.stringify(rawData)))
+		if (!mapData.value.id) {
+			mapData.value.id = mapId
+		}
+		if (mapData.value.pitch) {
+			mapPitch.value = mapData.value.pitch
+		}
+		selectedHexCoord.value = null
+		selectedMapId.value = mapId
+		isDirty.value = false
+		canvasRef.value?.resetCamera?.()
+		showToast(`Карта "${mapData.value.name || mapId}" успешно загружена`, 'info')
+	} else {
+		showToast(`Не удалось загрузить данные карты "${mapId}"`, 'error')
+	}
+}
+
+async function onLoadSelectedMap() {
+	if (isDirty.value) {
+		const confirmed = window.confirm('У вас есть несохранённые изменения. Переключить карту без сохранения?')
+		if (!confirmed) {
+			selectedMapId.value = mapData.value.id || 'newworld_hex'
+			return
+		}
+	}
+	await loadMapById(selectedMapId.value)
+}
+
+async function saveCurrentMap() {
+	if (isSaving.value) return
+	isSaving.value = true
+
+	try {
+		const mapId = mapData.value.id || selectedMapId.value || 'newworld_hex'
+		mapData.value.id = mapId
+		if (mapPitch.value) {
+			mapData.value.pitch = mapPitch.value
+		}
+
+		const payload = JSON.parse(JSON.stringify(mapData.value))
+		mapCache[mapId] = payload
+
+		// Update or insert into availableMaps
+		const existingItem = availableMaps.value.find(m => m.id === mapId)
+		if (existingItem) {
+			existingItem.name = mapData.value.name || mapId
+		} else {
+			availableMaps.value.push({
+				id: mapId,
+				name: mapData.value.name || mapId
+			})
+		}
+		selectedMapId.value = mapId
+
+		let savedToDisk = false
+		if (typeof window !== 'undefined' && window.electronAPI?.dataEditor?.writeFile) {
+			const res = await window.electronAPI.dataEditor.writeFile(`hexmaps/${mapId}.json`, payload)
+			if (!res.success) {
+				throw new Error(res.error || 'Ошибка записи файла на диск')
+			}
+			savedToDisk = true
+		}
+
+		if (typeof localStorage !== 'undefined') {
+			try {
+				localStorage.setItem(`hexmap_${mapId}`, JSON.stringify(payload))
+			} catch (e) {
+				console.warn('localStorage save warning:', e)
+			}
+		}
+
+		isDirty.value = false
+		const targetDesc = savedToDisk ? 'на диск (@data/hexmaps/)' : 'в память браузера'
+		showToast(`Карта "${mapData.value.name || mapId}" сохранена ${targetDesc}!`, 'success')
+	} catch (err) {
+		console.error('[HexEditorView] Ошибка сохранения карты:', err)
+		showToast(`Ошибка сохранения: ${err.message || err}`, 'error')
+	} finally {
+		isSaving.value = false
+	}
+}
+
+function onEditorKeyDown(e) {
+	if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable)) {
+		return
+	}
+	if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+		e.preventDefault()
+		saveCurrentMap()
+	}
+}
+
+onMounted(async () => {
+	window.addEventListener('keydown', onEditorKeyDown)
+	await refreshAvailableMaps()
+})
+
+onUnmounted(() => {
+	window.removeEventListener('keydown', onEditorKeyDown)
+})
 </script>
 
 <style scoped>
@@ -1313,6 +2106,37 @@ function downloadJson() {
 	display: flex;
 	align-items: center;
 	gap: 0.6em;
+}
+
+.header-selector-box {
+	display: flex;
+	align-items: center;
+	gap: 0.4em;
+	background: rgba(30, 41, 59, 0.8);
+	border: 1px solid rgba(255, 255, 255, 0.15);
+	border-radius: 0.4em;
+	padding: 0.3em 0.7em;
+}
+
+.selector-icon {
+	font-size: 1em;
+}
+
+.selector-label {
+	font-size: 0.85em;
+	color: #94a3b8;
+}
+
+.editor-select {
+	background: rgba(15, 23, 42, 0.9);
+	border: 1px solid rgba(246, 196, 69, 0.3);
+	color: #f6c445;
+	padding: 0.25em 0.5em;
+	border-radius: 0.3em;
+	font-size: 0.85em;
+	outline: none;
+	cursor: pointer;
+	font-family: Kurale, sans-serif;
 }
 
 .header-map-title {
@@ -1428,6 +2252,31 @@ function downloadJson() {
 .editor-btn-action:hover {
 	background: #0369a1;
 	color: #f8fafc;
+}
+
+.editor-btn-save {
+	background: #059669;
+	color: #ffffff;
+	font-weight: bold;
+	border-color: #10b981;
+}
+
+.editor-btn-save:hover {
+	background: #10b981;
+	color: #ffffff;
+	box-shadow: 0 0 0.5em rgba(16, 185, 129, 0.4);
+}
+
+.editor-btn-save.__dirty {
+	background: #d97706;
+	border-color: #f59e0b;
+	color: #ffffff;
+	box-shadow: 0 0 0.6em rgba(245, 158, 11, 0.4);
+}
+
+.editor-btn-save:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
 }
 
 /* Workspace */
@@ -2082,5 +2931,399 @@ function downloadJson() {
 	box-sizing: border-box;
 	border-radius: 0.2em;
 	resize: none;
+}
+
+/* Map Title Clickable Badge */
+.map-title-clickable {
+	cursor: pointer;
+	transition: background 0.15s ease;
+	padding: 0.2em 0.5em;
+	border-radius: 0.3em;
+}
+
+.map-title-clickable:hover {
+	background: rgba(255, 255, 255, 0.08);
+}
+
+/* Resize Modal */
+.resize-modal-card {
+	width: 44em;
+	max-width: 95%;
+	max-height: 90%;
+	overflow-y: auto;
+}
+
+.modal-title-wrap {
+	display: flex;
+	align-items: center;
+	gap: 0.8em;
+}
+
+.modal-title-icon {
+	font-size: 1.8em;
+}
+
+.modal-subtitle {
+	font-size: 0.8em;
+	color: #94a3b8;
+	margin: 0.2em 0 0;
+	font-weight: normal;
+}
+
+.resize-mode-tabs {
+	display: flex;
+	gap: 0.6em;
+	margin-bottom: 0.6em;
+}
+
+.resize-mode-tab {
+	flex: 1;
+	padding: 0.5em 0.8em;
+	border-radius: 0.35em;
+	font-size: 0.85em;
+	background: rgba(30, 41, 59, 0.7);
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	color: #cbd5e1;
+	cursor: pointer;
+	font-family: inherit;
+	transition: all 0.15s ease;
+}
+
+.resize-mode-tab:hover {
+	border-color: #38bdf8;
+	color: #ffffff;
+}
+
+.resize-mode-tab.__active {
+	background: rgba(56, 189, 248, 0.25);
+	border-color: #38bdf8;
+	color: #ffffff;
+	font-weight: bold;
+}
+
+.resize-comparison-card {
+	background: rgba(15, 23, 42, 0.85);
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	border-radius: 0.4em;
+	padding: 0.6em 0.8em;
+	display: flex;
+	flex-direction: column;
+	gap: 0.4em;
+	font-size: 0.85em;
+}
+
+.resize-comp-row {
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+}
+
+.resize-comp-label {
+	color: #94a3b8;
+}
+
+.resize-comp-val {
+	color: #e2e8f0;
+}
+
+.resize-comp-val.__new {
+	color: #38bdf8;
+}
+
+.resize-comp-coords {
+	color: #64748b;
+	font-weight: normal;
+	font-size: 0.9em;
+}
+
+.resize-comp-hint {
+	color: #94a3b8;
+	font-size: 0.8em;
+	line-height: 1.35;
+}
+
+/* Sides Grid Controls */
+.resize-sides-grid {
+	display: flex;
+	flex-direction: column;
+	gap: 0.6em;
+	align-items: center;
+}
+
+.resize-side-card {
+	background: rgba(30, 41, 59, 0.6);
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	border-radius: 0.35em;
+	padding: 0.5em 0.8em;
+	box-sizing: border-box;
+}
+
+.resize-side-north,
+.resize-side-south {
+	width: 22em;
+}
+
+.resize-sides-mid-row {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.8em;
+	width: 100%;
+}
+
+.resize-side-west,
+.resize-side-east {
+	flex: 1;
+	max-width: 19em;
+}
+
+.resize-side-header {
+	display: flex;
+	align-items: center;
+	gap: 0.4em;
+	margin-bottom: 0.4em;
+}
+
+.resize-side-icon {
+	font-size: 1.1em;
+}
+
+.resize-side-title {
+	font-size: 0.82em;
+	color: #e2e8f0;
+	flex: 1;
+}
+
+.resize-side-delta {
+	font-size: 0.82em;
+	font-weight: bold;
+	color: #94a3b8;
+}
+
+.resize-side-delta.__plus {
+	color: #4ade80;
+}
+
+.resize-side-delta.__minus {
+	color: #f87171;
+}
+
+.resize-side-controls {
+	display: flex;
+	justify-content: center;
+}
+
+.resize-delta-buttons {
+	display: flex;
+	align-items: center;
+	gap: 0.3em;
+}
+
+.side-step-btn {
+	background: rgba(51, 65, 85, 0.8);
+	border: 1px solid rgba(255, 255, 255, 0.15);
+	color: #cbd5e1;
+	padding: 0.25em 0.5em;
+	border-radius: 0.25em;
+	font-size: 0.78em;
+	cursor: pointer;
+	font-family: inherit;
+	transition: all 0.15s ease;
+}
+
+.side-step-btn:hover {
+	border-color: #38bdf8;
+	color: #ffffff;
+}
+
+.side-num-input {
+	width: 3.5em;
+	text-align: center;
+	background: rgba(15, 23, 42, 0.9);
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	border-radius: 0.25em;
+	color: #f6c445;
+	font-weight: bold;
+	padding: 0.2em 0.4em;
+	font-size: 0.85em;
+}
+
+.resize-center-preview {
+	width: 5.5em;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.3em;
+}
+
+.center-origin-badge {
+	font-size: 0.75em;
+	color: #f6c445;
+	font-weight: bold;
+}
+
+.center-reset-btn {
+	padding: 0.2em 0.5em !important;
+	font-size: 0.75em !important;
+}
+
+/* Anchor Mode Controls */
+.form-row-two {
+	display: flex;
+	gap: 0.8em;
+	margin-bottom: 0.6em;
+}
+
+.form-col {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 0.2em;
+}
+
+.form-sublabel {
+	font-size: 0.8em;
+	color: #94a3b8;
+}
+
+.resize-step-buttons {
+	display: flex;
+	gap: 0.5em;
+	margin-top: 0.3em;
+}
+
+.resize-step-buttons .editor-btn {
+	flex: 1;
+	justify-content: center;
+	font-size: 0.8em;
+	padding: 0.35em 0.6em;
+}
+
+.resize-presets-grid {
+	display: grid;
+	grid-template-columns: repeat(5, 1fr);
+	gap: 0.4em;
+	margin-top: 0.3em;
+}
+
+.preset-btn {
+	background: rgba(30, 41, 59, 0.7);
+	border: 1px solid rgba(255, 255, 255, 0.15);
+	color: #cbd5e1;
+	padding: 0.35em 0.5em;
+	border-radius: 0.3em;
+	font-size: 0.8em;
+	cursor: pointer;
+	font-family: inherit;
+	text-align: center;
+	transition: all 0.15s ease;
+}
+
+.preset-btn:hover {
+	border-color: #38bdf8;
+	color: #ffffff;
+}
+
+.preset-btn.__active {
+	background: rgba(56, 189, 248, 0.25);
+	border-color: #38bdf8;
+	color: #ffffff;
+	font-weight: bold;
+}
+
+.anchor-grid-matrix {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 0.4em;
+	max-width: 12em;
+	margin: 0.3em auto 0;
+}
+
+.anchor-btn {
+	height: 2.4em;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 1.1em;
+	background: rgba(30, 41, 59, 0.7);
+	border: 1px solid rgba(255, 255, 255, 0.15);
+	border-radius: 0.3em;
+	color: #cbd5e1;
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.anchor-btn:hover {
+	border-color: #f6c445;
+	color: #ffffff;
+}
+
+.anchor-btn.__active {
+	background: rgba(246, 196, 69, 0.25);
+	border-color: #f6c445;
+	color: #ffffff;
+	font-weight: bold;
+}
+
+.resize-shrink-warning {
+	background: rgba(239, 68, 68, 0.15);
+	border: 1px solid #ef4444;
+	border-radius: 0.35em;
+	padding: 0.5em 0.8em;
+	font-size: 0.82em;
+	color: #fca5a5;
+	line-height: 1.4;
+}
+
+/* Status Toast Notification */
+.status-toast {
+	position: absolute;
+	bottom: 1.5em;
+	right: 1.5em;
+	display: flex;
+	align-items: center;
+	gap: 0.6em;
+	padding: 0.6em 1em;
+	border-radius: 0.45em;
+	box-shadow: 0 0.5em 1.5em rgba(0, 0, 0, 0.7);
+	z-index: 1000;
+	font-size: 0.88em;
+	font-weight: 600;
+	backdrop-filter: blur(0.3em);
+}
+
+.status-toast.__success {
+	background: rgba(16, 185, 129, 0.95);
+	color: #ffffff;
+	border: 1px solid #34d399;
+}
+
+.status-toast.__error {
+	background: rgba(239, 68, 68, 0.95);
+	color: #ffffff;
+	border: 1px solid #f87171;
+}
+
+.status-toast.__warning {
+	background: rgba(245, 158, 11, 0.95);
+	color: #0f172a;
+	border: 1px solid #fbbf24;
+}
+
+.status-toast.__info {
+	background: rgba(30, 41, 59, 0.95);
+	color: #f1f5f9;
+	border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.toast-enter-active,
+.toast-leave-active {
+	transition: all 0.25s ease;
+}
+
+.toast-enter-from,
+.toast-leave-to {
+	opacity: 0;
+	transform: translateY(1em);
 }
 </style>

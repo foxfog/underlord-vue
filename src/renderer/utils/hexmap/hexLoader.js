@@ -135,7 +135,9 @@ export const FACTION_PRESETS = Object.freeze({
  */
 export function hexToRgba(hexStr, alpha = 0.16) {
 	if (!hexStr) return `rgba(56, 189, 248, ${alpha})`
-	if (hexStr.startsWith('rgba')) return hexStr
+	if (hexStr.startsWith('rgba')) {
+		return hexStr.replace(/[\d.]+\s*\)$/, `${alpha})`)
+	}
 	if (hexStr.startsWith('rgb(')) return hexStr.replace('rgb(', 'rgba(').replace(')', `, ${alpha})`)
 	let c = hexStr.replace('#', '')
 	if (c.length === 3) c = c[0] + c[0] + c[1] + c[1] + c[2] + c[2]
@@ -195,8 +197,23 @@ export function normalizeHexMapData(raw) {
 	if (!raw) return null
 
 	const data = JSON.parse(JSON.stringify(raw))
-	const cols = Number(data.cols) || 20
-	const rows = Number(data.rows) || 15
+	const rawCols = Number(data.cols) || 20
+	const rawRows = Number(data.rows) || 15
+
+	const minCol = data.bounds?.minCol !== undefined ? Number(data.bounds.minCol) : 0
+	const maxCol = data.bounds?.maxCol !== undefined ? Number(data.bounds.maxCol) : (rawCols - 1)
+	const minRow = data.bounds?.minRow !== undefined ? Number(data.bounds.minRow) : 0
+	const maxRow = data.bounds?.maxRow !== undefined ? Number(data.bounds.maxRow) : (rawRows - 1)
+
+	const bounds = {
+		minCol: Math.min(minCol, maxCol),
+		maxCol: Math.max(minCol, maxCol),
+		minRow: Math.min(minRow, maxRow),
+		maxRow: Math.max(minRow, maxRow)
+	}
+
+	const cols = bounds.maxCol - bounds.minCol + 1
+	const rows = bounds.maxRow - bounds.minRow + 1
 	const hexRadius = Number(data.hexRadius) || DEFAULT_HEX_RADIUS
 	const tilt = Number(data.tilt) || DEFAULT_HEX_TILT
 	const pitch = Number(data.pitch) || 45
@@ -234,10 +251,10 @@ export function normalizeHexMapData(raw) {
 		}
 	}
 
-	// Ensure all grid cells within cols x rows bounds are populated
+	// Ensure all grid cells within bounds are populated
 	const baseTerrain = (data.baseTerrain && BIOMES[data.baseTerrain]) ? data.baseTerrain : 'water'
-	for (let c = 0; c < cols; c++) {
-		for (let r = 0; r < rows; r++) {
+	for (let c = bounds.minCol; c <= bounds.maxCol; c++) {
+		for (let r = bounds.minRow; r <= bounds.maxRow; r++) {
 			const k = `${c},${r}`
 			if (!cells[k]) {
 				cells[k] = {
@@ -343,6 +360,7 @@ export function normalizeHexMapData(raw) {
 		description: data.description || '',
 		cols,
 		rows,
+		bounds,
 		hexRadius,
 		tilt,
 		pitch,
@@ -494,10 +512,16 @@ export function checkBridgeBetweenHexes(mapData, c1, r1, c2, r2, sharedEdge) {
 /**
  * Creates an empty default hex map.
  */
-export function createDefaultHexMap(cols = 20, rows = 15, baseTerrain = 'grass') {
+export function createDefaultHexMap(cols = 20, rows = 15, baseTerrain = 'grass', bounds = null) {
+	const b = bounds || {
+		minCol: 0,
+		maxCol: cols - 1,
+		minRow: 0,
+		maxRow: rows - 1
+	}
 	const cells = {}
-	for (let c = 0; c < cols; c++) {
-		for (let r = 0; r < rows; r++) {
+	for (let c = b.minCol; c <= b.maxCol; c++) {
+		for (let r = b.minRow; r <= b.maxRow; r++) {
 			cells[`${c},${r}`] = {
 				col: c,
 				row: r,
@@ -515,8 +539,9 @@ export function createDefaultHexMap(cols = 20, rows = 15, baseTerrain = 'grass')
 		id: 'new_hexmap',
 		name: 'Новая гексагональная карта',
 		description: '',
-		cols,
-		rows,
+		cols: b.maxCol - b.minCol + 1,
+		rows: b.maxRow - b.minRow + 1,
+		bounds: b,
 		hexRadius: DEFAULT_HEX_RADIUS,
 		tilt: DEFAULT_HEX_TILT,
 		cells,

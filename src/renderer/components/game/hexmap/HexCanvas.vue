@@ -21,18 +21,20 @@
 					'__discovered': badge.isDiscovered,
 					'__undiscovered': !badge.isDiscovered,
 					'__selected': badge.isSelected,
-					'__hovered': badge.isHovered
+					'__hovered': badge.isHovered,
+					'__current': badge.isCurrent
 				}"
 				:style="{
 					left: badge.xPercent + '%',
 					top: badge.yPercent + '%',
 					opacity: badge.opacity,
-					borderColor: badge.isSelected ? '#38bdf8' : (badge.isDiscovered ? badge.color : undefined)
+					borderColor: badge.isSelected ? '#38bdf8' : (badge.isCurrent ? '#38bdf8' : (badge.isDiscovered ? badge.color : undefined))
 				}"
 				@click.stop="onSettlementBadgeClick(badge)"
 				@pointerenter="onSettlementBadgePointerEnter(badge)"
 				@pointerleave="onSettlementBadgePointerLeave"
 			>
+				<span v-if="badge.isCurrent" class="badge-current-dot" title="Текущее местоположение"></span>
 				<span class="badge-icon">{{ badge.icon }}</span>
 				<span class="badge-name">{{ badge.displayName }}</span>
 				<span v-if="badge.hasLocalMap" class="badge-pin" title="Есть локальная карта">📍</span>
@@ -128,6 +130,10 @@ const props = defineProps({
 		type: [Array, Set],
 		default: null
 	},
+	currentLocation: {
+		type: String,
+		default: ''
+	},
 	readOnly: {
 		type: Boolean,
 		default: false
@@ -143,6 +149,10 @@ const props = defineProps({
 	factionsMap: {
 		type: [Array, Object],
 		default: null
+	},
+	pixelScale: {
+		type: Number,
+		default: 1
 	}
 })
 
@@ -160,8 +170,12 @@ const emit = defineEmits([
 
 const containerRef = ref(null)
 const canvasRef = ref(null)
-const canvasWidth = ref(1920)
-const canvasHeight = ref(1080)
+const canvasWidth = ref(960)
+const canvasHeight = ref(540)
+
+watch(() => props.pixelScale, () => {
+	resizeCanvas()
+})
 
 // Borders State
 const localShowBorders = ref(props.showBorders)
@@ -241,19 +255,26 @@ const hoveredHexInfo = computed(() => {
 	}
 })
 
+// Pre-filtered settlement cells list (cached, only recomputed when cells data changes)
+const settlementCells = computed(() => {
+	if (!props.mapData?.cells) return []
+	return Object.values(props.mapData.cells).filter(cell => cell?.settlement)
+})
+
 // Scale-independent HTML div settlement badges (auto-fading on zoom out, anti-overlap)
 const visibleSettlementBadges = computed(() => {
-	if (!props.mapData?.cells || canvasWidth.value <= 0 || canvasHeight.value <= 0) {
+	if (settlementCells.value.length === 0 || canvasWidth.value <= 0 || canvasHeight.value <= 0) {
 		return []
 	}
 
+	const scale = Math.max(1, props.pixelScale || 2)
 	const radius = props.mapData.hexRadius || DEFAULT_HEX_RADIUS
 	const camera = new HexPerspectiveCamera({
 		viewportWidth: canvasWidth.value,
 		viewportHeight: canvasHeight.value,
 		cameraX: cameraX.value,
 		cameraY: cameraY.value,
-		zoom: zoom.value,
+		zoom: zoom.value / scale,
 		pitch: pitch.value
 	})
 
@@ -262,7 +283,7 @@ const visibleSettlementBadges = computed(() => {
 	const horizonY = camera.getHorizonY()
 	const candidates = []
 
-	for (const cell of Object.values(props.mapData.cells)) {
+	for (const cell of settlementCells.value) {
 		const settlement = cell?.settlement
 		if (!settlement) continue
 
@@ -281,10 +302,11 @@ const visibleSettlementBadges = computed(() => {
 		if (!p.visible || p.distZ <= 100) continue
 		if (p.y < horizonY + 12) continue // Behind or right on the horizon
 
-		const screenX = p.x
-		const screenY = p.y
-		const xPercent = (screenX / cw) * 100
-		const yPercent = (screenY / ch) * 100
+		// In screen/physical pixels:
+		const screenX = p.x * scale
+		const screenY = p.y * scale
+		const xPercent = (p.x / cw) * 100
+		const yPercent = (p.y / ch) * 100
 
 		// Check if inside canvas viewport (with small margin)
 		if (xPercent < 2 || xPercent > 98 || yPercent < 2 || yPercent > 98) {
@@ -293,7 +315,7 @@ const visibleSettlementBadges = computed(() => {
 
 		// 2. Distance & Zoom-out Culling (Исчезновение при сильном отдалении)
 		// p.scale takes into account both perspective distance (distZ) and camera zoom!
-		const sc = p.scale
+		const sc = p.scale * scale
 		// If strongly zoomed out or very far back in perspective:
 		if (sc < 0.52) {
 			continue
@@ -316,10 +338,19 @@ const visibleSettlementBadges = computed(() => {
 			hoveredHex.value.col === cell.col &&
 			hoveredHex.value.row === cell.row
 		)
+		const curLoc = props.currentLocation || ''
+		const isCarneActive =
+			settlement.id === 'carne_village' &&
+			(curLoc.startsWith('carne') || curLoc === 'carne_village')
+		const isCurrent = Boolean(
+			curLoc &&
+			(curLoc === settlement.id || curLoc === settlement.sceneId || isCarneActive)
+		)
 
 		// Importance score for anti-collision sorting
 		let score = 0
 		if (isSelected) score += 2000
+		if (isCurrent) score += 1500
 		if (isHovered) score += 1000
 		if (isDiscovered) score += 100
 		const typeScores = {
@@ -345,11 +376,12 @@ const visibleSettlementBadges = computed(() => {
 			isDiscovered,
 			isSelected,
 			isHovered,
+			isCurrent,
 			screenX,
 			screenY,
 			xPercent,
 			yPercent,
-			opacity: isSelected || isHovered ? 1.0 : opacity,
+			opacity: isSelected || isHovered || isCurrent ? 1.0 : opacity,
 			score
 		})
 	}
@@ -416,6 +448,8 @@ function clientToWorldCoords(clientX, clientY) {
 	const rect = canvas.getBoundingClientRect()
 	if (rect.width === 0 || rect.height === 0) return null
 
+	const scale = Math.max(1, props.pixelScale || 2)
+
 	const scaleX = canvas.width / rect.width
 	const scaleY = canvas.height / rect.height
 
@@ -427,7 +461,7 @@ function clientToWorldCoords(clientX, clientY) {
 		viewportHeight: canvas.height,
 		cameraX: cameraX.value,
 		cameraY: cameraY.value,
-		zoom: zoom.value,
+		zoom: zoom.value / scale,
 		pitch: pitch.value
 	})
 
@@ -487,6 +521,10 @@ function onPointerMove(e) {
 			cameraX.value = dragStart.camX - dx / zoom.value
 			cameraY.value = dragStart.camY - dy / (zoom.value * cosT)
 		}
+		// While actively dragging/panning the map, suppress raycast hover and DOM updates
+		hoveredHex.value = null
+		hoveredEdge.value = null
+		return
 	}
 
 	const ground = clientToWorldCoords(e.clientX, e.clientY)
@@ -501,7 +539,12 @@ function onPointerMove(e) {
 	const hex = screenToHex(ground.x, ground.y, radius, 1.0)
 
 	// Check bounds
-	if (hex.col >= 0 && hex.col < props.mapData.cols && hex.row >= 0 && hex.row < props.mapData.rows) {
+	const minCol = props.mapData.bounds?.minCol ?? 0
+	const maxCol = props.mapData.bounds?.maxCol ?? ((props.mapData.cols || 20) - 1)
+	const minRow = props.mapData.bounds?.minRow ?? 0
+	const maxRow = props.mapData.bounds?.maxRow ?? ((props.mapData.rows || 15) - 1)
+
+	if (hex.col >= minCol && hex.col <= maxCol && hex.row >= minRow && hex.row <= maxRow) {
 		hoveredHex.value = hex
 
 		if (props.activeTool === 'river') {
@@ -626,10 +669,16 @@ function zoomOut() {
 function resetCamera() {
 	if (!canvasRef.value || !props.mapData) return
 	const radius = props.mapData.hexRadius || DEFAULT_HEX_RADIUS
-	const cols = props.mapData.cols || 20
-	const rows = props.mapData.rows || 15
+	const minCol = props.mapData.bounds?.minCol ?? 0
+	const maxCol = props.mapData.bounds?.maxCol ?? ((props.mapData.cols || 20) - 1)
+	const minRow = props.mapData.bounds?.minRow ?? 0
+	const maxRow = props.mapData.bounds?.maxRow ?? ((props.mapData.rows || 15) - 1)
 
-	const centerGround = hexToWorldGroundCenter(Math.floor(cols / 2), Math.floor(rows / 2), radius)
+	const centerGround = hexToWorldGroundCenter(
+		Math.floor((minCol + maxCol) / 2),
+		Math.floor((minRow + maxRow) / 2),
+		radius
+	)
 
 	zoom.value = 1.0
 	pitch.value = calculateDynamicPitch(1.0)
@@ -637,6 +686,20 @@ function resetCamera() {
 	cameraY.value = centerGround.y
 	emit('pitch-change', pitch.value)
 	emit('update:pitch', pitch.value)
+}
+
+let offscreenCanvas = null
+let offscreenCtx = null
+
+function ensureOffscreen(w, h) {
+	if (!offscreenCanvas) {
+		offscreenCanvas = document.createElement('canvas')
+		offscreenCtx = offscreenCanvas.getContext('2d', { willReadFrequently: false })
+	}
+	if (offscreenCanvas.width !== w || offscreenCanvas.height !== h) {
+		offscreenCanvas.width = w
+		offscreenCanvas.height = h
+	}
 }
 
 function resizeCanvas() {
@@ -649,30 +712,45 @@ function resizeCanvas() {
 	const targetH = Math.round(rect.height)
 
 	if (targetW > 0 && targetH > 0) {
+		const scale = Math.max(1, props.pixelScale || 2)
+		const internalW = Math.max(1, Math.round(targetW / scale))
+		const internalH = Math.max(1, Math.round(targetH / scale))
+
+		// Visible canvas is kept 1:1 with screen/container for crystal-clear sharp pixels
 		if (canvas.width !== targetW || canvas.height !== targetH) {
 			canvas.width = targetW
 			canvas.height = targetH
 		}
-		canvasWidth.value = targetW
-		canvasHeight.value = targetH
+
+		ensureOffscreen(internalW, internalH)
+
+		canvasWidth.value = internalW
+		canvasHeight.value = internalH
 	}
 }
 
 function renderLoop(currentTime) {
 	if (!canvasRef.value || !props.mapData) return
-	const ctx = canvasRef.value.getContext('2d')
-	if (!ctx) return
+	const mainCtx = canvasRef.value.getContext('2d')
+	if (!mainCtx) return
 
+	const scale = Math.max(1, props.pixelScale || 2)
 	const elapsedSec = (currentTime - animStartTime) / 1000
 
-	// Clear canvas
-	ctx.clearRect(0, 0, canvasRef.value.width, canvasRef.value.height)
+	ensureOffscreen(canvasWidth.value, canvasHeight.value)
+	if (!offscreenCtx) return
 
-	// Render map with 3D perspective camera (Canvas badges disabled in favor of HTML div badges)
-	renderHexMap(ctx, props.mapData, {
+	// 1. Clear offscreen buffer
+	offscreenCtx.clearRect(0, 0, offscreenCanvas.width, offscreenCanvas.height)
+	if (offscreenCtx.imageSmoothingEnabled !== undefined) {
+		offscreenCtx.imageSmoothingEnabled = false
+	}
+
+	// 2. Render entire map at 0.5x resolution into offscreen buffer
+	renderHexMap(offscreenCtx, props.mapData, {
 		cameraX: cameraX.value,
 		cameraY: cameraY.value,
-		zoom: zoom.value,
+		zoom: zoom.value / scale,
 		pitch: pitch.value,
 		hoveredHex: hoveredHex.value,
 		selectedHex: props.selectedHex,
@@ -685,6 +763,17 @@ function renderLoop(currentTime) {
 		factionsMap: props.factionsMap,
 		animTime: elapsedSec
 	})
+
+	// 3. Blit offscreen buffer to visible canvas with STRICT nearest-neighbor (no blur/smoothing)
+	mainCtx.clearRect(0, 0, canvasRef.value.width, canvasRef.value.height)
+	if (mainCtx.imageSmoothingEnabled !== undefined) {
+		mainCtx.imageSmoothingEnabled = false
+	}
+	mainCtx.drawImage(
+		offscreenCanvas,
+		0, 0, offscreenCanvas.width, offscreenCanvas.height,
+		0, 0, canvasRef.value.width, canvasRef.value.height
+	)
 
 	animationFrameId = requestAnimationFrame(renderLoop)
 }
@@ -713,6 +802,8 @@ onUnmounted(() => {
 	if (animationFrameId) {
 		cancelAnimationFrame(animationFrameId)
 	}
+	offscreenCanvas = null
+	offscreenCtx = null
 })
 
 defineExpose({
@@ -738,6 +829,9 @@ defineExpose({
 	width: 100%;
 	height: 100%;
 	cursor: grab;
+	image-rendering: -webkit-optimize-contrast;
+	image-rendering: -moz-crisp-edges;
+	image-rendering: pixelated;
 }
 
 .hex-canvas-element:active {
@@ -893,5 +987,32 @@ defineExpose({
 .badge-pin {
 	font-size: 0.85em;
 	margin-left: 0.1em;
+}
+
+.hex-settlement-badge.__current {
+	border-color: #38bdf8;
+	background: rgba(12, 74, 110, 0.94);
+	box-shadow: 0 0 0.8em rgba(56, 189, 248, 0.7), 0 0.2em 0.5em rgba(0, 0, 0, 0.7);
+	animation: badge-current-pulse 2s infinite ease-in-out;
+	z-index: 15;
+}
+
+@keyframes badge-current-pulse {
+	0%, 100% {
+		box-shadow: 0 0 0.5em rgba(56, 189, 248, 0.6), 0 0.2em 0.5em rgba(0, 0, 0, 0.7);
+	}
+	50% {
+		box-shadow: 0 0 1.2em rgba(56, 189, 248, 1), 0 0.2em 0.5em rgba(0, 0, 0, 0.7);
+	}
+}
+
+.badge-current-dot {
+	display: inline-block;
+	width: 0.55em;
+	height: 0.55em;
+	border-radius: 50%;
+	background: #38bdf8;
+	box-shadow: 0 0 0.35em #38bdf8;
+	margin-right: 0.15em;
 }
 </style>

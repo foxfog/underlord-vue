@@ -24,11 +24,17 @@ import {
 import {
 	hexToWorldGroundCenter,
 	getHexGroundVertices,
+	getOrganicGroundVertex,
+	getOrganicHexGroundVertices,
 	getHexEdgeEndpoints,
 	getHexNeighbor,
 	getCanonicalEdgeKey,
 	HEX_EDGES,
 	HexPerspectiveCamera,
+	getVisibleHexGridBounds,
+	getHexEdgeCurve,
+	getOrganicCellPolygon,
+	getOrganicCellPerimeter,
 	getRiverMeanderControls,
 	getBorderMeanderControls,
 	getRoadPathControls,
@@ -36,6 +42,154 @@ import {
 	hashString,
 	getHashFloat
 } from './hexCoords.js'
+
+// ── Biome Texture Cache ────────────────────────────────────────────────────────
+// Maps biome IDs to their texture image paths (256×256 tileable textures).
+// Only land biomes have textures; water biomes use animated shimmer instead.
+// Texture rendering toggle: disabled for maximum performance.
+export let ENABLE_BIOME_TEXTURES = true
+
+export function setEnableBiomeTextures(enabled) {
+	ENABLE_BIOME_TEXTURES = !!enabled
+}
+
+// Toggle for organic multi-bend curves vs strict hexagonal grid geometry.
+export let ENABLE_ORGANIC_EDGES = true
+
+export function setEnableOrganicEdges(enabled) {
+	ENABLE_ORGANIC_EDGES = !!enabled
+}
+
+const BIOME_TEXTURE_PATH = {
+	grass: '/images/sprites/hexagon/meadow.jpg',
+	plains: '/images/sprites/hexagon/plain.jpg',
+	desert: '/images/sprites/hexagon/desert.jpg',
+	snow: '/images/sprites/hexagon/snow.jpg',
+	tundra: '/images/sprites/hexagon/tundra.jpg'
+}
+
+// Singleton image cache: biomeId -> HTMLImageElement (loaded) | 'loading' | undefined
+const _biomeTextureCache = new Map()
+
+/**
+ * Returns a loaded HTMLImageElement for a biome texture, or null if not yet ready.
+ * Triggers background loading on first call for each biome.
+ *
+ * @param {string} biomeId
+ * @returns {HTMLImageElement|null}
+ */
+function getBiomeTexture(biomeId) {
+	if (!ENABLE_BIOME_TEXTURES) return null
+	const path = BIOME_TEXTURE_PATH[biomeId]
+	if (!path) return null
+	// Gracefully degrade in Node.js test environments where Image/HTMLImageElement don't exist
+	if (typeof Image === 'undefined') return null
+
+	const cached = _biomeTextureCache.get(biomeId)
+	if (typeof HTMLImageElement !== 'undefined' && cached instanceof HTMLImageElement) return cached
+	if (cached === 'loading') return null
+
+	// Kick off load
+	_biomeTextureCache.set(biomeId, 'loading')
+	const img = new Image()
+	img.onload = () => _biomeTextureCache.set(biomeId, img)
+	img.onerror = () => _biomeTextureCache.delete(biomeId)
+	img.src = path
+	return null
+}
+
+// Singleton pattern cache: biomeId -> { img, pattern }
+const _biomePatternCache = new Map()
+
+/**
+ * Returns a CanvasPattern for a loaded biome texture image.
+ */
+function getOrCreateBiomePattern(ctx, biomeId, img) {
+	if (!ctx || typeof ctx.createPattern !== 'function' || !img) return null
+	const cached = _biomePatternCache.get(biomeId)
+	if (cached && cached.img === img) return cached.pattern
+
+	try {
+		const pattern = ctx.createPattern(img, 'repeat')
+		if (pattern) {
+			_biomePatternCache.set(biomeId, { img, pattern })
+		}
+		return pattern
+	} catch (e) {
+		return null
+	}
+}
+
+/**
+ * Synchronizes the 2D repeating CanvasPattern transform with camera world translation,
+ * scale, and 3D perspective ground-plane foreshortening (cosT).
+ *
+ * @param {CanvasPattern} pattern
+ * @param {HexPerspectiveCamera} camera
+ * @param {number} worldSize - Size of 1 texture tile in world units
+ */
+function applyPatternWorldTransform(pattern, camera, worldSize = 160) {
+	if (!pattern || typeof pattern.setTransform !== 'function') return
+	const DomMat = typeof DOMMatrix !== 'undefined' ? DOMMatrix : (typeof window !== 'undefined' ? window.DOMMatrix : null)
+	if (!DomMat) return
+
+	try {
+		// 1 texture repeat (256 texels) corresponds to worldSize ground units
+		const sx = (worldSize / 256) * camera.zoom
+		const sy = (worldSize / 256) * camera.zoom * camera.cosT
+
+		const periodX = 256 * sx
+		const periodY = 256 * sy
+
+		// Shift texture in sync with camera world translation
+		let tx = camera.cx0 - camera.cameraX * camera.zoom
+		let ty = camera.cy0 - camera.cameraY * camera.zoom * camera.cosT
+
+		if (periodX > 0) {
+			tx = ((tx % periodX) + periodX) % periodX
+		}
+		if (periodY > 0) {
+			ty = ((ty % periodY) + periodY) % periodY
+		}
+
+		const mat = new DomMat()
+		mat.translateSelf(tx, ty)
+		mat.scaleSelf(sx, sy)
+		pattern.setTransform(mat)
+	} catch (e) {
+		// Ignore any matrix transformation error
+	}
+}
+
+/**
+ * Frustum culling check: returns true if the hex cell's projected bounding circle
+ * intersects the camera viewport (including horizon culling).
+ */
+export function isCellVisible(camera, col, row, radius, marginMultiplier = 2.5) {
+	if (!camera) return true
+	const h = 1.7320508075688772 * radius
+	const wx = col * 1.5 * radius
+	const wy = row * h + (Math.abs(col % 2) === 1 ? h * 0.5 : 0)
+
+	const dx = wx - camera.cameraX
+	const dy = wy - camera.cameraY
+
+	const distZ = camera.focalDistance - dy * camera.sinT
+	if (distZ <= 100) return false
+
+	const scale = (camera.focalDistance / distZ) * camera.zoom
+	const x = camera.cx0 + dx * scale
+	const y = camera.cy0 + (dy * camera.cosT) * scale
+
+	const maxScreenR = radius * scale * marginMultiplier
+	const horizonY = camera.getHorizonY ? camera.getHorizonY() : -999999
+	if (y + maxScreenR < horizonY) return false
+	if (x + maxScreenR < 0 || x - maxScreenR > camera.viewportWidth) return false
+	if (y + maxScreenR < 0 || y - maxScreenR > camera.viewportHeight) return false
+	return true
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
 
 /**
  * Adjusts color brightness by percent for 3D directional facet shading.
@@ -90,49 +244,137 @@ export function renderHexMap(ctx, mapData, options = {}) {
 	})
 
 	ctx.save()
-
-	// 0. Atmospheric horizon sky & mist at the top of the canvas
-	drawAtmosphere(ctx, camera)
-
-	// 1. Draw all hex base cells (flat ground plane, sorted North to South by true ground center Y)
-	const cellEntries = Object.values(mapData.cells || {})
-	cellEntries.sort((a, b) => {
-		const yA = hexToWorldGroundCenter(a.col, a.row, radius).y
-		const yB = hexToWorldGroundCenter(b.col, b.row, radius).y
-		return yA - yB || a.col - b.col
-	})
-
-	for (const cell of cellEntries) {
-		drawHexCell(ctx, camera, cell, radius, animTime)
+	if (ctx.imageSmoothingEnabled !== undefined) {
+		ctx.imageSmoothingEnabled = false
 	}
 
-	// 1.5. Political borders & territory tint (Civilization style)
+	// 0. Build canonical river lookup map once per frame
+	const riverMap = new Map()
+	if (mapData.rivers) {
+		for (const r of Object.values(mapData.rivers)) {
+			const cKey = getCanonicalEdgeKey(r.col, r.row, r.edge)
+			riverMap.set(cKey, r)
+		}
+	}
+
+	// 0.05. Check organic edges setting & calculate dynamic LOD level
+	const mapOrganic = options.organic !== undefined ? options.organic : (mapData?.organic !== undefined ? mapData.organic : ENABLE_ORGANIC_EDGES)
+
+	// Level-Of-Detail (LOD) & Far-Plane Culling Architecture:
+	// screenRadius is the projected radius of a hex cell on screen in pixels
+	const screenRadius = radius * camera.zoom
+	let lodLevel = 0
+	if (screenRadius < 12) {
+		lodLevel = 2 // Strategic Overview (Civilization/Total War style: solid biomes, no cell borders, bold frontiers/rivers)
+	} else if (screenRadius < 20) {
+		lodLevel = 1 // Medium Distance (straight hexes, batched patterns, fading borders)
+	} else {
+		lodLevel = 0 // Close-up (Full fidelity: organic Bezier curves, per-cell random UV textures, water shimmer)
+	}
+
+	// At LOD 1 and 2, force straight hex geometry for a 10x-50x speedup
+	const useOrganic = lodLevel === 0 && mapOrganic
+
+	// 0.1. Atmospheric horizon sky & mist at the top of the canvas
+	drawAtmosphere(ctx, camera)
+
+	// 0.2. Fast Frustum Grid Bounding Box Culling (cuts 10,000 cells down to ~300 visible cells)
+	const mapBounds = mapData.bounds || {
+		minCol: 0,
+		maxCol: (mapData.cols || 20) - 1,
+		minRow: 0,
+		maxRow: (mapData.rows || 15) - 1
+	}
+	const vBounds = getVisibleHexGridBounds(camera, radius, mapBounds)
+
+	// Collect visible cells directly from mapData.cells in O(N_visible) time
+	const visibleCells = []
+	const visibleReliefCells = []
+	const cellsMap = mapData.cells || {}
+
+	for (let c = vBounds.minCol; c <= vBounds.maxCol; c++) {
+		for (let r = vBounds.minRow; r <= vBounds.maxRow; r++) {
+			const cell = cellsMap[`${c},${r}`]
+			if (cell && isCellVisible(camera, c, r, radius)) {
+				visibleCells.push(cell)
+				if (cell.feature === 'mountain' || cell.settlement || (lodLevel < 2 && cell.feature === 'hills')) {
+					visibleReliefCells.push(cell)
+				}
+			}
+		}
+	}
+
+	// 1. Draw all hex base cells as batched continuous biome layers (flat ground plane)
+	drawBaseCellsBatched(ctx, camera, mapData, radius, animTime, mapData.seed || 0, riverMap, {
+		organic: useOrganic,
+		lodLevel,
+		screenRadius,
+		visibleCells
+	})
+
+	// 1.5. Political territory fill (Civilization style, ground tint)
 	if (showBorders) {
-		drawPoliticalBorders(ctx, camera, mapData, radius, factionsMap)
+		drawPoliticalBorders(ctx, camera, mapData, radius, factionsMap, riverMap, 1, {
+			organic: useOrganic,
+			lodLevel,
+			screenRadius,
+			visibleCells,
+			vBounds
+		})
 	}
 
 	// 2. Draw rivers along edges (with animated flowing water on ground plane Z = 0)
-	drawRivers(ctx, camera, mapData, radius, animTime)
+	drawRivers(ctx, camera, mapData, radius, animTime, {
+		organic: useOrganic,
+		lodLevel,
+		screenRadius
+	})
 
-	// 3. Draw 2.5D Hill relief sprites (biome-adaptive rolling mounds, inside hexes)
-	for (const cell of cellEntries) {
-		if (cell.feature === 'hills') {
-			drawHills(ctx, camera, cell, radius)
+	// Sort ONLY the visible relief cells (hills, mountains, settlements) by Y back-to-front
+	// (0-20 items instead of 10,000 cells!)
+	if (visibleReliefCells.length > 1) {
+		visibleReliefCells.sort((a, b) => {
+			const yA = a.row + (a.col % 2 !== 0 ? 0.5 : 0)
+			const yB = b.row + (b.col % 2 !== 0 ? 0.5 : 0)
+			return yA - yB || a.col - b.col
+		})
+	}
+
+	// 3. Draw 2.5D Hill relief sprites (biome-adaptive rolling mounds, inside hexes; skipped at LOD 2)
+	if (lodLevel < 2) {
+		for (const cell of visibleReliefCells) {
+			if (cell.feature === 'hills') {
+				drawHills(ctx, camera, cell, radius)
+			}
 		}
 	}
 
 	// 4. Draw roads across all cells (on top of ground and hill sprites, seamless multi-pass)
-	const roadData = buildRoadRenderData(camera, mapData, radius)
+	const roadData = buildRoadRenderData(camera, mapData, radius, { lodLevel })
 	renderRoads(ctx, roadData)
 
 	// 5. Draw bridges where roads cross rivers
 	drawBridges(ctx, camera, mapData, radius)
 
+	// 5.5. Political border ribbons (drawn on top of rivers, roads, and bridges)
+	if (showBorders) {
+		drawPoliticalBorders(ctx, camera, mapData, radius, factionsMap, riverMap, 2, {
+			organic: useOrganic,
+			lodLevel,
+			screenRadius,
+			visibleCells,
+			vBounds
+		})
+	}
+
 	// 6. Draw 2.5D Pop-Up Objects (Mountains and Settlements)
 	// Rendered back-to-front (depth sorted by true ground Y)
-	for (const cell of cellEntries) {
+	for (const cell of visibleReliefCells) {
 		if (cell.feature === 'mountain') {
-			drawMountain(ctx, camera, cell, radius)
+			const mRad = cell.mountainRadius || 1
+			if (isCellVisible(camera, cell.col, cell.row, radius, mRad * 2.8)) {
+				drawMountain(ctx, camera, cell, radius)
+			}
 		}
 
 		if (cell.settlement) {
@@ -144,16 +386,16 @@ export function renderHexMap(ctx, mapData, options = {}) {
 	// 7. Draw hovered/selected hex highlights
 	if (hoveredHex) {
 		const hCell = mapData.cells?.[`${hoveredHex.col},${hoveredHex.row}`]
-		drawHexHighlight(ctx, camera, hoveredHex.col, hoveredHex.row, radius, '#38bdf8', 0.25, 2, hCell)
+		drawHexHighlight(ctx, camera, hoveredHex.col, hoveredHex.row, radius, '#38bdf8', 0.25, 2, hCell, mapData.seed || 0, riverMap, useOrganic)
 	}
 	if (selectedHex) {
 		const sCell = mapData.cells?.[`${selectedHex.col},${selectedHex.row}`]
-		drawHexHighlight(ctx, camera, selectedHex.col, selectedHex.row, radius, '#f6c445', 0.35, 3, sCell)
+		drawHexHighlight(ctx, camera, selectedHex.col, selectedHex.row, radius, '#f6c445', 0.35, 3, sCell, mapData.seed || 0, riverMap, useOrganic)
 	}
 
 	// 7. Draw hovered edge highlight for River tool
 	if (activeTool === 'river' && hoveredHex && hoveredEdge) {
-		drawEdgeHighlight(ctx, camera, hoveredHex.col, hoveredHex.row, hoveredEdge, radius, activeRiverWidth)
+		drawEdgeHighlight(ctx, camera, hoveredHex.col, hoveredHex.row, hoveredEdge.edge, radius, activeRiverWidth, mapData.seed || 0, useOrganic)
 	}
 
 	ctx.restore()
@@ -180,36 +422,454 @@ function drawAtmosphere(ctx, camera) {
 }
 
 /**
- * Draws a single flat-topped hex cell on the 3D perspective ground plane.
+ * Draws all visible base hex cells grouped by biome in batched compound passes:
+ *   1. Solid biome base color fill across the compound path of all cells in the biome
+ *   2. Infinite repeating pattern texture layer (single clip + transformed CanvasPattern per biome)
+ *   3. Organic hex edge strokes (single compound stroke per biome)
+ *   4. Water shimmer animation for water/ocean biomes
+ *
+ * This reduces GPU clipping stencil switches and draw calls by ~99% (from 500-1000 down to 3-5),
+ * while creating a continuous, seamless landscape across adjacent hexes of the same biome.
  */
-function drawHexCell(ctx, camera, cell, radius, animTime) {
-	const center = hexToWorldGroundCenter(cell.col, cell.row, radius)
-	const groundVerts = getHexGroundVertices(center.x, center.y, radius)
-	const screenVerts = groundVerts.map(v => camera.project(v.x, v.y, 0))
+function drawBaseCellsBatched(ctx, camera, mapData, radius, animTime, seed = 0, riverMap = null, options = {}) {
+	const useOrganic = options.organic !== undefined ? options.organic : (mapData?.organic !== undefined ? mapData.organic : ENABLE_ORGANIC_EDGES)
+	const screenRadius = options.screenRadius ?? (radius * camera.zoom)
+	const lodLevel = options.lodLevel !== undefined ? options.lodLevel : (screenRadius < 12 ? 2 : (screenRadius < 20 ? 1 : 0))
 
-	if (!screenVerts.some(v => v.visible)) return
+	let visibleCells = options.visibleCells
+	if (!visibleCells) {
+		const cellEntries = Object.values(mapData.cells || {})
+		if (cellEntries.length === 0) return
+		visibleCells = []
+		for (const cell of cellEntries) {
+			if (isCellVisible(camera, cell.col, cell.row, radius)) {
+				visibleCells.push(cell)
+			}
+		}
+	}
+	if (visibleCells.length === 0) return
 
-	const biome = BIOMES[cell.terrain] || BIOMES.grass
+	// 2. Group visible cells by terrain
+	const biomeGroups = new Map()
+	for (const cell of visibleCells) {
+		const terrain = cell.terrain || 'grass'
+		let group = biomeGroups.get(terrain)
+		if (!group) {
+			group = []
+			biomeGroups.set(terrain, group)
+		}
+		group.push(cell)
+	}
 
-	// Draw main hex polygon on perspective ground plane
+	// 3. Render each biome group in batches
+	for (const [terrain, cells] of biomeGroups.entries()) {
+		const biome = BIOMES[terrain] || BIOMES.grass
+
+		const projectedList = []
+		let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
+
+		for (const cell of cells) {
+			const center = hexToWorldGroundCenter(cell.col, cell.row, radius)
+
+			if (!useOrganic) {
+				const groundVerts = getHexGroundVertices(center.x, center.y, radius)
+				let cellHasVisible = false
+				const pVerts = []
+				for (let i = 0; i < 6; i++) {
+					const pv = camera.project(groundVerts[i].x, groundVerts[i].y, 0)
+					pVerts.push(pv)
+					if (pv.visible) cellHasVisible = true
+					if (pv.x < minX) minX = pv.x
+					if (pv.x > maxX) maxX = pv.x
+					if (pv.y < minY) minY = pv.y
+					if (pv.y > maxY) maxY = pv.y
+				}
+				if (cellHasVisible) {
+					projectedList.push({ cell, pVerts, center })
+				}
+			} else {
+				const perimeter = getOrganicCellPerimeter(cell.col, cell.row, radius, seed, riverMap)
+				const pStart = camera.project(perimeter[0].from.x, perimeter[0].from.y, 0)
+				let cellHasVisible = pStart.visible
+
+				const edges = perimeter.map(e => {
+					const m1 = e.mid1 || e.mid
+					const m2 = e.mid2 || e.to
+					const cp1C = e.cp1C || e.cp2B
+					const cp2C = e.cp2C || e.to
+
+					const pCP1A = camera.project(e.cp1A.x, e.cp1A.y, 0)
+					const pCP2A = camera.project(e.cp2A.x, e.cp2A.y, 0)
+					const pMid1 = camera.project(m1.x, m1.y, 0)
+					const pCP1B = camera.project(e.cp1B.x, e.cp1B.y, 0)
+					const pCP2B = camera.project(e.cp2B.x, e.cp2B.y, 0)
+					const pMid2 = camera.project(m2.x, m2.y, 0)
+					const pCP1C = camera.project(cp1C.x, cp1C.y, 0)
+					const pCP2C = camera.project(cp2C.x, cp2C.y, 0)
+					const pTo = camera.project(e.to.x, e.to.y, 0)
+
+					if (pTo.visible || pMid1.visible || pMid2.visible) cellHasVisible = true
+
+					if (pStart.x < minX) minX = pStart.x; if (pStart.x > maxX) maxX = pStart.x
+					if (pStart.y < minY) minY = pStart.y; if (pStart.y > maxY) maxY = pStart.y
+					if (pTo.x < minX) minX = pTo.x; if (pTo.x > maxX) maxX = pTo.x
+					if (pTo.y < minY) minY = pTo.y; if (pTo.y > maxY) maxY = pTo.y
+
+					return { pCP1A, pCP2A, pMid1, pCP1B, pCP2B, pMid2, pCP1C, pCP2C, pTo }
+				})
+
+				if (cellHasVisible) {
+					projectedList.push({ cell, pStart, edges, center })
+				}
+			}
+		}
+
+		if (projectedList.length === 0) continue
+
+		function traceGroupPath() {
+			ctx.beginPath()
+			if (!useOrganic) {
+				for (const pc of projectedList) {
+					ctx.moveTo(pc.pVerts[0].x, pc.pVerts[0].y)
+					for (let i = 1; i < 6; i++) {
+						ctx.lineTo(pc.pVerts[i].x, pc.pVerts[i].y)
+					}
+					ctx.closePath()
+				}
+			} else {
+				for (const pc of projectedList) {
+					ctx.moveTo(pc.pStart.x, pc.pStart.y)
+					for (const pe of pc.edges) {
+						ctx.bezierCurveTo(pe.pCP1A.x, pe.pCP1A.y, pe.pCP2A.x, pe.pCP2A.y, pe.pMid1.x, pe.pMid1.y)
+						ctx.bezierCurveTo(pe.pCP1B.x, pe.pCP1B.y, pe.pCP2B.x, pe.pCP2B.y, pe.pMid2.x, pe.pMid2.y)
+						ctx.bezierCurveTo(pe.pCP1C.x, pe.pCP1C.y, pe.pCP2C.x, pe.pCP2C.y, pe.pTo.x, pe.pTo.y)
+					}
+					ctx.closePath()
+				}
+			}
+		}
+
+		// 3.1. Base solid color fill (1 call for all cells of this biome)
+		traceGroupPath()
+		ctx.fillStyle = biome.color
+		ctx.fill()
+
+		// 3.2. Biome Texture Layer:
+		// - LOD 0: Distinct random UV sampling per cell (close-up handcrafted feel)
+		// - LOD 1: Batched repeating CanvasPattern (1 clip + 1 fill for entire biome layer!)
+		// - LOD 2: Solid biome fill only (0 texture overhead, clean strategic atlas style)
+		if (ENABLE_BIOME_TEXTURES && !biome.isWater) {
+			const tex = getBiomeTexture(terrain)
+			if (tex) {
+				if (lodLevel === 0) {
+					for (const pc of projectedList) {
+						drawSingleCellRandomTexture(ctx, pc, tex, seed)
+					}
+				} else if (lodLevel === 1) {
+					const pattern = getOrCreateBiomePattern(ctx, terrain, tex)
+					if (pattern) {
+						ctx.save()
+						traceGroupPath()
+						ctx.clip()
+						applyPatternWorldTransform(pattern, camera, 160)
+						ctx.fillStyle = pattern
+						ctx.fillRect(minX, minY, maxX - minX, maxY - minY)
+						ctx.restore()
+					}
+				}
+			}
+		}
+
+		// 3.3. Hex edge stroke:
+		// - LOD 0: Full border stroke
+		// - LOD 1: Smoothly fade border alpha from 0.4 down to 0 as screenRadius approaches 12
+		// - LOD 2: Completely suppress cell border strokes (eliminates dark moiré grid)
+		if (lodLevel === 0) {
+			traceGroupPath()
+			ctx.lineWidth = Math.max(0.6, 1 * camera.zoom)
+			ctx.strokeStyle = hexToRgba(biome.edgeColor || '#000000', 0.4)
+			ctx.stroke()
+		} else if (lodLevel === 1) {
+			const fadeAlpha = 0.4 * Math.max(0, Math.min(1, (screenRadius - 12) / 8))
+			if (fadeAlpha > 0.02) {
+				traceGroupPath()
+				ctx.lineWidth = Math.max(0.5, 0.8 * camera.zoom)
+				ctx.strokeStyle = hexToRgba(biome.edgeColor || '#000000', fadeAlpha)
+				ctx.stroke()
+			}
+		}
+
+		// 3.4. Water shimmer animation for water/ocean (LOD 0 only)
+		if (biome.isWater && lodLevel === 0) {
+			for (const pc of projectedList) {
+				drawWaterShimmer(ctx, camera, pc.center.x, pc.center.y, radius, animTime, pc.cell.terrain === 'ocean')
+			}
+		}
+	}
+}
+
+/**
+ * Draws a single hex cell's texture sampled from a deterministic pseudo-random UV offset,
+ * clipped to either the organic multi-bend contour or strict straight hex geometry.
+ */
+function drawSingleCellRandomTexture(ctx, pc, tex, seed = 0) {
+	let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
+	if (pc.pVerts) {
+		for (const pv of pc.pVerts) {
+			if (pv.x < minX) minX = pv.x
+			if (pv.x > maxX) maxX = pv.x
+			if (pv.y < minY) minY = pv.y
+			if (pv.y > maxY) maxY = pv.y
+		}
+	} else {
+		minX = pc.pStart.x
+		maxX = pc.pStart.x
+		minY = pc.pStart.y
+		maxY = pc.pStart.y
+		for (const pe of pc.edges) {
+			if (pe.pCP1A.x < minX) minX = pe.pCP1A.x; if (pe.pCP1A.x > maxX) maxX = pe.pCP1A.x
+			if (pe.pCP1A.y < minY) minY = pe.pCP1A.y; if (pe.pCP1A.y > maxY) maxY = pe.pCP1A.y
+			if (pe.pMid1.x < minX) minX = pe.pMid1.x; if (pe.pMid1.x > maxX) maxX = pe.pMid1.x
+			if (pe.pMid1.y < minY) minY = pe.pMid1.y; if (pe.pMid1.y > maxY) maxY = pe.pMid1.y
+			if (pe.pMid2.x < minX) minX = pe.pMid2.x; if (pe.pMid2.x > maxX) maxX = pe.pMid2.x
+			if (pe.pMid2.y < minY) minY = pe.pMid2.y; if (pe.pMid2.y > maxY) maxY = pe.pMid2.y
+			if (pe.pTo.x < minX) minX = pe.pTo.x; if (pe.pTo.x > maxX) maxX = pe.pTo.x
+			if (pe.pTo.y < minY) minY = pe.pTo.y; if (pe.pTo.y > maxY) maxY = pe.pTo.y
+		}
+	}
+
+	const boundW = maxX - minX
+	const boundH = maxY - minY
+	const sCx = (minX + maxX) / 2
+	const sCy = (minY + maxY) / 2
+	const BLEED = 1.25
+	const drawSize = Math.max(boundW, boundH) * BLEED
+
+	const CROP_PX = 128
+	const srcW = tex.naturalWidth || 256
+	const srcH = tex.naturalHeight || 256
+	const cropPx = Math.min(CROP_PX, srcW, srcH)
+
+	// Deterministic random UV offset: each cell samples a unique random crop
+	const cellHash = hashString(`${pc.cell.col},${pc.cell.row}:texOfs:${seed}`)
+	const maxOx = Math.max(0, srcW - cropPx)
+	const maxOy = Math.max(0, srcH - cropPx)
+	const ox = ((getHashFloat(cellHash, 0) * 0.5 + 0.5) * maxOx) | 0
+	const oy = ((getHashFloat(cellHash, 1) * 0.5 + 0.5) * maxOy) | 0
+
+	ctx.save()
 	ctx.beginPath()
-	ctx.moveTo(screenVerts[0].x, screenVerts[0].y)
-	for (let i = 1; i < screenVerts.length; i++) {
-		ctx.lineTo(screenVerts[i].x, screenVerts[i].y)
+	if (pc.pVerts) {
+		ctx.moveTo(pc.pVerts[0].x, pc.pVerts[0].y)
+		for (let i = 1; i < 6; i++) {
+			ctx.lineTo(pc.pVerts[i].x, pc.pVerts[i].y)
+		}
+	} else {
+		ctx.moveTo(pc.pStart.x, pc.pStart.y)
+		for (const pe of pc.edges) {
+			ctx.bezierCurveTo(pe.pCP1A.x, pe.pCP1A.y, pe.pCP2A.x, pe.pCP2A.y, pe.pMid1.x, pe.pMid1.y)
+			ctx.bezierCurveTo(pe.pCP1B.x, pe.pCP1B.y, pe.pCP2B.x, pe.pCP2B.y, pe.pMid2.x, pe.pMid2.y)
+			ctx.bezierCurveTo(pe.pCP1C.x, pe.pCP1C.y, pe.pCP2C.x, pe.pCP2C.y, pe.pTo.x, pe.pTo.y)
+		}
 	}
 	ctx.closePath()
+	ctx.clip()
 
+	if (ctx.imageSmoothingEnabled !== undefined) {
+		ctx.imageSmoothingEnabled = false
+	}
+
+	const destX = Math.round(sCx - drawSize / 2)
+	const destY = Math.round(sCy - drawSize / 2)
+	const destW = Math.round(drawSize)
+	const destH = Math.round(drawSize)
+
+	ctx.drawImage(
+		tex,
+		ox, oy, cropPx, cropPx,
+		destX, destY,
+		destW, destH
+	)
+	ctx.restore()
+}
+
+/**
+ * Draws a single flat-topped hex cell on the 3D perspective ground plane,
+ * following organic multi-bend edge curves matching borders and rivers.
+ *
+ * Rendering layers (back-to-front):
+ *   1. Solid biome fill color (fallback / base, always visible)
+ *   2. Biome terrain texture sampled at a deterministic random UV offset
+ *      (clips to the organic hex outline with a slight bleed margin)
+ *   3. Thin edge stroke for visual separation
+ *   4. Animated water shimmer (water/ocean biomes only)
+ */
+function drawHexCell(ctx, camera, cell, radius, animTime, seed = 0, riverMap = null, useOrganic = ENABLE_ORGANIC_EDGES) {
+	const center = hexToWorldGroundCenter(cell.col, cell.row, radius)
+	const biome = BIOMES[cell.terrain] || BIOMES.grass
+
+	if (!useOrganic) {
+		const groundVerts = getHexGroundVertices(center.x, center.y, radius)
+		const pVerts = groundVerts.map(v => camera.project(v.x, v.y, 0))
+		if (!pVerts.some(v => v.visible)) return
+
+		ctx.beginPath()
+		ctx.moveTo(pVerts[0].x, pVerts[0].y)
+		for (let i = 1; i < 6; i++) {
+			ctx.lineTo(pVerts[i].x, pVerts[i].y)
+		}
+		ctx.closePath()
+		ctx.fillStyle = biome.color
+		ctx.fill()
+
+		ctx.lineWidth = Math.max(0.6, 1 * camera.zoom)
+		ctx.strokeStyle = hexToRgba(biome.edgeColor || '#000000', 0.4)
+		ctx.stroke()
+
+		if (biome.isWater) {
+			drawWaterShimmer(ctx, camera, center.x, center.y, radius, animTime, cell.terrain === 'ocean')
+		}
+		return
+	}
+
+	const perimeter = getOrganicCellPerimeter(cell.col, cell.row, radius, seed, riverMap)
+	const pStart = camera.project(perimeter[0].from.x, perimeter[0].from.y, 0)
+	let hasVisible = pStart.visible
+
+	const projectedEdges = perimeter.map(e => {
+		const m1 = e.mid1 || e.mid
+		const m2 = e.mid2 || e.to
+		const cp1C = e.cp1C || e.cp2B
+		const cp2C = e.cp2C || e.to
+
+		const pCP1A = camera.project(e.cp1A.x, e.cp1A.y, 0)
+		const pCP2A = camera.project(e.cp2A.x, e.cp2A.y, 0)
+		const pMid1 = camera.project(m1.x, m1.y, 0)
+		const pCP1B = camera.project(e.cp1B.x, e.cp1B.y, 0)
+		const pCP2B = camera.project(e.cp2B.x, e.cp2B.y, 0)
+		const pMid2 = camera.project(m2.x, m2.y, 0)
+		const pCP1C = camera.project(cp1C.x, cp1C.y, 0)
+		const pCP2C = camera.project(cp2C.x, cp2C.y, 0)
+		const pTo = camera.project(e.to.x, e.to.y, 0)
+		if (pTo.visible || pMid1.visible || pMid2.visible) hasVisible = true
+		return { pCP1A, pCP2A, pMid1, pCP1B, pCP2B, pMid2, pCP1C, pCP2C, pTo }
+	})
+
+	if (!hasVisible) return
+
+	// Helper: trace the organic outline path (reused for fill and clip)
+	function traceOutlinePath() {
+		ctx.beginPath()
+		ctx.moveTo(pStart.x, pStart.y)
+		for (const pe of projectedEdges) {
+			ctx.bezierCurveTo(pe.pCP1A.x, pe.pCP1A.y, pe.pCP2A.x, pe.pCP2A.y, pe.pMid1.x, pe.pMid1.y)
+			ctx.bezierCurveTo(pe.pCP1B.x, pe.pCP1B.y, pe.pCP2B.x, pe.pCP2B.y, pe.pMid2.x, pe.pMid2.y)
+			ctx.bezierCurveTo(pe.pCP1C.x, pe.pCP1C.y, pe.pCP2C.x, pe.pCP2C.y, pe.pTo.x, pe.pTo.y)
+		}
+		ctx.closePath()
+	}
+
+	// 1. Solid biome fill (always visible as a base / fallback)
+	traceOutlinePath()
 	ctx.fillStyle = biome.color
 	ctx.fill()
 
-	// Hex border stroke (scaled by perspective)
-	const avgScale = screenVerts[0].scale
+	// Scale derived from perspective projection of the first vertex (shared by all steps)
+	const avgScale = pStart.scale
+
+	// 2. Biome terrain texture (disabled when ENABLE_BIOME_TEXTURES is false)
+	if (ENABLE_BIOME_TEXTURES && !biome.isWater) {
+		const tex = getBiomeTexture(cell.terrain)
+		if (tex) {
+			// Compute true screen-space bounding box across all organic perimeter points and Bezier handles
+			// to guarantee full texture coverage without clipping even on heavily expanded hexes.
+			let minX = pStart.x
+			let maxX = pStart.x
+			let minY = pStart.y
+			let maxY = pStart.y
+
+			const includePt = (p) => {
+				if (p.x < minX) minX = p.x
+				if (p.x > maxX) maxX = p.x
+				if (p.y < minY) minY = p.y
+				if (p.y > maxY) maxY = p.y
+			}
+
+			for (const pe of projectedEdges) {
+				includePt(pe.pCP1A)
+				includePt(pe.pCP2A)
+				includePt(pe.pMid1)
+				includePt(pe.pCP1B)
+				includePt(pe.pCP2B)
+				includePt(pe.pMid2)
+				includePt(pe.pCP1C)
+				includePt(pe.pCP2C)
+				includePt(pe.pTo)
+			}
+
+			const boundW = maxX - minX
+			const boundH = maxY - minY
+			const sCx = (minX + maxX) / 2
+			const sCy = (minY + maxY) / 2
+
+			// Texture draw size in screen pixels: cover the bounding box plus a 25% bleed margin
+			// ensuring organic curves, multi-bend Bezier protrusions, and jitter never run out of texture.
+			const BLEED = 1.25
+			const drawSize = Math.max(boundW, boundH) * BLEED
+
+			// PIXELATED LOOK: sample only a small crop of the texture (CROP_PX×CROP_PX texels)
+			// and magnify it to fill the hex. With 2x canvas downscaling, 44 texels
+			// map ~1:1 to canvas pixels, creating perfectly unified 2×2 retro screen pixels.
+			const CROP_PX = 128
+			const srcW = tex.naturalWidth || 256
+			const srcH = tex.naturalHeight || 256
+			const cropPx = Math.min(CROP_PX, srcW, srcH)
+
+			// Deterministic random UV offset: each cell samples a different region
+			const cellHash = hashString(`${cell.col},${cell.row}:texOfs:${seed}`)
+			const maxOx = Math.max(0, srcW - cropPx)
+			const maxOy = Math.max(0, srcH - cropPx)
+			const ox = ((getHashFloat(cellHash, 0) * 0.5 + 0.5) * maxOx) | 0
+			const oy = ((getHashFloat(cellHash, 1) * 0.5 + 0.5) * maxOy) | 0
+
+			ctx.save()
+			traceOutlinePath()
+			ctx.clip()
+
+			// Nearest-neighbour filtering → crisp pixel edges, no bilinear blur
+			if (ctx.imageSmoothingEnabled !== undefined) {
+				ctx.imageSmoothingEnabled = false
+			}
+
+			ctx.globalAlpha = 1.0
+
+			// Destination integer pixel snapping: eliminate all subpixel interpolation
+			// so texel edges land exactly on whole canvas pixels without blur.
+			const destX = Math.round(sCx - drawSize / 2)
+			const destY = Math.round(sCy - drawSize / 2)
+			const destW = Math.round(drawSize)
+			const destH = Math.round(drawSize)
+
+			ctx.drawImage(
+				tex,
+				ox, oy, cropPx, cropPx,
+				destX, destY,
+				destW, destH
+			)
+
+			ctx.restore()
+		}
+	}
+
+	// 3. Hex edge stroke — drawn on top of texture for clean visual separation
+	traceOutlinePath()
 	ctx.lineWidth = Math.max(0.6, 1 * avgScale)
-	ctx.strokeStyle = biome.edgeColor || 'rgba(0, 0, 0, 0.15)'
+	ctx.strokeStyle = hexToRgba(biome.edgeColor || '#000000', 0.4)
 	ctx.stroke()
 
-	// Water waves animation for water/ocean
+	// 4. Water waves animation for water/ocean
 	if (biome.isWater) {
+		const center = hexToWorldGroundCenter(cell.col, cell.row, radius)
 		drawWaterShimmer(ctx, camera, center.x, center.y, radius, animTime, cell.terrain === 'ocean')
 	}
 }
@@ -237,32 +897,80 @@ function drawWaterShimmer(ctx, camera, cx, cy, radius, animTime, isOcean) {
 }
 
 /**
- * Draws political borders and territory fills (Civilization style).
+ * Draws political borders and territory fills for hexes assigned to factions (Civilization style).
  *
  * Pass 1: Territory Fill
  * - Fills hex cells with a subtle translucent tint (fillColor) representing the controlling faction.
  *
  * Pass 2: Outer National Borders
  * - Computes external edges where the adjacent hex belongs to a different faction (or no faction/map edge).
- * - Border lines are inset towards the cell center by 6% of the radius (0.06 * R).
- * - Because inset vertices for adjacent edges meet at the exact same vertex inset point,
- *   borders form continuous closed ribbons without gaps or overlaps.
+ * - Border lines are inset inward into each nation's own territory by 8% of the radius (0.08 * R).
+ * - Miter normals at corner vertices ensure seamless, watertight, gapless continuous loops.
  * - When two nations border each other, each draws an inset line on its own side,
- *   creating the classic dual-ribbon border seen in Civilization.
- * - Rendered in two passes: soft glowing halo ribbon + crisp heraldic inner stroke.
+ *   creating the classic dual-ribbon border seen in Civilization without overlapping or obscuring.
+ * - Border ribbons render on top of rivers, roads, and bridges with slight transparency (~0.78 inner stroke, 0.30 halo).
+ *
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {HexPerspectiveCamera} camera
+ * @param {Object} mapData
+ * @param {number} radius
+ * @param {Object|Array} [factionsMap=null]
+ * @param {Map} [riverMap=null]
+ * @param {'all'|1|2} [pass='all'] - 1 = territory fill only, 2 = outer ribbons only, 'all' = both
  */
-export function drawPoliticalBorders(ctx, camera, mapData, radius, factionsMap = null) {
+export function drawPoliticalBorders(ctx, camera, mapData, radius, factionsMap = null, riverMap = null, pass = 'all', options = {}) {
 	if (!ctx || !mapData || !mapData.cells) return
 
 	const cells = mapData.cells
-	const cellEntries = Object.values(cells)
-	if (cellEntries.length === 0) return
+	const screenRadius = options.screenRadius ?? (radius * camera.zoom)
+	const lodLevel = options.lodLevel !== undefined ? options.lodLevel : (screenRadius < 12 ? 2 : (screenRadius < 20 ? 1 : 0))
+	const useOrganic = options.organic !== undefined ? options.organic : (mapData?.organic !== undefined ? mapData.organic : ENABLE_ORGANIC_EDGES)
+	const vB = options.vBounds
+
+	let candidateCells = options.visibleCells
+	if (!candidateCells || (pass === 2 && vB)) {
+		candidateCells = []
+		if (vB) {
+			const pad = 2
+			const cMin = vB.minCol - pad
+			const cMax = vB.maxCol + pad
+			const rMin = vB.minRow - pad
+			const rMax = vB.maxRow + pad
+			for (let c = cMin; c <= cMax; c++) {
+				for (let r = rMin; r <= rMax; r++) {
+					const cell = cells[`${c},${r}`]
+					if (cell && (cell.faction || cell.fraction)) {
+						candidateCells.push(cell)
+					}
+				}
+			}
+		} else {
+			for (const cell of Object.values(cells)) {
+				if (cell && (cell.faction || cell.fraction)) {
+					candidateCells.push(cell)
+				}
+			}
+		}
+	}
+
+	if (candidateCells.length === 0) return
+
+	// Build quick lookup for river tiers by canonical edge key if not provided
+	if (!riverMap) {
+		riverMap = new Map()
+		if (mapData.rivers) {
+			for (const r of Object.values(mapData.rivers)) {
+				const cKey = getCanonicalEdgeKey(r.col, r.row, r.edge)
+				riverMap.set(cKey, r)
+			}
+		}
+	}
 
 	// Group cells by faction
-	// Map: factionId -> { visuals, borderColor, fillColor, cells: Array<cell>, cellSet: Set<"col,row"> }
+	// Map: factionId -> { visuals, borderColor, fillColor, cells: Array<cell> }
 	const factionGroups = new Map()
 
-	for (const cell of cellEntries) {
+	for (const cell of candidateCells) {
 		const fId = cell.faction || cell.fraction
 		if (!fId) continue
 
@@ -276,13 +984,11 @@ export function drawPoliticalBorders(ctx, camera, mapData, radius, factionsMap =
 				visuals,
 				borderColor,
 				fillColor,
-				cells: [],
-				cellSet: new Set()
+				cells: []
 			}
 			factionGroups.set(fId, group)
 		}
 		group.cells.push(cell)
-		group.cellSet.add(`${cell.col},${cell.row}`)
 	}
 
 	if (factionGroups.size === 0) return
@@ -290,223 +996,433 @@ export function drawPoliticalBorders(ctx, camera, mapData, radius, factionsMap =
 	ctx.save()
 
 	// PASS 1: Territory Fills (Translucent colored background per cell)
-	for (const group of factionGroups.values()) {
-		if (!group.fillColor) continue
+	if (pass === 'all' || pass === 1) {
+		for (const group of factionGroups.values()) {
+			if (!group.fillColor) continue
 
-		ctx.fillStyle = group.fillColor
-		for (const cell of group.cells) {
-			const center = hexToWorldGroundCenter(cell.col, cell.row, radius)
-			const groundVerts = getHexGroundVertices(center.x, center.y, radius)
-			const screenVerts = groundVerts.map(v => camera.project(v.x, v.y, 0))
+			ctx.fillStyle = group.fillColor
+			for (const cell of group.cells) {
+				if (!isCellVisible(camera, cell.col, cell.row, radius)) continue
 
-			if (!screenVerts.some(v => v.visible)) continue
+				if (!useOrganic) {
+					const center = hexToWorldGroundCenter(cell.col, cell.row, radius)
+					const groundVerts = getHexGroundVertices(center.x, center.y, radius)
+					const pVerts = groundVerts.map(v => camera.project(v.x, v.y, 0))
+					if (!pVerts.some(v => v.visible)) continue
 
-			ctx.beginPath()
-			ctx.moveTo(screenVerts[0].x, screenVerts[0].y)
-			for (let i = 1; i < screenVerts.length; i++) {
-				ctx.lineTo(screenVerts[i].x, screenVerts[i].y)
+					ctx.beginPath()
+					ctx.moveTo(pVerts[0].x, pVerts[0].y)
+					for (let i = 1; i < 6; i++) {
+						ctx.lineTo(pVerts[i].x, pVerts[i].y)
+					}
+					ctx.closePath()
+					ctx.fill()
+				} else {
+					const perimeter = getOrganicCellPerimeter(cell.col, cell.row, radius, mapData?.seed || 0, riverMap)
+					const pStart = camera.project(perimeter[0].from.x, perimeter[0].from.y, 0)
+					let hasVisible = pStart.visible
+
+					const projectedEdges = perimeter.map(e => {
+						const m1 = e.mid1 || e.mid
+						const m2 = e.mid2 || e.to
+						const cp1C = e.cp1C || e.cp2B
+						const cp2C = e.cp2C || e.to
+
+						const pCP1A = camera.project(e.cp1A.x, e.cp1A.y, 0)
+						const pCP2A = camera.project(e.cp2A.x, e.cp2A.y, 0)
+						const pMid1 = camera.project(m1.x, m1.y, 0)
+						const pCP1B = camera.project(e.cp1B.x, e.cp1B.y, 0)
+						const pCP2B = camera.project(e.cp2B.x, e.cp2B.y, 0)
+						const pMid2 = camera.project(m2.x, m2.y, 0)
+						const pCP1C = camera.project(cp1C.x, cp1C.y, 0)
+						const pCP2C = camera.project(cp2C.x, cp2C.y, 0)
+						const pTo = camera.project(e.to.x, e.to.y, 0)
+						if (pTo.visible || pMid1.visible || pMid2.visible) hasVisible = true
+						return { pCP1A, pCP2A, pMid1, pCP1B, pCP2B, pMid2, pCP1C, pCP2C, pTo }
+					})
+
+					if (!hasVisible) continue
+
+					ctx.beginPath()
+					ctx.moveTo(pStart.x, pStart.y)
+					for (const pe of projectedEdges) {
+						ctx.bezierCurveTo(pe.pCP1A.x, pe.pCP1A.y, pe.pCP2A.x, pe.pCP2A.y, pe.pMid1.x, pe.pMid1.y)
+						ctx.bezierCurveTo(pe.pCP1B.x, pe.pCP1B.y, pe.pCP2B.x, pe.pCP2B.y, pe.pMid2.x, pe.pMid2.y)
+						ctx.bezierCurveTo(pe.pCP1C.x, pe.pCP1C.y, pe.pCP2C.x, pe.pCP2C.y, pe.pTo.x, pe.pTo.y)
+					}
+					ctx.closePath()
+					ctx.fill()
+				}
 			}
-			ctx.closePath()
-			ctx.fill()
 		}
 	}
 
 	// PASS 2: External Boundary Chains (Continuous Smooth Polylines / Loops)
-	// Edge vertex indices for flat-topped hex (clockwise around hex):
-	// N: [4, 5], NE: [5, 0], SE: [0, 1], S: [1, 2], SW: [2, 3], NW: [3, 4]
-	const EDGE_VERTEX_INDICES = {
-		N: [4, 5],
-		NE: [5, 0],
-		SE: [0, 1],
-		S: [1, 2],
-		SW: [2, 3],
-		NW: [3, 4]
-	}
-
-	function vertexKey(pt) {
-		return `${Math.round(pt.x * 10)},${Math.round(pt.y * 10)}`
-	}
-
-	// Build quick lookup for river tiers by canonical edge key
-	const riverMap = new Map()
-	if (mapData.rivers) {
-		for (const r of Object.values(mapData.rivers)) {
-			const cKey = getCanonicalEdgeKey(r.col, r.row, r.edge)
-			riverMap.set(cKey, r)
+	if (pass === 'all' || pass === 2) {
+		// Edge vertex indices for flat-topped hex (clockwise around hex):
+		// N: [4, 5], NE: [5, 0], SE: [0, 1], S: [1, 2], SW: [2, 3], NW: [3, 4]
+		const EDGE_VERTEX_INDICES = {
+			N: [4, 5],
+			NE: [5, 0],
+			SE: [0, 1],
+			S: [1, 2],
+			SW: [2, 3],
+			NW: [3, 4]
 		}
-	}
 
-	// Group continuous chains by border color
-	// Map: borderColor -> Array<Chain>
-	const chainsByColor = new Map()
+		function vertexKey(pt) {
+			return `${Math.round(pt.x * 10)},${Math.round(pt.y * 10)}`
+		}
 
-	for (const group of factionGroups.values()) {
-		const borderEdges = []
-
-		for (const cell of group.cells) {
-			const center = hexToWorldGroundCenter(cell.col, cell.row, radius)
-			const groundVerts = getHexGroundVertices(center.x, center.y, radius)
-
-			for (const edge of HEX_EDGES) {
-				const nCoord = getHexNeighbor(cell.col, cell.row, edge)
-				const nKey = `${nCoord.col},${nCoord.row}`
-
-				// External boundary edge if neighbor cell is not in this faction
-				if (!group.cellSet.has(nKey)) {
-					const [iA, iB] = EDGE_VERTEX_INDICES[edge]
-					const vFrom = groundVerts[iA]
-					const vTo = groundVerts[iB]
-					const canonKey = getCanonicalEdgeKey(cell.col, cell.row, edge)
-					const river = riverMap.get(canonKey)
-					const riverTier = river ? (river.width || 1) : 1
-
-					borderEdges.push({
-						fromKey: vertexKey(vFrom),
-						toKey: vertexKey(vTo),
-						vFrom,
-						vTo,
-						canonKey,
-						riverTier
-					})
-				}
+		// Helper to calculate corner miter offset between two inward segment normals
+		function getCornerMiter(nPrev, nCurr, dVal) {
+			const sumX = nPrev.x + nCurr.x
+			const sumY = nPrev.y + nCurr.y
+			const len = Math.hypot(sumX, sumY)
+			if (len < 1e-4) {
+				return { x: nCurr.x * dVal, y: nCurr.y * dVal }
+			}
+			const miterFactor = Math.min(2.0, 2.0 / len)
+			const normX = sumX / len
+			const normY = sumY / len
+			return {
+				x: normX * (dVal * miterFactor),
+				y: normY * (dVal * miterFactor)
 			}
 		}
 
-		if (borderEdges.length === 0) continue
+		// Group continuous chains by border color
+		// Map: borderColor -> Array<Chain>
+		const chainsByColor = new Map()
+		const dInset = 0.08 * radius
 
-		// Build adjacency graph to assemble border edges into continuous connected loops/chains
-		const outgoing = new Map()
-		const incoming = new Map()
-		for (const e of borderEdges) {
-			if (!outgoing.has(e.fromKey)) outgoing.set(e.fromKey, [])
-			outgoing.get(e.fromKey).push(e)
+		for (const group of factionGroups.values()) {
+			const borderEdges = []
 
-			if (!incoming.has(e.toKey)) incoming.set(e.toKey, [])
-			incoming.get(e.toKey).push(e)
-		}
+			for (const cell of group.cells) {
+				const center = hexToWorldGroundCenter(cell.col, cell.row, radius)
+				const groundVerts = useOrganic
+					? getOrganicHexGroundVertices(center.x, center.y, radius, mapData?.seed || 0)
+					: getHexGroundVertices(center.x, center.y, radius)
 
-		const visited = new Set()
-		const factionChains = []
+				for (const edge of HEX_EDGES) {
+					const nCoord = getHexNeighbor(cell.col, cell.row, edge)
+					const nKey = `${nCoord.col},${nCoord.row}`
 
-		for (const startEdge of borderEdges) {
-			if (visited.has(startEdge)) continue
+					// External boundary edge if neighbor cell is not in this faction
+					const nCell = cells[nKey]
+					const nFaction = nCell ? (nCell.faction || nCell.fraction) : null
+					if (nFaction !== group.factionId) {
+						const [iA, iB] = EDGE_VERTEX_INDICES[edge]
+						const vFrom = groundVerts[iA]
+						const vTo = groundVerts[iB]
+						const canonKey = getCanonicalEdgeKey(cell.col, cell.row, edge)
+						const river = riverMap ? riverMap.get(canonKey) : null
+						const riverTier = river ? (river.width || 1) : 1
 
-			visited.add(startEdge)
-			const chain = [startEdge]
-			let curr = startEdge
-
-			// Walk forward along adjacent edges
-			while (true) {
-				const nextList = outgoing.get(curr.toKey) || []
-				const nextEdge = nextList.find(e => !visited.has(e))
-				if (!nextEdge) break
-
-				visited.add(nextEdge)
-				chain.push(nextEdge)
-				curr = nextEdge
-
-				if (curr.toKey === chain[0].fromKey) {
-					chain.isClosed = true
-					break
-				}
-			}
-
-			// If not closed, walk backwards from chain start to prepend any incoming edges
-			if (!chain.isClosed) {
-				let head = chain[0]
-				while (true) {
-					const prevList = incoming.get(head.fromKey) || []
-					const prevEdge = prevList.find(e => !visited.has(e))
-					if (!prevEdge) break
-
-					visited.add(prevEdge)
-					chain.unshift(prevEdge)
-					head = prevEdge
-
-					if (head.fromKey === chain[chain.length - 1].toKey) {
-						chain.isClosed = true
-						break
+						borderEdges.push({
+							fromKey: vertexKey(vFrom),
+							toKey: vertexKey(vTo),
+							vFrom,
+							vTo,
+							canonKey,
+							riverTier
+						})
 					}
 				}
 			}
 
-			// Project segments in chain to camera screen coordinates
-			let scaleSum = 0
-			let visibleCount = 0
+			if (borderEdges.length === 0) continue
 
-			const projectedChain = []
-			for (const seg of chain) {
-				const { cp1, cp2 } = getRiverMeanderControls(seg.vFrom, seg.vTo, seg.canonKey, radius, seg.riverTier)
-				const pFrom = camera.project(seg.vFrom.x, seg.vFrom.y, 0)
-				const pCP1 = camera.project(cp1.x, cp1.y, 0)
-				const pCP2 = camera.project(cp2.x, cp2.y, 0)
-				const pTo = camera.project(seg.vTo.x, seg.vTo.y, 0)
+			// Build adjacency graph to assemble border edges into continuous connected loops/chains
+			const outgoing = new Map()
+			const incoming = new Map()
+			for (const e of borderEdges) {
+				if (!outgoing.has(e.fromKey)) outgoing.set(e.fromKey, [])
+				outgoing.get(e.fromKey).push(e)
 
-				if (pFrom.visible || pTo.visible) visibleCount++
-				scaleSum += (pFrom.scale + pTo.scale) / 2
-
-				projectedChain.push({
-					pFrom,
-					pCP1,
-					pCP2,
-					pTo
-				})
+				if (!incoming.has(e.toKey)) incoming.set(e.toKey, [])
+				incoming.get(e.toKey).push(e)
 			}
 
-			// Only render if at least one vertex is visible in camera frustum
-			if (visibleCount > 0 && projectedChain.length > 0) {
-				projectedChain.isClosed = chain.isClosed
-				projectedChain.avgScale = scaleSum / projectedChain.length
+			const visited = new Set()
 
-				let list = chainsByColor.get(group.borderColor)
-				if (!list) {
-					list = []
-					chainsByColor.set(group.borderColor, list)
+			for (const startEdge of borderEdges) {
+				if (visited.has(startEdge)) continue
+
+				visited.add(startEdge)
+				const chain = [startEdge]
+				let curr = startEdge
+
+				// Walk forward along adjacent edges
+				while (true) {
+					const nextList = outgoing.get(curr.toKey) || []
+					const nextEdge = nextList.find(e => !visited.has(e))
+					if (!nextEdge) break
+
+					visited.add(nextEdge)
+					chain.push(nextEdge)
+					curr = nextEdge
+
+					if (curr.toKey === chain[0].fromKey) {
+						chain.isClosed = true
+						break
+					}
 				}
-				list.push(projectedChain)
+
+				// If not closed, walk backwards from chain start to prepend any incoming edges
+				if (!chain.isClosed) {
+					let head = chain[0]
+					while (true) {
+						const prevList = incoming.get(head.fromKey) || []
+						const prevEdge = prevList.find(e => !visited.has(e))
+						if (!prevEdge) break
+
+						visited.add(prevEdge)
+						chain.unshift(prevEdge)
+						head = prevEdge
+
+						if (head.fromKey === chain[chain.length - 1].toKey) {
+							chain.isClosed = true
+							break
+						}
+					}
+				}
+
+				// Calculate inward normal per segment and miter offsets at vertices.
+				// Since traversal is clockwise around the cell, the interior is to the right: nIn = (-dy/L, dx/L)
+				const N = chain.length
+				const normals = []
+				for (let i = 0; i < N; i++) {
+					const seg = chain[i]
+					const dx = seg.vTo.x - seg.vFrom.x
+					const dy = seg.vTo.y - seg.vFrom.y
+					const elen = Math.hypot(dx, dy) || 1
+					normals.push({ x: -dy / elen, y: dx / elen })
+				}
+
+				// Inward offsets for the layered border ribbon:
+				// - dMain: offset of the crisp main line, sitting just inside the frontier (0.04 * R)
+				// - dHaloMid: offset of the mid-tier glow (0.076 * R)
+				// - dHaloWide: offset of the wide soft outer-fade halo (0.138 * R)
+				// All halo layers have their outer stroke edge aligned exactly at the crisp line (dOuter ~ 0.007 * R).
+				// Towards the outside, there is ZERO halo (only the crisp line).
+				// Towards the inside, the halo is 2x wider and smoothly fades to transparent!
+				const dMain = 0.04 * radius
+				const dHaloMid = 0.076 * radius
+				const dHaloWide = 0.138 * radius
+
+				function buildCornerOffsets(dVal) {
+					const arr = []
+					if (chain.isClosed) {
+						for (let i = 0; i < N; i++) {
+							const prevIdx = (i - 1 + N) % N
+							arr.push(getCornerMiter(normals[prevIdx], normals[i], dVal))
+						}
+					} else {
+						arr.push({ x: normals[0].x * dVal, y: normals[0].y * dVal })
+						for (let i = 1; i < N; i++) {
+							arr.push(getCornerMiter(normals[i - 1], normals[i], dVal))
+						}
+						arr.push({ x: normals[N - 1].x * dVal, y: normals[N - 1].y * dVal })
+					}
+					return arr
+				}
+
+				const cornerOffsetsMain = buildCornerOffsets(dMain)
+				const cornerOffsetsMid = buildCornerOffsets(dHaloMid)
+				const cornerOffsetsWide = buildCornerOffsets(dHaloWide)
+
+				// Project segments in chain to camera screen coordinates
+				let scaleSum = 0
+				let visibleCount = 0
+
+				const projectedChain = []
+				const haloMidList = []
+				const haloWideList = []
+
+				for (let i = 0; i < N; i++) {
+					const seg = chain[i]
+
+					if (!useOrganic) {
+						function projectStraightOffsetSegment(cOffsets) {
+							const deltaFrom = cOffsets[i]
+							const deltaTo = chain.isClosed ? cOffsets[(i + 1) % N] : cOffsets[i + 1]
+
+							const fromInset = { x: seg.vFrom.x + deltaFrom.x, y: seg.vFrom.y + deltaFrom.y }
+							const toInset = { x: seg.vTo.x + deltaTo.x, y: seg.vTo.y + deltaTo.y }
+
+							return {
+								pFrom: camera.project(fromInset.x, fromInset.y, 0),
+								pTo: camera.project(toInset.x, toInset.y, 0)
+							}
+						}
+
+						const segMain = projectStraightOffsetSegment(cornerOffsetsMain)
+						const segMid = projectStraightOffsetSegment(cornerOffsetsMid)
+						const segWide = projectStraightOffsetSegment(cornerOffsetsWide)
+
+						if (segMain.pFrom.visible || segMain.pTo.visible) visibleCount++
+						scaleSum += (segMain.pFrom.scale + segMain.pTo.scale) / 2
+
+						projectedChain.push(segMain)
+						haloMidList.push(segMid)
+						haloWideList.push(segWide)
+					} else {
+						const curve = getHexEdgeCurve(seg.vFrom, seg.vTo, seg.canonKey, radius, seg.riverTier, {
+							seed: mapData?.seed || 0
+						})
+
+						function projectOffsetSegment(dVal, cOffsets) {
+							const deltaFrom = cOffsets[i]
+							const deltaTo = chain.isClosed ? cOffsets[(i + 1) % N] : cOffsets[i + 1]
+
+							const fromInset = { x: curve.from.x + deltaFrom.x, y: curve.from.y + deltaFrom.y }
+							const toInset = { x: curve.to.x + deltaTo.x, y: curve.to.y + deltaTo.y }
+							const m1 = curve.mid1 || curve.mid
+							const m2 = curve.mid2 || curve.to
+							const cp1C = curve.cp1C || curve.cp2B
+							const cp2C = curve.cp2C || curve.to
+
+							const mid1Inset = { x: m1.x + normals[i].x * dVal, y: m1.y + normals[i].y * dVal }
+							const mid2Inset = { x: m2.x + normals[i].x * dVal, y: m2.y + normals[i].y * dVal }
+
+							const cp1AInset = { x: fromInset.x + (curve.cp1A.x - curve.from.x), y: fromInset.y + (curve.cp1A.y - curve.from.y) }
+							const cp2AInset = { x: mid1Inset.x + (curve.cp2A.x - m1.x), y: mid1Inset.y + (curve.cp2A.y - m1.y) }
+							const cp1BInset = { x: mid1Inset.x + (curve.cp1B.x - m1.x), y: mid1Inset.y + (curve.cp1B.y - m1.y) }
+							const cp2BInset = { x: mid2Inset.x + (curve.cp2B.x - m2.x), y: mid2Inset.y + (curve.cp2B.y - m2.y) }
+							const cp1CInset = { x: mid2Inset.x + (cp1C.x - m2.x), y: mid2Inset.y + (cp1C.y - m2.y) }
+							const cp2CInset = { x: toInset.x + (cp2C.x - curve.to.x), y: toInset.y + (cp2C.y - curve.to.y) }
+
+							return {
+								pFrom: camera.project(fromInset.x, fromInset.y, 0),
+								pCP1A: camera.project(cp1AInset.x, cp1AInset.y, 0),
+								pCP2A: camera.project(cp2AInset.x, cp2AInset.y, 0),
+								pMid1: camera.project(mid1Inset.x, mid1Inset.y, 0),
+								pCP1B: camera.project(cp1BInset.x, cp1BInset.y, 0),
+								pCP2B: camera.project(cp2BInset.x, cp2BInset.y, 0),
+								pMid2: camera.project(mid2Inset.x, mid2Inset.y, 0),
+								pCP1C: camera.project(cp1CInset.x, cp1CInset.y, 0),
+								pCP2C: camera.project(cp2CInset.x, cp2CInset.y, 0),
+								pTo: camera.project(toInset.x, toInset.y, 0),
+								fromInset,
+								toInset,
+								mid1Inset,
+								mid2Inset
+							}
+						}
+
+						const segMain = projectOffsetSegment(dMain, cornerOffsetsMain)
+						const segMid = projectOffsetSegment(dHaloMid, cornerOffsetsMid)
+						const segWide = projectOffsetSegment(dHaloWide, cornerOffsetsWide)
+
+						if (segMain.pFrom.visible || segMain.pTo.visible || segMain.pMid1.visible || segMain.pMid2.visible) visibleCount++
+						scaleSum += (segMain.pFrom.scale + segMain.pTo.scale) / 2
+
+						projectedChain.push(segMain)
+						haloMidList.push(segMid)
+						haloWideList.push(segWide)
+					}
+				}
+
+				// Only render if at least one vertex is visible in camera frustum
+				if (visibleCount > 0 && projectedChain.length > 0) {
+					projectedChain.isClosed = chain.isClosed
+					projectedChain.avgScale = scaleSum / projectedChain.length
+					projectedChain.haloMid = haloMidList
+					projectedChain.haloWide = haloWideList
+
+					let list = chainsByColor.get(group.borderColor)
+					if (!list) {
+						list = []
+						chainsByColor.set(group.borderColor, list)
+					}
+					list.push(projectedChain)
+				}
 			}
 		}
-	}
 
-	// Render borders grouped by color
-	ctx.lineCap = 'round'
-	ctx.lineJoin = 'round'
+		// Render borders grouped by color
+		ctx.lineCap = 'round'
+		ctx.lineJoin = 'round'
 
-	for (const [color, chains] of chainsByColor.entries()) {
-		if (chains.length === 0) continue
+		for (const [color, chains] of chainsByColor.entries()) {
+			if (chains.length === 0) continue
 
-		// PASS 2A: Soft halo ribbon glow
-		ctx.strokeStyle = hexToRgba(color, 0.38)
-		for (const chain of chains) {
-			const avgScale = chain.avgScale || 1.0
-			ctx.lineWidth = Math.max(2.4, 5.0 * avgScale)
-			ctx.beginPath()
-			ctx.moveTo(chain[0].pFrom.x, chain[0].pFrom.y)
-			for (let i = 0; i < chain.length; i++) {
-				const seg = chain[i]
-				ctx.bezierCurveTo(seg.pCP1.x, seg.pCP1.y, seg.pCP2.x, seg.pCP2.y, seg.pTo.x, seg.pTo.y)
+			// PASS 2A1: Wide soft inward halo (LOD 0 close-up only)
+			if (lodLevel === 0) {
+				ctx.strokeStyle = hexToRgba(color, 0.12)
+				for (const chain of chains) {
+					const avgScale = chain.avgScale || 1.0
+					ctx.lineWidth = Math.max(4.0, 9.5 * avgScale)
+					const list = chain.haloWide || chain
+					ctx.beginPath()
+					ctx.moveTo(list[0].pFrom.x, list[0].pFrom.y)
+					for (let i = 0; i < list.length; i++) {
+						const seg = list[i]
+						if (!useOrganic) {
+							ctx.lineTo(seg.pTo.x, seg.pTo.y)
+						} else {
+							ctx.bezierCurveTo(seg.pCP1A.x, seg.pCP1A.y, seg.pCP2A.x, seg.pCP2A.y, seg.pMid1.x, seg.pMid1.y)
+							ctx.bezierCurveTo(seg.pCP1B.x, seg.pCP1B.y, seg.pCP2B.x, seg.pCP2B.y, seg.pMid2.x, seg.pMid2.y)
+							ctx.bezierCurveTo(seg.pCP1C.x, seg.pCP1C.y, seg.pCP2C.x, seg.pCP2C.y, seg.pTo.x, seg.pTo.y)
+						}
+					}
+					if (chain.isClosed) {
+						ctx.closePath()
+					}
+					ctx.stroke()
+				}
 			}
-			if (chain.isClosed) {
-				ctx.closePath()
-			}
-			ctx.stroke()
-		}
 
-		// PASS 2B: Crisp heraldic inner stroke
-		ctx.strokeStyle = color
-		for (const chain of chains) {
-			const avgScale = chain.avgScale || 1.0
-			ctx.lineWidth = Math.max(1.3, 2.4 * avgScale)
-			ctx.beginPath()
-			ctx.moveTo(chain[0].pFrom.x, chain[0].pFrom.y)
-			for (let i = 0; i < chain.length; i++) {
-				const seg = chain[i]
-				ctx.bezierCurveTo(seg.pCP1.x, seg.pCP1.y, seg.pCP2.x, seg.pCP2.y, seg.pTo.x, seg.pTo.y)
+			// PASS 2A2: Focused inner halo (LOD 0 and LOD 1, skipped at LOD 2 strategic zoom)
+			if (lodLevel < 2) {
+				ctx.strokeStyle = hexToRgba(color, 0.22)
+				for (const chain of chains) {
+					const avgScale = chain.avgScale || 1.0
+					ctx.lineWidth = Math.max(2.2, 5.0 * avgScale)
+					const list = chain.haloMid || chain
+					ctx.beginPath()
+					ctx.moveTo(list[0].pFrom.x, list[0].pFrom.y)
+					for (let i = 0; i < list.length; i++) {
+						const seg = list[i]
+						if (!useOrganic) {
+							ctx.lineTo(seg.pTo.x, seg.pTo.y)
+						} else {
+							ctx.bezierCurveTo(seg.pCP1A.x, seg.pCP1A.y, seg.pCP2A.x, seg.pCP2A.y, seg.pMid1.x, seg.pMid1.y)
+							ctx.bezierCurveTo(seg.pCP1B.x, seg.pCP1B.y, seg.pCP2B.x, seg.pCP2B.y, seg.pMid2.x, seg.pMid2.y)
+							ctx.bezierCurveTo(seg.pCP1C.x, seg.pCP1C.y, seg.pCP2C.x, seg.pCP2C.y, seg.pTo.x, seg.pTo.y)
+						}
+					}
+					if (chain.isClosed) {
+						ctx.closePath()
+					}
+					ctx.stroke()
+				}
 			}
-			if (chain.isClosed) {
-				ctx.closePath()
+
+			// PASS 2B: Crisp heraldic main stroke (rendered across all LOD levels; bolder at LOD 2)
+			ctx.strokeStyle = hexToRgba(color, 0.78)
+			for (const chain of chains) {
+				const avgScale = chain.avgScale || 1.0
+				ctx.lineWidth = Math.max(1.3, (lodLevel === 2 ? 2.8 : 2.4) * avgScale)
+				ctx.beginPath()
+				ctx.moveTo(chain[0].pFrom.x, chain[0].pFrom.y)
+				for (let i = 0; i < chain.length; i++) {
+					const seg = chain[i]
+					if (!useOrganic) {
+						ctx.lineTo(seg.pTo.x, seg.pTo.y)
+					} else {
+						ctx.bezierCurveTo(seg.pCP1A.x, seg.pCP1A.y, seg.pCP2A.x, seg.pCP2A.y, seg.pMid1.x, seg.pMid1.y)
+						ctx.bezierCurveTo(seg.pCP1B.x, seg.pCP1B.y, seg.pCP2B.x, seg.pCP2B.y, seg.pMid2.x, seg.pMid2.y)
+						ctx.bezierCurveTo(seg.pCP1C.x, seg.pCP1C.y, seg.pCP2C.x, seg.pCP2C.y, seg.pTo.x, seg.pTo.y)
+					}
+				}
+				if (chain.isClosed) {
+					ctx.closePath()
+				}
+				ctx.stroke()
 			}
-			ctx.stroke()
 		}
 	}
 
@@ -784,11 +1700,128 @@ export function fillRibbonJunction(ctx, junction, layer) {
  * Multi-pass rendering pipeline with unified rounded junction fillets, width tapering, and confluence discs.
  * Guaranteed ZERO needle/spike artifacts on river banks!
  */
-function drawRivers(ctx, camera, mapData, radius, animTime) {
+function drawRivers(ctx, camera, mapData, radius, animTime, options = {}) {
 	if (!mapData.rivers) return
 
 	const rivers = Object.values(mapData.rivers)
 	if (rivers.length === 0) return
+
+	const useOrganic = options.organic !== undefined ? options.organic : (mapData?.organic !== undefined ? mapData.organic : ENABLE_ORGANIC_EDGES)
+	const screenRadius = options.screenRadius ?? (radius * camera.zoom)
+	const lodLevel = options.lodLevel !== undefined ? options.lodLevel : (screenRadius < 12 ? 2 : (screenRadius < 20 ? 1 : 0))
+
+	if (!useOrganic) {
+		const preparedRivers = []
+		for (const river of rivers) {
+			// At LOD 2, cull minor tier-1 streams to keep strategic view uncluttered and fast
+			if (lodLevel === 2 && (river.width || 1) === 1) continue
+
+			const center = hexToWorldGroundCenter(river.col, river.row, radius)
+			const groundVerts = getHexGroundVertices(center.x, center.y, radius)
+			const { from: gFrom, to: gTo } = getHexEdgeEndpoints(groundVerts, river.edge)
+			const pFrom = camera.project(gFrom.x, gFrom.y, 0)
+			const pTo = camera.project(gTo.x, gTo.y, 0)
+			if (!pFrom.visible && !pTo.visible) continue
+
+			const avgScale = (pFrom.scale + pTo.scale) / 2
+			const minX = Math.min(pFrom.x, pTo.x)
+			const maxX = Math.max(pFrom.x, pTo.x)
+			const minY = Math.min(pFrom.y, pTo.y)
+			const maxY = Math.max(pFrom.y, pTo.y)
+			const pad = 40 * avgScale
+			if (maxX < -pad || minX > camera.viewportWidth + pad || maxY < -pad || minY > camera.viewportHeight + pad) {
+				continue
+			}
+
+			const tier = river.width || 1
+			let baseWidth, shoreExtra, currentDashW
+			if (tier === 3) {
+				baseWidth = Math.max(2.6, 6.2 * avgScale)
+				shoreExtra = 1.8 * avgScale
+				currentDashW = Math.max(1.2, baseWidth * 0.35)
+			} else if (tier === 2) {
+				baseWidth = Math.max(1.8, 3.6 * avgScale)
+				shoreExtra = 1.4 * avgScale
+				currentDashW = Math.max(0.9, baseWidth * 0.38)
+			} else {
+				baseWidth = Math.max(1.0, 1.9 * avgScale)
+				shoreExtra = 1.0 * avgScale
+				currentDashW = Math.max(0.6, baseWidth * 0.40)
+			}
+			const casingWidth = baseWidth + shoreExtra
+			const flowDir = river.flowDir === -1 ? -1 : 1
+
+			preparedRivers.push({
+				pFrom,
+				pTo,
+				baseWidth,
+				casingWidth,
+				currentDashW,
+				tier,
+				avgScale,
+				flowDir
+			})
+		}
+
+		if (preparedRivers.length === 0) return
+
+		ctx.save()
+		ctx.lineCap = 'round'
+		ctx.lineJoin = 'round'
+
+		// PASS 1: Riverbed Shore Strokes
+		ctx.strokeStyle = '#0284c7'
+		for (const r of preparedRivers) {
+			ctx.lineWidth = r.casingWidth
+			ctx.beginPath()
+			ctx.moveTo(r.pFrom.x, r.pFrom.y)
+			ctx.lineTo(r.pTo.x, r.pTo.y)
+			ctx.stroke()
+		}
+
+		// PASS 2: Water Core
+		ctx.strokeStyle = '#38bdf8'
+		for (const r of preparedRivers) {
+			ctx.lineWidth = r.baseWidth
+			ctx.beginPath()
+			ctx.moveTo(r.pFrom.x, r.pFrom.y)
+			ctx.lineTo(r.pTo.x, r.pTo.y)
+			ctx.stroke()
+		}
+
+		// PASS 3: Animated Flow Dashes (LOD 0 and LOD 1 only, skipped at LOD 2)
+		if (lodLevel < 2) {
+			ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)'
+			for (const r of preparedRivers) {
+				const dx = r.pTo.x - r.pFrom.x
+				const dy = r.pTo.y - r.pFrom.y
+				const edgeLen = Math.hypot(dx, dy)
+				if (edgeLen > 2) {
+					const ux = dx / edgeLen
+					const uy = dy / edgeLen
+					const dir = r.flowDir
+					const numDashes = Math.max(1, Math.round(edgeLen / (28 * r.avgScale)))
+					const dashLen = Math.max(3, 7 * r.avgScale)
+					ctx.lineWidth = r.currentDashW
+
+					for (let d = 0; d < numDashes; d++) {
+						const basePhase = (d / numDashes + animTime * 0.45 * dir) % 1
+						const phase = (basePhase + 1) % 1
+						const cx = r.pFrom.x + dx * phase
+						const cy = r.pFrom.y + dy * phase
+						const half = dashLen / 2
+						ctx.beginPath()
+						ctx.moveTo(cx - ux * half, cy - uy * half)
+						ctx.lineTo(cx + ux * half, cy + uy * half)
+						ctx.stroke()
+					}
+				}
+			}
+		}
+
+		ctx.restore()
+		return
+	}
 
 	ctx.save()
 
@@ -801,11 +1834,11 @@ function drawRivers(ctx, camera, mapData, radius, animTime) {
 
 	for (const river of rivers) {
 		const center = hexToWorldGroundCenter(river.col, river.row, radius)
-		const groundVerts = getHexGroundVertices(center.x, center.y, radius)
+		const groundVerts = getOrganicHexGroundVertices(center.x, center.y, radius, mapData?.seed || 0)
 		const { from: gFrom, to: gTo } = getHexEdgeEndpoints(groundVerts, river.edge)
 		const canonKey = getCanonicalEdgeKey(river.col, river.row, river.edge)
 		const tier = river.width || 1
-		const { cp1, cp2 } = getRiverMeanderControls(gFrom, gTo, canonKey, radius, tier)
+		const { cp1, cp2 } = getRiverMeanderControls(gFrom, gTo, canonKey, radius, tier, { seed: mapData?.seed || 0 })
 
 		const pFrom = camera.project(gFrom.x, gFrom.y, 0)
 		const pCP1 = camera.project(cp1.x, cp1.y, 0)
@@ -814,7 +1847,15 @@ function drawRivers(ctx, camera, mapData, radius, animTime) {
 
 		if (!pFrom.visible && !pTo.visible) continue
 
+		const minX = Math.min(pFrom.x, pTo.x, pCP1.x, pCP2.x)
+		const maxX = Math.max(pFrom.x, pTo.x, pCP1.x, pCP2.x)
+		const minY = Math.min(pFrom.y, pTo.y, pCP1.y, pCP2.y)
+		const maxY = Math.max(pFrom.y, pTo.y, pCP1.y, pCP2.y)
 		const avgScale = (pFrom.scale + pTo.scale) / 2
+		const pad = 60 * avgScale
+		if (maxX < -pad || minX > camera.viewportWidth + pad || maxY < -pad || minY > camera.viewportHeight + pad) {
+			continue
+		}
 		let baseWidth
 		let shoreExtra
 		let currentDashW
@@ -900,7 +1941,7 @@ function drawRivers(ctx, camera, mapData, radius, animTime) {
 		})
 	}
 
-	// Calculate rounded turn fillets (2 branches) and confluence discs (3+ branches)
+	// Calculate rounded turn fillets (2 branches) and confluence fillets (3+ branches)
 	const riverTurns = []
 	const riverConfluences = []
 
@@ -934,12 +1975,11 @@ function drawRivers(ctx, camera, mapData, radius, animTime) {
 			for (const b of vData.branches) {
 				maxCasing = Math.max(maxCasing, b.casingWidth)
 				maxBase = Math.max(maxBase, b.baseWidth)
-				// Rivers must meet directly at the confluence vertex center!
 				if (b.isFrom) b.river.startPt = vData.pCenter
 				else b.river.endPt = vData.pCenter
 			}
 
-			// Sort branches by angle around confluence
+			// Sort branches circularly by angle around vertex
 			const sorted = [...vData.branches].sort((a, b) => {
 				const angA = Math.atan2(a.uy, a.ux)
 				const angB = Math.atan2(b.uy, b.ux)
@@ -970,7 +2010,7 @@ function drawRivers(ctx, camera, mapData, radius, animTime) {
 	ctx.lineCap = 'round'
 	ctx.lineJoin = 'round'
 
-	// --- PASS 1: Riverbed Shore Strokes, Rounded Junction Fillets, and Confluence Shore Pools ---
+	// --- PASS 1: Riverbed Shore Strokes, Rounded Junction Fillets, and Confluence Shore Fillets ---
 	for (const r of preparedRivers) {
 		ctx.beginPath()
 		ctx.moveTo(r.startPt.x, r.startPt.y)
@@ -1044,7 +2084,8 @@ function drawRivers(ctx, camera, mapData, radius, animTime) {
  * Pre-computes renderable road geometry (trunks, rounded turns, and crossroads)
  * tagged with their cellKey for depth-sorted 2.5D rendering.
  */
-export function buildRoadRenderData(camera, mapData, radius) {
+export function buildRoadRenderData(camera, mapData, radius, options = {}) {
+	const lodLevel = options.lodLevel ?? 0
 	if (!mapData.roads) return { trunks: [], turns: [], crossroads: [] }
 
 	const roads = Object.values(mapData.roads)
@@ -1053,6 +2094,10 @@ export function buildRoadRenderData(camera, mapData, radius) {
 	const cellBranches = new Map()
 
 	for (const road of roads) {
+		const isStone = road.type === 'stone'
+		// At LOD 2, cull minor dirt roads from strategic overview
+		if (lodLevel === 2 && !isStone) continue
+
 		const c1 = hexToWorldGroundCenter(road.from.col, road.from.row, radius)
 		const c2 = hexToWorldGroundCenter(road.to.col, road.to.row, radius)
 		const canonKey = getCanonicalRoadKey(road.from.col, road.from.row, road.to.col, road.to.row)
@@ -1067,8 +2112,15 @@ export function buildRoadRenderData(camera, mapData, radius) {
 
 		if (!p1.visible && !p2.visible && !pMid.visible) continue
 
+		const minX = Math.min(p1.x, p2.x, pMid.x)
+		const maxX = Math.max(p1.x, p2.x, pMid.x)
+		const minY = Math.min(p1.y, p2.y, pMid.y)
+		const maxY = Math.max(p1.y, p2.y, pMid.y)
 		const avgScale = (p1.scale + p2.scale) / 2
-		const isStone = road.type === 'stone'
+		const pad = 60 * avgScale
+		if (maxX < -pad || minX > camera.viewportWidth + pad || maxY < -pad || minY > camera.viewportHeight + pad) {
+			continue
+		}
 		const casingWidth = (isStone ? 5 : 4) * avgScale
 		const coreWidth = (isStone ? 3 : 2.5) * avgScale
 		const casingColor = isStone ? '#475569' : '#451a03'
@@ -1991,12 +3043,62 @@ function drawTower(ctx, x, y, w, h, color, sc = 1) {
 /**
  * Highlights a hex with a glowing outline on the 3D perspective ground plane.
  */
-function drawHexHighlight(ctx, camera, col, row, radius, color, fillOpacity = 0.2, lineWidth = 2, cell = null) {
-	const center = hexToWorldGroundCenter(col, row, radius)
-	const groundVerts = getHexGroundVertices(center.x, center.y, radius)
-	const screenVerts = groundVerts.map(v => camera.projectTerrain(v.x, v.y, 0))
+function drawHexHighlight(ctx, camera, col, row, radius, color, fillOpacity = 0.2, lineWidth = 2, cell = null, seed = 0, riverMap = null, useOrganic = ENABLE_ORGANIC_EDGES) {
+	if (!useOrganic) {
+		const center = hexToWorldGroundCenter(col, row, radius)
+		const groundVerts = getHexGroundVertices(center.x, center.y, radius)
+		const pVerts = groundVerts.map(v => camera.projectTerrain(v.x, v.y, 0))
+		if (!pVerts.some(v => v.visible)) return
 
-	if (!screenVerts.some(v => v.visible)) return
+		ctx.save()
+		const rgbaFill = color
+			.replace(')', `, ${fillOpacity})`)
+			.replace('rgb', 'rgba')
+			.replace('#38bdf8', `rgba(56, 189, 248, ${fillOpacity})`)
+			.replace('#f6c445', `rgba(246, 196, 69, ${fillOpacity})`)
+
+		ctx.beginPath()
+		ctx.moveTo(pVerts[0].x, pVerts[0].y)
+		for (let i = 1; i < 6; i++) {
+			ctx.lineTo(pVerts[i].x, pVerts[i].y)
+		}
+		ctx.closePath()
+
+		ctx.fillStyle = rgbaFill
+		ctx.fill()
+
+		const avgScale = pVerts[0].scale
+		ctx.lineWidth = Math.max(1, lineWidth * avgScale)
+		ctx.strokeStyle = color
+		ctx.stroke()
+		ctx.restore()
+		return
+	}
+
+	const perimeter = getOrganicCellPerimeter(col, row, radius, seed, riverMap)
+	const pStart = camera.projectTerrain(perimeter[0].from.x, perimeter[0].from.y, 0)
+	let hasVisible = pStart.visible
+
+	const projectedEdges = perimeter.map(e => {
+		const m1 = e.mid1 || e.mid
+		const m2 = e.mid2 || e.to
+		const cp1C = e.cp1C || e.cp2B
+		const cp2C = e.cp2C || e.to
+
+		const pCP1A = camera.projectTerrain(e.cp1A.x, e.cp1A.y, 0)
+		const pCP2A = camera.projectTerrain(e.cp2A.x, e.cp2A.y, 0)
+		const pMid1 = camera.projectTerrain(m1.x, m1.y, 0)
+		const pCP1B = camera.projectTerrain(e.cp1B.x, e.cp1B.y, 0)
+		const pCP2B = camera.projectTerrain(e.cp2B.x, e.cp2B.y, 0)
+		const pMid2 = camera.projectTerrain(m2.x, m2.y, 0)
+		const pCP1C = camera.projectTerrain(cp1C.x, cp1C.y, 0)
+		const pCP2C = camera.projectTerrain(cp2C.x, cp2C.y, 0)
+		const pTo = camera.projectTerrain(e.to.x, e.to.y, 0)
+		if (pTo.visible || pMid1.visible || pMid2.visible) hasVisible = true
+		return { pCP1A, pCP2A, pMid1, pCP1B, pCP2B, pMid2, pCP1C, pCP2C, pTo }
+	})
+
+	if (!hasVisible) return
 
 	ctx.save()
 
@@ -2007,16 +3109,18 @@ function drawHexHighlight(ctx, camera, col, row, radius, color, fillOpacity = 0.
 		.replace('#f6c445', `rgba(246, 196, 69, ${fillOpacity})`)
 
 	ctx.beginPath()
-	ctx.moveTo(screenVerts[0].x, screenVerts[0].y)
-	for (let i = 1; i < screenVerts.length; i++) {
-		ctx.lineTo(screenVerts[i].x, screenVerts[i].y)
+	ctx.moveTo(pStart.x, pStart.y)
+	for (const pe of projectedEdges) {
+		ctx.bezierCurveTo(pe.pCP1A.x, pe.pCP1A.y, pe.pCP2A.x, pe.pCP2A.y, pe.pMid1.x, pe.pMid1.y)
+		ctx.bezierCurveTo(pe.pCP1B.x, pe.pCP1B.y, pe.pCP2B.x, pe.pCP2B.y, pe.pMid2.x, pe.pMid2.y)
+		ctx.bezierCurveTo(pe.pCP1C.x, pe.pCP1C.y, pe.pCP2C.x, pe.pCP2C.y, pe.pTo.x, pe.pTo.y)
 	}
 	ctx.closePath()
 
 	ctx.fillStyle = rgbaFill
 	ctx.fill()
 
-	const avgScale = screenVerts[0].scale
+	const avgScale = pStart.scale
 	ctx.lineWidth = Math.max(1, lineWidth * avgScale)
 	ctx.strokeStyle = color
 	ctx.stroke()
@@ -2027,17 +3131,15 @@ function drawHexHighlight(ctx, camera, col, row, radius, color, fillOpacity = 0.
 /**
  * Highlights a specific hex edge (for river drawing).
  */
-function drawEdgeHighlight(ctx, camera, col, row, edge, radius, riverWidth = 1) {
+function drawEdgeHighlight(ctx, camera, col, row, edge, radius, riverWidth = 1, seed = 0, useOrganic = ENABLE_ORGANIC_EDGES) {
 	const center = hexToWorldGroundCenter(col, row, radius)
-	const groundVerts = getHexGroundVertices(center.x, center.y, radius)
+	const groundVerts = useOrganic
+		? getOrganicHexGroundVertices(center.x, center.y, radius, seed)
+		: getHexGroundVertices(center.x, center.y, radius)
 	const { from, to } = getHexEdgeEndpoints(groundVerts, edge)
-	const canonKey = getCanonicalEdgeKey(col, row, edge)
 	const tier = riverWidth || 1
-	const { cp1, cp2 } = getRiverMeanderControls(from, to, canonKey, radius, tier)
 
 	const pFrom = camera.project(from.x, from.y, 0)
-	const pCP1 = camera.project(cp1.x, cp1.y, 0)
-	const pCP2 = camera.project(cp2.x, cp2.y, 0)
 	const pTo = camera.project(to.x, to.y, 0)
 
 	if (!pFrom.visible && !pTo.visible) return
@@ -2051,7 +3153,15 @@ function drawEdgeHighlight(ctx, camera, col, row, edge, radius, riverWidth = 1) 
 	ctx.save()
 	ctx.beginPath()
 	ctx.moveTo(pFrom.x, pFrom.y)
-	ctx.bezierCurveTo(pCP1.x, pCP1.y, pCP2.x, pCP2.y, pTo.x, pTo.y)
+	if (!useOrganic) {
+		ctx.lineTo(pTo.x, pTo.y)
+	} else {
+		const canonKey = getCanonicalEdgeKey(col, row, edge)
+		const { cp1, cp2 } = getRiverMeanderControls(from, to, canonKey, radius, tier, { seed })
+		const pCP1 = camera.project(cp1.x, cp1.y, 0)
+		const pCP2 = camera.project(cp2.x, cp2.y, 0)
+		ctx.bezierCurveTo(pCP1.x, pCP1.y, pCP2.x, pCP2.y, pTo.x, pTo.y)
+	}
 	ctx.lineWidth = highlightW + 1.8 * avgScale
 	ctx.strokeStyle = '#38bdf8'
 	ctx.lineCap = 'round'

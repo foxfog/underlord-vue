@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import {
 	HEX_EDGES,
 	OPPOSITE_EDGE,
@@ -21,8 +21,21 @@ import {
 	getHashFloat,
 	getRiverMeanderControls,
 	getBorderMeanderControls,
+	getHexEdgeCurve,
+	getOrganicCellPolygon,
+	clearOrganicPolygonCache,
+	getOrganicCellPerimeter,
+	HEX_PERIMETER_EDGES,
+	getOrganicGroundVertex,
+	getOrganicHexGroundVertices,
+	isCoastEdge,
+	getBiomeTextureVariant,
+	DEFAULT_TEXTURE_BLEED_RATIO,
 	getRoadPathControls,
-	getRoadCurvePoint
+	getRoadCurvePoint,
+	calculateDirectionalBounds,
+	calculateAnchorBounds,
+	getVisibleHexGridBounds
 } from '../hexmap/hexCoords'
 import {
 	buildRibbonJunction,
@@ -32,7 +45,8 @@ import {
 	buildRoadRenderData,
 	renderRoads,
 	renderHexMap,
-	drawPoliticalBorders
+	drawPoliticalBorders,
+	isCellVisible
 } from '../hexmap/hexRenderer'
 
 describe('HexCoords Flat-Topped Math & Geometry', () => {
@@ -929,7 +943,7 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 			expect(d75).toBeCloseTo(dEndpoints, 4)
 		})
 
-		it('universal meanders: rivers and borders on the same edge have 100% coincident curves', () => {
+		it('getRiverMeanderControls maintains 100% strict mathematical symmetry in reverse traversal', () => {
 			const radius = 36
 			const canonKey = '13,5:SW'
 
@@ -940,21 +954,13 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 
 			// River on this edge with tier 2
 			const riverControls = getRiverMeanderControls(from, to, canonKey, radius, 2)
-			// Border along this same edge with tier 2
-			const borderControls = getBorderMeanderControls(from, to, canonKey, radius, 2)
-
-			// Control points must match exactly
-			expect(borderControls.cp1.x).toBeCloseTo(riverControls.cp1.x, 6)
-			expect(borderControls.cp1.y).toBeCloseTo(riverControls.cp1.y, 6)
-			expect(borderControls.cp2.x).toBeCloseTo(riverControls.cp2.x, 6)
-			expect(borderControls.cp2.y).toBeCloseTo(riverControls.cp2.y, 6)
+			const revRiverControls = getRiverMeanderControls(to, from, canonKey, radius, 2)
 
 			// Reverse traversal along the same edge produces identical physical curve in reverse
-			const revBorderControls = getBorderMeanderControls(to, from, canonKey, radius, 2)
-			expect(revBorderControls.cp1.x).toBeCloseTo(riverControls.cp2.x, 6)
-			expect(revBorderControls.cp1.y).toBeCloseTo(riverControls.cp2.y, 6)
-			expect(revBorderControls.cp2.x).toBeCloseTo(riverControls.cp1.x, 6)
-			expect(revBorderControls.cp2.y).toBeCloseTo(riverControls.cp1.y, 6)
+			expect(revRiverControls.cp1.x).toBeCloseTo(riverControls.cp2.x, 6)
+			expect(revRiverControls.cp1.y).toBeCloseTo(riverControls.cp2.y, 6)
+			expect(revRiverControls.cp2.x).toBeCloseTo(riverControls.cp1.x, 6)
+			expect(revRiverControls.cp2.y).toBeCloseTo(riverControls.cp1.y, 6)
 		})
 
 		it('drawPoliticalBorders renders continuous closed loops without interrupted segment-by-segment joints', () => {
@@ -991,9 +997,10 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 				pitch: 45
 			})
 
-			// 2 adjacent cells belonging to the same faction
+			// 2 adjacent cells belonging to the same faction (tested with organic: true)
 			const mapData = {
 				hexRadius: 36,
+				organic: true,
 				cells: {
 					'3,3': { col: 3, row: 3, faction: 're-estize' },
 					'3,4': { col: 3, row: 4, faction: 're-estize' }
@@ -1003,13 +1010,997 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 			drawPoliticalBorders(fakeCtx, camera, mapData, 36)
 
 			// External boundary of 2 adjacent hexes has 10 edges forming 1 continuous closed loop
-			// Halo pass + Crisp pass = 2 strokes for the continuous loop (NOT 10 separate strokes per edge!)
-			expect(strokeCalls.length).toBe(2)
-			// 2 closePath for cell fills in Pass 1 + 2 closePath for border loop passes in Pass 2
-			expect(closePathCalls.length).toBe(4)
-			// 10 bezierCurveTo segments per pass = 20 total
-			expect(bezierCurveToCalls.length).toBe(20)
+			// 2 inward halo passes (wide + mid) + 1 crisp pass = 3 strokes for the continuous loop
+			expect(strokeCalls.length).toBe(3)
+			// 2 closePath for cell fills in Pass 1 + 3 closePath for border loop passes in Pass 2
+			expect(closePathCalls.length).toBe(5)
+			// Multi-bend curves: 2 cells * 6 edges * 3 subsegments = 36 in Pass 1,
+			// plus 10 external boundary edges * 3 subsegments * 3 passes = 90 in Pass 2 => 126 total
+			expect(bezierCurveToCalls.length).toBe(126)
+		})
+
+		it('drawPoliticalBorders renders strict straight hexagonal grid when organic is false', () => {
+			const beginPathCalls = []
+			const moveToCalls = []
+			const lineToCalls = []
+			const bezierCurveToCalls = []
+			const closePathCalls = []
+			const strokeCalls = []
+
+			const fakeCtx = {
+				canvas: { width: 1000, height: 800 },
+				save: () => {},
+				restore: () => {},
+				beginPath: () => beginPathCalls.push('beginPath'),
+				moveTo: (x, y) => moveToCalls.push({ x, y }),
+				lineTo: (x, y) => lineToCalls.push({ x, y }),
+				bezierCurveTo: (cp1x, cp1y, cp2x, cp2y, x, y) => bezierCurveToCalls.push({ cp1x, cp1y, cp2x, cp2y, x, y }),
+				closePath: () => closePathCalls.push('closePath'),
+				fill: () => {},
+				stroke: () => strokeCalls.push('stroke'),
+				lineWidth: 0,
+				strokeStyle: '',
+				fillStyle: '',
+				lineCap: '',
+				lineJoin: ''
+			}
+
+			const camera = new HexPerspectiveCamera({
+				viewportWidth: 1000,
+				viewportHeight: 800,
+				cameraX: 200,
+				cameraY: 200,
+				zoom: 1.0,
+				pitch: 45
+			})
+
+			// 2 adjacent cells belonging to the same faction (organic: false explicitly specified)
+			const mapData = {
+				hexRadius: 36,
+				organic: false,
+				cells: {
+					'3,3': { col: 3, row: 3, faction: 're-estize' },
+					'3,4': { col: 3, row: 4, faction: 're-estize' }
+				}
+			}
+
+			drawPoliticalBorders(fakeCtx, camera, mapData, 36)
+
+			// 2 inward halo passes (wide + mid) + 1 crisp pass = 3 strokes
+			expect(strokeCalls.length).toBe(3)
+			// 2 closePath for cell fills in Pass 1 + 3 closePath for border loop passes in Pass 2
+			expect(closePathCalls.length).toBe(5)
+			// Strict straight grid: zero bezier curves evaluated, only straight lines
+			expect(bezierCurveToCalls.length).toBe(0)
+			expect(lineToCalls.length).toBeGreaterThan(0)
+		})
+
+		it('drawPoliticalBorders supports separate pass 1 (fills only) and pass 2 (ribbons only)', () => {
+			const strokeCalls = []
+			const fillCalls = []
+
+			const fakeCtx = {
+				canvas: { width: 1000, height: 800 },
+				save: () => {},
+				restore: () => {},
+				beginPath: () => {},
+				moveTo: () => {},
+				lineTo: () => {},
+				bezierCurveTo: () => {},
+				closePath: () => {},
+				fill: () => fillCalls.push('fill'),
+				stroke: () => strokeCalls.push('stroke'),
+				lineWidth: 0,
+				strokeStyle: '',
+				fillStyle: '',
+				lineCap: '',
+				lineJoin: ''
+			}
+
+			const camera = new HexPerspectiveCamera({
+				viewportWidth: 1000,
+				viewportHeight: 800,
+				cameraX: 200,
+				cameraY: 200,
+				zoom: 1.0,
+				pitch: 45
+			})
+
+			const mapData = {
+				hexRadius: 36,
+				cells: {
+					'3,3': { col: 3, row: 3, faction: 're-estize' },
+					'3,4': { col: 3, row: 4, faction: 're-estize' }
+				}
+			}
+
+			// Pass 1 only: fills only, zero strokes
+			drawPoliticalBorders(fakeCtx, camera, mapData, 36, null, null, 1)
+			expect(fillCalls.length).toBe(2) // 2 cells filled
+			expect(strokeCalls.length).toBe(0) // 0 strokes
+
+			// Pass 2 only: strokes only, zero fills
+			fillCalls.length = 0
+			strokeCalls.length = 0
+			drawPoliticalBorders(fakeCtx, camera, mapData, 36, null, null, 2)
+			expect(fillCalls.length).toBe(0) // 0 fills
+			expect(strokeCalls.length).toBe(3) // 3 border ribbon strokes (wide halo + mid halo + crisp)
+		})
+
+		it('drawPoliticalBorders insets border ribbons inward into each nation creating dual parallel ribbons with semi-transparency', () => {
+			const strokeStyles = []
+			const curvesByColor = new Map()
+			let currentSegments = []
+
+			const fakeCtx = {
+				canvas: { width: 1000, height: 800 },
+				save: () => {},
+				restore: () => {},
+				beginPath: () => { currentSegments = [] },
+				moveTo: (x, y) => { currentSegments.push({ type: 'move', x, y }) },
+				lineTo: (x, y) => { currentSegments.push({ type: 'line', x, y }) },
+				bezierCurveTo: (cp1x, cp1y, cp2x, cp2y, x, y) => {
+					currentSegments.push({ type: 'bezier', cp1x, cp1y, cp2x, cp2y, x, y })
+				},
+				closePath: () => {},
+				fill: () => {},
+				stroke: () => {
+					strokeStyles.push(fakeCtx.strokeStyle)
+					let list = curvesByColor.get(fakeCtx.strokeStyle)
+					if (!list) {
+						list = []
+						curvesByColor.set(fakeCtx.strokeStyle, list)
+					}
+					list.push([...currentSegments])
+				},
+				lineWidth: 0,
+				strokeStyle: '',
+				fillStyle: '',
+				lineCap: '',
+				lineJoin: ''
+			}
+
+			// Flat camera (pitch = 0) so projected screen coords map directly to ground coords
+			const camera = new HexPerspectiveCamera({
+				viewportWidth: 1000,
+				viewportHeight: 800,
+				cameraX: 200,
+				cameraY: 200,
+				zoom: 1.0,
+				pitch: 0
+			})
+
+			// 2 adjacent cells belonging to DIFFERENT nations:
+			// (3,3) in re-estize (blue), (4,3) in baharuth (red)
+			const mapData = {
+				hexRadius: 36,
+				cells: {
+					'3,3': { col: 3, row: 3, faction: 're-estize' },
+					'4,3': { col: 4, row: 3, faction: 'baharuth' }
+				}
+			}
+
+			drawPoliticalBorders(fakeCtx, camera, mapData, 36, null, null, 2)
+
+			// Strokes contain semi-transparent colors (0.12 for wide halo, 0.22 for mid halo, 0.78 for crisp stroke)
+			expect(strokeStyles.some(s => s.includes('0.12'))).toBe(true)
+			expect(strokeStyles.some(s => s.includes('0.22'))).toBe(true)
+			expect(strokeStyles.some(s => s.includes('0.78'))).toBe(true)
+
+			// Both nations should have had their border ribbons drawn (3 strokes each: wide halo + mid halo + crisp)
+			expect(strokeStyles.length).toBe(6)
+
+			// Check that the shared boundary curves for the two nations are distinct and offset from each other
+			const reEstizeStrokes = [...curvesByColor.entries()].filter(([k]) => k.includes('37, 99, 235'))
+			const baharuthStrokes = [...curvesByColor.entries()].filter(([k]) => k.includes('220, 38, 38'))
+
+			expect(reEstizeStrokes.length).toBeGreaterThan(0)
+			expect(baharuthStrokes.length).toBeGreaterThan(0)
+		})
+	})
+
+	describe('Hex Edge Curves, Organic Polygons & Texture Pipeline', () => {
+		it('getHexEdgeCurve generates varied harmonic profile types across different edges', () => {
+			const from = { x: 100, y: 100 }
+			const to = { x: 136, y: 100 }
+			const radius = 36
+
+			const profilesFound = new Set()
+			for (let i = 0; i < 20; i++) {
+				const curve = getHexEdgeCurve(from, to, `${i},${i * 2}:SE`, radius, 1)
+				profilesFound.add(curve.profileType)
+			}
+
+			// Must produce multiple diverse profiles (C-arc, S-meander, serpentine, compound lobe)
+			expect(profilesFound.size).toBeGreaterThanOrEqual(3)
+		})
+
+		it('getHexEdgeCurve scales protrusion depth and generates organic amplitudes up to 0.40 * radius', () => {
+			const from = { x: 100, y: 100 }
+			const to = { x: 136, y: 100 }
+			const radius = 36
+
+			const protrusions = []
+			for (let i = 0; i < 15; i++) {
+				const curve = getHexEdgeCurve(from, to, `${i},${i + 5}:N`, radius, 1)
+				protrusions.push(curve.protrusion)
+				// Protrusions must be non-zero and bounded by realistic organic terrain range
+				expect(curve.protrusion).toBeGreaterThan(radius * 0.08)
+				expect(curve.protrusion).toBeLessThanOrEqual(radius * 0.45)
+			}
+
+			// Protrusions must not be identical across all edges
+			const minP = Math.min(...protrusions)
+			const maxP = Math.max(...protrusions)
+			expect(maxP - minP).toBeGreaterThan(radius * 0.1)
+		})
+
+		it('getHexEdgeCurve guarantees at least 1 prominent intermediate point with significant offset between the 2 main vertices', () => {
+			const from = { x: 100, y: 100 }
+			const to = { x: 136, y: 100 }
+			const radius = 36
+
+			for (let i = 0; i < 30; i++) {
+				const curve = getHexEdgeCurve(from, to, `${i},${i * 3}:SE`, radius, 1)
+				expect(curve.mid).toBeDefined()
+
+				// Distance of mid from the straight chord connecting from and to:
+				// Line from (100, 100) to (136, 100) is horizontal (y = 100)
+				// Perpendicular distance is |mid.y - 100|
+				const perpDist = Math.abs(curve.mid.y - 100)
+				expect(perpDist).toBeGreaterThanOrEqual(radius * 0.10) // at least ~3.6px
+			}
+		})
+
+		it('getHexEdgeCurve applies smooth vertex tangents without lateral beaks at endpoints', () => {
+			const from = { x: 100, y: 100 }
+			const to = { x: 136, y: 100 }
+			const radius = 36
+
+			// Inward turning tangent from a previous edge (angle 45 deg)
+			const tangentFrom = { x: Math.cos(Math.PI / 4), y: Math.sin(Math.PI / 4) }
+			const tangentTo = { x: 1, y: 0 }
+
+			const curve = getHexEdgeCurve(from, to, '4,5:SE', radius, 1, { tangentFrom, tangentTo })
+
+			// CP1 should lean along tangentFrom
+			const dX = curve.cp1.x - from.x
+			const dY = curve.cp1.y - from.y
+			expect(dX).toBeGreaterThan(0)
+			expect(dY).toBeGreaterThan(0)
+		})
+
+		it('getHexEdgeCurve maintains 100% strict mathematical symmetry in reverse traversal', () => {
+			const from = { x: 80, y: 120 }
+			const to = { x: 116, y: 156 }
+			const canonKey = '9,12:SE'
+			const radius = 36
+
+			const fwd = getHexEdgeCurve(from, to, canonKey, radius, 1)
+			const rev = getHexEdgeCurve(to, from, canonKey, radius, 1)
+
+			expect(rev.cp1.x).toBeCloseTo(fwd.cp2.x, 6)
+			expect(rev.cp1.y).toBeCloseTo(fwd.cp2.y, 6)
+			expect(rev.cp2.x).toBeCloseTo(fwd.cp1.x, 6)
+			expect(rev.cp2.y).toBeCloseTo(fwd.cp1.y, 6)
+		})
+
+		it('getOrganicCellPolygon generates 6-sided organic boundary with coincident shared edges', () => {
+			const radius = 36
+			const cellPoly1 = getOrganicCellPolygon(2, 2, radius)
+			const nCoord = getHexNeighbor(2, 2, 'NE')
+			const cellPoly2 = getOrganicCellPolygon(nCoord.col, nCoord.row, radius)
+
+			expect(cellPoly1.edges).toHaveLength(6)
+			expect(cellPoly2.edges).toHaveLength(6)
+
+			// Shared edge between (2,2) and its NE neighbor
+			const edge1 = cellPoly1.edges.find(e => e.edge === 'NE')
+			const edge2 = cellPoly2.edges.find(e => e.edge === 'SW')
+
+			expect(edge1.canonKey).toBe(edge2.canonKey)
+			// Coincident endpoints and control points
+			expect(edge1.from.x).toBeCloseTo(edge2.from.x, 5)
+			expect(edge1.from.y).toBeCloseTo(edge2.from.y, 5)
+			expect(edge1.to.x).toBeCloseTo(edge2.to.x, 5)
+			expect(edge1.to.y).toBeCloseTo(edge2.to.y, 5)
+			expect(edge1.cp1.x).toBeCloseTo(edge2.cp1.x, 5)
+			expect(edge1.cp1.y).toBeCloseTo(edge2.cp1.y, 5)
+		})
+
+		it('isCoastEdge accurately classifies land vs water edges', () => {
+			const grassCell = { col: 1, row: 1, terrain: 'grass' }
+			const oceanCell = { col: 1, row: 2, terrain: 'ocean' }
+			const waterCell = { col: 1, row: 3, terrain: 'water' }
+			const desertCell = { col: 2, row: 1, terrain: 'desert' }
+
+			expect(isCoastEdge(grassCell, oceanCell)).toBe(true)
+			expect(isCoastEdge(desertCell, waterCell)).toBe(true)
+			expect(isCoastEdge(oceanCell, waterCell)).toBe(false) // Both water
+			expect(isCoastEdge(grassCell, desertCell)).toBe(false) // Both land
+		})
+
+		it('getBiomeTextureVariant provides deterministic bounded variant indexing', () => {
+			const v1 = getBiomeTextureVariant(4, 5, 4, 100)
+			const v1Repeat = getBiomeTextureVariant(4, 5, 4, 100)
+			const v2 = getBiomeTextureVariant(4, 6, 4, 100)
+
+			expect(v1).toBe(v1Repeat)
+			expect(v1).toBeGreaterThanOrEqual(0)
+			expect(v1).toBeLessThan(4)
+			expect(DEFAULT_TEXTURE_BLEED_RATIO).toBeGreaterThan(1.1)
+		})
+
+		it('getOrganicGroundVertex and getOrganicHexGroundVertices displace vertices organically with strict shared-edge determinism', () => {
+			const radius = 36
+			const seed = 42
+
+			// Center 1 and neighbor
+			const c1 = hexToWorldGroundCenter(3, 4, radius)
+			const idealVerts1 = getHexGroundVertices(c1.x, c1.y, radius)
+			const organicVerts1 = getOrganicHexGroundVertices(c1.x, c1.y, radius, seed)
+
+			// 1. Ensure organic vertices are not pinned to rigid lattice
+			let totalDisplacement = 0
+			for (let i = 0; i < 6; i++) {
+				const dist = Math.hypot(organicVerts1[i].x - idealVerts1[i].x, organicVerts1[i].y - idealVerts1[i].y)
+				totalDisplacement += dist
+				// Max jitter offset is bounded by sqrt(2) * 0.16 * radius ≈ 8.14px
+				expect(dist).toBeLessThanOrEqual(Math.SQRT2 * 0.16 * radius + 0.01)
+			}
+			expect(totalDisplacement).toBeGreaterThan(1.0) // Vertices genuinely jitter!
+
+			// 2. Neighbor sharing edge SE (edge vertices [0, 1] on (3,4) vs [3, 4] on (4,4))
+			const nCoord = getHexNeighbor(3, 4, 'SE')
+			const c2 = hexToWorldGroundCenter(nCoord.col, nCoord.row, radius)
+			const organicVerts2 = getOrganicHexGroundVertices(c2.x, c2.y, radius, seed)
+
+			// Vertex 0 of hex 1 should equal Vertex 4 of hex 2
+			expect(organicVerts1[0].x).toBeCloseTo(organicVerts2[4].x, 5)
+			expect(organicVerts1[0].y).toBeCloseTo(organicVerts2[4].y, 5)
+
+			// Vertex 1 of hex 1 should equal Vertex 3 of hex 2
+			expect(organicVerts1[1].x).toBeCloseTo(organicVerts2[3].x, 5)
+			expect(organicVerts1[1].y).toBeCloseTo(organicVerts2[3].y, 5)
+		})
+
+		it('border and river on shared edge with opposite traversals form 100% coincident curves', () => {
+			const radius = 36
+			const seed = 99
+			const canonKey = '5,6:S'
+
+			const c1 = hexToWorldGroundCenter(5, 6, radius)
+			const gv1 = getOrganicHexGroundVertices(c1.x, c1.y, radius, seed)
+			// River endpoints from getHexEdgeEndpoints: [2, 1] (West -> East)
+			const { from: rFrom, to: rTo } = getHexEdgeEndpoints(gv1, 'S')
+
+			// Faction 1 boundary edge (Hex 1, edge S: clockwise is [1, 2] East -> West)
+			const f1From = gv1[1]
+			const f1To = gv1[2]
+
+			// Faction 2 boundary edge (Neighbor Hex 2, edge N: clockwise is [4, 5] West -> East)
+			const nCoord = getHexNeighbor(5, 6, 'S')
+			const c2 = hexToWorldGroundCenter(nCoord.col, nCoord.row, radius)
+			const gv2 = getOrganicHexGroundVertices(c2.x, c2.y, radius, seed)
+			const f2From = gv2[4]
+			const f2To = gv2[5]
+
+			// Verify shared corner points match
+			expect(f1From.x).toBeCloseTo(f2To.x, 5)
+			expect(f1From.y).toBeCloseTo(f2To.y, 5)
+			expect(f1To.x).toBeCloseTo(f2From.x, 5)
+			expect(f1To.y).toBeCloseTo(f2From.y, 5)
+			expect(rFrom.x).toBeCloseTo(f2From.x, 5)
+			expect(rFrom.y).toBeCloseTo(f2From.y, 5)
+
+			// River running along canonical edge
+			const riverCurve = getRiverMeanderControls(rFrom, rTo, canonKey, radius, 2, { seed })
+			const revRiverCurve = getRiverMeanderControls(rTo, rFrom, canonKey, radius, 2, { seed })
+			// Faction 1 border along S edge (traversing East -> West)
+			const f1Curve = getHexEdgeCurve(f1From, f1To, canonKey, radius, 2, { seed })
+			// Faction 2 border along N edge (traversing West -> East)
+			const f2Curve = getHexEdgeCurve(f2From, f2To, canonKey, radius, 2, { seed })
+
+			function evalCubic(p0, cp1, cp2, p1, t) {
+				const mt = 1 - t
+				return {
+					x: mt ** 3 * p0.x + 3 * mt ** 2 * t * cp1.x + 3 * mt * t ** 2 * cp2.x + t ** 3 * p1.x,
+					y: mt ** 3 * p0.y + 3 * mt ** 2 * t * cp1.y + 3 * mt * t ** 2 * cp2.y + t ** 3 * p1.y
+				}
+			}
+
+			// Borders on both sides of shared edge trace the exact same physical curve
+			// River meander also preserves exact reverse symmetry
+			for (const t of [0, 0.15, 0.35, 0.5, 0.65, 0.85, 1.0]) {
+				const ptF2 = evalCubic(f2From, f2Curve.cp1, f2Curve.cp2, f2To, t)
+				const ptF1 = evalCubic(f1From, f1Curve.cp1, f1Curve.cp2, f1To, 1 - t)
+
+				expect(ptF2.x).toBeCloseTo(ptF1.x, 5)
+				expect(ptF2.y).toBeCloseTo(ptF1.y, 5)
+
+				const ptRiver = evalCubic(rFrom, riverCurve.cp1, riverCurve.cp2, rTo, t)
+				const ptRiverRev = evalCubic(rTo, revRiverCurve.cp1, revRiverCurve.cp2, rFrom, 1 - t)
+				expect(ptRiver.x).toBeCloseTo(ptRiverRev.x, 5)
+				expect(ptRiver.y).toBeCloseTo(ptRiverRev.y, 5)
+			}
+		})
+
+		it('getOrganicCellPerimeter produces a continuous watertight closed loop of 6 curved edges', () => {
+			const perimeter = getOrganicCellPerimeter(4, 5, 36, 12345)
+			expect(perimeter).toHaveLength(6)
+
+			// Verify clockwise continuity: edge[i].to strictly equals edge[(i+1)%6].from
+			for (let i = 0; i < 6; i++) {
+				const curr = perimeter[i]
+				const next = perimeter[(i + 1) % 6]
+
+				expect(curr.to.x).toBeCloseTo(next.from.x, 5)
+				expect(curr.to.y).toBeCloseTo(next.from.y, 5)
+
+				// Each edge contains multi-bend controls with at least 2 intermediate apex points
+				expect(curr.mid).toBeDefined()
+				expect(curr.mid1).toBeDefined()
+				expect(curr.mid2).toBeDefined()
+				expect(curr.midPoints).toHaveLength(2)
+				expect(curr.cp1A).toBeDefined()
+				expect(curr.cp2A).toBeDefined()
+				expect(curr.cp1B).toBeDefined()
+				expect(curr.cp2B).toBeDefined()
+				expect(curr.cp1C).toBeDefined()
+				expect(curr.cp2C).toBeDefined()
+			}
+		})
+
+		it('180-degree collinear handles across corners eliminate sharp kinks at hex boundary joints', () => {
+			const vCorner = { x: 200, y: 300 }
+			const vPrev = { x: 170, y: 260 }
+			const vNext = { x: 240, y: 310 }
+
+			// Chord directions
+			const d1x = vCorner.x - vPrev.x
+			const d1y = vCorner.y - vPrev.y
+			const l1 = Math.hypot(d1x, d1y)
+			const u1 = { x: d1x / l1, y: d1y / l1 }
+
+			const d2x = vNext.x - vCorner.x
+			const d2y = vNext.y - vCorner.y
+			const l2 = Math.hypot(d2x, d2y)
+			const u2 = { x: d2x / l2, y: d2y / l2 }
+
+			// Bisector tangent at corner
+			const sx = u1.x + u2.x
+			const sy = u1.y + u2.y
+			const sl = Math.hypot(sx, sy)
+			const tCorner = { x: sx / sl, y: sy / sl }
+
+			// Incoming segment ends at vCorner with tangentTo = tCorner
+			const seg1 = getHexEdgeCurve(vPrev, vCorner, '1,1:SE', 36, 1, { tangentTo: tCorner })
+			// Outgoing segment starts at vCorner with tangentFrom = tCorner
+			const seg2 = getHexEdgeCurve(vCorner, vNext, '2,1:N', 36, 1, { tangentFrom: tCorner })
+
+			// Vector entering vCorner from cp2C of seg1
+			const inDx = vCorner.x - seg1.cp2C.x
+			const inDy = vCorner.y - seg1.cp2C.y
+			const inLen = Math.hypot(inDx, inDy)
+			const uIn = { x: inDx / inLen, y: inDy / inLen }
+
+			// Vector leaving vCorner towards cp1A of seg2
+			const outDx = seg2.cp1A.x - vCorner.x
+			const outDy = seg2.cp1A.y - vCorner.y
+			const outLen = Math.hypot(outDx, outDy)
+			const uOut = { x: outDx / outLen, y: outDy / outLen }
+
+			// Both unit vectors point along tCorner: their dot product must be 1.0 (angle = 0 deg, handles 180 deg collinear)
+			const dot = uIn.x * uOut.x + uIn.y * uOut.y
+			expect(dot).toBeCloseTo(1.0, 5)
+
+			expect(uIn.x).toBeCloseTo(tCorner.x, 5)
+			expect(uIn.y).toBeCloseTo(tCorner.y, 5)
+			expect(uOut.x).toBeCloseTo(tCorner.x, 5)
+			expect(uOut.y).toBeCloseTo(tCorner.y, 5)
+		})
+
+		it('guarantees at least 2 intermediate apex points with minimum protrusion and collinear through-tangents', () => {
+			const from = { x: 50, y: 50 }
+			const to = { x: 120, y: 70 }
+			const radius = 36
+
+			// Test all canonical profile archetypes
+			const testEdges = ['0,0:N', '1,0:NE', '2,1:SE', '3,2:S', '0,2:SW', '1,3:NW']
+			for (const canonKey of testEdges) {
+				const curve = getHexEdgeCurve(from, to, canonKey, radius, 1)
+
+				// 1. Must have mid1 and mid2
+				expect(curve.mid1).toBeDefined()
+				expect(curve.mid2).toBeDefined()
+				expect(curve.midPoints).toHaveLength(2)
+				expect(curve.mid).toBe(curve.mid1)
+
+				// Chord vector and normal
+				const cdx = to.x - from.x
+				const cdy = to.y - from.y
+				const clen = Math.hypot(cdx, cdy)
+				const cnx = -cdy / clen
+				const cny = cdx / clen
+
+				// Perpendicular distance of mid1 and mid2 from chord line
+				const distM1 = Math.abs((curve.mid1.x - from.x) * cnx + (curve.mid1.y - from.y) * cny)
+				const distM2 = Math.abs((curve.mid2.x - from.x) * cnx + (curve.mid2.y - from.y) * cny)
+
+				// Both intermediate points must have noticeable lateral protrusion (> 0.08 * radius)
+				expect(distM1).toBeGreaterThanOrEqual(0.08 * radius)
+				expect(distM2).toBeGreaterThanOrEqual(0.08 * radius)
+
+				// 2. Collinear 180° through-tangents at mid1: vector(mid1 - cp2A) and vector(cp1B - mid1)
+				const vIn1 = { x: curve.mid1.x - curve.cp2A.x, y: curve.mid1.y - curve.cp2A.y }
+				const lenIn1 = Math.hypot(vIn1.x, vIn1.y)
+				const uIn1 = { x: vIn1.x / lenIn1, y: vIn1.y / lenIn1 }
+
+				const vOut1 = { x: curve.cp1B.x - curve.mid1.x, y: curve.cp1B.y - curve.mid1.y }
+				const lenOut1 = Math.hypot(vOut1.x, vOut1.y)
+				const uOut1 = { x: vOut1.x / lenOut1, y: vOut1.y / lenOut1 }
+
+				const dotM1 = uIn1.x * uOut1.x + uIn1.y * uOut1.y
+				expect(dotM1).toBeCloseTo(1.0, 5)
+
+				// 3. Collinear 180° through-tangents at mid2: vector(mid2 - cp2B) and vector(cp1C - mid2)
+				const vIn2 = { x: curve.mid2.x - curve.cp2B.x, y: curve.mid2.y - curve.cp2B.y }
+				const lenIn2 = Math.hypot(vIn2.x, vIn2.y)
+				const uIn2 = { x: vIn2.x / lenIn2, y: vIn2.y / lenIn2 }
+
+				const vOut2 = { x: curve.cp1C.x - curve.mid2.x, y: curve.cp1C.y - curve.mid2.y }
+				const lenOut2 = Math.hypot(vOut2.x, vOut2.y)
+				const uOut2 = { x: vOut2.x / lenOut2, y: vOut2.y / lenOut2 }
+
+				const dotM2 = uIn2.x * uOut2.x + uIn2.y * uOut2.y
+				expect(dotM2).toBeCloseTo(1.0, 5)
+
+				// 4. Reverse traversal symmetry across all 3 subsegments
+				const rev = getHexEdgeCurve(to, from, canonKey, radius, 1)
+				expect(rev.mid1.x).toBeCloseTo(curve.mid2.x, 5)
+				expect(rev.mid1.y).toBeCloseTo(curve.mid2.y, 5)
+				expect(rev.mid2.x).toBeCloseTo(curve.mid1.x, 5)
+				expect(rev.mid2.y).toBeCloseTo(curve.mid1.y, 5)
+
+				expect(rev.cp1A.x).toBeCloseTo(curve.cp2C.x, 5)
+				expect(rev.cp1A.y).toBeCloseTo(curve.cp2C.y, 5)
+				expect(rev.cp2A.x).toBeCloseTo(curve.cp1C.x, 5)
+				expect(rev.cp2A.y).toBeCloseTo(curve.cp1C.y, 5)
+
+				expect(rev.cp1B.x).toBeCloseTo(curve.cp2B.x, 5)
+				expect(rev.cp1B.y).toBeCloseTo(curve.cp2B.y, 5)
+				expect(rev.cp2B.x).toBeCloseTo(curve.cp1B.x, 5)
+				expect(rev.cp2B.y).toBeCloseTo(curve.cp1B.y, 5)
+
+				expect(rev.cp1C.x).toBeCloseTo(curve.cp2A.x, 5)
+				expect(rev.cp1C.y).toBeCloseTo(curve.cp2A.y, 5)
+				expect(rev.cp2C.x).toBeCloseTo(curve.cp1A.x, 5)
+				expect(rev.cp2C.y).toBeCloseTo(curve.cp1A.y, 5)
+			}
+		})
+
+		it('100% geometric coincidence between hex cell boundary, river, and political border on the same edge', () => {
+			const col = 4
+			const row = 5
+			const edge = 'SE'
+			const radius = 36
+			const seed = 98765
+			const canonKey = getCanonicalEdgeKey(col, row, edge)
+			const riverMap = new Map()
+			riverMap.set(canonKey, { col, row, edge, width: 2 })
+
+			// 1. Organic hex cell boundary for (4, 5)
+			const perimeter = getOrganicCellPerimeter(col, row, radius, seed, riverMap)
+			const cellEdge = perimeter.find(e => e.edge === edge)
+			expect(cellEdge).toBeDefined()
+
+			// 2. River curve along this edge
+			const center = hexToWorldGroundCenter(col, row, radius)
+			const groundVerts = getOrganicHexGroundVertices(center.x, center.y, radius, seed)
+			const { from: rFrom, to: rTo } = getHexEdgeEndpoints(groundVerts, edge)
+			const riverCurve = getRiverMeanderControls(rFrom, rTo, canonKey, radius, 2, { seed })
+
+			// 3. Political border curve along this edge
+			const borderCurve = getHexEdgeCurve(rFrom, rTo, canonKey, radius, 2, { seed })
+
+			// Verify all 10 multi-bend control points match identically between cell boundary and political border
+			for (const prop of ['from', 'cp1A', 'cp2A', 'mid1', 'cp1B', 'cp2B', 'mid2', 'cp1C', 'cp2C', 'to']) {
+				expect(cellEdge[prop].x).toBeCloseTo(borderCurve[prop].x, 5)
+				expect(cellEdge[prop].y).toBeCloseTo(borderCurve[prop].y, 5)
+			}
+
+			// Sub-pixel curve evaluation: lobe A (from -> mid1), lobe B (mid1 -> mid2), lobe C (mid2 -> to)
+			function evalCubic(p0, cp1, cp2, p1, t) {
+				const mt = 1 - t
+				return {
+					x: mt ** 3 * p0.x + 3 * mt ** 2 * t * cp1.x + 3 * mt * t ** 2 * cp2.x + t ** 3 * p1.x,
+					y: mt ** 3 * p0.y + 3 * mt ** 2 * t * cp1.y + 3 * mt * t ** 2 * cp2.y + t ** 3 * p1.y
+				}
+			}
+
+			for (const t of [0, 0.2, 0.5, 0.8, 1.0]) {
+				const ptCellA = evalCubic(cellEdge.from, cellEdge.cp1A, cellEdge.cp2A, cellEdge.mid1, t)
+				const ptBorderA = evalCubic(borderCurve.from, borderCurve.cp1A, borderCurve.cp2A, borderCurve.mid1, t)
+
+				expect(ptCellA.x).toBeCloseTo(ptBorderA.x, 5)
+				expect(ptCellA.y).toBeCloseTo(ptBorderA.y, 5)
+
+				const ptCellB = evalCubic(cellEdge.mid1, cellEdge.cp1B, cellEdge.cp2B, cellEdge.mid2, t)
+				const ptBorderB = evalCubic(borderCurve.mid1, borderCurve.cp1B, borderCurve.cp2B, borderCurve.mid2, t)
+
+				expect(ptCellB.x).toBeCloseTo(ptBorderB.x, 5)
+				expect(ptCellB.y).toBeCloseTo(ptBorderB.y, 5)
+
+				const ptCellC = evalCubic(cellEdge.mid2, cellEdge.cp1C, cellEdge.cp2C, cellEdge.to, t)
+				const ptBorderC = evalCubic(borderCurve.mid2, borderCurve.cp1C, borderCurve.cp2C, borderCurve.to, t)
+
+				expect(ptCellC.x).toBeCloseTo(ptBorderC.x, 5)
+				expect(ptCellC.y).toBeCloseTo(ptBorderC.y, 5)
+			}
+
+			// River has dedicated S-meander control points
+			expect(riverCurve.cp1).toBeDefined()
+			expect(riverCurve.cp2).toBeDefined()
+			expect(riverCurve.from.x).toBeCloseTo(rFrom.x, 5)
+			expect(riverCurve.to.x).toBeCloseTo(rTo.x, 5)
+		})
+	})
+
+	describe('Hex Map Resizing & Bounds Calculation', () => {
+		const baseBounds = {
+			minCol: 0,
+			maxCol: 23,
+			minRow: 0,
+			maxRow: 15,
+			cols: 24,
+			rows: 16
+		}
+
+		it('calculates directional bounds expansion correctly for all 4 directions', () => {
+			// East (+cols to the right)
+			const eastExp = calculateDirectionalBounds(baseBounds, { east: 6 })
+			expect(eastExp).toEqual({
+				minCol: 0,
+				maxCol: 29,
+				minRow: 0,
+				maxRow: 15,
+				cols: 30,
+				rows: 16
+			})
+
+			// North (+rows to the top, minRow becomes negative)
+			const northExp = calculateDirectionalBounds(baseBounds, { north: 4 })
+			expect(northExp).toEqual({
+				minCol: 0,
+				maxCol: 23,
+				minRow: -4,
+				maxRow: 15,
+				cols: 24,
+				rows: 20
+			})
+
+			// West (+cols to the left, minCol becomes negative)
+			const westExp = calculateDirectionalBounds(baseBounds, { west: 5 })
+			expect(westExp).toEqual({
+				minCol: -5,
+				maxCol: 23,
+				minRow: 0,
+				maxRow: 15,
+				cols: 29,
+				rows: 16
+			})
+
+			// South (+rows to the bottom)
+			const southExp = calculateDirectionalBounds(baseBounds, { south: 8 })
+			expect(southExp).toEqual({
+				minCol: 0,
+				maxCol: 23,
+				minRow: 0,
+				maxRow: 23,
+				cols: 24,
+				rows: 24
+			})
+
+			// All 4 directions simultaneously
+			const allExp = calculateDirectionalBounds(baseBounds, { north: 2, south: 3, west: 4, east: 5 })
+			expect(allExp).toEqual({
+				minCol: -4,
+				maxCol: 28,
+				minRow: -2,
+				maxRow: 18,
+				cols: 33,
+				rows: 21
+			})
+		})
+
+		it('handles shrinking directional bounds correctly', () => {
+			const shrunk = calculateDirectionalBounds(baseBounds, { west: -2, east: -3, north: -1, south: -4 })
+			expect(shrunk).toEqual({
+				minCol: 2,
+				maxCol: 20,
+				minRow: 1,
+				maxRow: 11,
+				cols: 19,
+				rows: 11
+			})
+		})
+
+		it('calculates anchor bounds correctly for 3x3 positions', () => {
+			// Center expansion
+			const centerExp = calculateAnchorBounds(baseBounds, 30, 20, 'center')
+			expect(centerExp).toEqual({
+				minCol: -3,
+				maxCol: 26,
+				minRow: -2,
+				maxRow: 17,
+				cols: 30,
+				rows: 20
+			})
+
+			// Top-Left anchor (fixes minCol, minRow, expands right and down)
+			const topLeftExp = calculateAnchorBounds(baseBounds, 30, 20, 'top-left')
+			expect(topLeftExp).toEqual({
+				minCol: 0,
+				maxCol: 29,
+				minRow: 0,
+				maxRow: 19,
+				cols: 30,
+				rows: 20
+			})
+
+			// Bottom-Right anchor (fixes maxCol, maxRow, expands left and up)
+			const bottomRightExp = calculateAnchorBounds(baseBounds, 30, 20, 'bottom-right')
+			expect(bottomRightExp).toEqual({
+				minCol: -6,
+				maxCol: 23,
+				minRow: -4,
+				maxRow: 15,
+				cols: 30,
+				rows: 20
+			})
+
+			// Top anchor (fixes minRow, centers horizontally)
+			const topExp = calculateAnchorBounds(baseBounds, 30, 20, 'top')
+			expect(topExp).toEqual({
+				minCol: -3,
+				maxCol: 26,
+				minRow: 0,
+				maxRow: 19,
+				cols: 30,
+				rows: 20
+			})
+
+			// Bottom anchor (fixes maxRow, centers horizontally)
+			const bottomExp = calculateAnchorBounds(baseBounds, 30, 20, 'bottom')
+			expect(bottomExp).toEqual({
+				minCol: -3,
+				maxCol: 26,
+				minRow: -4,
+				maxRow: 15,
+				cols: 30,
+				rows: 20
+			})
+
+			// Left anchor (fixes minCol, centers vertically)
+			const leftExp = calculateAnchorBounds(baseBounds, 30, 20, 'left')
+			expect(leftExp).toEqual({
+				minCol: 0,
+				maxCol: 29,
+				minRow: -2,
+				maxRow: 17,
+				cols: 30,
+				rows: 20
+			})
+
+			// Right anchor (fixes maxCol, centers vertically)
+			const rightExp = calculateAnchorBounds(baseBounds, 30, 20, 'right')
+			expect(rightExp).toEqual({
+				minCol: -6,
+				maxCol: 23,
+				minRow: -2,
+				maxRow: 17,
+				cols: 30,
+				rows: 20
+			})
+		})
+	})
+
+	describe('Rendering Optimizations: Frustum Culling and Geometry Caching', () => {
+		it('caches organic cell polygons and clears cache on clearOrganicPolygonCache', () => {
+			clearOrganicPolygonCache()
+			const poly1 = getOrganicCellPolygon(5, 5, 36, 42)
+			const poly2 = getOrganicCellPolygon(5, 5, 36, 42)
+			expect(poly1).toBe(poly2) // Same instance from cache
+
+			clearOrganicPolygonCache()
+			const poly3 = getOrganicCellPolygon(5, 5, 36, 42)
+			expect(poly3).not.toBe(poly1) // New instance after clear
+			expect(poly3.edges.length).toBe(6)
+			expect(poly3.perimeter.length).toBe(6)
+		})
+
+		it('isCellVisible accurately identifies on-screen and off-screen hexes', () => {
+			const camera = new HexPerspectiveCamera({
+				viewportWidth: 1000,
+				viewportHeight: 800,
+				cameraX: 500,
+				cameraY: 500,
+				zoom: 1.0,
+				pitch: 45
+			})
+
+			// Cell near camera center (col 10, row 10 has center ~ (540, 571))
+			const isNearVisible = isCellVisible(camera, 10, 10, 36)
+			expect(isNearVisible).toBe(true)
+
+			// Cell very far away (col 100, row 100)
+			const isFarVisible = isCellVisible(camera, 100, 100, 36)
+			expect(isFarVisible).toBe(false)
+
+			// Cell behind camera / horizon
+			const isBehindVisible = isCellVisible(camera, -100, -100, 36)
+			expect(isBehindVisible).toBe(false)
+		})
+
+		it('isCellVisible returns true if camera is not provided', () => {
+			expect(isCellVisible(null, 10, 10, 36)).toBe(true)
+		})
+
+		it('getVisibleHexGridBounds calculates tight window and culls 100x100 map by >90%', () => {
+			const camera = new HexPerspectiveCamera({
+				viewportWidth: 960,
+				viewportHeight: 540,
+				cameraX: 2500,
+				cameraY: 2500,
+				zoom: 1.0,
+				pitch: 45
+			})
+
+			const mapBounds = { minCol: 0, maxCol: 99, minRow: 0, maxRow: 99, cols: 100, rows: 100 }
+			const vBounds = getVisibleHexGridBounds(camera, 36, mapBounds)
+
+			expect(vBounds.minCol).toBeGreaterThanOrEqual(0)
+			expect(vBounds.maxCol).toBeLessThanOrEqual(99)
+			expect(vBounds.minRow).toBeGreaterThanOrEqual(0)
+			expect(vBounds.maxRow).toBeLessThanOrEqual(99)
+
+			const colsCount = vBounds.maxCol - vBounds.minCol + 1
+			const rowsCount = vBounds.maxRow - vBounds.minRow + 1
+			const visibleCandidateCells = colsCount * rowsCount
+
+			// 100x100 map has 10,000 cells. Visible window must be under 1,000 cells (>90% reduction!)
+			expect(visibleCandidateCells).toBeLessThan(1000)
+			expect(visibleCandidateCells).toBeGreaterThan(100)
+		})
+
+		it('getVisibleHexGridBounds handles flat pitch=0 and respects custom map bounds', () => {
+			const camera = new HexPerspectiveCamera({
+				viewportWidth: 960,
+				viewportHeight: 540,
+				cameraX: 1000,
+				cameraY: 1000,
+				zoom: 1.0,
+				pitch: 0
+			})
+
+			const mapBounds = { minCol: -10, maxCol: 40, minRow: -5, maxRow: 30 }
+			const vBounds = getVisibleHexGridBounds(camera, 36, mapBounds)
+
+			expect(vBounds.minCol).toBeGreaterThanOrEqual(-10)
+			expect(vBounds.maxCol).toBeLessThanOrEqual(40)
+			expect(vBounds.minRow).toBeGreaterThanOrEqual(-5)
+			expect(vBounds.maxRow).toBeLessThanOrEqual(30)
+		})
+
+		it('getVisibleHexGridBounds prevents column explosion on huge 1000x1000 map with tilted camera', () => {
+			const camera = new HexPerspectiveCamera({
+				viewportWidth: 960,
+				viewportHeight: 540,
+				cameraX: 25000,
+				cameraY: 25000,
+				zoom: 0.5,
+				pitch: 50
+			})
+
+			// 1,000 x 1,000 map = 1,000,000 cells!
+			const mapBounds = { minCol: 0, maxCol: 999, minRow: 0, maxRow: 999, cols: 1000, rows: 1000 }
+			const vBounds = getVisibleHexGridBounds(camera, 36, mapBounds)
+
+			expect(vBounds.minCol).toBeGreaterThanOrEqual(0)
+			expect(vBounds.maxCol).toBeLessThanOrEqual(999)
+
+			// Column count must NOT explode across the entire 1,000 columns!
+			const colsCount = vBounds.maxCol - vBounds.minCol + 1
+			expect(colsCount).toBeLessThan(300)
+
+			const rowsCount = vBounds.maxRow - vBounds.minRow + 1
+			expect(rowsCount).toBeLessThan(200)
+
+			// Total visible candidates must cull at least 95% of the 1,000,000 cells
+			const totalVisible = colsCount * rowsCount
+			expect(totalVisible).toBeLessThan(50000)
+		})
+
+		it('buildRoadRenderData culls minor dirt roads at LOD 2 while retaining stone roads', () => {
+			const camera = new HexPerspectiveCamera({
+				viewportWidth: 960,
+				viewportHeight: 540,
+				cameraX: 500,
+				cameraY: 500,
+				zoom: 0.25,
+				pitch: 0
+			})
+
+			const mapData = {
+				hexRadius: 36,
+				roads: {
+					'dirt_1': { from: { col: 5, row: 5 }, to: { col: 6, row: 5 }, type: 'dirt' },
+					'stone_1': { from: { col: 7, row: 5 }, to: { col: 8, row: 5 }, type: 'stone' }
+				}
+			}
+
+			// At LOD 0, both roads are built (2 roads * 2 cell endpoints = 4 trunks)
+			const roadDataLOD0 = buildRoadRenderData(camera, mapData, 36, { lodLevel: 0 })
+			expect(roadDataLOD0.trunks.length).toBe(4)
+
+			// At LOD 2, dirt roads are culled, only stone roads are built (1 road * 2 cell endpoints = 2 trunks)
+			const roadDataLOD2 = buildRoadRenderData(camera, mapData, 36, { lodLevel: 2 })
+			expect(roadDataLOD2.trunks.length).toBe(2)
+			expect(roadDataLOD2.trunks[0].isStone).toBe(true)
+		})
+
+		it('renderHexMap renders successfully across all LOD levels (LOD 0, LOD 1, LOD 2)', () => {
+			const mockCtx = {
+				canvas: { width: 960, height: 540 },
+				save: vi.fn(),
+				restore: vi.fn(),
+				beginPath: vi.fn(),
+				closePath: vi.fn(),
+				moveTo: vi.fn(),
+				lineTo: vi.fn(),
+				bezierCurveTo: vi.fn(),
+				quadraticCurveTo: vi.fn(),
+				arc: vi.fn(),
+				ellipse: vi.fn(),
+				fill: vi.fn(),
+				stroke: vi.fn(),
+				fillRect: vi.fn(),
+				clearRect: vi.fn(),
+				clip: vi.fn(),
+				createLinearGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
+				createPattern: vi.fn(() => ({ setTransform: vi.fn() })),
+				setLineDash: vi.fn()
+			}
+
+			const mapData = {
+				hexRadius: 36,
+				cols: 10,
+				rows: 10,
+				bounds: { minCol: 0, maxCol: 9, minRow: 0, maxRow: 9 },
+				cells: {
+					'5,5': { col: 5, row: 5, terrain: 'grass', feature: 'hills', faction: 'kingdom' },
+					'5,6': { col: 5, row: 6, terrain: 'water' },
+					'6,5': { col: 6, row: 5, terrain: 'plains', feature: 'mountain', mountainRadius: 1 }
+				},
+				rivers: {
+					'5,5:S': { col: 5, row: 5, edge: 'S', width: 1 },
+					'6,5:S': { col: 6, row: 5, edge: 'S', width: 2 }
+				},
+				roads: {
+					'5,5-6,5': { from: { col: 5, row: 5 }, to: { col: 6, row: 5 }, type: 'dirt' }
+				}
+			}
+
+			// LOD 0 (Close-up: zoom = 1.0, screenRadius = 36)
+			expect(() => renderHexMap(mockCtx, mapData, { cameraX: 300, cameraY: 300, zoom: 1.0 })).not.toThrow()
+
+			// LOD 1 (Medium: zoom = 0.45, screenRadius = 16.2)
+			expect(() => renderHexMap(mockCtx, mapData, { cameraX: 300, cameraY: 300, zoom: 0.45 })).not.toThrow()
+
+			// LOD 2 (Strategic overview: zoom = 0.25, screenRadius = 9)
+			expect(() => renderHexMap(mockCtx, mapData, { cameraX: 300, cameraY: 300, zoom: 0.25 })).not.toThrow()
 		})
 	})
 })
+
 

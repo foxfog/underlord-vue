@@ -5,6 +5,7 @@
 			ref="canvasRef"
 			:map-data="mapData"
 			:read-only="true"
+			:current-location="currentLocation"
 			:discovered-locations="discoveredSettlementIds"
 			:show-borders="showBorders"
 			:factions-map="fractionsData"
@@ -110,9 +111,12 @@ function openLocalMap(settlement) {
 }
 
 function navigateToLocation(settlement) {
-	const locId = settlement.sceneId || settlement.id
+	const overrides = props.globalData?.mapOverrides?.newworld
+	const target = overrides?.[settlement.id] || settlement.sceneId || settlement.id
 	emit('goto', {
-		id: locId,
+		target,
+		locationId: settlement.id,
+		id: target,
 		name: settlement.name,
 		localMapId: settlement.localMapId
 	})

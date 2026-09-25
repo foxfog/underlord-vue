@@ -303,4 +303,64 @@ describe('HexLoader & Map Data', () => {
 			renderHexMap(mockCtx, map, { showBorders: false })
 		}).not.toThrow()
 	})
+
+	it('supports maps with custom negative and expanded bounds', () => {
+		const expandedMap = normalizeHexMapData({
+			bounds: {
+				minCol: -5,
+				maxCol: 15,
+				minRow: -3,
+				maxRow: 12
+			},
+			baseTerrain: 'ocean',
+			cells: {
+				'0,0': { col: 0, row: 0, terrain: 'grass', faction: 're-estize' }
+			}
+		})
+
+		expect(expandedMap.cols).toBe(21) // 15 - (-5) + 1
+		expect(expandedMap.rows).toBe(16) // 12 - (-3) + 1
+		expect(expandedMap.bounds).toEqual({ minCol: -5, maxCol: 15, minRow: -3, maxRow: 12 })
+		expect(expandedMap.cells['0,0'].terrain).toBe('grass')
+		expect(expandedMap.cells['-5,-3'].terrain).toBe('ocean')
+		expect(expandedMap.cells['15,12'].terrain).toBe('ocean')
+	})
+
+	it('supports map creation and roundtrip serialization for saving and loading', () => {
+		const newMap = createDefaultHexMap(6, 6, 'plains', {
+			minCol: 0,
+			maxCol: 5,
+			minRow: 0,
+			maxRow: 5
+		})
+		newMap.id = 'tactical_carne_plains'
+		newMap.name = 'Равнины Карна'
+		newMap.pitch = 50
+
+		// Place a settlement and road
+		newMap.cells['2,2'].settlement = {
+			id: 'settlement_2_2',
+			name: 'Форпост Карна',
+			type: 'fortress'
+		}
+		newMap.cells['2,2'].road = 'stone'
+		syncRoadsForCell(newMap, 2, 2)
+
+		// Simulate saving to JSON
+		const jsonString = JSON.stringify(newMap)
+		expect(jsonString).toBeDefined()
+
+		// Simulate loading from JSON
+		const parsed = JSON.parse(jsonString)
+		const reloaded = normalizeHexMapData(parsed)
+
+		expect(reloaded.id).toBe('tactical_carne_plains')
+		expect(reloaded.name).toBe('Равнины Карна')
+		expect(reloaded.pitch).toBe(50)
+		expect(reloaded.cells['2,2'].settlement.name).toBe('Форпост Карна')
+		expect(reloaded.cells['2,2'].road).toBe('stone')
+		expect(reloaded.cols).toBe(6)
+		expect(reloaded.rows).toBe(6)
+	})
 })
+
