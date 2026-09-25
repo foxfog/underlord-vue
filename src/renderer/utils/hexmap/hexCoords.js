@@ -18,9 +18,9 @@ export const OPPOSITE_EDGE = Object.freeze({
 })
 
 export const DEFAULT_HEX_RADIUS = 36
-export const DEFAULT_HEX_TILT = 0.70
-export const DEFAULT_HEX_MIN_ZOOM = 0.5
-export const DEFAULT_HEX_MAX_ZOOM = 3.75
+export const DEFAULT_HEX_TILT = 0.7
+export const DEFAULT_HEX_MIN_ZOOM = 0.75
+export const DEFAULT_HEX_MAX_ZOOM = 5
 
 /**
  * Returns neighbor coordinate for a given hex and edge in odd-q flat-topped system.
@@ -141,9 +141,14 @@ export function getOrganicGroundVertex(v, radius = DEFAULT_HEX_RADIUS, seed = 0)
  * @param {number} seed
  * @returns {Array<{ x: number, y: number }>}
  */
-export function getOrganicHexGroundVertices(centerX, centerY, radius = DEFAULT_HEX_RADIUS, seed = 0) {
+export function getOrganicHexGroundVertices(
+	centerX,
+	centerY,
+	radius = DEFAULT_HEX_RADIUS,
+	seed = 0
+) {
 	const verts = getHexGroundVertices(centerX, centerY, radius)
-	return verts.map(v => getOrganicGroundVertex(v, radius, seed))
+	return verts.map((v) => getOrganicGroundVertex(v, radius, seed))
 }
 
 /**
@@ -310,13 +315,16 @@ export function getVisibleHexGridBounds(camera, radius = DEFAULT_HEX_RADIUS, map
 	if (pts.length === 0) {
 		return {
 			minCol: mapBounds?.minCol ?? 0,
-			maxCol: mapBounds?.maxCol ?? ((mapBounds?.cols || 20) - 1),
+			maxCol: mapBounds?.maxCol ?? (mapBounds?.cols || 20) - 1,
 			minRow: mapBounds?.minRow ?? 0,
-			maxRow: mapBounds?.maxRow ?? ((mapBounds?.rows || 15) - 1)
+			maxRow: mapBounds?.maxRow ?? (mapBounds?.rows || 15) - 1
 		}
 	}
 
-	let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
+	let minX = Infinity,
+		maxX = -Infinity,
+		minY = Infinity,
+		maxY = -Infinity
 	for (const p of pts) {
 		if (p.x < minX) minX = p.x
 		if (p.x > maxX) maxX = p.x
@@ -326,7 +334,7 @@ export function getVisibleHexGridBounds(camera, radius = DEFAULT_HEX_RADIUS, map
 
 	// Depth clamping for far-plane horizon fog (scale < 0.10)
 	if (camera.sinT > 0.05) {
-		const targetMinScale = 0.10
+		const targetMinScale = 0.1
 		const maxDistZ = camera.focalDistance / (targetMinScale / camera.zoom)
 		const minFarGroundY = camera.cameraY + (camera.focalDistance - maxDistZ) / camera.sinT
 		if (minY < minFarGroundY) {
@@ -415,7 +423,12 @@ export function hexToScreenCenter(col, row, radius = DEFAULT_HEX_RADIUS, tilt = 
  * @param {number} tilt
  * @returns {Array<{ x: number, y: number }>}
  */
-export function getHexVertices(centerX, centerY, radius = DEFAULT_HEX_RADIUS, tilt = DEFAULT_HEX_TILT) {
+export function getHexVertices(
+	centerX,
+	centerY,
+	radius = DEFAULT_HEX_RADIUS,
+	tilt = DEFAULT_HEX_TILT
+) {
 	const halfH = (Math.sqrt(3) / 2) * radius * tilt
 	const halfR = radius / 2
 
@@ -511,7 +524,14 @@ export function screenToHex(sx, sy, radius = DEFAULT_HEX_RADIUS, tilt = DEFAULT_
  * @param {number} tilt
  * @returns {{ edge: string, distance: number }}
  */
-export function getClosestEdgeToPoint(sx, sy, col, row, radius = DEFAULT_HEX_RADIUS, tilt = DEFAULT_HEX_TILT) {
+export function getClosestEdgeToPoint(
+	sx,
+	sy,
+	col,
+	row,
+	radius = DEFAULT_HEX_RADIUS,
+	tilt = DEFAULT_HEX_TILT
+) {
 	const center = hexToScreenCenter(col, row, radius, tilt)
 	const vertices = getHexVertices(center.x, center.y, radius, tilt)
 
@@ -537,7 +557,7 @@ export function getClosestEdgeToPoint(sx, sy, col, row, radius = DEFAULT_HEX_RAD
  */
 export function oddQToCube(col, row) {
 	const x = col
-	const z = row - (col - (Math.abs(col % 2))) / 2
+	const z = row - (col - Math.abs(col % 2)) / 2
 	const y = -x - z
 	return { x, y, z }
 }
@@ -547,7 +567,7 @@ export function oddQToCube(col, row) {
  */
 export function cubeToOddQ(x, y, z) {
 	const col = x
-	const row = z + (col - (Math.abs(col % 2))) / 2
+	const row = z + (col - Math.abs(col % 2)) / 2
 	return { col, row }
 }
 
@@ -577,7 +597,11 @@ export function getHexesInRadius(centerCol, centerRow, radius = 1) {
 	const centerCube = oddQToCube(centerCol, centerRow)
 
 	for (let dx = -maxDist; dx <= maxDist; dx++) {
-		for (let dy = Math.max(-maxDist, -dx - maxDist); dy <= Math.min(maxDist, -dx + maxDist); dy++) {
+		for (
+			let dy = Math.max(-maxDist, -dx - maxDist);
+			dy <= Math.min(maxDist, -dx + maxDist);
+			dy++
+		) {
 			const dz = -dx - dy
 			const targetCube = {
 				x: centerCube.x + dx,
@@ -629,7 +653,7 @@ export function hashString(str) {
 		hash ^= str.charCodeAt(i)
 		hash = Math.imul(hash, 16777619)
 	}
-	return (hash >>> 0)
+	return hash >>> 0
 }
 
 /**
@@ -641,15 +665,15 @@ export function hashString(str) {
  */
 export function getHashFloat(hash, seed = 0) {
 	const n = (hash ^ (seed * 2654435761)) >>> 0
-	return ((n % 10000) / 5000) - 1
+	return (n % 10000) / 5000 - 1
 }
 
 export const HEX_PERIMETER_EDGES = Object.freeze([
 	{ edge: 'SE', fromIdx: 0, toIdx: 1 },
-	{ edge: 'S',  fromIdx: 1, toIdx: 2 },
+	{ edge: 'S', fromIdx: 1, toIdx: 2 },
 	{ edge: 'SW', fromIdx: 2, toIdx: 3 },
 	{ edge: 'NW', fromIdx: 3, toIdx: 4 },
-	{ edge: 'N',  fromIdx: 4, toIdx: 5 },
+	{ edge: 'N', fromIdx: 4, toIdx: 5 },
 	{ edge: 'NE', fromIdx: 5, toIdx: 0 }
 ])
 
@@ -676,7 +700,14 @@ export const DEFAULT_TEXTURE_BLEED_RATIO = 1.18
  * @param {Object} options - Optional configuration (tangentFrom, tangentTo, seed)
  * @returns {{ cp1: { x: number, y: number }, cp2: { x: number, y: number }, profileType: number, protrusion: number }}
  */
-export function getHexEdgeCurve(from, to, canonKey, radius = DEFAULT_HEX_RADIUS, tier = 1, options = {}) {
+export function getHexEdgeCurve(
+	from,
+	to,
+	canonKey,
+	radius = DEFAULT_HEX_RADIUS,
+	tier = 1,
+	options = {}
+) {
 	const seed = options.seed !== undefined ? options.seed : 0
 	let cnx = 0
 	let cny = 1
@@ -717,7 +748,8 @@ export function getHexEdgeCurve(from, to, canonKey, radius = DEFAULT_HEX_RADIUS,
 			}
 
 			if (idxFrom !== -1 && idxTo !== -1) {
-				const otherFromIdx = (idxFrom + 1) % 6 === idxTo ? (idxFrom + 5) % 6 : (idxFrom + 1) % 6
+				const otherFromIdx =
+					(idxFrom + 1) % 6 === idxTo ? (idxFrom + 5) % 6 : (idxFrom + 1) % 6
 				const vOtherFrom = gv0[otherFromIdx]
 				const dInX = canFrom.x - vOtherFrom.x
 				const dInY = canFrom.y - vOtherFrom.y
@@ -764,7 +796,11 @@ export function getHexEdgeCurve(from, to, canonKey, radius = DEFAULT_HEX_RADIUS,
 		cny = ny
 	}
 
-	const h = hashString(canonKey ? `${canonKey}:${seed}` : `${from.x.toFixed(1)},${from.y.toFixed(1)}:${to.x.toFixed(1)},${to.y.toFixed(1)}:${seed}`)
+	const h = hashString(
+		canonKey
+			? `${canonKey}:${seed}`
+			: `${from.x.toFixed(1)},${from.y.toFixed(1)}:${to.x.toFixed(1)},${to.y.toFixed(1)}:${seed}`
+	)
 
 	// 4 distinct curve profile archetypes:
 	// 0: C-arc (single wide natural bend / bay / promontory)
@@ -818,14 +854,14 @@ export function getHexEdgeCurve(from, to, canonKey, radius = DEFAULT_HEX_RADIUS,
 		case 3:
 		default:
 			// Profile 3: Compound asymmetric lobe (crest at M1, shoulder at M2)
-			mOffset1 = sign1 * protrusion * 0.90
+			mOffset1 = sign1 * protrusion * 0.9
 			mOffset2 = sign1 * protrusion * 0.55
 			break
 	}
 
 	// Guarantee minimum protrusion on BOTH intermediate points M1 and M2
 	// Ensures every edge has at least 2 prominent additional points between the 2 main hex corners
-	const minOffset = 0.50 * protrusion
+	const minOffset = 0.5 * protrusion
 	if (Math.abs(mOffset1) < minOffset) {
 		mOffset1 = (mOffset1 >= 0 ? 1 : -1) * minOffset
 	}
@@ -833,8 +869,8 @@ export function getHexEdgeCurve(from, to, canonKey, radius = DEFAULT_HEX_RADIUS,
 		mOffset2 = (mOffset2 >= 0 ? 1 : -1) * minOffset
 	}
 
-	const u_used1 = isForward ? u1 : (1 - u2)
-	const u_used2 = isForward ? u2 : (1 - u1)
+	const u_used1 = isForward ? u1 : 1 - u2
+	const u_used2 = isForward ? u2 : 1 - u1
 	const off_used1 = isForward ? mOffset1 : -mOffset2
 	const off_used2 = isForward ? mOffset2 : -mOffset1
 
@@ -894,10 +930,10 @@ export function getHexEdgeCurve(from, to, canonKey, radius = DEFAULT_HEX_RADIUS,
 	const tM2x = sumM2x / lenM2
 	const tM2y = sumM2y / lenM2
 
-	const armA = Math.min(L1 * 0.40, 14 * (radius / DEFAULT_HEX_RADIUS))
+	const armA = Math.min(L1 * 0.4, 14 * (radius / DEFAULT_HEX_RADIUS))
 	const armB1 = Math.min(L2 * 0.38, 14 * (radius / DEFAULT_HEX_RADIUS))
 	const armB2 = Math.min(L2 * 0.38, 14 * (radius / DEFAULT_HEX_RADIUS))
-	const armC = Math.min(L3 * 0.40, 14 * (radius / DEFAULT_HEX_RADIUS))
+	const armC = Math.min(L3 * 0.4, 14 * (radius / DEFAULT_HEX_RADIUS))
 
 	let tFrom = options.tangentFrom || null
 	let tTo = options.tangentTo || null
@@ -998,7 +1034,14 @@ export function getHexEdgeCurve(from, to, canonKey, radius = DEFAULT_HEX_RADIUS,
  * @param {number} tier - River width tier: 1 (brook), 2 (medium), 3 (wide)
  * @returns {{ cp1: { x: number, y: number }, cp2: { x: number, y: number } }}
  */
-export function getRiverMeanderControls(from, to, canonKey, radius = DEFAULT_HEX_RADIUS, tier = 1, options = {}) {
+export function getRiverMeanderControls(
+	from,
+	to,
+	canonKey,
+	radius = DEFAULT_HEX_RADIUS,
+	tier = 1,
+	options = {}
+) {
 	const seed = options.seed !== undefined ? options.seed : 0
 	let cnx = 0
 	let cny = 1
@@ -1045,7 +1088,11 @@ export function getRiverMeanderControls(from, to, canonKey, radius = DEFAULT_HEX
 	const nx = -uy
 	const ny = ux
 
-	const h = hashString(canonKey ? `${canonKey}:${seed}` : `${from.x.toFixed(1)},${from.y.toFixed(1)}:${to.x.toFixed(1)},${to.y.toFixed(1)}:${seed}`)
+	const h = hashString(
+		canonKey
+			? `${canonKey}:${seed}`
+			: `${from.x.toFixed(1)},${from.y.toFixed(1)}:${to.x.toFixed(1)},${to.y.toFixed(1)}:${seed}`
+	)
 	const h1 = getHashFloat(h, 1)
 	const h2 = getHashFloat(h, 2)
 
@@ -1054,19 +1101,20 @@ export function getRiverMeanderControls(from, to, canonKey, radius = DEFAULT_HEX
 	let baseAmp
 	let varAmp
 	if (tier === 3) {
-		baseAmp = 0.10
+		baseAmp = 0.1
 		varAmp = 0.07
 	} else if (tier === 2) {
 		baseAmp = 0.15
-		varAmp = 0.10
+		varAmp = 0.1
 	} else {
 		// Tier 1: small mountain creek/brook winds vigorously with sharp micro-meanders
 		baseAmp = 0.22
 		varAmp = 0.14
 	}
 
-	const offset1 = (h1 >= 0 ? baseAmp + Math.abs(h1) * varAmp : -baseAmp - Math.abs(h1) * varAmp) * radius
-	const offset2 = (-Math.sign(offset1 || 1) * (baseAmp + Math.abs(h2) * varAmp)) * radius
+	const offset1 =
+		(h1 >= 0 ? baseAmp + Math.abs(h1) * varAmp : -baseAmp - Math.abs(h1) * varAmp) * radius
+	const offset2 = -Math.sign(offset1 || 1) * (baseAmp + Math.abs(h2) * varAmp) * radius
 
 	// Check traversal direction relative to canonical edge orientation
 	const dot = edx * cux + edy * cuy
@@ -1116,7 +1164,14 @@ export function getRiverMeanderControls(from, to, canonKey, radius = DEFAULT_HEX
  * @param {Object} options - Optional config (seed, etc.)
  * @returns {{ cp1: { x: number, y: number }, cp2: { x: number, y: number } }}
  */
-export function getBorderMeanderControls(from, to, canonKey, radius = DEFAULT_HEX_RADIUS, tier = 1, options = {}) {
+export function getBorderMeanderControls(
+	from,
+	to,
+	canonKey,
+	radius = DEFAULT_HEX_RADIUS,
+	tier = 1,
+	options = {}
+) {
 	return getHexEdgeCurve(from, to, canonKey, radius, tier, options)
 }
 
@@ -1143,7 +1198,13 @@ export function clearOrganicPolygonCache() {
 	_organicPolygonCache.clear()
 }
 
-export function getOrganicCellPolygon(col, row, radius = DEFAULT_HEX_RADIUS, seed = 0, riverMap = null) {
+export function getOrganicCellPolygon(
+	col,
+	row,
+	radius = DEFAULT_HEX_RADIUS,
+	seed = 0,
+	riverMap = null
+) {
 	const rSig = riverMap ? riverMap.size : 0
 	const cacheKey = `${col},${row}:${radius}:${seed}:${rSig}`
 	const cached = _organicPolygonCache.get(cacheKey)
@@ -1161,7 +1222,7 @@ export function getOrganicCellPolygon(col, row, radius = DEFAULT_HEX_RADIUS, see
 		const { from, to } = getHexEdgeEndpoints(groundVerts, edge)
 		const canonKey = getCanonicalEdgeKey(col, row, edge)
 		const river = riverMap?.get(canonKey)
-		const tier = river ? (river.width || 1) : 1
+		const tier = river ? river.width || 1 : 1
 		const curve = getHexEdgeCurve(from, to, canonKey, radius, tier, { seed })
 		edges.push({
 			edge,
@@ -1189,7 +1250,7 @@ export function getOrganicCellPolygon(col, row, radius = DEFAULT_HEX_RADIUS, see
 		const to = groundVerts[pe.toIdx]
 		const canonKey = getCanonicalEdgeKey(col, row, pe.edge)
 		const river = riverMap?.get(canonKey)
-		const tier = river ? (river.width || 1) : 1
+		const tier = river ? river.width || 1 : 1
 		const curve = getHexEdgeCurve(from, to, canonKey, radius, tier, { seed })
 		perimeter.push({
 			edge: pe.edge,
@@ -1234,10 +1295,15 @@ export function getOrganicCellPolygon(col, row, radius = DEFAULT_HEX_RADIUS, see
  * @param {Map} riverMap - Optional Map of canonicalEdgeKey -> river data for tier matching
  * @returns {Array} Ordered array of 6 curved edges around the perimeter
  */
-export function getOrganicCellPerimeter(col, row, radius = DEFAULT_HEX_RADIUS, seed = 0, riverMap = null) {
+export function getOrganicCellPerimeter(
+	col,
+	row,
+	radius = DEFAULT_HEX_RADIUS,
+	seed = 0,
+	riverMap = null
+) {
 	return getOrganicCellPolygon(col, row, radius, seed, riverMap).perimeter
 }
-
 
 /**
  * Determines if a given hex edge is a coastline boundary between land and water.
@@ -1292,7 +1358,10 @@ export function getRoadPathControls(fromCenter, toCenter, canonKey, radius = DEF
 	const nx = -uy
 	const ny = ux
 
-	const h = hashString(canonKey || `${fromCenter.x.toFixed(1)},${fromCenter.y.toFixed(1)}:${toCenter.x.toFixed(1)},${toCenter.y.toFixed(1)}`)
+	const h = hashString(
+		canonKey ||
+			`${fromCenter.x.toFixed(1)},${fromCenter.y.toFixed(1)}:${toCenter.x.toFixed(1)},${toCenter.y.toFixed(1)}`
+	)
 
 	// Organic lateral shift at boundary crossing M (along the shared edge)
 	const bendEdge = getHashFloat(h, 1) * (radius * 0.16)
@@ -1353,9 +1422,11 @@ export function getRoadCurvePoint(fromCenter, toCenter, canonKey, radius = DEFAU
  */
 export function calculateDirectionalBounds(currentBounds, deltas = {}) {
 	const curMinCol = currentBounds.minCol !== undefined ? currentBounds.minCol : 0
-	const curMaxCol = currentBounds.maxCol !== undefined ? currentBounds.maxCol : ((currentBounds.cols || 1) - 1)
+	const curMaxCol =
+		currentBounds.maxCol !== undefined ? currentBounds.maxCol : (currentBounds.cols || 1) - 1
 	const curMinRow = currentBounds.minRow !== undefined ? currentBounds.minRow : 0
-	const curMaxRow = currentBounds.maxRow !== undefined ? currentBounds.maxRow : ((currentBounds.rows || 1) - 1)
+	const curMaxRow =
+		currentBounds.maxRow !== undefined ? currentBounds.maxRow : (currentBounds.rows || 1) - 1
 
 	const minCol = curMinCol - (deltas.west || 0)
 	const maxCol = curMaxCol + (deltas.east || 0)
@@ -1399,9 +1470,11 @@ export function calculateDirectionalBounds(currentBounds, deltas = {}) {
  */
 export function calculateAnchorBounds(currentBounds, targetCols, targetRows, anchor = 'center') {
 	const curMinCol = currentBounds.minCol !== undefined ? currentBounds.minCol : 0
-	const curMaxCol = currentBounds.maxCol !== undefined ? currentBounds.maxCol : ((currentBounds.cols || 1) - 1)
+	const curMaxCol =
+		currentBounds.maxCol !== undefined ? currentBounds.maxCol : (currentBounds.cols || 1) - 1
 	const curMinRow = currentBounds.minRow !== undefined ? currentBounds.minRow : 0
-	const curMaxRow = currentBounds.maxRow !== undefined ? currentBounds.maxRow : ((currentBounds.rows || 1) - 1)
+	const curMaxRow =
+		currentBounds.maxRow !== undefined ? currentBounds.maxRow : (currentBounds.rows || 1) - 1
 
 	const currentW = curMaxCol - curMinCol + 1
 	const currentH = curMaxRow - curMinRow + 1
@@ -1453,4 +1526,3 @@ export function calculateAnchorBounds(currentBounds, targetCols, targetRows, anc
 		rows: safeMaxRow - safeMinRow + 1
 	}
 }
-

@@ -549,3 +549,81 @@ export function createDefaultHexMap(cols = 20, rows = 15, baseTerrain = 'grass',
 		roads: {}
 	})
 }
+
+/**
+ * Loads hex map JSON dynamically in runtime (via electronAPI or fetch).
+ *
+ * @param {string} mapIdOrPath - map ID (e.g. 'newworld_hex') or relative path ('data/hexmaps/newworld_hex.json')
+ * @returns {Promise<Object|null>} Normalized hex map data
+ */
+export async function loadHexMap(mapIdOrPath = 'newworld_hex') {
+	const relPath = mapIdOrPath.endsWith('.json')
+		? mapIdOrPath.replace(/^(\/)?(data\/)?/, '')
+		: `hexmaps/${mapIdOrPath}.json`
+
+	// 1. Try Electron IPC (native file read from data directory)
+	if (typeof window !== 'undefined' && window.electronAPI?.dataEditor?.readFile) {
+		try {
+			const res = await window.electronAPI.dataEditor.readFile(relPath)
+			if (res && res.success && res.data) {
+				return normalizeHexMapData(res.data)
+			}
+		} catch (e) {
+			console.warn('[hexLoader] Electron IPC read failed for', relPath, e)
+		}
+	}
+
+	// 2. Try HTTP fetch (for Vite dev server / web browser)
+	try {
+		const basePath = typeof window !== 'undefined' && window.__APP_BASE__ ? window.__APP_BASE__ : ''
+		const cleanBase = basePath ? basePath.replace(/\/+$/, '') : ''
+		const fullUrl = cleanBase ? `${cleanBase}/data/${relPath}` : `/data/${relPath}`
+		const response = await fetch(fullUrl)
+		if (response.ok) {
+			const json = await response.json()
+			return normalizeHexMapData(json)
+		}
+	} catch (e) {
+		console.warn('[hexLoader] Fetch failed for', relPath, e)
+	}
+
+	return null
+}
+
+/**
+ * Loads factions data dynamically in runtime (via electronAPI or fetch).
+ * Falls back to built-in FACTION_PRESETS.
+ *
+ * @returns {Promise<Array<Object>>}
+ */
+export async function loadFactionsData() {
+	// 1. Try Electron IPC
+	if (typeof window !== 'undefined' && window.electronAPI?.dataEditor?.readFile) {
+		try {
+			const res = await window.electronAPI.dataEditor.readFile('fractions/fractions.json')
+			if (res && res.success && res.data) {
+				return Array.isArray(res.data) ? res.data : Object.values(res.data)
+			}
+		} catch (e) {
+			console.warn('[hexLoader] Electron IPC read failed for fractions.json', e)
+		}
+	}
+
+	// 2. Try HTTP fetch
+	try {
+		const basePath = typeof window !== 'undefined' && window.__APP_BASE__ ? window.__APP_BASE__ : ''
+		const cleanBase = basePath ? basePath.replace(/\/+$/, '') : ''
+		const fullUrl = cleanBase ? `${cleanBase}/data/fractions/fractions.json` : '/data/fractions/fractions.json'
+		const response = await fetch(fullUrl)
+		if (response.ok) {
+			const json = await response.json()
+			return Array.isArray(json) ? json : Object.values(json)
+		}
+	} catch (e) {
+		console.warn('[hexLoader] Fetch failed for fractions.json', e)
+	}
+
+	// 3. Fallback to FACTION_PRESETS
+	return Object.values(FACTION_PRESETS)
+}
+

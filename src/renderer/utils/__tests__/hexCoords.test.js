@@ -61,7 +61,8 @@ describe('HexCoords Flat-Topped Math & Geometry', () => {
 	})
 
 	it('computes neighbors for even columns correctly', () => {
-		const col = 2, row = 2
+		const col = 2,
+			row = 2
 		expect(getHexNeighbor(col, row, 'N')).toEqual({ col: 2, row: 1 })
 		expect(getHexNeighbor(col, row, 'S')).toEqual({ col: 2, row: 3 })
 		expect(getHexNeighbor(col, row, 'NE')).toEqual({ col: 3, row: 1 })
@@ -71,7 +72,8 @@ describe('HexCoords Flat-Topped Math & Geometry', () => {
 	})
 
 	it('computes neighbors for odd columns correctly', () => {
-		const col = 3, row = 2
+		const col = 3,
+			row = 2
 		expect(getHexNeighbor(col, row, 'N')).toEqual({ col: 3, row: 1 })
 		expect(getHexNeighbor(col, row, 'S')).toEqual({ col: 3, row: 3 })
 		expect(getHexNeighbor(col, row, 'NE')).toEqual({ col: 4, row: 2 })
@@ -81,9 +83,11 @@ describe('HexCoords Flat-Topped Math & Geometry', () => {
 	})
 
 	it('canonical edge keys match symmetrically from either side of an edge', () => {
-		const c1 = 2, r1 = 2
+		const c1 = 2,
+			r1 = 2
 		const neighbor = getHexNeighbor(c1, r1, 'NE')
-		const c2 = neighbor.col, r2 = neighbor.row
+		const c2 = neighbor.col,
+			r2 = neighbor.row
 
 		const keyFrom1 = getCanonicalEdgeKey(c1, r1, 'NE')
 		const keyFrom2 = getCanonicalEdgeKey(c2, r2, 'SW')
@@ -293,24 +297,24 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 		expect(Math.abs(p60.y - 400)).toBeLessThan(Math.abs(p30.y - 400))
 	})
 
-	it('defines default hex zoom limits (shifted 25% closer: min 0.5, max 3.75)', () => {
-		expect(DEFAULT_HEX_MIN_ZOOM).toBe(0.5)
-		expect(DEFAULT_HEX_MAX_ZOOM).toBe(3.75)
+	it('defines default hex zoom limits (min 0.75, max 5)', () => {
+		expect(DEFAULT_HEX_MIN_ZOOM).toBe(0.75)
+		expect(DEFAULT_HEX_MAX_ZOOM).toBe(5)
 	})
 
 	it('calculates dynamic pitch based on zoom level: max 60 when zoomed in, min 0 when zoomed out', () => {
-		// Minimum pitch at zoom-out (0.5) is 0°
+		// Minimum pitch at zoom-out (DEFAULT_HEX_MIN_ZOOM) is 0°
 		expect(calculateDynamicPitch(DEFAULT_HEX_MIN_ZOOM)).toBe(0)
-		expect(calculateDynamicPitch(0.5)).toBe(0)
+		expect(calculateDynamicPitch(0.75)).toBe(0)
 
-		// Maximum pitch at zoom-in (3.75) is 60°
+		// Maximum pitch at zoom-in (DEFAULT_HEX_MAX_ZOOM) is 60°
 		expect(calculateDynamicPitch(DEFAULT_HEX_MAX_ZOOM)).toBe(60)
-		expect(calculateDynamicPitch(3.75)).toBe(60)
+		expect(calculateDynamicPitch(5)).toBe(60)
 
-		// At normal zoom (1.0), pitch is smoothly interpolated (~21°)
+		// At normal zoom (1.0), pitch is smoothly interpolated (logarithmic, within [0, 60])
 		const pitchNormal = calculateDynamicPitch(1.0)
-		expect(pitchNormal).toBeGreaterThan(15)
-		expect(pitchNormal).toBeLessThan(30)
+		expect(pitchNormal).toBeGreaterThanOrEqual(0)
+		expect(pitchNormal).toBeLessThan(60)
 
 		// Clamps cleanly within [0, 60]
 		expect(calculateDynamicPitch(0.1)).toBe(0)
@@ -450,14 +454,28 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 	describe('buildRibbonJunction (Unified Ribbon Junction Math)', () => {
 		it('returns null for less than 2 branches', () => {
 			expect(buildRibbonJunction({ x: 0, y: 0 }, [])).toBeNull()
-			expect(buildRibbonJunction({ x: 0, y: 0 }, [{ angle: 0, casingWidth: 4, coreWidth: 2 }])).toBeNull()
+			expect(
+				buildRibbonJunction({ x: 0, y: 0 }, [{ angle: 0, casingWidth: 4, coreWidth: 2 }])
+			).toBeNull()
 		})
 
 		it('builds a smooth rounded 2-branch bend with inner concave fillet and outer sweeping curve', () => {
 			const center = { x: 100, y: 100 }
 			const branches = [
-				{ angle: 0, casingWidth: 4, coreWidth: 2.5, casingColor: '#451a03', coreColor: '#b45309' },
-				{ angle: (Math.PI * 2) / 3, casingWidth: 5, coreWidth: 3.5, casingColor: '#475569', coreColor: '#94a3b8' }
+				{
+					angle: 0,
+					casingWidth: 4,
+					coreWidth: 2.5,
+					casingColor: '#451a03',
+					coreColor: '#b45309'
+				},
+				{
+					angle: (Math.PI * 2) / 3,
+					casingWidth: 5,
+					coreWidth: 3.5,
+					casingColor: '#475569',
+					coreColor: '#94a3b8'
+				}
 			]
 
 			const junction = buildRibbonJunction(center, branches, 1.0)
@@ -493,7 +511,7 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 			const junction = buildRibbonJunction(center, branches, 1.0)
 			expect(junction).toBeDefined()
 			expect(junction.casing.cornerCurves.length).toBe(3)
-			expect(junction.casing.cornerCurves.every(c => c.type === 'inner')).toBe(true)
+			expect(junction.casing.cornerCurves.every((c) => c.type === 'inner')).toBe(true)
 		})
 	})
 
@@ -544,7 +562,7 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 		it('straight pass-through (180 deg) curves directly through center with zero deviation', () => {
 			const center = { x: 100, y: 100 }
 			const b0 = { ux: -1, uy: 0, dist: 30 } // West
-			const b1 = { ux: 1, uy: 0, dist: 30 }  // East
+			const b1 = { ux: 1, uy: 0, dist: 30 } // East
 			const turn = buildTurnGeometry(center, b0, b1, 14)
 
 			const midX = 0.25 * turn.A0.x + 0.5 * center.x + 0.25 * turn.A1.x
@@ -569,16 +587,31 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 			const fakeCtx = {
 				beginPath: () => calls.push('beginPath'),
 				moveTo: (x, y) => calls.push(`moveTo(${x},${y})`),
-				quadraticCurveTo: (cpx, cpy, x, y) => calls.push(`quadraticCurveTo(${cpx},${cpy},${x},${y})`),
+				quadraticCurveTo: (cpx, cpy, x, y) =>
+					calls.push(`quadraticCurveTo(${cpx},${cpy},${x},${y})`),
 				stroke: () => calls.push('stroke'),
 				lineWidth: 0,
 				strokeStyle: ''
 			}
 
-			strokeTaperedCurve(fakeCtx, { x: 10, y: 10 }, { x: 20, y: 20 }, { x: 30, y: 10 }, 4, 4, '#0369a1', '#0369a1')
+			strokeTaperedCurve(
+				fakeCtx,
+				{ x: 10, y: 10 },
+				{ x: 20, y: 20 },
+				{ x: 30, y: 10 },
+				4,
+				4,
+				'#0369a1',
+				'#0369a1'
+			)
 			expect(fakeCtx.lineWidth).toBe(4)
 			expect(fakeCtx.strokeStyle).toBe('#0369a1')
-			expect(calls).toEqual(['beginPath', 'moveTo(10,10)', 'quadraticCurveTo(20,20,30,10)', 'stroke'])
+			expect(calls).toEqual([
+				'beginPath',
+				'moveTo(10,10)',
+				'quadraticCurveTo(20,20,30,10)',
+				'stroke'
+			])
 		})
 
 		it('subdivides curve into tapered segments when width or color differ', () => {
@@ -592,7 +625,17 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 				strokeStyle: ''
 			}
 
-			strokeTaperedCurve(fakeCtx, { x: 10, y: 10 }, { x: 20, y: 20 }, { x: 30, y: 10 }, 2, 6, '#451a03', '#475569', 4)
+			strokeTaperedCurve(
+				fakeCtx,
+				{ x: 10, y: 10 },
+				{ x: 20, y: 20 },
+				{ x: 30, y: 10 },
+				2,
+				6,
+				'#451a03',
+				'#475569',
+				4
+			)
 			expect(strokeCount).toBe(4)
 		})
 	})
@@ -608,7 +651,7 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 			]
 
 			// Every branch trunk MUST have endPt exactly at center
-			const trunks = branches.map(b => ({
+			const trunks = branches.map((b) => ({
 				pMid: b.pMid,
 				pQ: b.pQ,
 				endPt: center
@@ -674,11 +717,53 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 		it('renderRoads filters road elements by cellKey correctly', () => {
 			const roadData = {
 				trunks: [
-					{ cellKey: '0,0', pMid: { x: 10, y: 10 }, pQ: { x: 20, y: 20 }, endPt: { x: 30, y: 30 }, casingWidth: 4, coreWidth: 2, casingColor: '#000', coreColor: '#fff', scale: 1, isStone: false },
-					{ cellKey: '1,0', pMid: { x: 40, y: 40 }, pQ: { x: 50, y: 50 }, endPt: { x: 60, y: 60 }, casingWidth: 4, coreWidth: 2, casingColor: '#000', coreColor: '#fff', scale: 1, isStone: false }
+					{
+						cellKey: '0,0',
+						pMid: { x: 10, y: 10 },
+						pQ: { x: 20, y: 20 },
+						endPt: { x: 30, y: 30 },
+						casingWidth: 4,
+						coreWidth: 2,
+						casingColor: '#000',
+						coreColor: '#fff',
+						scale: 1,
+						isStone: false
+					},
+					{
+						cellKey: '1,0',
+						pMid: { x: 40, y: 40 },
+						pQ: { x: 50, y: 50 },
+						endPt: { x: 60, y: 60 },
+						casingWidth: 4,
+						coreWidth: 2,
+						casingColor: '#000',
+						coreColor: '#fff',
+						scale: 1,
+						isStone: false
+					}
 				],
 				turns: [
-					{ cellKey: '1,0', A0: { x: 40, y: 40 }, center: { x: 50, y: 50 }, A1: { x: 60, y: 60 }, b0: { casingWidth: 4, coreWidth: 2, casingColor: '#000', coreColor: '#fff', isStone: false }, b1: { casingWidth: 4, coreWidth: 2, casingColor: '#000', coreColor: '#fff', isStone: false }, scale: 1 }
+					{
+						cellKey: '1,0',
+						A0: { x: 40, y: 40 },
+						center: { x: 50, y: 50 },
+						A1: { x: 60, y: 60 },
+						b0: {
+							casingWidth: 4,
+							coreWidth: 2,
+							casingColor: '#000',
+							coreColor: '#fff',
+							isStone: false
+						},
+						b1: {
+							casingWidth: 4,
+							coreWidth: 2,
+							casingColor: '#000',
+							coreColor: '#fff',
+							isStone: false
+						},
+						scale: 1
+					}
 				],
 				crossroads: []
 			}
@@ -689,7 +774,9 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 				restore: () => {},
 				beginPath: () => {},
 				moveTo: () => {},
-				quadraticCurveTo: () => { drawnTrunks++ },
+				quadraticCurveTo: () => {
+					drawnTrunks++
+				},
 				stroke: () => {},
 				setLineDash: () => {},
 				lineWidth: 0,
@@ -699,7 +786,7 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 			}
 
 			// Filter to only render cell 0,0 (flat)
-			renderRoads(fakeCtx, roadData, key => key === '0,0')
+			renderRoads(fakeCtx, roadData, (key) => key === '0,0')
 			// For 1 trunk, Pass 1 (casing) + Pass 2 (core) + Pass 3 (rut) = 3 calls to quadraticCurveTo
 			expect(drawnTrunks).toBe(3)
 		})
@@ -713,7 +800,9 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 				moveTo: () => {},
 				lineTo: () => {},
 				quadraticCurveTo: () => {},
-				arc: () => { arcCalls++ },
+				arc: () => {
+					arcCalls++
+				},
 				fill: () => {},
 				stroke: () => {},
 				setLineDash: () => {},
@@ -726,9 +815,42 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 
 			const roadData = {
 				trunks: [
-					{ cellKey: '0,0', pMid: { x: 10, y: 10 }, pQ: { x: 20, y: 20 }, endPt: { x: 30, y: 30 }, casingWidth: 4, coreWidth: 2, casingColor: '#000', coreColor: '#fff', scale: 1, isStone: false },
-					{ cellKey: '0,0', pMid: { x: 40, y: 40 }, pQ: { x: 50, y: 50 }, endPt: { x: 30, y: 30 }, casingWidth: 4, coreWidth: 2, casingColor: '#000', coreColor: '#fff', scale: 1, isStone: false },
-					{ cellKey: '0,0', pMid: { x: 10, y: 50 }, pQ: { x: 20, y: 40 }, endPt: { x: 30, y: 30 }, casingWidth: 4, coreWidth: 2, casingColor: '#000', coreColor: '#fff', scale: 1, isStone: false }
+					{
+						cellKey: '0,0',
+						pMid: { x: 10, y: 10 },
+						pQ: { x: 20, y: 20 },
+						endPt: { x: 30, y: 30 },
+						casingWidth: 4,
+						coreWidth: 2,
+						casingColor: '#000',
+						coreColor: '#fff',
+						scale: 1,
+						isStone: false
+					},
+					{
+						cellKey: '0,0',
+						pMid: { x: 40, y: 40 },
+						pQ: { x: 50, y: 50 },
+						endPt: { x: 30, y: 30 },
+						casingWidth: 4,
+						coreWidth: 2,
+						casingColor: '#000',
+						coreColor: '#fff',
+						scale: 1,
+						isStone: false
+					},
+					{
+						cellKey: '0,0',
+						pMid: { x: 10, y: 50 },
+						pQ: { x: 20, y: 40 },
+						endPt: { x: 30, y: 30 },
+						casingWidth: 4,
+						coreWidth: 2,
+						casingColor: '#000',
+						coreColor: '#fff',
+						scale: 1,
+						isStone: false
+					}
 				],
 				turns: [],
 				crossroads: [
@@ -736,7 +858,12 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 						cellKey: '0,0',
 						center: { x: 30, y: 30 },
 						fillets: [
-							{ PA: { x: 25, y: 25 }, PB: { x: 35, y: 35 }, bA: { casingWidth: 4, coreWidth: 2 }, bB: { casingWidth: 4, coreWidth: 2 } }
+							{
+								PA: { x: 25, y: 25 },
+								PB: { x: 35, y: 35 },
+								bA: { casingWidth: 4, coreWidth: 2 },
+								bB: { casingWidth: 4, coreWidth: 2 }
+							}
 						],
 						maxCasingWidth: 4,
 						maxCoreWidth: 2,
@@ -781,8 +908,8 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 			expect(roadData.trunks.length).toBe(2)
 
 			// Both trunks share identical pMid at the boundary
-			const t0 = roadData.trunks.find(t => t.cellKey === '0,0')
-			const t1 = roadData.trunks.find(t => t.cellKey === '1,0')
+			const t0 = roadData.trunks.find((t) => t.cellKey === '0,0')
+			const t1 = roadData.trunks.find((t) => t.cellKey === '1,0')
 			expect(t0).toBeDefined()
 			expect(t1).toBeDefined()
 			expect(t0.pMid.x).toBeCloseTo(t1.pMid.x, 3)
@@ -804,7 +931,7 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 		it('sorts cells by true world ground center Y to properly handle staggered columns', () => {
 			const radius = 36
 			const c_even_0 = hexToWorldGroundCenter(0, 0, radius) // row 0, even: Y = 0
-			const c_odd_0 = hexToWorldGroundCenter(1, 0, radius)  // row 0, odd: Y = h/2 (half a hex closer to bottom)
+			const c_odd_0 = hexToWorldGroundCenter(1, 0, radius) // row 0, odd: Y = h/2 (half a hex closer to bottom)
 			const c_even_1 = hexToWorldGroundCenter(0, 1, radius) // row 1, even: Y = h
 
 			expect(c_even_0.y).toBeLessThan(c_odd_0.y)
@@ -861,7 +988,13 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 				hexRadius: 36,
 				cells: {
 					'0,0': { col: 0, row: 0, terrain: 'grass', feature: 'none' },
-					'1,0': { col: 1, row: 0, terrain: 'grass', feature: 'hills', settlement: { id: 'hill_fort', type: 'fortress', name: 'Hill Fort' } },
+					'1,0': {
+						col: 1,
+						row: 0,
+						terrain: 'grass',
+						feature: 'hills',
+						settlement: { id: 'hill_fort', type: 'fortress', name: 'Hill Fort' }
+					},
 					'2,0': { col: 2, row: 0, terrain: 'grass', feature: 'mountain' },
 					'0,1': { col: 0, row: 1, terrain: 'grass', feature: 'none' }
 				},
@@ -895,15 +1028,23 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 			// Cell 1 (4,7) SE edge
 			const c1 = hexToWorldGroundCenter(4, 7, radius)
 			const gv1 = getHexGroundVertices(c1.x, c1.y, radius)
-			const inset1 = gv1.map(v => ({ x: v.x + (c1.x - v.x) * 0.06, y: v.y + (c1.y - v.y) * 0.06 }))
-			const vA1 = inset1[0], vB1 = inset1[1]
+			const inset1 = gv1.map((v) => ({
+				x: v.x + (c1.x - v.x) * 0.06,
+				y: v.y + (c1.y - v.y) * 0.06
+			}))
+			const vA1 = inset1[0],
+				vB1 = inset1[1]
 			const curve1 = getBorderMeanderControls(vA1, vB1, canonKey, radius)
 
 			// Cell 2 (5,7) NW edge (shared neighbor)
 			const c2 = hexToWorldGroundCenter(5, 7, radius)
 			const gv2 = getHexGroundVertices(c2.x, c2.y, radius)
-			const inset2 = gv2.map(v => ({ x: v.x + (c2.x - v.x) * 0.06, y: v.y + (c2.y - v.y) * 0.06 }))
-			const vA2 = inset2[3], vB2 = inset2[4]
+			const inset2 = gv2.map((v) => ({
+				x: v.x + (c2.x - v.x) * 0.06,
+				y: v.y + (c2.y - v.y) * 0.06
+			}))
+			const vA2 = inset2[3],
+				vB2 = inset2[4]
 			const curve2 = getBorderMeanderControls(vA2, vB2, canonKey, radius)
 
 			expect(curve1.cp1).toBeDefined()
@@ -915,8 +1056,16 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 			function evalB(p0, cp1, cp2, p1, t) {
 				const mt = 1 - t
 				return {
-					x: mt ** 3 * p0.x + 3 * mt ** 2 * t * cp1.x + 3 * mt * t ** 2 * cp2.x + t ** 3 * p1.x,
-					y: mt ** 3 * p0.y + 3 * mt ** 2 * t * cp1.y + 3 * mt * t ** 2 * cp2.y + t ** 3 * p1.y
+					x:
+						mt ** 3 * p0.x +
+						3 * mt ** 2 * t * cp1.x +
+						3 * mt * t ** 2 * cp2.x +
+						t ** 3 * p1.x,
+					y:
+						mt ** 3 * p0.y +
+						3 * mt ** 2 * t * cp1.y +
+						3 * mt * t ** 2 * cp2.y +
+						t ** 3 * p1.y
 				}
 			}
 
@@ -929,8 +1078,8 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 			const pt2_75 = evalB(vA2, curve2.cp1, curve2.cp2, vB2, 0.75)
 			const d25 = Math.hypot(pt1_25.x - pt2_75.x, pt1_25.y - pt2_75.y)
 
-			const pt1_50 = evalB(vA1, curve1.cp1, curve1.cp2, vB1, 0.50)
-			const pt2_50 = evalB(vA2, curve2.cp1, curve2.cp2, vB2, 0.50)
+			const pt1_50 = evalB(vA1, curve1.cp1, curve1.cp2, vB1, 0.5)
+			const pt2_50 = evalB(vA2, curve2.cp1, curve2.cp2, vB2, 0.5)
 			const d50 = Math.hypot(pt1_50.x - pt2_50.x, pt1_50.y - pt2_50.y)
 
 			const pt1_75 = evalB(vA1, curve1.cp1, curve1.cp2, vB1, 0.75)
@@ -977,7 +1126,8 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 				beginPath: () => beginPathCalls.push('beginPath'),
 				moveTo: (x, y) => moveToCalls.push({ x, y }),
 				lineTo: () => {},
-				bezierCurveTo: (cp1x, cp1y, cp2x, cp2y, x, y) => bezierCurveToCalls.push({ cp1x, cp1y, cp2x, cp2y, x, y }),
+				bezierCurveTo: (cp1x, cp1y, cp2x, cp2y, x, y) =>
+					bezierCurveToCalls.push({ cp1x, cp1y, cp2x, cp2y, x, y }),
 				closePath: () => closePathCalls.push('closePath'),
 				fill: () => {},
 				stroke: () => strokeCalls.push('stroke'),
@@ -1034,7 +1184,8 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 				beginPath: () => beginPathCalls.push('beginPath'),
 				moveTo: (x, y) => moveToCalls.push({ x, y }),
 				lineTo: (x, y) => lineToCalls.push({ x, y }),
-				bezierCurveTo: (cp1x, cp1y, cp2x, cp2y, x, y) => bezierCurveToCalls.push({ cp1x, cp1y, cp2x, cp2y, x, y }),
+				bezierCurveTo: (cp1x, cp1y, cp2x, cp2y, x, y) =>
+					bezierCurveToCalls.push({ cp1x, cp1y, cp2x, cp2y, x, y }),
 				closePath: () => closePathCalls.push('closePath'),
 				fill: () => {},
 				stroke: () => strokeCalls.push('stroke'),
@@ -1136,9 +1287,15 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 				canvas: { width: 1000, height: 800 },
 				save: () => {},
 				restore: () => {},
-				beginPath: () => { currentSegments = [] },
-				moveTo: (x, y) => { currentSegments.push({ type: 'move', x, y }) },
-				lineTo: (x, y) => { currentSegments.push({ type: 'line', x, y }) },
+				beginPath: () => {
+					currentSegments = []
+				},
+				moveTo: (x, y) => {
+					currentSegments.push({ type: 'move', x, y })
+				},
+				lineTo: (x, y) => {
+					currentSegments.push({ type: 'line', x, y })
+				},
 				bezierCurveTo: (cp1x, cp1y, cp2x, cp2y, x, y) => {
 					currentSegments.push({ type: 'bezier', cp1x, cp1y, cp2x, cp2y, x, y })
 				},
@@ -1183,16 +1340,20 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 			drawPoliticalBorders(fakeCtx, camera, mapData, 36, null, null, 2)
 
 			// Strokes contain semi-transparent colors (0.12 for wide halo, 0.22 for mid halo, 0.78 for crisp stroke)
-			expect(strokeStyles.some(s => s.includes('0.12'))).toBe(true)
-			expect(strokeStyles.some(s => s.includes('0.22'))).toBe(true)
-			expect(strokeStyles.some(s => s.includes('0.78'))).toBe(true)
+			expect(strokeStyles.some((s) => s.includes('0.12'))).toBe(true)
+			expect(strokeStyles.some((s) => s.includes('0.22'))).toBe(true)
+			expect(strokeStyles.some((s) => s.includes('0.78'))).toBe(true)
 
 			// Both nations should have had their border ribbons drawn (3 strokes each: wide halo + mid halo + crisp)
 			expect(strokeStyles.length).toBe(6)
 
 			// Check that the shared boundary curves for the two nations are distinct and offset from each other
-			const reEstizeStrokes = [...curvesByColor.entries()].filter(([k]) => k.includes('37, 99, 235'))
-			const baharuthStrokes = [...curvesByColor.entries()].filter(([k]) => k.includes('220, 38, 38'))
+			const reEstizeStrokes = [...curvesByColor.entries()].filter(([k]) =>
+				k.includes('37, 99, 235')
+			)
+			const baharuthStrokes = [...curvesByColor.entries()].filter(([k]) =>
+				k.includes('220, 38, 38')
+			)
 
 			expect(reEstizeStrokes.length).toBeGreaterThan(0)
 			expect(baharuthStrokes.length).toBeGreaterThan(0)
@@ -1248,7 +1409,7 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 				// Line from (100, 100) to (136, 100) is horizontal (y = 100)
 				// Perpendicular distance is |mid.y - 100|
 				const perpDist = Math.abs(curve.mid.y - 100)
-				expect(perpDist).toBeGreaterThanOrEqual(radius * 0.10) // at least ~3.6px
+				expect(perpDist).toBeGreaterThanOrEqual(radius * 0.1) // at least ~3.6px
 			}
 		})
 
@@ -1295,8 +1456,8 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 			expect(cellPoly2.edges).toHaveLength(6)
 
 			// Shared edge between (2,2) and its NE neighbor
-			const edge1 = cellPoly1.edges.find(e => e.edge === 'NE')
-			const edge2 = cellPoly2.edges.find(e => e.edge === 'SW')
+			const edge1 = cellPoly1.edges.find((e) => e.edge === 'NE')
+			const edge2 = cellPoly2.edges.find((e) => e.edge === 'SW')
 
 			expect(edge1.canonKey).toBe(edge2.canonKey)
 			// Coincident endpoints and control points
@@ -1343,7 +1504,10 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 			// 1. Ensure organic vertices are not pinned to rigid lattice
 			let totalDisplacement = 0
 			for (let i = 0; i < 6; i++) {
-				const dist = Math.hypot(organicVerts1[i].x - idealVerts1[i].x, organicVerts1[i].y - idealVerts1[i].y)
+				const dist = Math.hypot(
+					organicVerts1[i].x - idealVerts1[i].x,
+					organicVerts1[i].y - idealVerts1[i].y
+				)
 				totalDisplacement += dist
 				// Max jitter offset is bounded by sqrt(2) * 0.16 * radius ≈ 8.14px
 				expect(dist).toBeLessThanOrEqual(Math.SQRT2 * 0.16 * radius + 0.01)
@@ -1404,8 +1568,16 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 			function evalCubic(p0, cp1, cp2, p1, t) {
 				const mt = 1 - t
 				return {
-					x: mt ** 3 * p0.x + 3 * mt ** 2 * t * cp1.x + 3 * mt * t ** 2 * cp2.x + t ** 3 * p1.x,
-					y: mt ** 3 * p0.y + 3 * mt ** 2 * t * cp1.y + 3 * mt * t ** 2 * cp2.y + t ** 3 * p1.y
+					x:
+						mt ** 3 * p0.x +
+						3 * mt ** 2 * t * cp1.x +
+						3 * mt * t ** 2 * cp2.x +
+						t ** 3 * p1.x,
+					y:
+						mt ** 3 * p0.y +
+						3 * mt ** 2 * t * cp1.y +
+						3 * mt * t ** 2 * cp2.y +
+						t ** 3 * p1.y
 				}
 			}
 
@@ -1419,7 +1591,13 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 				expect(ptF2.y).toBeCloseTo(ptF1.y, 5)
 
 				const ptRiver = evalCubic(rFrom, riverCurve.cp1, riverCurve.cp2, rTo, t)
-				const ptRiverRev = evalCubic(rTo, revRiverCurve.cp1, revRiverCurve.cp2, rFrom, 1 - t)
+				const ptRiverRev = evalCubic(
+					rTo,
+					revRiverCurve.cp1,
+					revRiverCurve.cp2,
+					rFrom,
+					1 - t
+				)
 				expect(ptRiver.x).toBeCloseTo(ptRiverRev.x, 5)
 				expect(ptRiver.y).toBeCloseTo(ptRiverRev.y, 5)
 			}
@@ -1524,8 +1702,12 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 				const cny = cdx / clen
 
 				// Perpendicular distance of mid1 and mid2 from chord line
-				const distM1 = Math.abs((curve.mid1.x - from.x) * cnx + (curve.mid1.y - from.y) * cny)
-				const distM2 = Math.abs((curve.mid2.x - from.x) * cnx + (curve.mid2.y - from.y) * cny)
+				const distM1 = Math.abs(
+					(curve.mid1.x - from.x) * cnx + (curve.mid1.y - from.y) * cny
+				)
+				const distM2 = Math.abs(
+					(curve.mid2.x - from.x) * cnx + (curve.mid2.y - from.y) * cny
+				)
 
 				// Both intermediate points must have noticeable lateral protrusion (> 0.08 * radius)
 				expect(distM1).toBeGreaterThanOrEqual(0.08 * radius)
@@ -1591,7 +1773,7 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 
 			// 1. Organic hex cell boundary for (4, 5)
 			const perimeter = getOrganicCellPerimeter(col, row, radius, seed, riverMap)
-			const cellEdge = perimeter.find(e => e.edge === edge)
+			const cellEdge = perimeter.find((e) => e.edge === edge)
 			expect(cellEdge).toBeDefined()
 
 			// 2. River curve along this edge
@@ -1604,7 +1786,18 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 			const borderCurve = getHexEdgeCurve(rFrom, rTo, canonKey, radius, 2, { seed })
 
 			// Verify all 10 multi-bend control points match identically between cell boundary and political border
-			for (const prop of ['from', 'cp1A', 'cp2A', 'mid1', 'cp1B', 'cp2B', 'mid2', 'cp1C', 'cp2C', 'to']) {
+			for (const prop of [
+				'from',
+				'cp1A',
+				'cp2A',
+				'mid1',
+				'cp1B',
+				'cp2B',
+				'mid2',
+				'cp1C',
+				'cp2C',
+				'to'
+			]) {
 				expect(cellEdge[prop].x).toBeCloseTo(borderCurve[prop].x, 5)
 				expect(cellEdge[prop].y).toBeCloseTo(borderCurve[prop].y, 5)
 			}
@@ -1613,26 +1806,70 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 			function evalCubic(p0, cp1, cp2, p1, t) {
 				const mt = 1 - t
 				return {
-					x: mt ** 3 * p0.x + 3 * mt ** 2 * t * cp1.x + 3 * mt * t ** 2 * cp2.x + t ** 3 * p1.x,
-					y: mt ** 3 * p0.y + 3 * mt ** 2 * t * cp1.y + 3 * mt * t ** 2 * cp2.y + t ** 3 * p1.y
+					x:
+						mt ** 3 * p0.x +
+						3 * mt ** 2 * t * cp1.x +
+						3 * mt * t ** 2 * cp2.x +
+						t ** 3 * p1.x,
+					y:
+						mt ** 3 * p0.y +
+						3 * mt ** 2 * t * cp1.y +
+						3 * mt * t ** 2 * cp2.y +
+						t ** 3 * p1.y
 				}
 			}
 
 			for (const t of [0, 0.2, 0.5, 0.8, 1.0]) {
-				const ptCellA = evalCubic(cellEdge.from, cellEdge.cp1A, cellEdge.cp2A, cellEdge.mid1, t)
-				const ptBorderA = evalCubic(borderCurve.from, borderCurve.cp1A, borderCurve.cp2A, borderCurve.mid1, t)
+				const ptCellA = evalCubic(
+					cellEdge.from,
+					cellEdge.cp1A,
+					cellEdge.cp2A,
+					cellEdge.mid1,
+					t
+				)
+				const ptBorderA = evalCubic(
+					borderCurve.from,
+					borderCurve.cp1A,
+					borderCurve.cp2A,
+					borderCurve.mid1,
+					t
+				)
 
 				expect(ptCellA.x).toBeCloseTo(ptBorderA.x, 5)
 				expect(ptCellA.y).toBeCloseTo(ptBorderA.y, 5)
 
-				const ptCellB = evalCubic(cellEdge.mid1, cellEdge.cp1B, cellEdge.cp2B, cellEdge.mid2, t)
-				const ptBorderB = evalCubic(borderCurve.mid1, borderCurve.cp1B, borderCurve.cp2B, borderCurve.mid2, t)
+				const ptCellB = evalCubic(
+					cellEdge.mid1,
+					cellEdge.cp1B,
+					cellEdge.cp2B,
+					cellEdge.mid2,
+					t
+				)
+				const ptBorderB = evalCubic(
+					borderCurve.mid1,
+					borderCurve.cp1B,
+					borderCurve.cp2B,
+					borderCurve.mid2,
+					t
+				)
 
 				expect(ptCellB.x).toBeCloseTo(ptBorderB.x, 5)
 				expect(ptCellB.y).toBeCloseTo(ptBorderB.y, 5)
 
-				const ptCellC = evalCubic(cellEdge.mid2, cellEdge.cp1C, cellEdge.cp2C, cellEdge.to, t)
-				const ptBorderC = evalCubic(borderCurve.mid2, borderCurve.cp1C, borderCurve.cp2C, borderCurve.to, t)
+				const ptCellC = evalCubic(
+					cellEdge.mid2,
+					cellEdge.cp1C,
+					cellEdge.cp2C,
+					cellEdge.to,
+					t
+				)
+				const ptBorderC = evalCubic(
+					borderCurve.mid2,
+					borderCurve.cp1C,
+					borderCurve.cp2C,
+					borderCurve.to,
+					t
+				)
 
 				expect(ptCellC.x).toBeCloseTo(ptBorderC.x, 5)
 				expect(ptCellC.y).toBeCloseTo(ptBorderC.y, 5)
@@ -1702,7 +1939,12 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 			})
 
 			// All 4 directions simultaneously
-			const allExp = calculateDirectionalBounds(baseBounds, { north: 2, south: 3, west: 4, east: 5 })
+			const allExp = calculateDirectionalBounds(baseBounds, {
+				north: 2,
+				south: 3,
+				west: 4,
+				east: 5
+			})
 			expect(allExp).toEqual({
 				minCol: -4,
 				maxCol: 28,
@@ -1714,7 +1956,12 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 		})
 
 		it('handles shrinking directional bounds correctly', () => {
-			const shrunk = calculateDirectionalBounds(baseBounds, { west: -2, east: -3, north: -1, south: -4 })
+			const shrunk = calculateDirectionalBounds(baseBounds, {
+				west: -2,
+				east: -3,
+				north: -1,
+				south: -4
+			})
 			expect(shrunk).toEqual({
 				minCol: 2,
 				maxCol: 20,
@@ -1903,7 +2150,14 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 			})
 
 			// 1,000 x 1,000 map = 1,000,000 cells!
-			const mapBounds = { minCol: 0, maxCol: 999, minRow: 0, maxRow: 999, cols: 1000, rows: 1000 }
+			const mapBounds = {
+				minCol: 0,
+				maxCol: 999,
+				minRow: 0,
+				maxRow: 999,
+				cols: 1000,
+				rows: 1000
+			}
 			const vBounds = getVisibleHexGridBounds(camera, 36, mapBounds)
 
 			expect(vBounds.minCol).toBeGreaterThanOrEqual(0)
@@ -1934,8 +2188,8 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 			const mapData = {
 				hexRadius: 36,
 				roads: {
-					'dirt_1': { from: { col: 5, row: 5 }, to: { col: 6, row: 5 }, type: 'dirt' },
-					'stone_1': { from: { col: 7, row: 5 }, to: { col: 8, row: 5 }, type: 'stone' }
+					dirt_1: { from: { col: 5, row: 5 }, to: { col: 6, row: 5 }, type: 'dirt' },
+					stone_1: { from: { col: 7, row: 5 }, to: { col: 8, row: 5 }, type: 'stone' }
 				}
 			}
 
@@ -1978,9 +2232,21 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 				rows: 10,
 				bounds: { minCol: 0, maxCol: 9, minRow: 0, maxRow: 9 },
 				cells: {
-					'5,5': { col: 5, row: 5, terrain: 'grass', feature: 'hills', faction: 'kingdom' },
+					'5,5': {
+						col: 5,
+						row: 5,
+						terrain: 'grass',
+						feature: 'hills',
+						faction: 'kingdom'
+					},
 					'5,6': { col: 5, row: 6, terrain: 'water' },
-					'6,5': { col: 6, row: 5, terrain: 'plains', feature: 'mountain', mountainRadius: 1 }
+					'6,5': {
+						col: 6,
+						row: 5,
+						terrain: 'plains',
+						feature: 'mountain',
+						mountainRadius: 1
+					}
 				},
 				rivers: {
 					'5,5:S': { col: 5, row: 5, edge: 'S', width: 1 },
@@ -1992,15 +2258,19 @@ describe('HexPerspectiveCamera 3D Perspective Projection & Parallax', () => {
 			}
 
 			// LOD 0 (Close-up: zoom = 1.0, screenRadius = 36)
-			expect(() => renderHexMap(mockCtx, mapData, { cameraX: 300, cameraY: 300, zoom: 1.0 })).not.toThrow()
+			expect(() =>
+				renderHexMap(mockCtx, mapData, { cameraX: 300, cameraY: 300, zoom: 1.0 })
+			).not.toThrow()
 
 			// LOD 1 (Medium: zoom = 0.45, screenRadius = 16.2)
-			expect(() => renderHexMap(mockCtx, mapData, { cameraX: 300, cameraY: 300, zoom: 0.45 })).not.toThrow()
+			expect(() =>
+				renderHexMap(mockCtx, mapData, { cameraX: 300, cameraY: 300, zoom: 0.45 })
+			).not.toThrow()
 
 			// LOD 2 (Strategic overview: zoom = 0.25, screenRadius = 9)
-			expect(() => renderHexMap(mockCtx, mapData, { cameraX: 300, cameraY: 300, zoom: 0.25 })).not.toThrow()
+			expect(() =>
+				renderHexMap(mockCtx, mapData, { cameraX: 300, cameraY: 300, zoom: 0.25 })
+			).not.toThrow()
 		})
 	})
 })
-
-

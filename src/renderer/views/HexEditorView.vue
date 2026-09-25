@@ -1112,7 +1112,10 @@ import {
 	syncRoadsForCell,
 	rebuildAllRoadConnections,
 	getFactionVisuals,
-	hexToRgba
+	hexToRgba,
+	loadHexMap,
+	loadFactionsData,
+	FACTION_PRESETS
 } from '@/utils/hexmap/hexLoader.js'
 import {
 	HEX_EDGES,
@@ -1126,8 +1129,6 @@ import {
 	calculateDirectionalBounds,
 	calculateAnchorBounds
 } from '@/utils/hexmap/hexCoords.js'
-import defaultNewWorldHex from '@data/hexmaps/newworld_hex.json'
-import fractionsData from '@data/fractions/fractions.json'
 
 const router = useRouter()
 const canvasRef = ref(null)
@@ -1146,13 +1147,11 @@ const availableMaps = ref([
 	{ id: 'newworld_hex', name: 'Новый Мир (Тактическая)' }
 ])
 const selectedMapId = ref('newworld_hex')
-const mapCache = {
-	newworld_hex: defaultNewWorldHex
-}
+const mapCache = {}
 
-// Current Map State
-const mapData = ref(normalizeHexMapData(JSON.parse(JSON.stringify(defaultNewWorldHex))))
-const mapPitch = ref(mapData.value?.pitch || 45)
+// Current Map State (defaults to empty map until loadMapById resolves)
+const mapData = ref(createDefaultHexMap(20, 15, 'grass'))
+const mapPitch = ref(45)
 
 const isDirty = ref(false)
 const isSaving = ref(false)
@@ -1180,10 +1179,11 @@ watch(mapPitch, (newP) => {
 })
 
 // Factions & Borders State (Civilization Style)
-const fractionsRaw = Array.isArray(fractionsData) ? fractionsData : Object.values(fractionsData || {})
+const fractionsRaw = ref(Object.values(FACTION_PRESETS))
 const factionsList = computed(() => {
-	return fractionsRaw.map(f => {
-		const visuals = getFactionVisuals(f.id, fractionsRaw)
+	const raw = Array.isArray(fractionsRaw.value) ? fractionsRaw.value : Object.values(fractionsRaw.value || {})
+	return raw.map(f => {
+		const visuals = getFactionVisuals(f.id, raw)
 		return {
 			id: f.id,
 			name: f.name || visuals?.name || f.id,
@@ -1969,9 +1969,11 @@ async function loadMapById(mapId) {
 		}
 	}
 
-	if (!rawData && mapId === 'newworld_hex') {
-		rawData = defaultNewWorldHex
-		mapCache[mapId] = rawData
+	if (!rawData) {
+		rawData = await loadHexMap(mapId)
+		if (rawData) {
+			mapCache[mapId] = rawData
+		}
 	}
 
 	if (rawData) {
@@ -2069,7 +2071,12 @@ function onEditorKeyDown(e) {
 
 onMounted(async () => {
 	window.addEventListener('keydown', onEditorKeyDown)
+	const loadedFactions = await loadFactionsData()
+	if (loadedFactions && loadedFactions.length > 0) {
+		fractionsRaw.value = loadedFactions
+	}
 	await refreshAvailableMaps()
+	await loadMapById(selectedMapId.value)
 })
 
 onUnmounted(() => {

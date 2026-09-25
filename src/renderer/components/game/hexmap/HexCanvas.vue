@@ -6,7 +6,6 @@
 		@pointermove="onPointerMove"
 		@pointerup="onPointerUp"
 		@pointerleave="onPointerLeave"
-		@wheel.prevent="onWheel"
 		@contextmenu.prevent="onContextMenu"
 	>
 		<canvas ref="canvasRef" class="hex-canvas-element"></canvas>
@@ -175,18 +174,29 @@ const canvasHeight = ref(540)
 
 watch(() => props.pixelScale, () => {
 	resizeCanvas()
+	markDirty()
 })
+
+// Mark dirty on any external data change that affects rendering
+watch(() => props.mapData, markDirty, { deep: false })
+watch(() => props.selectedHex, markDirty)
+watch(() => props.factionsMap, markDirty)
+watch(() => props.discoveredLocations, markDirty)
+watch(() => props.activeTool, markDirty)
+
 
 // Borders State
 const localShowBorders = ref(props.showBorders)
 watch(() => props.showBorders, (val) => {
 	localShowBorders.value = val
+	markDirty()
 })
 
 function toggleBorders() {
 	localShowBorders.value = !localShowBorders.value
 	emit('update:showBorders', localShowBorders.value)
 	emit('borders-toggle', localShowBorders.value)
+	markDirty()
 }
 
 // Camera State (3D Perspective with dynamic zoom-pitch coupling: min 0° at 0.5x zoom, max 60° at 3.75x zoom)
@@ -206,6 +216,7 @@ const hasMovedSignificantly = ref(false)
 watch(() => props.pitch, (newP) => {
 	if (newP !== undefined && newP !== null && Math.abs(newP - pitch.value) > 1) {
 		pitch.value = Math.max(0, Math.min(60, newP))
+		markDirty()
 	}
 })
 
@@ -216,6 +227,23 @@ const hoveredEdge = ref(null)
 // Animation Frame
 let animationFrameId = null
 const animStartTime = performance.now()
+
+// ── Dirty-flag render throttling ─────────────────────────────────────────────
+// renderDirty=true → перерисовать в следующем кадре (пан/зум/ховер/resize/данные)
+// Анимация воды/рек throttled до ~30fps (каждые 33мс) чтобы не жечь GPU каждые 16мс
+let renderDirty = true
+const ANIM_FRAME_INTERVAL_MS = 33 // ~30fps для водной анимации
+let lastAnimRenderTime = 0
+
+// ── Frame budget guard ────────────────────────────────────────────────────────
+// Если предыдущий рендер занял > FRAME_BUDGET_MS, следующий animTick пропускается.
+// Это убирает [Violation] 'requestAnimationFrame' handler took Nms при LOD 0.
+const FRAME_BUDGET_MS = 14 // ~85% от 16мс бюджета (оставляем запас на composite)
+let lastRenderDurationMs = 0
+
+function markDirty() {
+	renderDirty = true
+}
 
 // Discovered settlements set
 const discoveredSet = computed(() => {
@@ -508,6 +536,7 @@ function onPointerMove(e) {
 		pitch.value = newPitch
 		emit('pitch-change', pitch.value)
 		emit('update:pitch', pitch.value)
+		markDirty()
 		return
 	}
 
@@ -520,6 +549,7 @@ function onPointerMove(e) {
 			const cosT = Math.max(0.2, Math.cos(theta))
 			cameraX.value = dragStart.camX - dx / zoom.value
 			cameraY.value = dragStart.camY - dy / (zoom.value * cosT)
+			markDirty()
 		}
 		// While actively dragging/panning the map, suppress raycast hover and DOM updates
 		hoveredHex.value = null
@@ -545,6 +575,8 @@ function onPointerMove(e) {
 	const maxRow = props.mapData.bounds?.maxRow ?? ((props.mapData.rows || 15) - 1)
 
 	if (hex.col >= minCol && hex.col <= maxCol && hex.row >= minRow && hex.row <= maxRow) {
+		const prevCol = hoveredHex.value?.col
+		const prevRow = hoveredHex.value?.row
 		hoveredHex.value = hex
 
 		if (props.activeTool === 'river') {
@@ -554,6 +586,11 @@ function onPointerMove(e) {
 			hoveredEdge.value = null
 		}
 
+		// Only mark dirty if the hovered cell actually changed
+		if (hex.col !== prevCol || hex.row !== prevRow) {
+			markDirty()
+		}
+
 		emit('hex-hover', {
 			col: hex.col,
 			row: hex.row,
@@ -561,6 +598,7 @@ function onPointerMove(e) {
 			edge: hoveredEdge.value
 		})
 	} else {
+		if (hoveredHex.value !== null) markDirty()
 		hoveredHex.value = null
 		hoveredEdge.value = null
 	}
@@ -610,6 +648,7 @@ function onPointerUp(e) {
 }
 
 function onPointerLeave() {
+	if (hoveredHex.value !== null) markDirty()
 	hoveredHex.value = null
 	hoveredEdge.value = null
 	isDragging.value = false
@@ -625,9 +664,13 @@ function applyZoom(newZoom) {
 		emit('pitch-change', pitch.value)
 		emit('update:pitch', pitch.value)
 	}
+	markDirty()
 }
 
 function onWheel(e) {
+	// Блокируем скролл страницы — listener зарегистрирован с { passive: false }
+	e.preventDefault()
+
 	if (e.shiftKey) {
 		// Shift + Wheel smoothly tilts perspective angle manually!
 		const delta = e.deltaY < 0 ? 3 : -3
@@ -635,6 +678,7 @@ function onWheel(e) {
 		pitch.value = newPitch
 		emit('pitch-change', pitch.value)
 		emit('update:pitch', pitch.value)
+		markDirty()
 		return
 	}
 
@@ -686,6 +730,7 @@ function resetCamera() {
 	cameraY.value = centerGround.y
 	emit('pitch-change', pitch.value)
 	emit('update:pitch', pitch.value)
+	markDirty()
 }
 
 let offscreenCanvas = null
@@ -726,19 +771,49 @@ function resizeCanvas() {
 
 		canvasWidth.value = internalW
 		canvasHeight.value = internalH
+		markDirty()
 	}
 }
 
 function renderLoop(currentTime) {
-	if (!canvasRef.value || !props.mapData) return
+	// ── Dirty-flag check ──────────────────────────────────────────────────────
+	// Animated elements (rivers, water shimmer) throttled to ~30fps.
+	// Everything else renders ONLY when state changed (dirty).
+	const timeSinceAnimRender = currentTime - lastAnimRenderTime
+	// Frame budget guard: если предыдущий рендер тяжёлый — пропускаем animTick
+	const prevFrameHeavy = lastRenderDurationMs > FRAME_BUDGET_MS
+	const animTick = !prevFrameHeavy && timeSinceAnimRender >= ANIM_FRAME_INTERVAL_MS
+
+	if (!renderDirty && !animTick) {
+		// Nothing changed — skip this frame entirely, reschedule
+		animationFrameId = requestAnimationFrame(renderLoop)
+		return
+	}
+
+	if (!canvasRef.value || !props.mapData) {
+		animationFrameId = requestAnimationFrame(renderLoop)
+		return
+	}
 	const mainCtx = canvasRef.value.getContext('2d')
-	if (!mainCtx) return
+	if (!mainCtx) {
+		animationFrameId = requestAnimationFrame(renderLoop)
+		return
+	}
+
+	// Consume dirty flag
+	renderDirty = false
+	if (animTick) lastAnimRenderTime = currentTime
 
 	const scale = Math.max(1, props.pixelScale || 2)
 	const elapsedSec = (currentTime - animStartTime) / 1000
 
 	ensureOffscreen(canvasWidth.value, canvasHeight.value)
-	if (!offscreenCtx) return
+	if (!offscreenCtx) {
+		animationFrameId = requestAnimationFrame(renderLoop)
+		return
+	}
+
+	const _t0 = performance.now()
 
 	// 1. Clear offscreen buffer
 	offscreenCtx.clearRect(0, 0, offscreenCanvas.width, offscreenCanvas.height)
@@ -775,6 +850,9 @@ function renderLoop(currentTime) {
 		0, 0, canvasRef.value.width, canvasRef.value.height
 	)
 
+	// Сохраняем время рендера для frame budget guard следующего кадра
+	lastRenderDurationMs = performance.now() - _t0
+
 	animationFrameId = requestAnimationFrame(renderLoop)
 }
 
@@ -789,6 +867,10 @@ onMounted(() => {
 		resizeObserver.observe(containerRef.value)
 	}
 	window.addEventListener('resize', resizeCanvas)
+	// Wheel зарегистрирован вручную с { passive: false } чтобы:
+	//  1. Подавить Chrome Violation "non-passive event listener" (Vue @wheel.prevent не может это)
+	//  2. Сохранить возможность вызывать e.preventDefault() для блокировки скролла страницы
+	containerRef.value?.addEventListener('wheel', onWheel, { passive: false })
 	resetCamera()
 	animationFrameId = requestAnimationFrame(renderLoop)
 })
@@ -799,6 +881,7 @@ onUnmounted(() => {
 		resizeObserver = null
 	}
 	window.removeEventListener('resize', resizeCanvas)
+	containerRef.value?.removeEventListener('wheel', onWheel)
 	if (animationFrameId) {
 		cancelAnimationFrame(animationFrameId)
 	}

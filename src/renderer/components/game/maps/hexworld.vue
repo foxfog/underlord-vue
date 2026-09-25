@@ -2,6 +2,7 @@
 	<div class="hexworld-map-wrap">
 		<!-- Hex Canvas View -->
 		<HexCanvas
+			v-if="mapData"
 			ref="canvasRef"
 			:map-data="mapData"
 			:read-only="true"
@@ -54,14 +55,15 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import HexCanvas from '@/components/game/hexmap/HexCanvas.vue'
 import {
 	normalizeHexMapData,
-	SETTLEMENT_TYPES
+	SETTLEMENT_TYPES,
+	FACTION_PRESETS,
+	loadHexMap,
+	loadFactionsData
 } from '@/utils/hexmap/hexLoader.js'
-import newWorldHexJson from '@data/hexmaps/newworld_hex.json'
-import fractionsData from '@data/fractions/fractions.json'
 
 const showBorders = ref(true)
 
@@ -78,8 +80,26 @@ const props = defineProps({
 
 const emit = defineEmits(['goto', 'switch-level', 'view-local'])
 
-const mapData = ref(normalizeHexMapData(newWorldHexJson))
+const mapData = ref(null)
+const fractionsData = ref(Object.values(FACTION_PRESETS))
 const selectedSettlement = ref(null)
+
+onMounted(async () => {
+	try {
+		const [loadedMap, loadedFactions] = await Promise.all([
+			loadHexMap('newworld_hex'),
+			loadFactionsData()
+		])
+		if (loadedMap) {
+			mapData.value = loadedMap
+		}
+		if (loadedFactions && loadedFactions.length > 0) {
+			fractionsData.value = loadedFactions
+		}
+	} catch (e) {
+		console.error('[hexworld] Error loading map or factions:', e)
+	}
+})
 
 const discoveredSettlementIds = computed(() => {
 	const list = props.globalData?.discoveredLocations?.newworld

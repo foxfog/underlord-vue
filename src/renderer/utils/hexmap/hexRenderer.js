@@ -40,7 +40,9 @@ import {
 	getRoadPathControls,
 	getRoadCurvePoint,
 	hashString,
-	getHashFloat
+	getHashFloat,
+	DEFAULT_HEX_MIN_ZOOM,
+	DEFAULT_HEX_MAX_ZOOM
 } from './hexCoords.js'
 
 // ── Biome Texture Cache ────────────────────────────────────────────────────────
@@ -58,6 +60,23 @@ export let ENABLE_ORGANIC_EDGES = true
 
 export function setEnableOrganicEdges(enabled) {
 	ENABLE_ORGANIC_EDGES = !!enabled
+}
+
+// ── Animation zoom threshold ───────────────────────────────────────────────────
+// Доля диапазона отдаления, при превышении которой отключаются анимации воды и рек.
+// 0.0 = анимации всегда включены.
+// 1.0 = анимации только на максимальном приближении.
+// 0.75 (по умолчанию): анимации отключаются когда отдалились на 75% от максимума.
+//
+// Пример с DEFAULT_HEX_MIN_ZOOM=0.75 и DEFAULT_HEX_MAX_ZOOM=5:
+//   Порог = MIN + (1 - 0.75) * (MAX - MIN) = 0.75 + 0.25 * 4.25 ≈ 1.81
+//   При zoom < 1.81 — анимации выключены.
+//
+// Изменить: setAnimDisableZoomFraction(0.5) — порог 50% от отдаления.
+export let ANIM_DISABLE_ZOOM_FRACTION = 0.75
+
+export function setAnimDisableZoomFraction(fraction) {
+	ANIM_DISABLE_ZOOM_FRACTION = Math.max(0, Math.min(1, Number(fraction) || 0))
 }
 
 const BIOME_TEXTURE_PATH = {
@@ -275,6 +294,15 @@ export function renderHexMap(ctx, mapData, options = {}) {
 	// At LOD 1 and 2, force straight hex geometry for a 10x-50x speedup
 	const useOrganic = lodLevel === 0 && mapOrganic
 
+	// ── Animation zoom threshold ───────────────────────────────────────────────
+	// Если камера отдалена дальше порога — замораживаем анимации воды и рек (animTime → 0).
+	// Порог вычисляется из ANIM_DISABLE_ZOOM_FRACTION:
+	//   fraction=0.75 → порог ≈ 1.81 при min=0.75, max=5
+	//   zoom < порога → effectiveAnimTime = 0 (анимации стоп)
+	//   zoom ≥ порога → effectiveAnimTime = animTime (анимации идут)
+	const _animZoomThreshold = DEFAULT_HEX_MIN_ZOOM + (1 - ANIM_DISABLE_ZOOM_FRACTION) * (DEFAULT_HEX_MAX_ZOOM - DEFAULT_HEX_MIN_ZOOM)
+	const effectiveAnimTime = (ANIM_DISABLE_ZOOM_FRACTION <= 0 || zoom >= _animZoomThreshold) ? animTime : 0
+
 	// 0.1. Atmospheric horizon sky & mist at the top of the canvas
 	drawAtmosphere(ctx, camera)
 
@@ -305,7 +333,7 @@ export function renderHexMap(ctx, mapData, options = {}) {
 	}
 
 	// 1. Draw all hex base cells as batched continuous biome layers (flat ground plane)
-	drawBaseCellsBatched(ctx, camera, mapData, radius, animTime, mapData.seed || 0, riverMap, {
+	drawBaseCellsBatched(ctx, camera, mapData, radius, effectiveAnimTime, mapData.seed || 0, riverMap, {
 		organic: useOrganic,
 		lodLevel,
 		screenRadius,
@@ -324,7 +352,7 @@ export function renderHexMap(ctx, mapData, options = {}) {
 	}
 
 	// 2. Draw rivers along edges (with animated flowing water on ground plane Z = 0)
-	drawRivers(ctx, camera, mapData, radius, animTime, {
+	drawRivers(ctx, camera, mapData, radius, effectiveAnimTime, {
 		organic: useOrganic,
 		lodLevel,
 		screenRadius
@@ -1833,6 +1861,9 @@ function drawRivers(ctx, camera, mapData, radius, animTime, options = {}) {
 	}
 
 	for (const river of rivers) {
+		// ── Cheap early-out: skip entirely if hex is outside frustum ──────────
+		if (!isCellVisible(camera, river.col, river.row, radius, 1.5)) continue
+
 		const center = hexToWorldGroundCenter(river.col, river.row, radius)
 		const groundVerts = getOrganicHexGroundVertices(center.x, center.y, radius, mapData?.seed || 0)
 		const { from: gFrom, to: gTo } = getHexEdgeEndpoints(groundVerts, river.edge)
@@ -2435,6 +2466,10 @@ function drawBridges(ctx, camera, mapData, radius, filterFn = null, drawnBridges
 				if (filterFn && !filterFn(key1, key2)) break
 
 				drawn.add(canonRoadKey)
+
+				// ── Cheap early-out before expensive geometry ─────────────────
+				if (!isCellVisible(camera, c1.col, c1.row, radius, 2.0) &&
+					!isCellVisible(camera, c2.col, c2.row, radius, 2.0)) break
 
 				const bridgeInfo = checkBridgeBetweenHexes(mapData, c1.col, c1.row, c2.col, c2.row, edge)
 				if (bridgeInfo.hasBridge) {
