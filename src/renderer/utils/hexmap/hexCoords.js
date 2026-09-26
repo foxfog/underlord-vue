@@ -17,10 +17,19 @@ export const OPPOSITE_EDGE = Object.freeze({
 	NW: 'SE'
 })
 
-export const DEFAULT_HEX_RADIUS = 36
-export const DEFAULT_HEX_TILT = 0.7
-export const DEFAULT_HEX_MIN_ZOOM = 0.75
-export const DEFAULT_HEX_MAX_ZOOM = 5
+import {
+	DEFAULT_HEX_RADIUS,
+	DEFAULT_HEX_TILT,
+	DEFAULT_HEX_MIN_ZOOM,
+	DEFAULT_HEX_MAX_ZOOM
+} from './hexConfig.js'
+
+export {
+	DEFAULT_HEX_RADIUS,
+	DEFAULT_HEX_TILT,
+	DEFAULT_HEX_MIN_ZOOM,
+	DEFAULT_HEX_MAX_ZOOM
+}
 
 /**
  * Returns neighbor coordinate for a given hex and edge in odd-q flat-topped system.

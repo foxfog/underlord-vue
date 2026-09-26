@@ -6,6 +6,7 @@ import App from './App.vue'
 import i18n from './locales'
 import router from './router'
 import { initSettingsStore } from './stores/settings'
+import { setFpsLimit } from './utils/hexmap/hexConfig'
 import uiComponents from './components/UI'
 
 async function main() {
@@ -20,6 +21,11 @@ async function main() {
 	// Синхронизируем fullscreen с настройками
 	if (settings?.video?.fullscreen !== undefined) {
 		window.electronAPI.setFullscreen(settings.video.fullscreen)
+	}
+
+	// Применяем сохранённый FPS-лимит к рендер-петлям (HexCanvas, IsoCanvas)
+	if (settings?.video?.fpsLimit) {
+		setFpsLimit(settings.video.fpsLimit)
 	}
 
 	const app = createApp(App)

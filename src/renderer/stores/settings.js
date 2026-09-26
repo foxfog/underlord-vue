@@ -39,7 +39,8 @@ export function initSettingsStore(settings) {
 			video: {
 				...(settings?.video ?? {}),
 				fullscreen: settings?.video?.fullscreen ?? false,
-				resolution: settings?.video?.resolution ?? '1920x1080'
+				resolution: settings?.video?.resolution ?? '1920x1080',
+				fpsLimit: settings?.video?.fpsLimit ?? 0
 			},
 			currentMap: settings?.game?.currentMap ?? 'default'
 		}),
@@ -102,6 +103,10 @@ export function initSettingsStore(settings) {
 
 			setResolution(res) {
 				this.video.resolution = res
+			},
+
+			setFpsLimit(fps) {
+				this.video.fpsLimit = Number(fps) || 0
 			},
 
 			setCurrentMap(mapName) {

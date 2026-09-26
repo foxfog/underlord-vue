@@ -62,14 +62,7 @@
 			</div>
 
 			<div class="header-right">
-				<button
-					class="editor-btn"
-					:class="{ '__active': showBordersFilter, 'editor-btn-secondary': !showBordersFilter }"
-					@click="showBordersFilter = !showBordersFilter"
-					:title="showBordersFilter ? 'Скрыть границы государств' : 'Показать границы государств'"
-				>
-					<span>🏳️ Границы: {{ showBordersFilter ? 'ВКЛ' : 'ВЫКЛ' }}</span>
-				</button>
+
 				<button
 					class="editor-btn editor-btn-save"
 					:class="{ '__dirty': isDirty }"
@@ -730,6 +723,7 @@
 					:show-borders="showBordersFilter"
 					:factions-map="factionsList"
 					@pitch-change="p => mapPitch = p"
+					@update:show-borders="val => showBordersFilter = val"
 					@hex-click="onHexClick"
 					@edge-click="onEdgeClick"
 				/>

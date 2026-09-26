@@ -9,7 +9,7 @@
 		@contextmenu.prevent="onContextMenu"
 	>
 		<canvas ref="canvasRef" class="hex-canvas-element"></canvas>
- 
+
 		<!-- HTML Div Settlement Name Badges Layer (Scale-independent, Auto-fading, Anti-overlap) -->
 		<div class="hex-settlements-layer">
 			<div
@@ -17,37 +17,51 @@
 				:key="badge.id"
 				class="hex-settlement-badge"
 				:class="{
-					'__discovered': badge.isDiscovered,
-					'__undiscovered': !badge.isDiscovered,
-					'__selected': badge.isSelected,
-					'__hovered': badge.isHovered,
-					'__current': badge.isCurrent
+					__discovered: badge.isDiscovered,
+					__undiscovered: !badge.isDiscovered,
+					__selected: badge.isSelected,
+					__hovered: badge.isHovered,
+					__current: badge.isCurrent
 				}"
 				:style="{
 					left: badge.xPercent + '%',
 					top: badge.yPercent + '%',
 					opacity: badge.opacity,
-					borderColor: badge.isSelected ? '#38bdf8' : (badge.isCurrent ? '#38bdf8' : (badge.isDiscovered ? badge.color : undefined))
+					borderColor: badge.isSelected
+						? '#38bdf8'
+						: badge.isCurrent
+							? '#38bdf8'
+							: badge.isDiscovered
+								? badge.color
+								: undefined
 				}"
 				@click.stop="onSettlementBadgeClick(badge)"
 				@pointerenter="onSettlementBadgePointerEnter(badge)"
 				@pointerleave="onSettlementBadgePointerLeave"
 			>
-				<span v-if="badge.isCurrent" class="badge-current-dot" title="Текущее местоположение"></span>
+				<span
+					v-if="badge.isCurrent"
+					class="badge-current-dot"
+					title="Текущее местоположение"
+				></span>
 				<span class="badge-icon">{{ badge.icon }}</span>
 				<span class="badge-name">{{ badge.displayName }}</span>
-				<span v-if="badge.hasLocalMap" class="badge-pin" title="Есть локальная карта">📍</span>
+				<span v-if="badge.hasLocalMap" class="badge-pin" title="Есть локальная карта"
+					>📍</span
+				>
 			</div>
 		</div>
 
 		<!-- Zoom / Center Controls Overlay -->
-		<div class="hex-canvas-overlay-controls">
+		<div class="hex-canvas-overlay-controls" @pointerdown.stop @click.stop>
 			<button class="hex-nav-btn" title="Приблизить" @click="zoomIn">➕</button>
 			<button class="hex-nav-btn" title="Отдалить" @click="zoomOut">➖</button>
-			<button class="hex-nav-btn" title="Сбросить камеру и центрировать" @click="resetCamera">🎯</button>
+			<button class="hex-nav-btn" title="Сбросить камеру и центрировать" @click="resetCamera">
+				🎯
+			</button>
 			<button
 				class="hex-nav-btn"
-				:class="{ '__active': localShowBorders }"
+				:class="{ __active: localShowBorders }"
 				:title="localShowBorders ? 'Скрыть границы государств' : 'Показать границы государств'"
 				@click="toggleBorders"
 			>
@@ -65,7 +79,11 @@
 			<span v-if="hoveredHexInfo.settlement" class="info-settlement">
 				🏰 {{ hoveredHexInfo.settlement.name }}
 			</span>
-			<span v-if="hoveredHexInfo.factionInfo" class="info-faction" :style="{ color: hoveredHexInfo.factionInfo.borderColor }">
+			<span
+				v-if="hoveredHexInfo.factionInfo"
+				class="info-faction"
+				:style="{ color: hoveredHexInfo.factionInfo.borderColor }"
+			>
 				{{ hoveredHexInfo.factionInfo.icon }} {{ hoveredHexInfo.factionInfo.name }}
 			</span>
 		</div>
@@ -79,11 +97,26 @@ import {
 	getClosestEdgeToPoint,
 	hexToWorldGroundCenter,
 	HexPerspectiveCamera,
-	calculateDynamicPitch,
+	calculateDynamicPitch
+} from '@/utils/hexmap/hexCoords.js'
+import {
 	DEFAULT_HEX_RADIUS,
 	DEFAULT_HEX_MIN_ZOOM,
-	DEFAULT_HEX_MAX_ZOOM
-} from '@/utils/hexmap/hexCoords.js'
+	DEFAULT_HEX_MAX_ZOOM,
+	DEFAULT_HEX_INITIAL_PITCH,
+	DEFAULT_PIXEL_SCALE,
+	HEX_ZOOM_WHEEL_STEP,
+	HEX_ZOOM_BTN_STEP_IN,
+	HEX_ZOOM_BTN_STEP_OUT,
+	BADGE_AUTO_FADE_MIN_SCALE,
+	BADGE_AUTO_FADE_MAX_SCALE,
+	BADGE_COLLISION_DISTANCE_X,
+	BADGE_COLLISION_DISTANCE_Y,
+	ANIM_FRAME_INTERVAL_MS,
+	FRAME_BUDGET_MS,
+	FPS_LIMIT_INTERVAL_MS,
+	shouldTriggerHexAnimTick
+} from '@/utils/hexmap/hexConfig.js'
 import {
 	BIOMES,
 	SETTLEMENT_TYPES,
@@ -139,7 +172,7 @@ const props = defineProps({
 	},
 	pitch: {
 		type: Number,
-		default: 45
+		default: DEFAULT_HEX_INITIAL_PITCH
 	},
 	showBorders: {
 		type: Boolean,
@@ -151,7 +184,7 @@ const props = defineProps({
 	},
 	pixelScale: {
 		type: Number,
-		default: 1
+		default: DEFAULT_PIXEL_SCALE
 	}
 })
 
@@ -172,10 +205,13 @@ const canvasRef = ref(null)
 const canvasWidth = ref(960)
 const canvasHeight = ref(540)
 
-watch(() => props.pixelScale, () => {
-	resizeCanvas()
-	markDirty()
-})
+watch(
+	() => props.pixelScale,
+	() => {
+		resizeCanvas()
+		markDirty()
+	}
+)
 
 // Mark dirty on any external data change that affects rendering
 watch(() => props.mapData, markDirty, { deep: false })
@@ -184,13 +220,15 @@ watch(() => props.factionsMap, markDirty)
 watch(() => props.discoveredLocations, markDirty)
 watch(() => props.activeTool, markDirty)
 
-
 // Borders State
 const localShowBorders = ref(props.showBorders)
-watch(() => props.showBorders, (val) => {
-	localShowBorders.value = val
-	markDirty()
-})
+watch(
+	() => props.showBorders,
+	(val) => {
+		localShowBorders.value = val
+		markDirty()
+	}
+)
 
 function toggleBorders() {
 	localShowBorders.value = !localShowBorders.value
@@ -213,12 +251,15 @@ const isTilting = ref(false)
 const dragStart = { x: 0, y: 0, camX: 0, camY: 0, pitch: 48 }
 const hasMovedSignificantly = ref(false)
 
-watch(() => props.pitch, (newP) => {
-	if (newP !== undefined && newP !== null && Math.abs(newP - pitch.value) > 1) {
-		pitch.value = Math.max(0, Math.min(60, newP))
-		markDirty()
+watch(
+	() => props.pitch,
+	(newP) => {
+		if (newP !== undefined && newP !== null && Math.abs(newP - pitch.value) > 1) {
+			pitch.value = Math.max(0, Math.min(60, newP))
+			markDirty()
+		}
 	}
-})
+)
 
 // Hover State
 const hoveredHex = ref(null)
@@ -230,19 +271,24 @@ const animStartTime = performance.now()
 
 // ── Dirty-flag render throttling ─────────────────────────────────────────────
 // renderDirty=true → перерисовать в следующем кадре (пан/зум/ховер/resize/данные)
-// Анимация воды/рек throttled до ~30fps (каждые 33мс) чтобы не жечь GPU каждые 16мс
+// Анимация воды/рек throttled до ANIM_FRAME_INTERVAL_MS (~30fps)
 let renderDirty = true
-const ANIM_FRAME_INTERVAL_MS = 33 // ~30fps для водной анимации
 let lastAnimRenderTime = 0
+let lastFpsLimitTime = 0
+let lastCameraMoveTime = 0
+const CAMERA_MOVE_HOLD_MS = 120
 
 // ── Frame budget guard ────────────────────────────────────────────────────────
 // Если предыдущий рендер занял > FRAME_BUDGET_MS, следующий animTick пропускается.
-// Это убирает [Violation] 'requestAnimationFrame' handler took Nms при LOD 0.
-const FRAME_BUDGET_MS = 14 // ~85% от 16мс бюджета (оставляем запас на composite)
 let lastRenderDurationMs = 0
 
 function markDirty() {
 	renderDirty = true
+}
+
+function markCameraMove() {
+	lastCameraMoveTime = performance.now()
+	markDirty()
 }
 
 // Discovered settlements set
@@ -286,7 +332,7 @@ const hoveredHexInfo = computed(() => {
 // Pre-filtered settlement cells list (cached, only recomputed when cells data changes)
 const settlementCells = computed(() => {
 	if (!props.mapData?.cells) return []
-	return Object.values(props.mapData.cells).filter(cell => cell?.settlement)
+	return Object.values(props.mapData.cells).filter((cell) => cell?.settlement)
 })
 
 // Scale-independent HTML div settlement badges (auto-fading on zoom out, anti-overlap)
@@ -295,7 +341,7 @@ const visibleSettlementBadges = computed(() => {
 		return []
 	}
 
-	const scale = Math.max(1, props.pixelScale || 2)
+	const scale = Math.max(1, props.pixelScale || DEFAULT_PIXEL_SCALE)
 	const radius = props.mapData.hexRadius || DEFAULT_HEX_RADIUS
 	const camera = new HexPerspectiveCamera({
 		viewportWidth: canvasWidth.value,
@@ -345,14 +391,21 @@ const visibleSettlementBadges = computed(() => {
 		// p.scale takes into account both perspective distance (distZ) and camera zoom!
 		const sc = p.scale * scale
 		// If strongly zoomed out or very far back in perspective:
-		if (sc < 0.52) {
+		if (sc < BADGE_AUTO_FADE_MIN_SCALE) {
 			continue
 		}
 
-		// Smooth opacity transition between 0.52 and 0.72
+		// Smooth opacity transition between BADGE_AUTO_FADE_MIN_SCALE and BADGE_AUTO_FADE_MAX_SCALE
 		let opacity = 1.0
-		if (sc < 0.72) {
-			opacity = Math.max(0, Math.min(1, (sc - 0.52) / (0.72 - 0.52)))
+		if (sc < BADGE_AUTO_FADE_MAX_SCALE) {
+			opacity = Math.max(
+				0,
+				Math.min(
+					1,
+					(sc - BADGE_AUTO_FADE_MIN_SCALE) /
+						(BADGE_AUTO_FADE_MAX_SCALE - BADGE_AUTO_FADE_MIN_SCALE)
+				)
+			)
 		}
 
 		const typeDef = SETTLEMENT_TYPES[settlement.type] || SETTLEMENT_TYPES.village
@@ -371,8 +424,7 @@ const visibleSettlementBadges = computed(() => {
 			settlement.id === 'carne_village' &&
 			(curLoc.startsWith('carne') || curLoc === 'carne_village')
 		const isCurrent = Boolean(
-			curLoc &&
-			(curLoc === settlement.id || curLoc === settlement.sceneId || isCarneActive)
+			curLoc && (curLoc === settlement.id || curLoc === settlement.sceneId || isCarneActive)
 		)
 
 		// Importance score for anti-collision sorting
@@ -397,7 +449,11 @@ const visibleSettlementBadges = computed(() => {
 			row: cell.row,
 			cell,
 			settlement,
-			displayName: isDiscovered ? (settlement.name || typeDef.name) : (props.readOnly ? '???' : (settlement.name || typeDef.name)),
+			displayName: isDiscovered
+				? settlement.name || typeDef.name
+				: props.readOnly
+					? '???'
+					: settlement.name || typeDef.name,
 			icon: typeDef.icon || '🏰',
 			color: typeDef.color || '#f6c445',
 			hasLocalMap: Boolean(settlement.hasLocalMap),
@@ -424,8 +480,8 @@ const visibleSettlementBadges = computed(() => {
 		for (const placed of accepted) {
 			const dx = Math.abs(cand.screenX - placed.screenX)
 			const dy = Math.abs(cand.screenY - placed.screenY)
-			// If two badges would overlap horizontally (< 72px) and vertically (< 26px)
-			if (dx < 72 && dy < 26) {
+			// If two badges would overlap horizontally (< BADGE_COLLISION_DISTANCE_X) and vertically (< BADGE_COLLISION_DISTANCE_Y)
+			if (dx < BADGE_COLLISION_DISTANCE_X && dy < BADGE_COLLISION_DISTANCE_Y) {
 				collides = true
 				break
 			}
@@ -476,20 +532,22 @@ function clientToWorldCoords(clientX, clientY) {
 	const rect = canvas.getBoundingClientRect()
 	if (rect.width === 0 || rect.height === 0) return null
 
-	const scale = Math.max(1, props.pixelScale || 2)
-
 	const scaleX = canvas.width / rect.width
 	const scaleY = canvas.height / rect.height
 
 	const mouseCanvasX = (clientX - rect.left) * scaleX
 	const mouseCanvasY = (clientY - rect.top) * scaleY
 
+	// Видимый холст canvasRef отображает картинку с зумом zoom.value,
+	// растянутую GPU из offscreen-буфера на весь размер canvas.width/height.
+	// Поэтому луч из экранных координат мыши unproject-ится в координатах
+	// видимого canvas с полным зумом zoom.value (без деления на pixelScale).
 	const camera = new HexPerspectiveCamera({
 		viewportWidth: canvas.width,
 		viewportHeight: canvas.height,
 		cameraX: cameraX.value,
 		cameraY: cameraY.value,
-		zoom: zoom.value / scale,
+		zoom: zoom.value,
 		pitch: pitch.value
 	})
 
@@ -503,6 +561,7 @@ function onPointerDown(e) {
 		hasMovedSignificantly.value = false
 		dragStart.y = e.clientY
 		dragStart.pitch = pitch.value
+		markCameraMove()
 		containerRef.value?.setPointerCapture?.(e.pointerId)
 		return
 	}
@@ -514,6 +573,7 @@ function onPointerDown(e) {
 		dragStart.y = e.clientY
 		dragStart.camX = cameraX.value
 		dragStart.camY = cameraY.value
+		markCameraMove()
 		containerRef.value?.setPointerCapture?.(e.pointerId)
 	} else if (e.button === 0) {
 		isDragging.value = true
@@ -522,6 +582,7 @@ function onPointerDown(e) {
 		dragStart.y = e.clientY
 		dragStart.camX = cameraX.value
 		dragStart.camY = cameraY.value
+		markCameraMove()
 		containerRef.value?.setPointerCapture?.(e.pointerId)
 	}
 }
@@ -536,7 +597,7 @@ function onPointerMove(e) {
 		pitch.value = newPitch
 		emit('pitch-change', pitch.value)
 		emit('update:pitch', pitch.value)
-		markDirty()
+		markCameraMove()
 		return
 	}
 
@@ -549,7 +610,7 @@ function onPointerMove(e) {
 			const cosT = Math.max(0.2, Math.cos(theta))
 			cameraX.value = dragStart.camX - dx / zoom.value
 			cameraY.value = dragStart.camY - dy / (zoom.value * cosT)
-			markDirty()
+			markCameraMove()
 		}
 		// While actively dragging/panning the map, suppress raycast hover and DOM updates
 		hoveredHex.value = null
@@ -570,9 +631,9 @@ function onPointerMove(e) {
 
 	// Check bounds
 	const minCol = props.mapData.bounds?.minCol ?? 0
-	const maxCol = props.mapData.bounds?.maxCol ?? ((props.mapData.cols || 20) - 1)
+	const maxCol = props.mapData.bounds?.maxCol ?? (props.mapData.cols || 20) - 1
 	const minRow = props.mapData.bounds?.minRow ?? 0
-	const maxRow = props.mapData.bounds?.maxRow ?? ((props.mapData.rows || 15) - 1)
+	const maxRow = props.mapData.bounds?.maxRow ?? (props.mapData.rows || 15) - 1
 
 	if (hex.col >= minCol && hex.col <= maxCol && hex.row >= minRow && hex.row <= maxRow) {
 		const prevCol = hoveredHex.value?.col
@@ -580,7 +641,14 @@ function onPointerMove(e) {
 		hoveredHex.value = hex
 
 		if (props.activeTool === 'river') {
-			const edgeInfo = getClosestEdgeToPoint(ground.x, ground.y, hex.col, hex.row, radius, 1.0)
+			const edgeInfo = getClosestEdgeToPoint(
+				ground.x,
+				ground.y,
+				hex.col,
+				hex.row,
+				radius,
+				1.0
+			)
 			hoveredEdge.value = edgeInfo.edge
 		} else {
 			hoveredEdge.value = null
@@ -678,12 +746,13 @@ function onWheel(e) {
 		pitch.value = newPitch
 		emit('pitch-change', pitch.value)
 		emit('update:pitch', pitch.value)
-		markDirty()
+		markCameraMove()
 		return
 	}
 
-	const zoomFactor = e.deltaY < 0 ? 1.15 : 0.85
-	applyZoom(zoom.value * zoomFactor)
+	const zoomStep = e.deltaY < 0 ? HEX_ZOOM_WHEEL_STEP : -HEX_ZOOM_WHEEL_STEP
+	applyZoom(zoom.value + zoomStep)
+	markCameraMove()
 }
 
 function onContextMenu(e) {
@@ -703,20 +772,22 @@ function onContextMenu(e) {
 }
 
 function zoomIn() {
-	applyZoom(zoom.value * 1.25)
+	applyZoom(zoom.value + HEX_ZOOM_BTN_STEP_IN)
+	markCameraMove()
 }
 
 function zoomOut() {
-	applyZoom(zoom.value * 0.8)
+	applyZoom(zoom.value - HEX_ZOOM_BTN_STEP_OUT)
+	markCameraMove()
 }
 
 function resetCamera() {
 	if (!canvasRef.value || !props.mapData) return
 	const radius = props.mapData.hexRadius || DEFAULT_HEX_RADIUS
 	const minCol = props.mapData.bounds?.minCol ?? 0
-	const maxCol = props.mapData.bounds?.maxCol ?? ((props.mapData.cols || 20) - 1)
+	const maxCol = props.mapData.bounds?.maxCol ?? (props.mapData.cols || 20) - 1
 	const minRow = props.mapData.bounds?.minRow ?? 0
-	const maxRow = props.mapData.bounds?.maxRow ?? ((props.mapData.rows || 15) - 1)
+	const maxRow = props.mapData.bounds?.maxRow ?? (props.mapData.rows || 15) - 1
 
 	const centerGround = hexToWorldGroundCenter(
 		Math.floor((minCol + maxCol) / 2),
@@ -757,7 +828,7 @@ function resizeCanvas() {
 	const targetH = Math.round(rect.height)
 
 	if (targetW > 0 && targetH > 0) {
-		const scale = Math.max(1, props.pixelScale || 2)
+		const scale = Math.max(1, props.pixelScale || DEFAULT_PIXEL_SCALE)
 		const internalW = Math.max(1, Math.round(targetW / scale))
 		const internalH = Math.max(1, Math.round(targetH / scale))
 
@@ -776,13 +847,26 @@ function resizeCanvas() {
 }
 
 function renderLoop(currentTime) {
+	// ── FPS-лимит ─────────────────────────────────────────────────────────────
+	// Если лимит активен (> 0) и с прошлого рендера ещё не прошёл нужный интервал —
+	// пропускаем кадр и reschedule без отрисовки.
+	if (FPS_LIMIT_INTERVAL_MS > 0 && currentTime - lastFpsLimitTime < FPS_LIMIT_INTERVAL_MS) {
+		animationFrameId = requestAnimationFrame(renderLoop)
+		return
+	}
+
 	// ── Dirty-flag check ──────────────────────────────────────────────────────
 	// Animated elements (rivers, water shimmer) throttled to ~30fps.
 	// Everything else renders ONLY when state changed (dirty).
-	const timeSinceAnimRender = currentTime - lastAnimRenderTime
-	// Frame budget guard: если предыдущий рендер тяжёлый — пропускаем animTick
-	const prevFrameHeavy = lastRenderDurationMs > FRAME_BUDGET_MS
-	const animTick = !prevFrameHeavy && timeSinceAnimRender >= ANIM_FRAME_INTERVAL_MS
+	const isCameraMoving = currentTime - lastCameraMoveTime < CAMERA_MOVE_HOLD_MS
+	const animTick = shouldTriggerHexAnimTick({
+		currentTime,
+		lastAnimRenderTime,
+		lastRenderDurationMs,
+		isCameraMoving,
+		animFrameIntervalMs: ANIM_FRAME_INTERVAL_MS,
+		frameBudgetMs: FRAME_BUDGET_MS
+	})
 
 	if (!renderDirty && !animTick) {
 		// Nothing changed — skip this frame entirely, reschedule
@@ -804,8 +888,9 @@ function renderLoop(currentTime) {
 	renderDirty = false
 	if (animTick) lastAnimRenderTime = currentTime
 
-	const scale = Math.max(1, props.pixelScale || 2)
+	const scale = Math.max(1, props.pixelScale || DEFAULT_PIXEL_SCALE)
 	const elapsedSec = (currentTime - animStartTime) / 1000
+	const animTime = isCameraMoving ? 0 : elapsedSec
 
 	ensureOffscreen(canvasWidth.value, canvasHeight.value)
 	if (!offscreenCtx) {
@@ -836,7 +921,7 @@ function renderLoop(currentTime) {
 		drawCanvasBadges: false,
 		showBorders: localShowBorders.value,
 		factionsMap: props.factionsMap,
-		animTime: elapsedSec
+		animTime
 	})
 
 	// 3. Blit offscreen buffer to visible canvas with STRICT nearest-neighbor (no blur/smoothing)
@@ -846,12 +931,20 @@ function renderLoop(currentTime) {
 	}
 	mainCtx.drawImage(
 		offscreenCanvas,
-		0, 0, offscreenCanvas.width, offscreenCanvas.height,
-		0, 0, canvasRef.value.width, canvasRef.value.height
+		0,
+		0,
+		offscreenCanvas.width,
+		offscreenCanvas.height,
+		0,
+		0,
+		canvasRef.value.width,
+		canvasRef.value.height
 	)
 
 	// Сохраняем время рендера для frame budget guard следующего кадра
 	lastRenderDurationMs = performance.now() - _t0
+	// Сохраняем время для FPS-лимитера
+	lastFpsLimitTime = currentTime
 
 	animationFrameId = requestAnimationFrame(renderLoop)
 }
@@ -1035,7 +1128,11 @@ defineExpose({
 	backdrop-filter: blur(0.2em);
 	cursor: pointer;
 	user-select: none;
-	transition: opacity 0.2s ease, transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+	transition:
+		opacity 0.2s ease,
+		transform 0.15s ease,
+		border-color 0.15s ease,
+		box-shadow 0.15s ease;
 }
 
 .hex-settlement-badge:hover,
@@ -1075,17 +1172,24 @@ defineExpose({
 .hex-settlement-badge.__current {
 	border-color: #38bdf8;
 	background: rgba(12, 74, 110, 0.94);
-	box-shadow: 0 0 0.8em rgba(56, 189, 248, 0.7), 0 0.2em 0.5em rgba(0, 0, 0, 0.7);
+	box-shadow:
+		0 0 0.8em rgba(56, 189, 248, 0.7),
+		0 0.2em 0.5em rgba(0, 0, 0, 0.7);
 	animation: badge-current-pulse 2s infinite ease-in-out;
 	z-index: 15;
 }
 
 @keyframes badge-current-pulse {
-	0%, 100% {
-		box-shadow: 0 0 0.5em rgba(56, 189, 248, 0.6), 0 0.2em 0.5em rgba(0, 0, 0, 0.7);
+	0%,
+	100% {
+		box-shadow:
+			0 0 0.5em rgba(56, 189, 248, 0.6),
+			0 0.2em 0.5em rgba(0, 0, 0, 0.7);
 	}
 	50% {
-		box-shadow: 0 0 1.2em rgba(56, 189, 248, 1), 0 0.2em 0.5em rgba(0, 0, 0, 0.7);
+		box-shadow:
+			0 0 1.2em rgba(56, 189, 248, 1),
+			0 0.2em 0.5em rgba(0, 0, 0, 0.7);
 	}
 }
 

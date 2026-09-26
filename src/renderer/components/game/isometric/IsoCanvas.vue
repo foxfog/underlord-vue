@@ -60,6 +60,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
+import { FPS_LIMIT_INTERVAL_MS } from '@/utils/hexmap/hexConfig.js'
 import {
 	gridToScreen,
 	getTilePolygon,
@@ -185,6 +186,7 @@ const hoveredInteractiveObject = ref(null)
 const hoveredDoorWall = ref(null)
 const tooltipPos = ref({ x: 0, y: 0 })
 let animationFrameId = null
+let lastFpsLimitTime = 0
 
 // Planned Movement Path & Object Context Menu (2-click movement)
 const plannedPath = ref([])
@@ -599,7 +601,16 @@ let renderScheduled = false
 function requestRender() {
 	if (renderScheduled) return
 	renderScheduled = true
-	animationFrameId = requestAnimationFrame(renderLoop)
+	animationFrameId = requestAnimationFrame((currentTime) => {
+		// ── FPS-лимит ───────────────────────────────────────────────────────
+		if (FPS_LIMIT_INTERVAL_MS > 0 && currentTime - lastFpsLimitTime < FPS_LIMIT_INTERVAL_MS) {
+			renderScheduled = false
+			requestRender()
+			return
+		}
+		lastFpsLimitTime = currentTime
+		renderLoop()
+	})
 }
 
 function renderLoop() {

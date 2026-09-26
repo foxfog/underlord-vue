@@ -44,39 +44,31 @@ import {
 	DEFAULT_HEX_MIN_ZOOM,
 	DEFAULT_HEX_MAX_ZOOM
 } from './hexCoords.js'
+import {
+	ENABLE_BIOME_TEXTURES,
+	setEnableBiomeTextures,
+	ENABLE_ORGANIC_EDGES,
+	setEnableOrganicEdges,
+	ENABLE_HEX_ANIMATIONS,
+	setEnableHexAnimations,
+	ANIM_DISABLE_ZOOM_FRACTION,
+	setAnimDisableZoomFraction,
+	HEX_LOD_SCREEN_RADIUS_ORGANIC,
+	HEX_LOD_SCREEN_RADIUS_STRATEGIC,
+	calculateLodLevel,
+	HEX_TEXTURE_CROP_PX,
+	HEX_TEXTURE_BLEED
+} from './hexConfig.js'
 
-// ── Biome Texture Cache ────────────────────────────────────────────────────────
-// Maps biome IDs to their texture image paths (256×256 tileable textures).
-// Only land biomes have textures; water biomes use animated shimmer instead.
-// Texture rendering toggle: disabled for maximum performance.
-export let ENABLE_BIOME_TEXTURES = true
-
-export function setEnableBiomeTextures(enabled) {
-	ENABLE_BIOME_TEXTURES = !!enabled
-}
-
-// Toggle for organic multi-bend curves vs strict hexagonal grid geometry.
-export let ENABLE_ORGANIC_EDGES = true
-
-export function setEnableOrganicEdges(enabled) {
-	ENABLE_ORGANIC_EDGES = !!enabled
-}
-
-// ── Animation zoom threshold ───────────────────────────────────────────────────
-// Доля диапазона отдаления, при превышении которой отключаются анимации воды и рек.
-// 0.0 = анимации всегда включены.
-// 1.0 = анимации только на максимальном приближении.
-// 0.75 (по умолчанию): анимации отключаются когда отдалились на 75% от максимума.
-//
-// Пример с DEFAULT_HEX_MIN_ZOOM=0.75 и DEFAULT_HEX_MAX_ZOOM=5:
-//   Порог = MIN + (1 - 0.75) * (MAX - MIN) = 0.75 + 0.25 * 4.25 ≈ 1.81
-//   При zoom < 1.81 — анимации выключены.
-//
-// Изменить: setAnimDisableZoomFraction(0.5) — порог 50% от отдаления.
-export let ANIM_DISABLE_ZOOM_FRACTION = 0.75
-
-export function setAnimDisableZoomFraction(fraction) {
-	ANIM_DISABLE_ZOOM_FRACTION = Math.max(0, Math.min(1, Number(fraction) || 0))
+export {
+	ENABLE_BIOME_TEXTURES,
+	setEnableBiomeTextures,
+	ENABLE_ORGANIC_EDGES,
+	setEnableOrganicEdges,
+	ENABLE_HEX_ANIMATIONS,
+	setEnableHexAnimations,
+	ANIM_DISABLE_ZOOM_FRACTION,
+	setAnimDisableZoomFraction
 }
 
 const BIOME_TEXTURE_PATH = {
@@ -282,26 +274,20 @@ export function renderHexMap(ctx, mapData, options = {}) {
 	// Level-Of-Detail (LOD) & Far-Plane Culling Architecture:
 	// screenRadius is the projected radius of a hex cell on screen in pixels
 	const screenRadius = radius * camera.zoom
-	let lodLevel = 0
-	if (screenRadius < 12) {
-		lodLevel = 2 // Strategic Overview (Civilization/Total War style: solid biomes, no cell borders, bold frontiers/rivers)
-	} else if (screenRadius < 20) {
-		lodLevel = 1 // Medium Distance (straight hexes, batched patterns, fading borders)
-	} else {
-		lodLevel = 0 // Close-up (Full fidelity: organic Bezier curves, per-cell random UV textures, water shimmer)
-	}
+	let lodLevel = calculateLodLevel(screenRadius)
 
 	// At LOD 1 and 2, force straight hex geometry for a 10x-50x speedup
 	const useOrganic = lodLevel === 0 && mapOrganic
 
 	// ── Animation zoom threshold ───────────────────────────────────────────────
-	// Если камера отдалена дальше порога — замораживаем анимации воды и рек (animTime → 0).
+	// Если камера отдалена дальше порога или анимации выключены — замораживаем анимации воды и рек (animTime → 0).
 	// Порог вычисляется из ANIM_DISABLE_ZOOM_FRACTION:
 	//   fraction=0.75 → порог ≈ 1.81 при min=0.75, max=5
-	//   zoom < порога → effectiveAnimTime = 0 (анимации стоп)
+	//   zoom < порога или !ENABLE_HEX_ANIMATIONS → effectiveAnimTime = 0 (анимации стоп)
 	//   zoom ≥ порога → effectiveAnimTime = animTime (анимации идут)
 	const _animZoomThreshold = DEFAULT_HEX_MIN_ZOOM + (1 - ANIM_DISABLE_ZOOM_FRACTION) * (DEFAULT_HEX_MAX_ZOOM - DEFAULT_HEX_MIN_ZOOM)
-	const effectiveAnimTime = (ANIM_DISABLE_ZOOM_FRACTION <= 0 || zoom >= _animZoomThreshold) ? animTime : 0
+	const animationsActive = ENABLE_HEX_ANIMATIONS && (ANIM_DISABLE_ZOOM_FRACTION <= 0 || zoom >= _animZoomThreshold)
+	const effectiveAnimTime = animationsActive ? animTime : 0
 
 	// 0.1. Atmospheric horizon sky & mist at the top of the canvas
 	drawAtmosphere(ctx, camera)
@@ -462,7 +448,7 @@ function drawAtmosphere(ctx, camera) {
 function drawBaseCellsBatched(ctx, camera, mapData, radius, animTime, seed = 0, riverMap = null, options = {}) {
 	const useOrganic = options.organic !== undefined ? options.organic : (mapData?.organic !== undefined ? mapData.organic : ENABLE_ORGANIC_EDGES)
 	const screenRadius = options.screenRadius ?? (radius * camera.zoom)
-	const lodLevel = options.lodLevel !== undefined ? options.lodLevel : (screenRadius < 12 ? 2 : (screenRadius < 20 ? 1 : 0))
+	const lodLevel = options.lodLevel !== undefined ? options.lodLevel : calculateLodLevel(screenRadius)
 
 	let visibleCells = options.visibleCells
 	if (!visibleCells) {
@@ -670,10 +656,10 @@ function drawSingleCellRandomTexture(ctx, pc, tex, seed = 0) {
 	const boundH = maxY - minY
 	const sCx = (minX + maxX) / 2
 	const sCy = (minY + maxY) / 2
-	const BLEED = 1.25
+	const BLEED = HEX_TEXTURE_BLEED
 	const drawSize = Math.max(boundW, boundH) * BLEED
 
-	const CROP_PX = 128
+	const CROP_PX = HEX_TEXTURE_CROP_PX
 	const srcW = tex.naturalWidth || 256
 	const srcH = tex.naturalHeight || 256
 	const cropPx = Math.min(CROP_PX, srcW, srcH)
@@ -842,13 +828,13 @@ function drawHexCell(ctx, camera, cell, radius, animTime, seed = 0, riverMap = n
 
 			// Texture draw size in screen pixels: cover the bounding box plus a 25% bleed margin
 			// ensuring organic curves, multi-bend Bezier protrusions, and jitter never run out of texture.
-			const BLEED = 1.25
+			const BLEED = HEX_TEXTURE_BLEED
 			const drawSize = Math.max(boundW, boundH) * BLEED
 
 			// PIXELATED LOOK: sample only a small crop of the texture (CROP_PX×CROP_PX texels)
 			// and magnify it to fill the hex. With 2x canvas downscaling, 44 texels
 			// map ~1:1 to canvas pixels, creating perfectly unified 2×2 retro screen pixels.
-			const CROP_PX = 128
+			const CROP_PX = HEX_TEXTURE_CROP_PX
 			const srcW = tex.naturalWidth || 256
 			const srcH = tex.naturalHeight || 256
 			const cropPx = Math.min(CROP_PX, srcW, srcH)
@@ -951,7 +937,7 @@ export function drawPoliticalBorders(ctx, camera, mapData, radius, factionsMap =
 
 	const cells = mapData.cells
 	const screenRadius = options.screenRadius ?? (radius * camera.zoom)
-	const lodLevel = options.lodLevel !== undefined ? options.lodLevel : (screenRadius < 12 ? 2 : (screenRadius < 20 ? 1 : 0))
+	const lodLevel = options.lodLevel !== undefined ? options.lodLevel : calculateLodLevel(screenRadius)
 	const useOrganic = options.organic !== undefined ? options.organic : (mapData?.organic !== undefined ? mapData.organic : ENABLE_ORGANIC_EDGES)
 	const vB = options.vBounds
 
@@ -1736,7 +1722,7 @@ function drawRivers(ctx, camera, mapData, radius, animTime, options = {}) {
 
 	const useOrganic = options.organic !== undefined ? options.organic : (mapData?.organic !== undefined ? mapData.organic : ENABLE_ORGANIC_EDGES)
 	const screenRadius = options.screenRadius ?? (radius * camera.zoom)
-	const lodLevel = options.lodLevel !== undefined ? options.lodLevel : (screenRadius < 12 ? 2 : (screenRadius < 20 ? 1 : 0))
+	const lodLevel = options.lodLevel !== undefined ? options.lodLevel : calculateLodLevel(screenRadius)
 
 	if (!useOrganic) {
 		const preparedRivers = []

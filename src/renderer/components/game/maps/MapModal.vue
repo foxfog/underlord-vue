@@ -37,7 +37,7 @@
 					</button>
 				</div>
 
-				<div class="map-modal__controls">
+				<div v-if="activeLevel !== 'hex'" class="map-modal__controls">
 					<button
 						class="map-modal__zoom-btn"
 						@click="zoomOut"
@@ -62,11 +62,11 @@
 			<div
 				ref="containerRef"
 				class="map-modal__body"
-				@pointerdown="startDrag"
+				@pointerdown="activeLevel !== 'hex' ? startDrag($event) : null"
 				@wheel.passive="onWheel"
 				@dragstart.prevent
 				@selectstart.prevent
-				:class="{ _dragging: isDragging, _zoomable: isZoomed }"
+				:class="{ _dragging: isDragging, _zoomable: isZoomed, _hex_mode: activeLevel === 'hex' }"
 			>
 				<div ref="contentRef" class="map-modal__dynamic-map" :style="transformStyle">
 					<component

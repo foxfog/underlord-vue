@@ -32,12 +32,29 @@
 				/>
 			</div>
 		</div>
+		<div class="settings-item">
+			<div class="left">
+				<div class="settings-item-label">Ограничение FPS:</div>
+			</div>
+			<div class="right">
+				<UiSelect
+					v-model="store.video.fpsLimit"
+					:options="fpsLimitOptions"
+					valueKey="value"
+					labelKey="label"
+					placeholder="Выберите лимит..."
+					@change="onFpsLimitChange"
+					class="settings-select"
+				/>
+			</div>
+		</div>
 	</div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
 import { useSettingsStore } from '@/stores/settings'
+import { setFpsLimit } from '@/utils/hexmap/hexConfig.js'
 
 defineOptions({
 	name: 'SettingsVideo'
@@ -55,14 +72,21 @@ const screenModeOptions = [
 // Resolution options with descriptive labels
 const resolutionOptions = computed(() => {
 	return availableResolutions.map((res) => {
-		const [width, height] = res.split('x')
-
 		return {
 			value: res,
 			label: `${res}`
 		}
 	})
 })
+
+// FPS limit options (0 = без ограничения)
+const fpsLimitOptions = [
+	{ value: 0,   label: 'Без ограничения' },
+	{ value: 30,  label: '30 FPS' },
+	{ value: 60,  label: '60 FPS' },
+	{ value: 120, label: '120 FPS' },
+	{ value: 144, label: '144 FPS' }
+]
 
 const fullscreenMode = computed({
 	get: () => !!store.video.fullscreen,
@@ -83,5 +107,11 @@ function onResolutionChange() {
 	if (!store.video.fullscreen) {
 		window.electronAPI.setResolution(store.video.resolution)
 	}
+}
+
+function onFpsLimitChange() {
+	store.setFpsLimit(store.video.fpsLimit)
+	// Применяем глобально к рендер-петлям (HexCanvas, IsoCanvas)
+	setFpsLimit(store.video.fpsLimit)
 }
 </script>
