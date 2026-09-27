@@ -1,5 +1,119 @@
 {
-	"body": {
-		"image": "images/sprites/characters/enri/default.png"
-	}
+  "body": {
+    "image": "images/sprites/characters/enri/2d/pelvis.png"
+  },
+  "torso": {
+    "image": "images/sprites/characters/enri/2d/torso.png",
+    "parent": "body",
+    "offset": {
+      "x": -1.33,
+      "y": -5.41
+    }
+  },
+  "neck": {
+    "image": "images/sprites/characters/enri/2d/neck.png",
+    "parent": "torso",
+    "offset": {
+      "x": 17.58,
+      "y": -79.56
+    }
+  },
+  "head": {
+    "image": "images/sprites/characters/enri/2d/head.png",
+    "parent": "neck",
+    "offset": {
+      "x": -88.43,
+      "y": -58.18
+    }
+  },
+  "arm_left": {
+    "image": "images/sprites/characters/enri/2d/arm_left.png",
+    "parent": "torso",
+    "offset": {
+      "x": 61.78,
+      "y": -61.72
+    }
+  },
+  "arm_left2": {
+    "image": "images/sprites/characters/enri/2d/arm_left2.png",
+    "parent": "arm_left",
+    "offset": {
+      "x": 13.94,
+      "y": 83.35
+    }
+  },
+  "arm_left3": {
+    "image": "images/sprites/characters/enri/2d/arm_left3.png",
+    "parent": "arm_left2",
+    "offset": {
+      "x": 47.5,
+      "y": 88.81
+    }
+  },
+  "arm_right": {
+    "image": "images/sprites/characters/enri/2d/arm_right.png",
+    "parent": "torso",
+    "zindex": -1,
+    "offset": {
+      "x": -29.37,
+      "y": -61.39
+    }
+  },
+  "arm_right2": {
+    "image": "images/sprites/characters/enri/2d/arm_right2.png",
+    "parent": "arm_right",
+    "offset": {
+      "x": -41.38,
+      "y": 80.75
+    }
+  },
+  "arm_right3": {
+    "image": "images/sprites/characters/enri/2d/arm_right3.png",
+    "parent": "arm_right2",
+    "offset": {
+      "x": -70.06,
+      "y": 86.59
+    }
+  },
+  "nose": {
+    "image": "images/sprites/characters/enri/2d/nose.png",
+    "parent": "head"
+  },
+  "beast": {
+    "image": "images/sprites/characters/enri/2d/beast.png",
+    "parent": "torso"
+  },
+  "eyebrows": {
+    "image": "images/sprites/characters/enri/2d/eyebrows/default.png",
+    "parent": "head"
+  },
+  "mouth": {
+    "image": "images/sprites/characters/enri/2d/mouth/smile.png",
+    "parent": "head"
+  },
+  "eyes": {
+    "image": "images/sprites/characters/enri/2d/eyes/default.png",
+    "parent": "head",
+    "zindex": 1
+  },
+  "eyes-back": {
+    "image": "/images/sprites/characters/enri/2d/eyes/default-back.png",
+    "parent": "head"
+  },
+  "eyeball-left": {
+    "image": "images/sprites/characters/enri/2d/eyes/eyeball.png",
+    "parent": "eyes-back",
+    "offset": {
+      "x": 11.19,
+      "y": -33.04
+    }
+  },
+  "eyeball-right": {
+    "image": "images/sprites/characters/enri/2d/eyes/eyeball.png",
+    "parent": "eyes-back",
+    "offset": {
+      "x": -48.35,
+      "y": -33.04
+    }
+  }
 }

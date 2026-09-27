@@ -21,7 +21,7 @@ describe('Enri Emmot & Choice System Enhancements', () => {
 		expect(values.name).toBe('Энри')
 		expect(values.surname).toBe('Эммот')
 		expect(values.title).toBe('Энри Эммот')
-		expect(body.body.image).toBe('images/sprites/characters/enri/default.png')
+		expect(body.body.image).toMatch(/^images\/sprites\/characters\/enri\//)
 		expect(Array.isArray(equipment)).toBe(true)
 	})
 

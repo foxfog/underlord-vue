@@ -127,6 +127,7 @@ export function useCharacterRigStudio() {
 	const partRotations = reactive({})
 	const partTranslations = reactive({})
 	const partScales = reactive({})
+	const partOpacities = reactive({})
 	const partCustomStyles = reactive({})
 	const animatedSprites = reactive({})
 	const partPivots = reactive({})
@@ -757,6 +758,7 @@ export function useCharacterRigStudio() {
 					image: part.image || '',
 					parent: part.parent || null,
 					zindex: part.zindex ?? part['z-index'] ?? 0,
+					opacity: part.opacity !== undefined ? Number(part.opacity) : 1,
 					offset: {
 						x: part.offset?.x ?? 0,
 						y: part.offset?.y ?? 0
@@ -788,6 +790,7 @@ export function useCharacterRigStudio() {
 					image: part.image || '',
 					parent: part.parent || null,
 					zindex: part.zindex ?? part['z-index'] ?? 0,
+					opacity: part.opacity !== undefined ? Number(part.opacity) : 1,
 					offset: {
 						x: part.offset?.x ?? 0,
 						y: part.offset?.y ?? 0
@@ -1085,6 +1088,9 @@ export function useCharacterRigStudio() {
 		for (const k in partScales) {
 			partScales[k] = 1
 		}
+		for (const k in partOpacities) {
+			partOpacities[k] = 1
+		}
 		for (const k in partCustomStyles) {
 			delete partCustomStyles[k]
 		}
@@ -1315,6 +1321,7 @@ export function useCharacterRigStudio() {
 				translateX: kf.transform?.translateX ?? kf.transform?.x ?? 0,
 				translateY: kf.transform?.translateY ?? kf.transform?.y ?? 0,
 				scale: kf.transform?.scale ?? 1,
+				opacity: kf.transform?.opacity !== undefined ? Number(kf.transform.opacity) : 1,
 				sprite: kf.sprite || null,
 				customStyles: parseCustomCss(kf.customCss)
 			}
@@ -1327,6 +1334,7 @@ export function useCharacterRigStudio() {
 				translateX: last.transform?.translateX ?? last.transform?.x ?? 0,
 				translateY: last.transform?.translateY ?? last.transform?.y ?? 0,
 				scale: last.transform?.scale ?? 1,
+				opacity: last.transform?.opacity !== undefined ? Number(last.transform.opacity) : 1,
 				sprite: last.sprite || null,
 				customStyles: parseCustomCss(last.customCss)
 			}
@@ -1358,6 +1366,8 @@ export function useCharacterRigStudio() {
 		const yB = kfB.transform?.translateY ?? kfB.transform?.y ?? 0
 		const sA = kfA.transform?.scale ?? 1
 		const sB = kfB.transform?.scale ?? 1
+		const opA = kfA.transform?.opacity !== undefined ? Number(kfA.transform.opacity) : 1
+		const opB = kfB.transform?.opacity !== undefined ? Number(kfB.transform.opacity) : 1
 
 		let activeSprite = null
 		for (const kf of sorted) {
@@ -1375,6 +1385,7 @@ export function useCharacterRigStudio() {
 			translateX: Number(lerp(xA, xB, easedT).toFixed(2)),
 			translateY: Number(lerp(yA, yB, easedT).toFixed(2)),
 			scale: Number(lerp(sA, sB, easedT).toFixed(3)),
+			opacity: Number(lerp(opA, opB, easedT).toFixed(2)),
 			sprite: activeSprite,
 			customStyles: parseCustomCss(kfA.customCss)
 		}
@@ -1460,6 +1471,7 @@ export function useCharacterRigStudio() {
 								}
 							}
 							if (vals.scale !== undefined) partScales[part] = Number(vals.scale)
+							if (vals.opacity !== undefined) partOpacities[part] = Number(vals.opacity)
 							if (vals.sprite !== undefined) {
 								if (vals.sprite) animatedSprites[part] = vals.sprite
 								else delete animatedSprites[part]
@@ -1515,6 +1527,9 @@ export function useCharacterRigStudio() {
 				if (state.scale !== undefined) {
 					partScales[part] = state.scale
 				}
+				if (state.opacity !== undefined) {
+					partOpacities[part] = state.opacity
+				}
 				if (state.sprite !== undefined) {
 					if (state.sprite) {
 						animatedSprites[part] = state.sprite
@@ -1563,6 +1578,9 @@ export function useCharacterRigStudio() {
 		}
 		for (const k in partScales) {
 			partScales[k] = 1
+		}
+		for (const k in partOpacities) {
+			partOpacities[k] = 1
 		}
 		for (const k in partCustomStyles) {
 			delete partCustomStyles[k]
@@ -1703,6 +1721,7 @@ export function useCharacterRigStudio() {
 		const rot = partRotations[partName] || 0
 		const trans = partTranslations[partName] || { x: 0, y: 0 }
 		const scale = partScales[partName] ?? 1
+		const opacity = partOpacities[partName]
 		const transformParts = []
 		if (rot) {
 			transformParts.push(`rotate(${Math.round(rot)}deg)`)
@@ -1713,14 +1732,19 @@ export function useCharacterRigStudio() {
 		if (scale !== undefined && scale !== 1) {
 			transformParts.push(`scale(${scale})`)
 		}
+		const styles = {
+			transform: transformParts.length > 0 ? transformParts.join(' ') : 'none',
+			transition: 'transform 0.4s ease-in-out'
+		}
+		if (opacity !== undefined && opacity !== 1 && opacity !== null) {
+			styles.opacity = Number(Number(opacity).toFixed(2))
+			styles.transition = 'transform 0.4s ease-in-out, opacity 0.4s ease-in-out'
+		}
 		const step = {
 			type: 'part-animate',
 			character: selectedCharacterId.value,
 			part: partName,
-			styles: {
-				transform: transformParts.length > 0 ? transformParts.join(' ') : 'none',
-				transition: 'transform 0.4s ease-in-out'
-			},
+			styles,
 			duration: 0.4
 		}
 		const jsonString = JSON.stringify(step, null, 2)
@@ -1738,6 +1762,9 @@ export function useCharacterRigStudio() {
 			const item = { image: p.image }
 			if (p.parent) item.parent = p.parent
 			if (p.zindex !== 0 && p.zindex !== undefined) item.zindex = p.zindex
+			if (p.opacity !== undefined && p.opacity !== 1 && p.opacity !== null) {
+				item.opacity = Number(Number(p.opacity).toFixed(2))
+			}
 			if (p.offset && (p.offset.x !== 0 || p.offset.y !== 0)) {
 				item.offset = { x: Number(p.offset.x), y: Number(p.offset.y) }
 			}
@@ -1767,6 +1794,9 @@ export function useCharacterRigStudio() {
 			const item = { image: p.image }
 			if (p.parent) item.parent = p.parent
 			if (p.zindex !== 0 && p.zindex !== undefined) item.zindex = p.zindex
+			if (p.opacity !== undefined && p.opacity !== 1 && p.opacity !== null) {
+				item.opacity = Number(Number(p.opacity).toFixed(2))
+			}
 			if (name === 'body') {
 				if (rootOffset.x !== 0 || rootOffset.y !== 0) {
 					item.offset = { x: Number(rootOffset.x.toFixed(2)), y: Number(rootOffset.y.toFixed(2)) }
@@ -1867,6 +1897,7 @@ export function useCharacterRigStudio() {
 		partRotations,
 		partTranslations,
 		partScales,
+		partOpacities,
 		partCustomStyles,
 		animatedSprites,
 		partPivots,

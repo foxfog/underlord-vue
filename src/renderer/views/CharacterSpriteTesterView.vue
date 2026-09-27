@@ -345,6 +345,7 @@
 										:part-rotations="partRotations"
 										:part-translations="partTranslations"
 										:part-scales="partScales"
+										:part-opacities="partOpacities"
 										:part-custom-styles="partCustomStyles"
 										:animated-sprites="animatedSprites"
 										:eye-offset="eyeLinkedOffset"
@@ -486,6 +487,7 @@
 										:part-rotations="partRotations"
 										:part-translations="partTranslations"
 										:part-scales="partScales"
+										:part-opacities="partOpacities"
 										:part-custom-styles="partCustomStyles"
 										:animated-sprites="animatedSprites"
 										:eye-offset="eyeLinkedOffset"
@@ -810,13 +812,39 @@
 							</div>
 						</div>
 
+						<!-- Opacity (Степень прозрачности) -->
+						<div class="control-field">
+							<div class="field-label-row">
+								<label class="field-label">Степень прозрачности (Opacity):</label>
+								<span class="field-val">{{ Math.round((currentPart.opacity ?? 1) * 100) }}%</span>
+							</div>
+							<div class="field-range-row">
+								<input
+									v-model.number="currentPart.opacity"
+									type="range"
+									min="0"
+									max="1"
+									step="0.01"
+									class="studio-range"
+								/>
+								<input
+									v-model.number="currentPart.opacity"
+									type="number"
+									min="0"
+									max="1"
+									step="0.01"
+									class="studio-number-input"
+								/>
+							</div>
+						</div>
+
 						<!-- Offset X & Offset Y -->
 						<div class="control-field">
 							<div class="field-label-row">
 								<label class="field-label"
 									>Смещение по горизонтали (Offset X %):</label
 								>
-								<span class="field-val">{{ currentPart.offset.x }}%</span>
+								<span class="field-val">{{ Number(currentPart.offset.x || 0).toFixed(2) }}%</span>
 							</div>
 							<div class="field-range-row">
 								<input
@@ -824,13 +852,13 @@
 									type="range"
 									min="-100"
 									max="100"
-									step="0.5"
+									step="0.01"
 									class="studio-range"
 								/>
 								<input
 									v-model.number="currentPart.offset.x"
 									type="number"
-									step="0.5"
+									step="0.01"
 									class="studio-number-input"
 								/>
 							</div>
@@ -841,7 +869,7 @@
 								<label class="field-label"
 									>Смещение по вертикали (Offset Y %):</label
 								>
-								<span class="field-val">{{ currentPart.offset.y }}%</span>
+								<span class="field-val">{{ Number(currentPart.offset.y || 0).toFixed(2) }}%</span>
 							</div>
 							<div class="field-range-row">
 								<input
@@ -849,13 +877,13 @@
 									type="range"
 									min="-150"
 									max="150"
-									step="0.5"
+									step="0.01"
 									class="studio-range"
 								/>
 								<input
 									v-model.number="currentPart.offset.y"
 									type="number"
-									step="0.5"
+									step="0.01"
 									class="studio-number-input"
 								/>
 							</div>
@@ -867,7 +895,7 @@
 								<label class="field-label">Точка вращения (Pivot X / Y %):</label>
 								<div class="field-label-actions">
 									<span class="field-val"
-										>{{ currentPivot.x }}%, {{ currentPivot.y }}%</span
+										>{{ Number(currentPivot.x || 0).toFixed(2) }}%, {{ Number(currentPivot.y || 0).toFixed(2) }}%</span
 									>
 									<button
 										v-if="currentPivot.x !== 50 || currentPivot.y !== 50"
@@ -888,6 +916,7 @@
 										type="range"
 										min="0"
 										max="100"
+										step="0.01"
 										class="studio-range"
 									/>
 								</div>
@@ -898,6 +927,7 @@
 										type="range"
 										min="0"
 										max="100"
+										step="0.01"
 										class="studio-range"
 									/>
 								</div>
@@ -921,6 +951,7 @@
 									partRotations[selectedPartName] = 0;
 									if (partTranslations[selectedPartName]) { partTranslations[selectedPartName].x = 0; partTranslations[selectedPartName].y = 0; }
 									if (partScales[selectedPartName] !== undefined) partScales[selectedPartName] = 1;
+									if (partOpacities[selectedPartName] !== undefined) partOpacities[selectedPartName] = 1;
 								"
 							>
 								Сброс
@@ -957,7 +988,7 @@
 							<div class="field-label-row">
 								<label class="field-label">Смещение X (%):</label>
 								<span class="field-val"
-									>{{ ((partTranslations[selectedPartName] && partTranslations[selectedPartName].x) || 0).toFixed(1) }}%</span
+									>{{ ((partTranslations[selectedPartName] && partTranslations[selectedPartName].x) || 0).toFixed(2) }}%</span
 								>
 							</div>
 							<div class="field-range-row">
@@ -966,7 +997,7 @@
 									type="range"
 									min="-100"
 									max="100"
-									step="0.5"
+									step="0.01"
 									class="studio-range"
 									@input="
 										if (!partTranslations[selectedPartName]) partTranslations[selectedPartName] = { x: 0, y: 0 };
@@ -976,7 +1007,7 @@
 								<input
 									:value="(partTranslations[selectedPartName] && partTranslations[selectedPartName].x) || 0"
 									type="number"
-									step="0.5"
+									step="0.01"
 									class="studio-number-input"
 									@input="
 										if (!partTranslations[selectedPartName]) partTranslations[selectedPartName] = { x: 0, y: 0 };
@@ -991,7 +1022,7 @@
 							<div class="field-label-row">
 								<label class="field-label">Смещение Y (%):</label>
 								<span class="field-val"
-									>{{ ((partTranslations[selectedPartName] && partTranslations[selectedPartName].y) || 0).toFixed(1) }}%</span
+									>{{ ((partTranslations[selectedPartName] && partTranslations[selectedPartName].y) || 0).toFixed(2) }}%</span
 								>
 							</div>
 							<div class="field-range-row">
@@ -1000,7 +1031,7 @@
 									type="range"
 									min="-100"
 									max="100"
-									step="0.5"
+									step="0.01"
 									class="studio-range"
 									@input="
 										if (!partTranslations[selectedPartName]) partTranslations[selectedPartName] = { x: 0, y: 0 };
@@ -1010,7 +1041,7 @@
 								<input
 									:value="(partTranslations[selectedPartName] && partTranslations[selectedPartName].y) || 0"
 									type="number"
-									step="0.5"
+									step="0.01"
 									class="studio-number-input"
 									@input="
 										if (!partTranslations[selectedPartName]) partTranslations[selectedPartName] = { x: 0, y: 0 };
@@ -1034,13 +1065,39 @@
 									type="range"
 									min="0.1"
 									max="3"
-									step="0.05"
+									step="0.01"
 									class="studio-range"
 								/>
 								<input
 									v-model.number="partScales[selectedPartName]"
 									type="number"
-									step="0.05"
+									step="0.01"
+									class="studio-number-input"
+								/>
+							</div>
+						</div>
+
+						<!-- Opacity -->
+						<div class="control-field">
+							<div class="field-label-row">
+								<label class="field-label">Прозрачность (Opacity):</label>
+								<span class="field-val">{{ ((partOpacities[selectedPartName] ?? 1) * 100).toFixed(0) }}%</span>
+							</div>
+							<div class="field-range-row">
+								<input
+									v-model.number="partOpacities[selectedPartName]"
+									type="range"
+									min="0"
+									max="1"
+									step="0.01"
+									class="studio-range"
+								/>
+								<input
+									v-model.number="partOpacities[selectedPartName]"
+									type="number"
+									min="0"
+									max="1"
+									step="0.01"
 									class="studio-number-input"
 								/>
 							</div>
@@ -1395,13 +1452,13 @@
 									type="range"
 									min="-25"
 									max="25"
-									step="0.05"
+									step="0.01"
 									class="studio-range"
 								/>
 								<input
 									v-model.number="rootOffset.x"
 									type="number"
-									step="0.05"
+									step="0.01"
 									min="-50"
 									max="50"
 									class="studio-number-input __precise"
@@ -1487,13 +1544,13 @@
 									type="range"
 									min="-25"
 									max="25"
-									step="0.05"
+									step="0.01"
 									class="studio-range"
 								/>
 								<input
 									v-model.number="rootOffset.y"
 									type="number"
-									step="0.05"
+									step="0.01"
 									min="-50"
 									max="50"
 									class="studio-number-input __precise"
@@ -1795,6 +1852,7 @@ const {
 	partRotations,
 	partTranslations,
 	partScales,
+	partOpacities,
 	partCustomStyles,
 	partPivots,
 	animatedSprites,

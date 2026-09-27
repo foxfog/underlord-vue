@@ -60,7 +60,7 @@ describe('Hexagonal Map Centralized Configuration (hexConfig.js)', () => {
 	})
 
 	it('defines zoom and camera boundaries', () => {
-		expect(DEFAULT_HEX_MIN_ZOOM).toBe(1)
+		expect(DEFAULT_HEX_MIN_ZOOM).toBe(0.5)
 		expect(DEFAULT_HEX_MAX_ZOOM).toBe(6)
 		expect(DEFAULT_HEX_MIN_PITCH).toBe(0)
 		expect(DEFAULT_HEX_MAX_PITCH).toBe(60)

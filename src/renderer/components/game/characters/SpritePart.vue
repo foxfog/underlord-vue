@@ -95,6 +95,11 @@ const offsetStyle = computed(() => {
 		style.zIndex = props.sprite['z-index']
 	}
 
+	// Opacity (прозрачность части тела)
+	if (props.sprite.opacity !== undefined && props.sprite.opacity !== null && props.sprite.opacity !== 1) {
+		style.opacity = Math.max(0, Math.min(1, Number(props.sprite.opacity)))
+	}
+
 	return style
 })
 

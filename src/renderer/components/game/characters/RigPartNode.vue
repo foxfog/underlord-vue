@@ -39,6 +39,7 @@
 				:part-rotations="partRotations"
 				:part-translations="partTranslations"
 				:part-scales="partScales"
+				:part-opacities="partOpacities"
 				:part-custom-styles="partCustomStyles"
 				:animated-sprites="animatedSprites"
 				:eye-offset="eyeOffset"
@@ -101,6 +102,10 @@ const props = defineProps({
 		default: () => ({})
 	},
 	partScales: {
+		type: Object,
+		default: () => ({})
+	},
+	partOpacities: {
 		type: Object,
 		default: () => ({})
 	},
@@ -255,6 +260,17 @@ const computedPartStyle = computed(() => {
 
 	if (customStyle) {
 		Object.assign(style, customStyle)
+	}
+
+	// Opacity: dynamic posing/animation override (partOpacities) or base part opacity (sprite.opacity)
+	const poseOpacity = props.partOpacities?.[props.spriteName]
+	const baseOpacity = props.sprite?.opacity
+	const effectiveOpacity = poseOpacity !== undefined ? poseOpacity : baseOpacity
+	if (effectiveOpacity !== undefined && effectiveOpacity !== null && !isNaN(effectiveOpacity)) {
+		const num = Number(effectiveOpacity)
+		if (num < 1 || (poseOpacity !== undefined && baseOpacity !== undefined && baseOpacity !== 1)) {
+			style.opacity = Math.max(0, Math.min(1, num))
+		}
 	}
 
 	return style

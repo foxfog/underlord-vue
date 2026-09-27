@@ -646,4 +646,52 @@ describe('useCharacterRigStudio Composable', () => {
 			expect(studio.getEffectivePartImage('head')).toBe('char_head.png')
 		})
 	})
+
+	describe('Opacity and Fine Stepping (0.01 precision)', () => {
+		it('supports partOpacities and resets to 1 in resetPose and stopAnimation', () => {
+			studio.partOpacities['arm_left'] = 0.45
+			studio.partOpacities['head'] = 0.8
+			expect(studio.partOpacities['arm_left']).toBe(0.45)
+			expect(studio.partOpacities['head']).toBe(0.8)
+
+			studio.resetPose()
+			expect(studio.partOpacities['arm_left']).toBe(1)
+			expect(studio.partOpacities['head']).toBe(1)
+		})
+
+		it('interpolates opacity in timeline keyframes', () => {
+			const keyframes = [
+				{ time: 0, transform: { opacity: 0.2, rotate: 0 } },
+				{ time: 1, transform: { opacity: 0.8, rotate: 10 }, easing: 'linear' }
+			]
+			const stateMid = studio.interpolateKeyframes(keyframes, 0.5)
+			expect(stateMid.opacity).toBeCloseTo(0.5, 2)
+		})
+
+		it('exports animation step with opacity when part opacity is customized', () => {
+			studio.selectedCharacterId.value = 'mc'
+			studio.selectedPartName.value = 'arm_left'
+			studio.partRotations['arm_left'] = 15
+			studio.partOpacities['arm_left'] = 0.65
+
+			const jsonStr = studio.exportAnimationToJson('arm_left')
+			const parsed = JSON.parse(jsonStr)
+
+			expect(parsed.type).toBe('part-animate')
+			expect(parsed.part).toBe('arm_left')
+			expect(parsed.styles.opacity).toBe(0.65)
+			expect(parsed.styles.transition).toContain('opacity')
+		})
+
+		it('preserves opacity property when populating body parts', () => {
+			studio.bodyParts['wings'] = {
+				image: 'wings.png',
+				parent: 'body',
+				opacity: 0.75,
+				offset: { x: 10.25, y: -20.15 }
+			}
+			expect(studio.bodyParts['wings'].opacity).toBe(0.75)
+			expect(studio.bodyParts['wings'].offset.x).toBe(10.25)
+		})
+	})
 })

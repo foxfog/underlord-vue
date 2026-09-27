@@ -1,67 +1,68 @@
 {
-	"id": "enri",
-	"name": "Энри",
-	"character_type": "individual",
-	"surname": "Эммот",
-	"nickname": "",
-	"title": "Энри Эммот",
-	"names": [
-		"Энри",
-		"Генерал Энри"
-	],
-	"icon": "images/sprites/characters/enri/default.png",
-	"gender": "female",
-	"race": "human",
-	"races": [
-		"human"
-	],
-	"classs": [
-		"hunter"
-	],
-	"fractions": [
-		"carne-village"
-	],
-	"tags": [
-		"villager",
-		"chieftain",
-		"carne"
-	],
-	"talents": [
-		"item_restriction_bypass"
-	],
-	"description": "Жительница деревни Карн, взявшая на себя ответственность за судьбу родных и поселения.",
-	"size": 1,
-	"root_offset": {
-		"x": 0,
-		"y": 0
-	},
-	"hpmax": 15,
-	"mpmax": 0,
-	"attack": 1,
-	"defense": 1,
-	"weight": 52,
-	"hp": 15,
-	"mp": 0,
-	"lvl": 1,
-	"exp": 0,
-	"skill_points": 0,
-	"stat_points": 0,
-	"equipment_slots": {
-		"head": null,
-		"neck_1": null,
-		"torso-1": null,
-		"torso-2": null,
-		"torso-3": null,
-		"legs": null,
-		"feet": null,
-		"weapon-hand-1": null,
-		"weapon-hand-2": null,
-		"hands": null,
-		"weapon_off": null
-	},
-	"inventory": {
-		"items": []
-	},
-	"height": 158,
-	"age": 16
+  "id": "enri",
+  "name": "Энри",
+  "character_type": "individual",
+  "surname": "Эммот",
+  "nickname": "",
+  "title": "Энри Эммот",
+  "names": [
+    "Энри",
+    "Генерал Энри"
+  ],
+  "icon": "images/sprites/characters/enri/default.png",
+  "gender": "female",
+  "race": "human",
+  "races": [
+    "human"
+  ],
+  "classs": [
+    "hunter"
+  ],
+  "fractions": [
+    "carne-village"
+  ],
+  "tags": [
+    "villager",
+    "chieftain",
+    "carne"
+  ],
+  "talents": [
+    "item_restriction_bypass"
+  ],
+  "description": "Жительница деревни Карн, взявшая на себя ответственность за судьбу родных и поселения.",
+  "size": 1,
+  "root_offset": {
+    "x": 0,
+    "y": 0
+  },
+  "hpmax": 15,
+  "mpmax": 0,
+  "attack": 1,
+  "defense": 1,
+  "weight": 52,
+  "hp": 15,
+  "mp": 0,
+  "lvl": 1,
+  "exp": 0,
+  "skill_points": 0,
+  "stat_points": 0,
+  "equipment_slots": {
+    "head": null,
+    "neck_1": null,
+    "torso-1": null,
+    "torso-2": null,
+    "torso-3": null,
+    "legs": null,
+    "feet": null,
+    "weapon-hand-1": null,
+    "weapon-hand-2": null,
+    "hands": null,
+    "weapon_off": null
+  },
+  "inventory": {
+    "items": []
+  },
+  "height": 158,
+  "age": 16,
+  "scale": 1
 }

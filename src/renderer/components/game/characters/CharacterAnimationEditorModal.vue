@@ -372,7 +372,7 @@
 								<div class="cae-control-item">
 									<div class="cae-ci-label-row">
 										<label>Смещение X (Translate X):</label>
-										<span class="cae-ci-val">{{ (track.keyframes[activeKeyframeIndex].transform.translateX || 0).toFixed(1) }}%</span>
+										<span class="cae-ci-val">{{ (track.keyframes[activeKeyframeIndex].transform.translateX || 0).toFixed(2) }}%</span>
 									</div>
 									<div class="cae-slider-input-row">
 										<input
@@ -380,14 +380,14 @@
 											type="range"
 											min="-100"
 											max="100"
-											step="0.5"
+											step="0.01"
 											class="cae-range"
 											@input="triggerKeyframePreview(track)"
 										/>
 										<input
 											v-model.number="track.keyframes[activeKeyframeIndex].transform.translateX"
 											type="number"
-											step="0.5"
+											step="0.01"
 											class="cae-number-input"
 											@input="triggerKeyframePreview(track)"
 										/>
@@ -406,7 +406,7 @@
 								<div class="cae-control-item">
 									<div class="cae-ci-label-row">
 										<label>Смещение Y (Translate Y):</label>
-										<span class="cae-ci-val">{{ (track.keyframes[activeKeyframeIndex].transform.translateY || 0).toFixed(1) }}%</span>
+										<span class="cae-ci-val">{{ (track.keyframes[activeKeyframeIndex].transform.translateY || 0).toFixed(2) }}%</span>
 									</div>
 									<div class="cae-slider-input-row">
 										<input
@@ -414,14 +414,14 @@
 											type="range"
 											min="-100"
 											max="100"
-											step="0.5"
+											step="0.01"
 											class="cae-range"
 											@input="triggerKeyframePreview(track)"
 										/>
 										<input
 											v-model.number="track.keyframes[activeKeyframeIndex].transform.translateY"
 											type="number"
-											step="0.5"
+											step="0.01"
 											class="cae-number-input"
 											@input="triggerKeyframePreview(track)"
 										/>
@@ -448,14 +448,14 @@
 											type="range"
 											min="0.1"
 											max="3"
-											step="0.05"
+											step="0.01"
 											class="cae-range"
 											@input="triggerKeyframePreview(track)"
 										/>
 										<input
 											v-model.number="track.keyframes[activeKeyframeIndex].transform.scale"
 											type="number"
-											step="0.05"
+											step="0.01"
 											class="cae-number-input"
 											@input="triggerKeyframePreview(track)"
 										/>
@@ -466,6 +466,42 @@
 											@click="track.keyframes[activeKeyframeIndex].transform.scale = 1; triggerKeyframePreview(track)"
 										>
 											1x
+										</button>
+									</div>
+								</div>
+
+								<!-- Opacity Slider (0 to 1.0) -->
+								<div class="cae-control-item">
+									<div class="cae-ci-label-row">
+										<label>Прозрачность (Opacity):</label>
+										<span class="cae-ci-val">{{ Math.round((track.keyframes[activeKeyframeIndex].transform.opacity ?? 1) * 100) }}%</span>
+									</div>
+									<div class="cae-slider-input-row">
+										<input
+											v-model.number="track.keyframes[activeKeyframeIndex].transform.opacity"
+											type="range"
+											min="0"
+											max="1"
+											step="0.01"
+											class="cae-range"
+											@input="triggerKeyframePreview(track)"
+										/>
+										<input
+											v-model.number="track.keyframes[activeKeyframeIndex].transform.opacity"
+											type="number"
+											min="0"
+											max="1"
+											step="0.01"
+											class="cae-number-input"
+											@input="triggerKeyframePreview(track)"
+										/>
+										<button
+											type="button"
+											class="cae-micro-btn"
+											title="Сброс в 100%"
+											@click="track.keyframes[activeKeyframeIndex].transform.opacity = 1; triggerKeyframePreview(track)"
+										>
+											100%
 										</button>
 									</div>
 								</div>
@@ -802,14 +838,14 @@ function addTrack(partName) {
 		keyframes: [
 			{
 				time: 0,
-				transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1 },
+				transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1, opacity: 1 },
 				sprite: null,
 				customCss: '',
 				easing: 'ease-in-out'
 			},
 			{
 				time: Number((localAnim.value.duration || 1.0).toFixed(2)),
-				transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1 },
+				transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1, opacity: 1 },
 				sprite: null,
 				customCss: '',
 				easing: 'ease-in-out'
@@ -856,7 +892,7 @@ function addKeyframeAtCurrentTime(track) {
 
 	const newKf = {
 		time,
-		transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1 },
+		transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1, opacity: 1 },
 		sprite: null,
 		customCss: '',
 		easing: 'ease-in-out'
