@@ -31,7 +31,8 @@
       "init": 5,
       "crit_chance": 5,
       "crit_dmg": 50,
-      "res": {}
+      "res": {},
+      "evasion": 1
     },
     "attribute_converters": {
       "str": {
@@ -47,7 +48,6 @@
         }
       },
       "agi": {
-        "spd": 0.1,
         "init": 2,
         "atk_phys": 4
       },
@@ -88,6 +88,17 @@
         "physical": -2,
         "poison": 4,
         "cold": -1
+      }
+    },
+    "attribute_converters": {
+      "agi": {
+        "init": 3
+      },
+      "str": {
+        "hp": 18
+      },
+      "end": {
+        "hp": 30
       }
     }
   },
@@ -134,9 +145,8 @@
         "def_phys": 8
       },
       "agi": {
-        "spd": 0.15,
-        "init": 3,
-        "atk_phys": 6
+        "init": 2,
+        "atk_phys": 4
       },
       "int": {
         "mp": 30,
@@ -173,10 +183,48 @@
       "crit_chance": 3,
       "crit_dmg": 5,
       "res": {
-        "dark": 5,
+        "dark": 1,
         "poison": 10,
         "physical": -3,
         "cold": -3
+      },
+      "evasion": 1
+    },
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
       }
     }
   },
@@ -241,7 +289,7 @@
       "crit_chance": 1,
       "crit_dmg": 8,
       "res": {
-        "dark": 5,
+        "dark": 1,
         "poison": 5,
         "cold": 5,
         "fire": 8,

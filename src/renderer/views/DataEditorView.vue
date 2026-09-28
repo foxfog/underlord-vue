@@ -1659,7 +1659,7 @@
 										/>
 									</div>
 									<div class="form-field">
-										<label class="field-label">🌑 Тьма (dark)</label>
+										<label class="field-label">☠️ Негативная энергия (dark)</label>
 										<input
 											v-model.number="ensureRaceResistances().dark"
 											type="number"

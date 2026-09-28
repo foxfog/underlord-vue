@@ -863,7 +863,8 @@ const columnGroups = computed(() => {
 					{ key: 'spd', label: 'Скор.', minWidth: '4em', type: 'number', step: 0.1, statPath: 'base_stats.spd' },
 					{ key: 'init', label: 'Иниц.', minWidth: '4em', type: 'number', statPath: 'base_stats.init' },
 					{ key: 'crit_chance', label: 'Крит. %', minWidth: '4.8em', type: 'number', step: 0.1, statPath: 'base_stats.crit_chance', tooltip: 'Шанс критического урона (%)' },
-					{ key: 'crit_dmg', label: 'Крит. Урон %', minWidth: '5.5em', type: 'number', step: 0.1, statPath: 'base_stats.crit_dmg', tooltip: 'Процент критического урона (%)' }
+					{ key: 'crit_dmg', label: 'Крит. Урон %', minWidth: '5.5em', type: 'number', step: 0.1, statPath: 'base_stats.crit_dmg', tooltip: 'Процент критического урона (%)' },
+					{ key: 'evasion', label: 'Уворот %', minWidth: '5em', type: 'number', step: 0.1, min: 0, max: 100, statPath: 'base_stats.evasion', tooltip: 'Шанс уклониться от атаки (%)' }
 				]
 			},
 			...(props.type === 'races' ? [{
@@ -878,7 +879,7 @@ const columnGroups = computed(() => {
 					{ key: 'res_lightning', label: 'Молния %', minWidth: '5.2em', type: 'number', step: 0.1, min: -100, max: 100, statPath: 'base_stats.res.lightning', tooltip: 'Сопротивление молнии (%)' },
 					{ key: 'res_poison', label: 'Яд %', minWidth: '4.8em', type: 'number', step: 0.1, min: -100, max: 100, statPath: 'base_stats.res.poison', tooltip: 'Сопротивление яду (%)' },
 					{ key: 'res_holy', label: 'Свет %', minWidth: '4.8em', type: 'number', step: 0.1, min: -100, max: 100, statPath: 'base_stats.res.holy', tooltip: 'Сопротивление свету (%)' },
-					{ key: 'res_dark', label: 'Тьма %', minWidth: '4.8em', type: 'number', step: 0.1, min: -100, max: 100, statPath: 'base_stats.res.dark', tooltip: 'Сопротивление тьме (%)' }
+					{ key: 'res_dark', label: 'Негативная энергия %', minWidth: '8em', type: 'number', step: 0.1, min: -100, max: 100, statPath: 'base_stats.res.dark', tooltip: 'Сопротивление негативной энергии (%)' }
 				]
 			}] : []),
 			{
@@ -1052,7 +1053,7 @@ function setColPreset(preset) {
 	hiddenColKeys.value.clear()
 	if (preset === 'stats') {
 		for (const col of allColumns.value) {
-			if (!['icon', 'name', 'hp', 'mp', 'atk_phys', 'def_phys', 'atk_mag', 'def_mag', 'spd', 'init', 'crit_chance', 'crit_dmg'].includes(col.key)) {
+			if (!['icon', 'name', 'hp', 'mp', 'atk_phys', 'def_phys', 'atk_mag', 'def_mag', 'spd', 'init', 'crit_chance', 'crit_dmg', 'evasion'].includes(col.key)) {
 				hiddenColKeys.value.add(col.key)
 			}
 		}
@@ -1451,6 +1452,7 @@ function isPercentStat(key) {
 	return k.startsWith('res.') ||
 		k.startsWith('res_') ||
 		k.startsWith('res') ||
+		k === 'evasion' ||
 		k.includes('resistance') ||
 		k === 'crit_chance' ||
 		k === 'crit_dmg' ||
@@ -1472,14 +1474,16 @@ const availableConverterStats = [
 	{ key: 'init', label: 'Инициатива', icon: '⚡', isPercent: false },
 	{ key: 'crit_chance', label: 'Шанс крит. урона (%)', icon: '🎯', isPercent: true },
 	{ key: 'crit_dmg', label: 'Крит. урон (%)', icon: '💥', isPercent: true },
+	{ key: 'evasion', label: 'Уворот (%)', icon: '💨', isPercent: true },
 	{ key: 'res.physical', label: 'Физ. Сопротивление (%)', icon: '🛡️', isPercent: true },
+	{ key: 'res.magic', label: 'Маг. Сопротивление (%)', icon: '✨', isPercent: true },
 	{ key: 'res.water', label: 'Сопр. Вода (%)', icon: '🌊', isPercent: true },
 	{ key: 'res.fire', label: 'Сопр. Огонь (%)', icon: '🔥', isPercent: true },
 	{ key: 'res.cold', label: 'Сопр. Холод (%)', icon: '❄️', isPercent: true },
 	{ key: 'res.lightning', label: 'Сопр. Молния (%)', icon: '⚡', isPercent: true },
 	{ key: 'res.poison', label: 'Сопр. Яд (%)', icon: '🧪', isPercent: true },
 	{ key: 'res.holy', label: 'Сопр. Свет (%)', icon: '☀️', isPercent: true },
-	{ key: 'res.dark', label: 'Сопр. Тьма (%)', icon: '🌑', isPercent: true }
+	{ key: 'res.dark', label: 'Сопр. негативной энергии (%)', icon: '☠️', isPercent: true }
 ]
 
 function getStatDisplayMeta(statKey) {
@@ -1494,14 +1498,16 @@ function getStatDisplayMeta(statKey) {
 		init: { label: 'Иниц', icon: '⚡', theme: '__init', isPercent: false },
 		crit_chance: { label: 'Крит.Шанс', icon: '🎯', theme: '__crit_chance', isPercent: true },
 		crit_dmg: { label: 'Крит.Урон', icon: '💥', theme: '__crit_dmg', isPercent: true },
+		evasion: { label: 'Уворот', icon: '💨', theme: '__res', isPercent: true },
 		'res.physical': { label: 'Физ.Сопр', icon: '🛡️', theme: '__res', isPercent: true },
+		'res.magic': { label: 'Маг.Сопр', icon: '✨', theme: '__res', isPercent: true },
 		'res.water': { label: 'Вода', icon: '🌊', theme: '__res', isPercent: true },
 		'res.fire': { label: 'Огонь', icon: '🔥', theme: '__res', isPercent: true },
 		'res.cold': { label: 'Холод', icon: '❄️', theme: '__res', isPercent: true },
 		'res.lightning': { label: 'Молния', icon: '⚡', theme: '__res', isPercent: true },
 		'res.poison': { label: 'Яд', icon: '🧪', theme: '__res', isPercent: true },
 		'res.holy': { label: 'Свет', icon: '☀️', theme: '__res', isPercent: true },
-		'res.dark': { label: 'Тьма', icon: '🌑', theme: '__res', isPercent: true }
+		'res.dark': { label: 'Негативная энергия', icon: '☠️', theme: '__res', isPercent: true }
 	}
 	const isPct = isPercentStat(statKey)
 	return map[statKey] || { label: statKey, icon: '📊', theme: '__generic', isPercent: isPct }

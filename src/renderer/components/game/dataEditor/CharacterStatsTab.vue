@@ -458,7 +458,7 @@ function formatStatName(statKey) {
 		'res.lightning': 'Сопр.Молния',
 		'res.poison': 'Сопр.Яд',
 		'res.holy': 'Сопр.Свет',
-		'res.dark': 'Сопр.Тьма'
+		'res.dark': 'Сопр.Негативная энергия'
 	}
 	return map[statKey] || statKey
 }
@@ -472,7 +472,7 @@ function formatResName(resKey) {
 		lightning: 'Молния',
 		poison: 'Яд',
 		holy: 'Свет',
-		dark: 'Тьма',
+		dark: 'Негативная энергия',
 		nature: 'Природа'
 	}
 	return map[resKey] || resKey
