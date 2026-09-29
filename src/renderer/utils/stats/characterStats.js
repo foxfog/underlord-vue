@@ -451,7 +451,8 @@ export function getRaceStatsConfig(raceOrId, racesData = []) {
 	}
 
 	// Built-in iconic racial defaults if not explicitly configured
-	if (!race.base_stats) {
+	const hasExplicitBaseStats = race.base_stats && Object.keys(race.base_stats).some((stat) => stat !== 'evasion')
+	if (!hasExplicitBaseStats) {
 		if (race.id === 'human') {
 			baseStats = {
 				hp: 100, mp: 30, atk_phys: 10, def_phys: 6, atk_mag: 6, def_mag: 6, spd: 3, init: 5, crit_chance: 5, crit_dmg: 50, res: {}
@@ -477,6 +478,7 @@ export function getRaceStatsConfig(raceOrId, racesData = []) {
 			}
 		}
 	}
+	baseStats.evasion = rawBase.evasion ?? 1
 
 	// Add backwards-compatible aliases directly on base_stats
 	baseStats.speed = baseStats.spd

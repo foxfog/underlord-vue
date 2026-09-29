@@ -31,30 +31,46 @@
       "init": 5,
       "crit_chance": 5,
       "crit_dmg": 50,
-      "res": {},
+      "res": {
+        "physical": 1
+      },
       "evasion": 1
     },
     "attribute_converters": {
-      "str": {
-        "hp": 20,
-        "atk_phys": 10,
-        "def_phys": 8
-      },
       "end": {
-        "hp": 35,
-        "def_phys": 10,
+        "hp": 2,
+        "def_phys": 2,
         "res": {
-          "physical": 1
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
         }
       },
       "agi": {
-        "init": 2,
-        "atk_phys": 4
-      },
-      "int": {
-        "mp": 20,
-        "atk_mag": 10,
-        "def_mag": 8
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
       }
     }
   },
@@ -88,17 +104,44 @@
         "physical": -2,
         "poison": 4,
         "cold": -1
-      }
+      },
+      "evasion": 1
     },
     "attribute_converters": {
-      "agi": {
-        "init": 3
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
       },
       "str": {
-        "hp": 18
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
       },
-      "end": {
-        "hp": 30
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
       }
     }
   },
@@ -132,26 +175,44 @@
         "physical": -5,
         "poison": 5,
         "cold": -5
-      }
+      },
+      "evasion": 1
     },
     "attribute_converters": {
-      "str": {
-        "hp": 15,
-        "atk_phys": 8,
-        "def_phys": 7
-      },
       "end": {
-        "hp": 25,
-        "def_phys": 8
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
       },
-      "agi": {
-        "init": 2,
-        "atk_phys": 4
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
       },
       "int": {
-        "mp": 30,
-        "atk_mag": 15,
-        "def_mag": 10
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
       }
     },
     "description": "Древний лесной народ с длинными ушами и врождённым сродством к стихиям природы. Обладают долголетием, острым зрением и мастерством владения луком."
@@ -256,9 +317,47 @@
       "crit_dmg": 10,
       "res": {
         "cold": 10,
-        "fire": 10,
+        "fire": 5,
         "physical": 5,
         "water": -1
+      },
+      "evasion": 1
+    },
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
       }
     }
   },
@@ -292,9 +391,47 @@
         "dark": 1,
         "poison": 5,
         "cold": 5,
-        "fire": 8,
+        "fire": 2.5,
         "physical": 4,
         "water": -1
+      },
+      "evasion": 1
+    },
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
       }
     }
   },
@@ -323,7 +460,50 @@
       "spd": 3,
       "init": 3,
       "crit_chance": 1,
-      "crit_dmg": 3
+      "crit_dmg": 3,
+      "res": {
+        "lightning": 1,
+        "poison": 1,
+        "fire": -5
+      },
+      "evasion": 1
+    },
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
     }
   },
   {
@@ -351,7 +531,50 @@
       "spd": 3,
       "init": 6,
       "crit_chance": 2,
-      "crit_dmg": 8
+      "crit_dmg": 8,
+      "res": {
+        "physical": 2,
+        "lightning": 2,
+        "poison": 2
+      },
+      "evasion": 1
+    },
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
     }
   },
   {
@@ -368,7 +591,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Мускулистые и свирепые полулюди с развитой клановой культурой. Ценят силу, воинскую доблесть и боевую ярость превыше всего."
+    "description": "Мускулистые и свирепые полулюди с развитой клановой культурой. Ценят силу, воинскую доблесть и боевую ярость превыше всего.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "ogre",
@@ -384,7 +647,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Массивные великаноподобные существа колоссальной физической силы, способные крушить врагов тяжелыми дубинами и голыми руками."
+    "description": "Массивные великаноподобные существа колоссальной физической силы, способные крушить врагов тяжелыми дубинами и голыми руками.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "merrow",
@@ -400,7 +703,47 @@
     "lvl_min": 5,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Водная разновидность огров, приспособившаяся к жизни в глубоких реках и озёрах. Опасные засадные охотники водной стихии."
+    "description": "Водная разновидность огров, приспособившаяся к жизни в глубоких реках и озёрах. Опасные засадные охотники водной стихии.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "troll",
@@ -416,7 +759,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Грозные великаны, обладающие невероятной способностью к мгновенному заживлению ран. Единственное, чего они страшатся — это огонь и едкая кислота."
+    "description": "Грозные великаны, обладающие невероятной способностью к мгновенному заживлению ран. Единственное, чего они страшатся — это огонь и едкая кислота.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "scrag",
@@ -432,7 +815,47 @@
     "lvl_min": 5,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Водные тролли, обитающие на дне водоёмов и в топях. Их регенерация многократно усиливается при погружении в воду."
+    "description": "Водные тролли, обитающие на дне водоёмов и в топях. Их регенерация многократно усиливается при погружении в воду.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "lizardman",
@@ -449,7 +872,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Гордый народ рептилий, обитающий в болотах и на озёрных побережьях. Мастера выживания в дикой природе, следопыты и искусные охотники."
+    "description": "Гордый народ рептилий, обитающий в болотах и на озёрных побережьях. Мастера выживания в дикой природе, следопыты и искусные охотники.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "quagoa",
@@ -465,7 +928,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Подземные кротоподобные гуманоиды, питающиеся минералами и рудами. Их густой мех и кожа приобретают прочность поглощенного ими металла."
+    "description": "Подземные кротоподобные гуманоиды, питающиеся минералами и рудами. Их густой мех и кожа приобретают прочность поглощенного ими металла.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "minotaur",
@@ -482,7 +985,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Могучие быкоголовые гуманоиды, славящиеся неукротимой яростью в ближнем бою, крепким телосложением и природным чувством направления."
+    "description": "Могучие быкоголовые гуманоиды, славящиеся неукротимой яростью в ближнем бою, крепким телосложением и природным чувством направления.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "centaur",
@@ -498,7 +1041,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Степные воители с телом коня и торсом человека, сочетающие грацию и скорость скакуна с меткостью стрелка и выносливостью воина."
+    "description": "Степные воители с телом коня и торсом человека, сочетающие грацию и скорость скакуна с меткостью стрелка и выносливостью воина.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "naga",
@@ -515,7 +1098,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Хладнокровные змееподобные существа с развитым интеллектом. От природы одарены способностями к магии и гипнотическому воздействию."
+    "description": "Хладнокровные змееподобные существа с развитым интеллектом. От природы одарены способностями к магии и гипнотическому воздействию.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "armot",
@@ -531,7 +1154,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Двуногие крысоподобные охотники с исключительно прочной, словно железная проволока, шерстью и острым обонянием."
+    "description": "Двуногие крысоподобные охотники с исключительно прочной, словно железная проволока, шерстью и острым обонянием.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "skeleton",
@@ -562,30 +1225,44 @@
         "dark": 50,
         "holy": -50,
         "fire": -20
-      }
+      },
+      "evasion": 1
     },
     "attribute_converters": {
-      "str": {
-        "hp": 25,
-        "atk_phys": 12,
-        "def_phys": 10
-      },
       "end": {
-        "hp": 40,
-        "def_phys": 14,
+        "hp": 2,
+        "def_phys": 2,
         "res": {
-          "physical": 2
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
         }
       },
       "agi": {
-        "spd": 0.08,
         "init": 1,
-        "atk_phys": 3
-      },
-      "int": {
-        "mp": 15,
-        "atk_mag": 8,
-        "def_mag": 6
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
       }
     },
     "description": "Останки павших воинов, поднятые тёмной некромантией. Не ведают страха, боли и усталости, неуязвимы к холоду и ядам."
@@ -605,7 +1282,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Поднятые скелеты стрелков, механически посылающие стрелы в цель с неослабевающей точностью даже сквозь непроглядную тьму."
+    "description": "Поднятые скелеты стрелков, механически посылающие стрелы в цель с неослабевающей точностью даже сквозь непроглядную тьму.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "skeleton-warrior",
@@ -622,7 +1339,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Воскрешенные воины, облачённые в истлевшие доспехи и сжимающие ржавые клинки. Их кости укреплены тёмными чарами."
+    "description": "Воскрешенные воины, облачённые в истлевшие доспехи и сжимающие ржавые клинки. Их кости укреплены тёмными чарами.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "skeleton-mage",
@@ -639,7 +1396,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Одарённые магией костяные заклинатели, сохранившие искру чародейского дарования и способные повелевать разрушительными заклинаниями."
+    "description": "Одарённые магией костяные заклинатели, сохранившие искру чародейского дарования и способные повелевать разрушительными заклинаниями.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "lich",
@@ -656,7 +1453,47 @@
     "lvl_min": 10,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Могущественный чародей, добровольно или силой тёмных ритуалов отринувший смертную плоть ради вечной жизни и постижения некромантии."
+    "description": "Могущественный чародей, добровольно или силой тёмных ритуалов отринувший смертную плоть ради вечной жизни и постижения некромантии.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "elder-lich",
@@ -688,28 +1525,44 @@
         "dark": 70,
         "cold": 40,
         "holy": -40
-      }
+      },
+      "evasion": 1
     },
     "attribute_converters": {
-      "str": {
-        "hp": 18,
-        "atk_phys": 8,
-        "def_phys": 8
-      },
       "end": {
-        "hp": 30,
-        "def_phys": 12,
-        "def_mag": 5
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
       },
-      "agi": {
-        "spd": 0.1,
-        "init": 2,
-        "atk_phys": 4
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
       },
       "int": {
-        "mp": 45,
-        "atk_mag": 22,
-        "def_mag": 16
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
       }
     },
     "description": "Древний и мудрый неживой заклинатель, чьи магические познания простираются далеко за пределы возможностей смертных магов."
@@ -730,7 +1583,47 @@
     "lvl_min": 80,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Владыка смерти и абсолютная вершина неживой эволюции. Обладает непререкаемой властью над загробным миром и непостижимой магической мощью."
+    "description": "Владыка смерти и абсолютная вершина неживой эволюции. Обладает непререкаемой властью над загробным миром и непостижимой магической мощью.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "night-lich",
@@ -754,7 +1647,47 @@
     "colEnd": 0,
     "colWidth": 1,
     "gridRow": 1,
-    "gridColumn": "1 / 2"
+    "gridColumn": "1 / 2",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "ghost",
@@ -772,7 +1705,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Бестелесный дух неприкаянной души, блуждающий среди живых. Неуязвим для обычного немагического оружия и способен проходить сквозь стены."
+    "description": "Бестелесный дух неприкаянной души, блуждающий среди живых. Неуязвим для обычного немагического оружия и способен проходить сквозь стены.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "wraith",
@@ -791,7 +1764,47 @@
     "lvl_min": 10,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Зловещий призрак тьмы, сотканный из теней и могильного холода, способный вытягивать жизненное тепло из любого живого существа."
+    "description": "Зловещий призрак тьмы, сотканный из теней и могильного холода, способный вытягивать жизненное тепло из любого живого существа.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "spectre",
@@ -810,7 +1823,47 @@
     "lvl_min": 30,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Высший фантом, несущий ауру леденящего потустороннего ужаса и подчиняющий волю тех, кто осмелился взглянуть ему в глаза."
+    "description": "Высший фантом, несущий ауру леденящего потустороннего ужаса и подчиняющий волю тех, кто осмелился взглянуть ему в глаза.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "zombie",
@@ -826,7 +1879,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Оживший мертвец, движимый слепой жаждой плоти. Невосприимчив к боли и способен выдерживать тяжелые удары, пока его тело цельно."
+    "description": "Оживший мертвец, движимый слепой жаждой плоти. Невосприимчив к боли и способен выдерживать тяжелые удары, пока его тело цельно.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "ghoul",
@@ -842,7 +1935,47 @@
     "lvl_min": 5,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Быстрая и хищная трупоядная нежить, чьи когти несут парализующий трупный яд."
+    "description": "Быстрая и хищная трупоядная нежить, чьи когти несут парализующий трупный яд.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "vampire",
@@ -859,7 +1992,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Аристократичные хищники ночи, питающиеся жизненной силой крови. Обладают сверхчеловеческой грацией и гипнозом, но уязвимы к солнцу и святыням."
+    "description": "Аристократичные хищники ночи, питающиеся жизненной силой крови. Обладают сверхчеловеческой грацией и гипнозом, но уязвимы к солнцу и святыням.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "blood-guard",
@@ -876,7 +2049,47 @@
     "lvl_min": 10,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Элитный воин вампирского рода, черпающий стойкость и свирепость из пролитой вражеской крови."
+    "description": "Элитный воин вампирского рода, черпающий стойкость и свирепость из пролитой вражеской крови.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "vampire-lord",
@@ -893,7 +2106,47 @@
     "lvl_min": 30,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Повелитель клана кровопийц, обладающий вековой мудростью, искусством превращения в туман и подчинением низшей нежити."
+    "description": "Повелитель клана кровопийц, обладающий вековой мудростью, искусством превращения в туман и подчинением низшей нежити.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "true-vampire",
@@ -910,7 +2163,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Первородный владыка крови, сочетающий совершенную внешность с чудовищным боевым обличием и абсолютной регенерацией плоти."
+    "description": "Первородный владыка крови, сочетающий совершенную внешность с чудовищным боевым обличием и абсолютной регенерацией плоти.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "vampire-bride",
@@ -927,7 +2220,47 @@
     "lvl_min": 10,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Пленительная и опасная вампирша благородных кровей, сочетающая гипнотическое очарование с молниеносной смертоносностью в бою."
+    "description": "Пленительная и опасная вампирша благородных кровей, сочетающая гипнотическое очарование с молниеносной смертоносностью в бою.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "werewolf",
@@ -944,7 +2277,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Оборотень, объединяющий хитрость охотника и дикую ярость волка. В полнолуние и в битве его сила и скорость возрастают многократно."
+    "description": "Оборотень, объединяющий хитрость охотника и дикую ярость волка. В полнолуние и в битве его сила и скорость возрастают многократно.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "alpha-werewolf",
@@ -961,7 +2334,47 @@
     "lvl_min": 10,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Прирождённый вожак ликантропов, чей боевой вой вдохновляет союзников и повергает врагов в паническое бегство."
+    "description": "Прирождённый вожак ликантропов, чей боевой вой вдохновляет союзников и повергает врагов в паническое бегство.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "true-werewolf",
@@ -978,7 +2391,47 @@
     "lvl_min": 15,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Древний прародитель оборотней, способный мгновенно исцелять смертельные раны и рассекать сталь голыми когтями."
+    "description": "Древний прародитель оборотней, способный мгновенно исцелять смертельные раны и рассекать сталь голыми когтями.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "imp",
@@ -997,7 +2450,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Мелкий коварный обитатель нижних планов, сеющий хаос, искушение и порчу своими кознями и мелким огненным чародейством."
+    "description": "Мелкий коварный обитатель нижних планов, сеющий хаос, искушение и порчу своими кознями и мелким огненным чародейством.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "incubus",
@@ -1028,29 +2521,44 @@
       "init": 5,
       "crit_chance": 5,
       "crit_dmg": 50,
-      "res": {}
+      "res": {},
+      "evasion": 1
     },
     "attribute_converters": {
-      "str": {
-        "hp": 20,
-        "atk_phys": 10,
-        "def_phys": 8,
-        "crit_dmg": 0
-      },
       "end": {
-        "hp": 35,
-        "def_phys": 10
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
       },
-      "agi": {
-        "spd": 0.1,
-        "init": 2,
-        "atk_phys": 4,
-        "crit_chance": 0
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
       },
       "int": {
-        "mp": 20,
-        "atk_mag": 10,
-        "def_mag": 8
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
       }
     },
     "tierNum": 1,
@@ -1095,29 +2603,44 @@
       "init": 5,
       "crit_chance": 5,
       "crit_dmg": 50,
-      "res": {}
+      "res": {},
+      "evasion": 1
     },
     "attribute_converters": {
-      "str": {
-        "hp": 20,
-        "atk_phys": 10,
-        "def_phys": 8,
-        "crit_dmg": 0
-      },
       "end": {
-        "hp": 35,
-        "def_phys": 10
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
       },
-      "agi": {
-        "spd": 0.1,
-        "init": 2,
-        "atk_phys": 4,
-        "crit_chance": 0
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
       },
       "int": {
-        "mp": 20,
-        "atk_mag": 10,
-        "def_mag": 8
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
       }
     }
   },
@@ -1139,7 +2662,47 @@
     "lvl_min": 50,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Коварный архидемон преисподней, искусный в составлении нерушимых темных сделок и повелевании легионами низших бесов."
+    "description": "Коварный архидемон преисподней, искусный в составлении нерушимых темных сделок и повелевании легионами низших бесов.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "archdevil",
@@ -1160,7 +2723,47 @@
     "lvl_min": 80,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Великий князь преисподней, чей взгляд обращает смертных в пепел, а стратегический гений ведет адские орды к триумфу."
+    "description": "Великий князь преисподней, чей взгляд обращает смертных в пепел, а стратегический гений ведет адские орды к триумфу.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "demon",
@@ -1180,7 +2783,47 @@
     "lvl_min": 10,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Порождение преисподней, воплощающее чистую разрушительную стихию адского огня, жестокости и хаоса."
+    "description": "Порождение преисподней, воплощающее чистую разрушительную стихию адского огня, жестокости и хаоса.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "angel",
@@ -1198,7 +2841,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Безупречные крылатые вестники высших небес, воплощающие священный закон, божественный свет и очищающее правосудие."
+    "description": "Безупречные крылатые вестники высших небес, воплощающие священный закон, божественный свет и очищающее правосудие.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "angel-guardian",
@@ -1216,7 +2899,47 @@
     "lvl_min": 10,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Небесный страж, защищающий праведников священным щитом и карающий нечестивых освященным клинком."
+    "description": "Небесный страж, защищающий праведников священным щитом и карающий нечестивых освященным клинком.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "archangel-flame",
@@ -1235,7 +2958,47 @@
     "lvl_min": 15,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Огненный воитель небес, чье пылающее лезвие испепеляет нечисть и обращает во тьму полчища демонов."
+    "description": "Огненный воитель небес, чье пылающее лезвие испепеляет нечисть и обращает во тьму полчища демонов.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "principality-observation",
@@ -1254,7 +3017,47 @@
     "lvl_min": 25,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Всевидящий ангельский вестник, способный обнаружить любую скрытую угрозу и укрыть союзников куполом священного дозора."
+    "description": "Всевидящий ангельский вестник, способный обнаружить любую скрытую угрозу и укрыть союзников куполом священного дозора.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "principality-peace",
@@ -1273,7 +3076,47 @@
     "lvl_min": 25,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Небесный благодетель, чье присутствие приносит умиротворение, исцеляет смертельные недуги и восстанавливает душевные силы."
+    "description": "Небесный благодетель, чье присутствие приносит умиротворение, исцеляет смертельные недуги и восстанавливает душевные силы.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "dominion-authority",
@@ -1292,7 +3135,47 @@
     "lvl_min": 50,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Высшая сущность небесного порядка в виде парящих крыльев со скрижалями завета, вершащая непоколебимый суд божественной воли."
+    "description": "Высшая сущность небесного порядка в виде парящих крыльев со скрижалями завета, вершащая непоколебимый суд божественной воли.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "cherubim-gatekeeper",
@@ -1311,7 +3194,47 @@
     "lvl_min": 80,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Могучий хранитель небесных врат, вооруженный титаническим щитом и копьем света, сквозь строй которого не пройдет ни одно зло."
+    "description": "Могучий хранитель небесных врат, вооруженный титаническим щитом и копьем света, сквозь строй которого не пройдет ни одно зло.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "seraph",
@@ -1330,7 +3253,47 @@
     "lvl_min": 90,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Шестикрылый владыка небесного пламени, излучающий свет первозданного творения и наделенный безграничной святой мощью."
+    "description": "Шестикрылый владыка небесного пламени, излучающий свет первозданного творения и наделенный безграничной святой мощью.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "seraph-empyrean",
@@ -1349,7 +3312,47 @@
     "lvl_min": 90,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Эмпирейский владыка высших сфер, несущий ауру абсолютной святости, перед величием которой меркнут любые проклятия."
+    "description": "Эмпирейский владыка высших сфер, несущий ауру абсолютной святости, перед величием которой меркнут любые проклятия.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "seraph-aerosphere",
@@ -1368,7 +3371,47 @@
     "lvl_min": 90,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Небесный полководец в сияющих доспехах, повелевающий бурями священного света и карающий врагов с небесной выси."
+    "description": "Небесный полководец в сияющих доспехах, повелевающий бурями священного света и карающий врагов с небесной выси.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "slime",
@@ -1385,7 +3428,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Аморфное текучее существо без постоянной формы и уязвимых внутренних органов. Крайне устойчиво к рубящим и колющим ударам."
+    "description": "Аморфное текучее существо без постоянной формы и уязвимых внутренних органов. Крайне устойчиво к рубящим и колющим ударам.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "black-ooze",
@@ -1402,7 +3485,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Смертоносная темная слизь, вырабатывающая концентрированную едкую кислоту, способную прожигать плоть и камень за считанные секунды."
+    "description": "Смертоносная темная слизь, вырабатывающая концентрированную едкую кислоту, способную прожигать плоть и камень за считанные секунды.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "elder-black-ooze",
@@ -1437,29 +3560,44 @@
       "init": 5,
       "crit_chance": 5,
       "crit_dmg": 50,
-      "res": {}
+      "res": {},
+      "evasion": 1
     },
     "attribute_converters": {
-      "str": {
-        "hp": 20,
-        "atk_phys": 10,
-        "def_phys": 8,
-        "crit_dmg": 0
-      },
       "end": {
-        "hp": 35,
-        "def_phys": 10
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
       },
-      "agi": {
-        "spd": 0.1,
-        "init": 2,
-        "atk_phys": 4,
-        "crit_chance": 0
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
       },
       "int": {
-        "mp": 20,
-        "atk_mag": 10,
-        "def_mag": 8
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
       }
     }
   },
@@ -1479,7 +3617,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Ужасающая хтоническая протоплазма с десятками открывающихся глаз и пастей, сокрушающая все на своем пути неумолимой массой."
+    "description": "Ужасающая хтоническая протоплазма с десятками открывающихся глаз и пастей, сокрушающая все на своем пути неумолимой массой.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "ubbo-sathla",
@@ -1515,29 +3693,44 @@
       "init": 5,
       "crit_chance": 5,
       "crit_dmg": 50,
-      "res": {}
+      "res": {},
+      "evasion": 1
     },
     "attribute_converters": {
-      "str": {
-        "hp": 20,
-        "atk_phys": 10,
-        "def_phys": 8,
-        "crit_dmg": 0
-      },
       "end": {
-        "hp": 35,
-        "def_phys": 10
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
       },
-      "agi": {
-        "spd": 0.1,
-        "init": 2,
-        "atk_phys": 4,
-        "crit_chance": 0
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
       },
       "int": {
-        "mp": 20,
-        "atk_mag": 10,
-        "def_mag": 8
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
       }
     }
   },
@@ -1565,29 +3758,44 @@
       "init": 5,
       "crit_chance": 5,
       "crit_dmg": 50,
-      "res": {}
+      "res": {},
+      "evasion": 1
     },
     "attribute_converters": {
-      "str": {
-        "hp": 20,
-        "atk_phys": 10,
-        "def_phys": 8,
-        "crit_dmg": 0
-      },
       "end": {
-        "hp": 35,
-        "def_phys": 10
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
       },
-      "agi": {
-        "spd": 0.1,
-        "init": 2,
-        "atk_phys": 4,
-        "crit_chance": 0
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
       },
       "int": {
-        "mp": 20,
-        "atk_mag": 10,
-        "def_mag": 8
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
       }
     },
     "tierNum": 1,
@@ -1621,29 +3829,44 @@
       "init": 5,
       "crit_chance": 5,
       "crit_dmg": 50,
-      "res": {}
+      "res": {},
+      "evasion": 1
     },
     "attribute_converters": {
-      "str": {
-        "hp": 20,
-        "atk_phys": 10,
-        "def_phys": 8,
-        "crit_dmg": 0
-      },
       "end": {
-        "hp": 35,
-        "def_phys": 10
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
       },
-      "agi": {
-        "spd": 0.1,
-        "init": 2,
-        "atk_phys": 4,
-        "crit_chance": 0
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
       },
       "int": {
-        "mp": 20,
-        "atk_mag": 10,
-        "def_mag": 8
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
       }
     },
     "tierNum": 1,
@@ -1677,29 +3900,44 @@
       "init": 5,
       "crit_chance": 5,
       "crit_dmg": 50,
-      "res": {}
+      "res": {},
+      "evasion": 1
     },
     "attribute_converters": {
-      "str": {
-        "hp": 20,
-        "atk_phys": 10,
-        "def_phys": 8,
-        "crit_dmg": 0
-      },
       "end": {
-        "hp": 35,
-        "def_phys": 10
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
       },
-      "agi": {
-        "spd": 0.1,
-        "init": 2,
-        "atk_phys": 4,
-        "crit_chance": 0
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
       },
       "int": {
-        "mp": 20,
-        "atk_mag": 10,
-        "def_mag": 8
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
       }
     },
     "tierNum": 1,
@@ -1723,7 +3961,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Хитиновые воители и охотники, обладающие сверхъестественной реакцией, фасеточным зрением и несокрушимым экзоскелетом."
+    "description": "Хитиновые воители и охотники, обладающие сверхъестественной реакцией, фасеточным зрением и несокрушимым экзоскелетом.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "dragon",
@@ -1741,7 +4019,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Величественные древние ящеры, венчающие вершину природной пищевой цепи. Обладают крепчайшей чешуей, острым умом и разрушительным дыханием."
+    "description": "Величественные древние ящеры, венчающие вершину природной пищевой цепи. Обладают крепчайшей чешуей, острым умом и разрушительным дыханием.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "frost-dragon",
@@ -1759,7 +4077,47 @@
     "lvl_min": 10,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Владыки ледяных вершин и вечной мерзлоты, выдыхающие смертоносную ледяную метель и закованные в панцирь из вечного льда."
+    "description": "Владыки ледяных вершин и вечной мерзлоты, выдыхающие смертоносную ледяную метель и закованные в панцирь из вечного льда.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "fire-dragon",
@@ -1777,7 +4135,47 @@
     "lvl_min": 10,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Грозные владыки вулканов и пламени, способные одним выдохом огненного шквала превратить в пепелище целые поселения."
+    "description": "Грозные владыки вулканов и пламени, способные одним выдохом огненного шквала превратить в пепелище целые поселения.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "true-dragon-lord",
@@ -1795,7 +4193,47 @@
     "lvl_min": 45,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Древнейшие правители мира, повелевающие первозданной магией, чья воля способна изменять сами законы мироздания."
+    "description": "Древнейшие правители мира, повелевающие первозданной магией, чья воля способна изменять сами законы мироздания.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "dragonoid",
@@ -1823,30 +4261,44 @@
       "res": {
         "fire": 50,
         "physical": 15
-      }
+      },
+      "evasion": 1
     },
     "attribute_converters": {
-      "str": {
-        "hp": 30,
-        "atk_phys": 16,
-        "def_phys": 12
-      },
       "end": {
-        "hp": 50,
-        "def_phys": 16,
+        "hp": 2,
+        "def_phys": 2,
         "res": {
-          "physical": 3
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
         }
       },
       "agi": {
-        "spd": 0.1,
-        "init": 2,
-        "atk_phys": 5
-      },
-      "int": {
-        "mp": 25,
-        "atk_mag": 12,
-        "def_mag": 10
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
       }
     },
     "description": "Благородные гуманоиды, несущие в себе драконью кровь. Сочетают физическое совершенство драконов с разумом и дисциплиной воина."
@@ -1865,7 +4317,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Таинственные метаморфы, способные безупречно копировать чужой облик, голос, воспоминания и повадки жертвы."
+    "description": "Таинственные метаморфы, способные безупречно копировать чужой облик, голос, воспоминания и повадки жертвы.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "automaton",
@@ -1882,7 +4374,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Механические творения высокого мастерства. Лишены усталости, потребности в пище и сне, подчиняясь заложенным в них механизмам и долгу."
+    "description": "Механические творения высокого мастерства. Лишены усталости, потребности в пище и сне, подчиняясь заложенным в них механизмам и долгу.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "homunculus",
@@ -1900,7 +4432,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Искусственные создания, рождённые в алхимических ретортах из тайных эссенций. Преданы своим создателям и наделены безупречной исполнительностью."
+    "description": "Искусственные создания, рождённые в алхимических ретортах из тайных эссенций. Преданы своим создателям и наделены безупречной исполнительностью.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "wolf",
@@ -1917,7 +4489,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Выносливые и опасные стайные хищники с острым обонянием, чутким слухом и безупречной слаженностью на охоте."
+    "description": "Выносливые и опасные стайные хищники с острым обонянием, чутким слухом и безупречной слаженностью на охоте.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "pack-leader",
@@ -1934,7 +4546,47 @@
     "lvl_min": 10,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Опытный матерый хищник во главе стаи, чей свирепый натиск и боевой вой ведут сородичей за собой в любую атаку."
+    "description": "Опытный матерый хищник во главе стаи, чей свирепый натиск и боевой вой ведут сородичей за собой в любую атаку.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "barghest",
@@ -1960,29 +4612,44 @@
       "init": 5,
       "crit_chance": 5,
       "crit_dmg": 50,
-      "res": {}
+      "res": {},
+      "evasion": 1
     },
     "attribute_converters": {
-      "str": {
-        "hp": 20,
-        "atk_phys": 10,
-        "def_phys": 8,
-        "crit_dmg": 0
-      },
       "end": {
-        "hp": 35,
-        "def_phys": 10
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
       },
-      "agi": {
-        "spd": 0.1,
-        "init": 2,
-        "atk_phys": 4,
-        "crit_chance": 0
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
       },
       "int": {
-        "mp": 20,
-        "atk_mag": 10,
-        "def_mag": 8
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
       }
     },
     "tierNum": 2,
@@ -2016,29 +4683,44 @@
       "init": 5,
       "crit_chance": 5,
       "crit_dmg": 50,
-      "res": {}
+      "res": {},
+      "evasion": 1
     },
     "attribute_converters": {
-      "str": {
-        "hp": 20,
-        "atk_phys": 10,
-        "def_phys": 8,
-        "crit_dmg": 0
-      },
       "end": {
-        "hp": 35,
-        "def_phys": 10
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
       },
-      "agi": {
-        "spd": 0.1,
-        "init": 2,
-        "atk_phys": 4,
-        "crit_chance": 0
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
       },
       "int": {
-        "mp": 20,
-        "atk_mag": 10,
-        "def_mag": 8
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
       }
     }
   },
@@ -2066,29 +4748,44 @@
       "init": 5,
       "crit_chance": 5,
       "crit_dmg": 50,
-      "res": {}
+      "res": {},
+      "evasion": 1
     },
     "attribute_converters": {
-      "str": {
-        "hp": 20,
-        "atk_phys": 10,
-        "def_phys": 8,
-        "crit_dmg": 0
-      },
       "end": {
-        "hp": 35,
-        "def_phys": 10
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
       },
-      "agi": {
-        "spd": 0.1,
-        "init": 2,
-        "atk_phys": 4,
-        "crit_chance": 0
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
       },
       "int": {
-        "mp": 20,
-        "atk_mag": 10,
-        "def_mag": 8
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
       }
     },
     "tierNum": 2,
@@ -2122,29 +4819,44 @@
       "init": 5,
       "crit_chance": 5,
       "crit_dmg": 50,
-      "res": {}
+      "res": {},
+      "evasion": 1
     },
     "attribute_converters": {
-      "str": {
-        "hp": 20,
-        "atk_phys": 10,
-        "def_phys": 8,
-        "crit_dmg": 0
-      },
       "end": {
-        "hp": 35,
-        "def_phys": 10
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
       },
-      "agi": {
-        "spd": 0.1,
-        "init": 2,
-        "atk_phys": 4,
-        "crit_chance": 0
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
       },
       "int": {
-        "mp": 20,
-        "atk_mag": 10,
-        "def_mag": 8
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
       }
     }
   },
@@ -2175,29 +4887,44 @@
       "init": 5,
       "crit_chance": 5,
       "crit_dmg": 50,
-      "res": {}
+      "res": {},
+      "evasion": 1
     },
     "attribute_converters": {
-      "str": {
-        "hp": 20,
-        "atk_phys": 10,
-        "def_phys": 8,
-        "crit_dmg": 0
-      },
       "end": {
-        "hp": 35,
-        "def_phys": 10
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
       },
-      "agi": {
-        "spd": 0.1,
-        "init": 2,
-        "atk_phys": 4,
-        "crit_chance": 0
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
       },
       "int": {
-        "mp": 20,
-        "atk_mag": 10,
-        "def_mag": 8
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
       }
     },
     "tierNum": 4,
@@ -2222,7 +4949,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Выносливые и быстроногие травоядные скакуны, служащие верными спутниками в странствиях и надёжной опорой всадника на поле боя."
+    "description": "Выносливые и быстроногие травоядные скакуны, служащие верными спутниками в странствиях и надёжной опорой всадника на поле боя.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "pegasus",
@@ -2259,29 +5026,44 @@
       "init": 5,
       "crit_chance": 5,
       "crit_dmg": 50,
-      "res": {}
+      "res": {},
+      "evasion": 1
     },
     "attribute_converters": {
-      "str": {
-        "hp": 20,
-        "atk_phys": 10,
-        "def_phys": 8,
-        "crit_dmg": 0
-      },
       "end": {
-        "hp": 35,
-        "def_phys": 10
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
       },
-      "agi": {
-        "spd": 0.1,
-        "init": 2,
-        "atk_phys": 4,
-        "crit_chance": 0
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
       },
       "int": {
-        "mp": 20,
-        "atk_mag": 10,
-        "def_mag": 8
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
       }
     }
   },
@@ -2302,7 +5084,47 @@
     "lvl_min": 50,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Легендарное создание, соединяющее крылья пегаса и рог единорога. Повелевает небесными бурями и владеет высшей созидательной магией."
+    "description": "Легендарное создание, соединяющее крылья пегаса и рог единорога. Повелевает небесными бурями и владеет высшей созидательной магией.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "unicorn",
@@ -2321,7 +5143,47 @@
     "lvl_min": 10,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Священные скакуны с сияющим спиральным рогом, воплощающие чистоту. Обладают даром исцеления и рассеивания злых чар."
+    "description": "Священные скакуны с сияющим спиральным рогом, воплощающие чистоту. Обладают даром исцеления и рассеивания злых чар.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "bicorn",
@@ -2358,29 +5220,44 @@
       "init": 5,
       "crit_chance": 5,
       "crit_dmg": 50,
-      "res": {}
+      "res": {},
+      "evasion": 1
     },
     "attribute_converters": {
-      "str": {
-        "hp": 20,
-        "atk_phys": 10,
-        "def_phys": 8,
-        "crit_dmg": 0
-      },
       "end": {
-        "hp": 35,
-        "def_phys": 10
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
       },
-      "agi": {
-        "spd": 0.1,
-        "init": 2,
-        "atk_phys": 4,
-        "crit_chance": 0
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
       },
       "int": {
-        "mp": 20,
-        "atk_mag": 10,
-        "def_mag": 8
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
       }
     }
   },
@@ -2401,7 +5278,47 @@
     "lvl_min": 30,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Инфернальный скакун с горящими адским огнём копытами и глазами. Сеет первобытный ужас, оставляя за собой дорожку из тлеющего пепла."
+    "description": "Инфернальный скакун с горящими адским огнём копытами и глазами. Сеет первобытный ужас, оставляя за собой дорожку из тлеющего пепла.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "hippocampus",
@@ -2427,29 +5344,44 @@
       "init": 5,
       "crit_chance": 5,
       "crit_dmg": 50,
-      "res": {}
+      "res": {},
+      "evasion": 1
     },
     "attribute_converters": {
-      "str": {
-        "hp": 20,
-        "atk_phys": 10,
-        "def_phys": 8,
-        "crit_dmg": 0
-      },
       "end": {
-        "hp": 35,
-        "def_phys": 10
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
       },
-      "agi": {
-        "spd": 0.1,
-        "init": 2,
-        "atk_phys": 4,
-        "crit_chance": 0
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
       },
       "int": {
-        "mp": 20,
-        "atk_mag": 10,
-        "def_mag": 8
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
       }
     }
   },
@@ -2487,29 +5419,44 @@
       "init": 5,
       "crit_chance": 5,
       "crit_dmg": 50,
-      "res": {}
+      "res": {},
+      "evasion": 1
     },
     "attribute_converters": {
-      "str": {
-        "hp": 20,
-        "atk_phys": 10,
-        "def_phys": 8,
-        "crit_dmg": 0
-      },
       "end": {
-        "hp": 35,
-        "def_phys": 10
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
       },
-      "agi": {
-        "spd": 0.1,
-        "init": 2,
-        "atk_phys": 4,
-        "crit_chance": 0
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
       },
       "int": {
-        "mp": 20,
-        "atk_mag": 10,
-        "def_mag": 8
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
       }
     }
   },
@@ -2547,29 +5494,44 @@
       "init": 5,
       "crit_chance": 5,
       "crit_dmg": 50,
-      "res": {}
+      "res": {},
+      "evasion": 1
     },
     "attribute_converters": {
-      "str": {
-        "hp": 20,
-        "atk_phys": 10,
-        "def_phys": 8,
-        "crit_dmg": 0
-      },
       "end": {
-        "hp": 35,
-        "def_phys": 10
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
       },
-      "agi": {
-        "spd": 0.1,
-        "init": 2,
-        "atk_phys": 4,
-        "crit_chance": 0
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
       },
       "int": {
-        "mp": 20,
-        "atk_mag": 10,
-        "def_mag": 8
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
       }
     }
   },
@@ -2607,29 +5569,44 @@
       "init": 5,
       "crit_chance": 5,
       "crit_dmg": 50,
-      "res": {}
+      "res": {},
+      "evasion": 1
     },
     "attribute_converters": {
-      "str": {
-        "hp": 20,
-        "atk_phys": 10,
-        "def_phys": 8,
-        "crit_dmg": 0
-      },
       "end": {
-        "hp": 35,
-        "def_phys": 10
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
       },
-      "agi": {
-        "spd": 0.1,
-        "init": 2,
-        "atk_phys": 4,
-        "crit_chance": 0
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
       },
       "int": {
-        "mp": 20,
-        "atk_mag": 10,
-        "def_mag": 8
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
       }
     }
   },
@@ -2661,29 +5638,44 @@
       "init": 5,
       "crit_chance": 5,
       "crit_dmg": 50,
-      "res": {}
+      "res": {},
+      "evasion": 1
     },
     "attribute_converters": {
-      "str": {
-        "hp": 20,
-        "atk_phys": 10,
-        "def_phys": 8,
-        "crit_dmg": 0
-      },
       "end": {
-        "hp": 35,
-        "def_phys": 10
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
       },
-      "agi": {
-        "spd": 0.1,
-        "init": 2,
-        "atk_phys": 4,
-        "crit_chance": 0
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
       },
       "int": {
-        "mp": 20,
-        "atk_mag": 10,
-        "def_mag": 8
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
       }
     },
     "tierNum": 0,
@@ -2727,29 +5719,44 @@
       "init": 5,
       "crit_chance": 5,
       "crit_dmg": 50,
-      "res": {}
+      "res": {},
+      "evasion": 1
     },
     "attribute_converters": {
-      "str": {
-        "hp": 20,
-        "atk_phys": 10,
-        "def_phys": 8,
-        "crit_dmg": 0
-      },
       "end": {
-        "hp": 35,
-        "def_phys": 10
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
       },
-      "agi": {
-        "spd": 0.1,
-        "init": 2,
-        "atk_phys": 4,
-        "crit_chance": 0
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
       },
       "int": {
-        "mp": 20,
-        "atk_mag": 10,
-        "def_mag": 8
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
       }
     }
   },
@@ -2787,29 +5794,44 @@
       "init": 5,
       "crit_chance": 5,
       "crit_dmg": 50,
-      "res": {}
+      "res": {},
+      "evasion": 1
     },
     "attribute_converters": {
-      "str": {
-        "hp": 20,
-        "atk_phys": 10,
-        "def_phys": 8,
-        "crit_dmg": 0
-      },
       "end": {
-        "hp": 35,
-        "def_phys": 10
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
       },
-      "agi": {
-        "spd": 0.1,
-        "init": 2,
-        "atk_phys": 4,
-        "crit_chance": 0
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
       },
       "int": {
-        "mp": 20,
-        "atk_mag": 10,
-        "def_mag": 8
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
       }
     }
   },
@@ -2828,7 +5850,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Сгусток живого пламени, непрерывно сжигающий воздух вокруг себя и атакующий обжигающими языками огня."
+    "description": "Сгусток живого пламени, непрерывно сжигающий воздух вокруг себя и атакующий обжигающими языками огня.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "elder-fire-elemental",
@@ -2845,7 +5907,47 @@
     "lvl_min": 15,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Могущественное огненное воплощение, пылающее яростным белым жаром и способное обрушивать огненные бури."
+    "description": "Могущественное огненное воплощение, пылающее яростным белым жаром и способное обрушивать огненные бури.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "magma-elemental",
@@ -2863,7 +5965,47 @@
     "lvl_min": 30,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Гибрид огненной и земной первозданной стихии, состоящий из кипящей вулканической лавы и базальтовой корки."
+    "description": "Гибрид огненной и земной первозданной стихии, состоящий из кипящей вулканической лавы и базальтовой корки.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "fire-lord",
@@ -2881,7 +6023,47 @@
     "lvl_min": 60,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Владыка стихийного огня колоссальной мощи, чье присутствие плавит металл и обращает окружение в пепел."
+    "description": "Владыка стихийного огня колоссальной мощи, чье присутствие плавит металл и обращает окружение в пепел.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "water-elemental",
@@ -2898,7 +6080,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Текучий дух водной стихии, способный принимать любую форму, гасить пламя и наносить сокрушительные гидроудары."
+    "description": "Текучий дух водной стихии, способный принимать любую форму, гасить пламя и наносить сокрушительные гидроудары.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "elder-water-elemental",
@@ -2915,7 +6137,47 @@
     "lvl_min": 15,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Воплощение бушующего водоворота, легко сокрушающее броню давлением водных потоков и поглощающее кинетический урон."
+    "description": "Воплощение бушующего водоворота, легко сокрушающее броню давлением водных потоков и поглощающее кинетический урон.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "ice-elemental",
@@ -2933,7 +6195,47 @@
     "lvl_min": 30,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Кристаллизованная форма водной стихии, замораживающая пространство вокруг себя и разящая ледяными иглами."
+    "description": "Кристаллизованная форма водной стихии, замораживающая пространство вокруг себя и разящая ледяными иглами.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "tidal-lord",
@@ -2951,7 +6253,47 @@
     "lvl_min": 60,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Древний владыка океанических глубин, способный призывать сокрушительные цунами и повелевать океанскими течениями."
+    "description": "Древний владыка океанических глубин, способный призывать сокрушительные цунами и повелевать океанскими течениями.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "earth-elemental",
@@ -2968,7 +6310,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Монолитное создание из камня и почвы, наделенное колоссальной физической стойкостью и сокрушительным весом."
+    "description": "Монолитное создание из камня и почвы, наделенное колоссальной физической стойкостью и сокрушительным весом.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "elder-earth-elemental",
@@ -2985,7 +6367,47 @@
     "lvl_min": 15,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Древний каменный титан, способный вызывать локальные землетрясения и проходить сквозь твердые горные породы."
+    "description": "Древний каменный титан, способный вызывать локальные землетрясения и проходить сквозь твердые горные породы.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "crystal-elemental",
@@ -3003,7 +6425,47 @@
     "lvl_min": 30,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Земляная сущность высокой плотности, тело которой состоит из прочнейших самоцветов, преломляющих магические лучи."
+    "description": "Земляная сущность высокой плотности, тело которой состоит из прочнейших самоцветов, преломляющих магические лучи.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "earth-lord",
@@ -3021,7 +6483,47 @@
     "lvl_min": 60,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Первородный повелитель литосферы, чья нерушимая плоть выдерживает удары божественного масштаба."
+    "description": "Первородный повелитель литосферы, чья нерушимая плоть выдерживает удары божественного масштаба.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "air-elemental",
@@ -3038,7 +6540,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Стремительный вихрь первородного ветра, перемещающийся с головокружительной скоростью и рассекающий воздух."
+    "description": "Стремительный вихрь первородного ветра, перемещающийся с головокружительной скоростью и рассекающий воздух.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "elder-air-elemental",
@@ -3055,7 +6597,47 @@
     "lvl_min": 15,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Разрушительный ураганный вихрь, подбрасывающий врагов в воздух и наносящий шквал ударов сжатыми воздушными лезвиями."
+    "description": "Разрушительный ураганный вихрь, подбрасывающий врагов в воздух и наносящий шквал ударов сжатыми воздушными лезвиями.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "storm-elemental",
@@ -3073,7 +6655,47 @@
     "lvl_min": 30,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Бушующее грозовое облако, генерирующее электрические разряды колоссальной мощности и оглушительный гром."
+    "description": "Бушующее грозовое облако, генерирующее электрические разряды колоссальной мощности и оглушительный гром.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "storm-lord",
@@ -3091,7 +6713,47 @@
     "lvl_min": 60,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Легендарный правитель небесных штормов, одним взмахом порождающий опустошительные смерчи и грозы."
+    "description": "Легендарный правитель небесных штормов, одним взмахом порождающий опустошительные смерчи и грозы.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "clay-golem",
@@ -3109,7 +6771,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Базовый конструкт из обожжённой глины, оживлённый магическим ядром. Обладает вязким телом, амортизирующим тупые удары."
+    "description": "Базовый конструкт из обожжённой глины, оживлённый магическим ядром. Обладает вязким телом, амортизирующим тупые удары.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "stone-golem",
@@ -3127,7 +6829,47 @@
     "lvl_min": 10,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Массивный страж, высеченный из цельного гранита. Отличается высокой прочностью и полным иммунитетом к ядам и кровотечению."
+    "description": "Массивный страж, высеченный из цельного гранита. Отличается высокой прочностью и полным иммунитетом к ядам и кровотечению.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "iron-golem",
@@ -3145,7 +6887,47 @@
     "lvl_min": 25,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Тяжелый боевой автомат из кованого железа, устойчивый к обычному оружию и наделенный огромной сокрушающей силой."
+    "description": "Тяжелый боевой автомат из кованого железа, устойчивый к обычному оружию и наделенный огромной сокрушающей силой.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "crystal-golem",
@@ -3163,7 +6945,47 @@
     "lvl_min": 45,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Редкий конструкт из зачарованных минералов и кристаллов, способный отражать враждебную магию обратно во врагов."
+    "description": "Редкий конструкт из зачарованных минералов и кристаллов, способный отражать враждебную магию обратно во врагов.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "adamantine-golem",
@@ -3181,7 +7003,47 @@
     "lvl_min": 70,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Шедевр магической инженерии из легендарного адамантита. Практически неуязвим для физических и магических атак."
+    "description": "Шедевр магической инженерии из легендарного адамантита. Практически неуязвим для физических и магических атак.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "raven",
@@ -3199,7 +7061,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Умная и осторожная птица с чёрным оперением, служащая разведчиком и вестником тайн в темной магии."
+    "description": "Умная и осторожная птица с чёрным оперением, служащая разведчиком и вестником тайн в темной магии.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "falcon",
@@ -3217,7 +7119,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Стремительный пернатый хищник с феноменальным зрением, атакующий добычу в молниеносном пикирующем полёте."
+    "description": "Стремительный пернатый хищник с феноменальным зрением, атакующий добычу в молниеносном пикирующем полёте.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "shark",
@@ -3235,7 +7177,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Опасный морской хищник с острыми, как бритва, зубами и непревзойдённым чутьем на запах крови в воде."
+    "description": "Опасный морской хищник с острыми, как бритва, зубами и непревзойдённым чутьем на запах крови в воде.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "megalodon",
@@ -3254,7 +7236,47 @@
     "lvl_min": 25,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Доисторический исполинский хищник глубин, способный перекусывать надвое корабли и морских чудовищ."
+    "description": "Доисторический исполинский хищник глубин, способный перекусывать надвое корабли и морских чудовищ.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "octopus",
@@ -3272,7 +7294,47 @@
     "lvl_min": 1,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Разумный головоногий моллюск, обладающий восемью щупальцами с присосками, чернильной защитой и природной маскировкой."
+    "description": "Разумный головоногий моллюск, обладающий восемью щупальцами с присосками, чернильной защитой и природной маскировкой.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "giant-octopus",
@@ -3291,7 +7353,47 @@
     "lvl_min": 20,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Колоссальный глубоководный моллюск, чьи мощные щупальца способны сминать корпуса кораблей и утаскивать их на дно."
+    "description": "Колоссальный глубоководный моллюск, чьи мощные щупальца способны сминать корпуса кораблей и утаскивать их на дно.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "kraken",
@@ -3310,7 +7412,47 @@
     "lvl_min": 65,
     "skill_points_per_level": 1,
     "spell_points_per_level": 0,
-    "description": "Легендарное чудовище бездны, властвующее над морскими пучинами и способное вызывать чудовищные водовороты."
+    "description": "Легендарное чудовище бездны, властвующее над морскими пучинами и способное вызывать чудовищные водовороты.",
+    "attribute_converters": {
+      "end": {
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
+      },
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
+      },
+      "int": {
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
+      }
+    },
+    "base_stats": {
+      "evasion": 1
+    }
   },
   {
     "id": "pig",
@@ -3336,29 +7478,44 @@
       "init": 5,
       "crit_chance": 5,
       "crit_dmg": 50,
-      "res": {}
+      "res": {},
+      "evasion": 1
     },
     "attribute_converters": {
-      "str": {
-        "hp": 20,
-        "atk_phys": 10,
-        "def_phys": 8,
-        "crit_dmg": 0
-      },
       "end": {
-        "hp": 35,
-        "def_phys": 10
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
       },
-      "agi": {
-        "spd": 0.1,
-        "init": 2,
-        "atk_phys": 4,
-        "crit_chance": 0
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
       },
       "int": {
-        "mp": 20,
-        "atk_mag": 10,
-        "def_mag": 8
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
       }
     }
   },
@@ -3386,29 +7543,44 @@
       "init": 5,
       "crit_chance": 5,
       "crit_dmg": 50,
-      "res": {}
+      "res": {},
+      "evasion": 1
     },
     "attribute_converters": {
-      "str": {
-        "hp": 20,
-        "atk_phys": 10,
-        "def_phys": 8,
-        "crit_dmg": 0
-      },
       "end": {
-        "hp": 35,
-        "def_phys": 10
+        "hp": 2,
+        "def_phys": 2,
+        "res": {
+          "physical": 0.2,
+          "water": 0.1,
+          "fire": 0.1,
+          "cold": 0.1,
+          "lightning": 0.1,
+          "poison": 0.1
+        }
       },
-      "agi": {
-        "spd": 0.1,
-        "init": 2,
-        "atk_phys": 4,
-        "crit_chance": 0
+      "str": {
+        "hp": 1,
+        "def_phys": 1,
+        "atk_phys": 1,
+        "crit_dmg": 1
       },
       "int": {
-        "mp": 20,
-        "atk_mag": 10,
-        "def_mag": 8
+        "mp": 1,
+        "atk_mag": 1,
+        "def_mag": 1,
+        "res": {
+          "holy": 0.1,
+          "dark": 0.1,
+          "magic": 0.1
+        }
+      },
+      "agi": {
+        "init": 1,
+        "atk_phys": 1,
+        "crit_chance": 1,
+        "crit_dmg": 0.5,
+        "evasion": 0.5
       }
     }
   }
