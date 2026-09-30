@@ -1,6 +1,10 @@
 {
   "body": {
-    "image": "images/sprites/characters/enri/2d/pelvis.png"
+    "image": "images/sprites/characters/enri/2d/pelvis.png",
+    "offset": {
+      "x": 0,
+      "y": 18.12
+    }
   },
   "torso": {
     "image": "images/sprites/characters/enri/2d/torso.png",

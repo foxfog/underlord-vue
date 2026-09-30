@@ -131,8 +131,10 @@ export function useStoryCharacters({ characterData } = {}) {
 			// Apply scale if provided, or reset to default size
 			if (typeof step === 'object' && step.scale !== undefined) {
 				character.scale = step.scale
+				character.stepScale = step.scale
 			} else {
 				character.scale = character.size || 1
+				character.stepScale = null
 			}
 
 			// Apply class if provided

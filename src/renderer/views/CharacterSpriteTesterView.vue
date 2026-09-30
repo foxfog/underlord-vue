@@ -58,6 +58,30 @@
 				</button>
 			</div>
 
+			<!-- Render Engine Switcher (Canvas 2D vs Legacy DOM) -->
+			<div class="header-engine-tabs">
+				<button
+					type="button"
+					class="engine-tab-btn"
+					:class="{ __active: renderEngine === 'canvas' }"
+					title="Canvas 2D: точные повороты вокруг центра без скачков и разрывов Z-Index"
+					@click="renderEngine = 'canvas'"
+				>
+					<span class="etb-icon">⚡</span>
+					<span>Canvas</span>
+				</button>
+				<button
+					type="button"
+					class="engine-tab-btn"
+					:class="{ __active: renderEngine === 'dom' }"
+					title="DOM / CSS: устаревший режим верстки через <div>"
+					@click="renderEngine = 'dom'"
+				>
+					<span class="etb-icon">🧱</span>
+					<span>DOM</span>
+				</button>
+			</div>
+
 			<!-- Header Actions -->
 			<div class="header-right">
 				<button
@@ -411,7 +435,7 @@
 								v-for="h in rulerMarks"
 								:key="h"
 								class="ruler-mark"
-								:class="{ __zero: h === 0 }"
+								:class="{ __zero: h === 0, __negative: h < 0 }"
 								:style="{ bottom: `${(h / 240) * 100}%` }"
 							>
 								<span class="mark-line"></span>
@@ -456,8 +480,39 @@
 							</div>
 						</div>
 
-						<!-- Character Rig Container -->
+						<!-- Character Rig Container: Canvas 2D Engine -->
 						<div
+							v-if="renderEngine === 'canvas'"
+							class="char-canvas-stage-wrapper"
+						>
+							<CharacterCanvas
+								ref="characterCanvasRef"
+								:character-id="selectedCharacterId"
+								:body-parts="bodyParts"
+								:character-scale="characterScale"
+								:root-offset="rootOffset"
+								:orientation="orientation === 'inverted' ? 'left' : 'right'"
+								:part-rotations="partRotations"
+								:part-translations="partTranslations"
+								:part-scales="partScales"
+								:part-opacities="partOpacities"
+								:part-pivots="partPivots"
+								:animated-sprites="animatedSprites"
+								:eye-offset="eyeLinkedOffset"
+								:selected-part-name="selectedPartName"
+								:get-effective-part-image="getEffectivePartImage"
+								:is-isometric="false"
+								:bleed="stageBleed"
+								:relative-centers="true"
+								:zoom="stageZoom"
+								@select-part="onPartClick"
+								@rendered="onCanvasRendered"
+							/>
+						</div>
+
+						<!-- Character Rig Container: Legacy DOM Engine (Fallback) -->
+						<div
+							v-else
 							class="char character-rig-root"
 							ref="charRigRef"
 							:class="[
@@ -613,6 +668,23 @@
 							>
 								✂️ Разделить правую руку
 							</button>
+						</div>
+					</div>
+
+					<!-- Model Height & Scale Summary Bar -->
+					<div v-if="viewMode !== 'isometric'" class="model-quick-scale-bar">
+						<div class="mqsb-info">
+							<span class="mqsb-label">Целевой рост:</span>
+							<strong class="mqsb-target" :title="`Канонический рост из values.json: ${baseHeightCm} см`">🎯 {{ baseHeightCm }} см</strong>
+							<span class="mqsb-sep">•</span>
+							<span class="mqsb-label">Скейл:</span>
+							<span class="mqsb-scale">{{ characterScale.toFixed(3) }}x</span>
+						</div>
+						<div class="mqsb-actions">
+							<button type="button" class="mini-btn" title="Уменьшить масштаб модели на 0.01" @click="adjustScale(-0.01)">-0.01</button>
+							<button type="button" class="mini-btn __reset" title="Сбросить масштаб в 1.000" @click="characterScale = 1.0">1.0</button>
+							<button type="button" class="mini-btn" title="Увеличить масштаб модели на 0.01" @click="adjustScale(0.01)">+0.01</button>
+							<button type="button" class="mini-btn __save" title="Сохранить скейл в values.json" @click="saveValuesJson">💾</button>
 						</div>
 					</div>
 
@@ -838,13 +910,216 @@
 							</div>
 						</div>
 
+						<!-- Scale: Model Scale (when body/root) or Part Scale (when child part) -->
+						<div
+							v-if="selectedPartName === 'body'"
+							class="control-field __highlight-scale-card"
+						>
+							<div class="field-label-row">
+								<label class="field-label">Скейл визуала (Scale):</label>
+								<div class="field-label-actions">
+									<span class="field-val __highlight">{{ characterScale.toFixed(3) }}x</span>
+									<span
+										class="field-badge-cm"
+										:title="`Канонический рост персонажа: ${baseHeightCm} см. Подгоните макушку спрайта под желтую линию ${baseHeightCm} см на линейке.`"
+									>
+										🎯 Цель: {{ baseHeightCm }} см
+									</span>
+								</div>
+							</div>
+							<div class="field-range-row">
+								<input
+									v-model.number="characterScale"
+									type="range"
+									min="0.3"
+									max="2.5"
+									step="0.001"
+									class="studio-range"
+								/>
+								<input
+									v-model.number="characterScale"
+									type="number"
+									step="0.001"
+									min="0.2"
+									max="3.0"
+									class="studio-number-input __precise"
+								/>
+							</div>
+							<!-- Quick Fine-Tuning Steppers -->
+							<div class="fine-tune-row __compact">
+								<span class="ftr-label">Точная подгонка до тысячных:</span>
+								<div class="ftr-buttons">
+									<button
+										type="button"
+										class="ftr-btn"
+										title="Уменьшить масштаб на 0.05"
+										@click="adjustScale(-0.05)"
+									>
+										-0.05
+									</button>
+									<button
+										type="button"
+										class="ftr-btn"
+										title="Уменьшить масштаб на 0.01"
+										@click="adjustScale(-0.01)"
+									>
+										-0.01
+									</button>
+									<button
+										type="button"
+										class="ftr-btn __fine"
+										title="Уменьшить масштаб на 0.001"
+										@click="adjustScale(-0.001)"
+									>
+										-0.001
+									</button>
+									<button
+										type="button"
+										class="ftr-btn __reset"
+										title="Сбросить масштаб в 1.000"
+										@click="characterScale = 1.0"
+									>
+										1.000
+									</button>
+									<button
+										type="button"
+										class="ftr-btn __fine"
+										title="Увеличить масштаб на 0.001"
+										@click="adjustScale(0.001)"
+									>
+										+0.001
+									</button>
+									<button
+										type="button"
+										class="ftr-btn"
+										title="Увеличить масштаб на 0.01"
+										@click="adjustScale(0.01)"
+									>
+										+0.01
+									</button>
+									<button
+										type="button"
+										class="ftr-btn"
+										title="Увеличить масштаб на 0.05"
+										@click="adjustScale(0.05)"
+									>
+										+0.05
+									</button>
+								</div>
+							</div>
+							<div class="scale-save-row">
+								<button
+									type="button"
+									class="action-btn __save-alt __sm __w-full"
+									title="Сохранить размер модели (size) в values.json"
+									@click="saveValuesJson"
+								>
+									<span>💾</span> Сохранить скейл в values.json
+								</button>
+							</div>
+						</div>
+
+						<!-- Scale for Child Parts (part scale) -->
+						<div v-else class="control-field">
+							<div class="field-label-row">
+								<label class="field-label">Масштаб детали (Part Scale):</label>
+								<div class="field-label-actions">
+									<span class="field-val">{{ Number(currentPart.scale || 1).toFixed(2) }}x</span>
+									<button
+										v-if="currentPart.scale && currentPart.scale !== 1"
+										type="button"
+										class="mini-btn"
+										title="Сбросить масштаб детали в 1.0"
+										@click="resetPartScale(selectedPartName)"
+									>
+										🔄 1.0
+									</button>
+								</div>
+							</div>
+							<div class="field-range-row">
+								<input
+									v-model.number="currentPart.scale"
+									type="range"
+									min="0.2"
+									max="2.5"
+									step="0.01"
+									class="studio-range"
+									@input="onPartScaleInput(selectedPartName, $event.target.value)"
+								/>
+								<input
+									v-model.number="currentPart.scale"
+									type="number"
+									step="0.01"
+									min="0.1"
+									max="3.0"
+									class="studio-number-input"
+									@input="onPartScaleInput(selectedPartName, $event.target.value)"
+								/>
+							</div>
+							<div class="fine-tune-row __compact">
+								<div class="ftr-buttons">
+									<button
+										type="button"
+										class="ftr-btn"
+										title="Уменьшить масштаб детали на 0.05"
+										@click="adjustPartScale(selectedPartName, -0.05)"
+									>
+										-0.05
+									</button>
+									<button
+										type="button"
+										class="ftr-btn"
+										title="Уменьшить масштаб детали на 0.01"
+										@click="adjustPartScale(selectedPartName, -0.01)"
+									>
+										-0.01
+									</button>
+									<button
+										type="button"
+										class="ftr-btn __reset"
+										title="Сбросить масштаб детали в 1.00"
+										@click="resetPartScale(selectedPartName)"
+									>
+										1.00
+									</button>
+									<button
+										type="button"
+										class="ftr-btn"
+										title="Увеличить масштаб детали на 0.01"
+										@click="adjustPartScale(selectedPartName, 0.01)"
+									>
+										+0.01
+									</button>
+									<button
+										type="button"
+										class="ftr-btn"
+										title="Увеличить масштаб детали на 0.05"
+										@click="adjustPartScale(selectedPartName, 0.05)"
+									>
+										+0.05
+									</button>
+								</div>
+							</div>
+						</div>
+
 						<!-- Offset X & Offset Y -->
 						<div class="control-field">
 							<div class="field-label-row">
 								<label class="field-label"
 									>Смещение по горизонтали (Offset X %):</label
 								>
-								<span class="field-val">{{ Number(currentPart.offset.x || 0).toFixed(2) }}%</span>
+								<div class="field-label-actions">
+									<span class="field-val">{{ Number(currentPart.offset?.x || 0).toFixed(2) }}%</span>
+									<button
+										v-if="currentPart.offset?.x"
+										type="button"
+										class="mini-btn"
+										title="Сбросить смещение X в 0"
+										@click="currentPart.offset.x = 0"
+									>
+										🔄 0%
+									</button>
+								</div>
 							</div>
 							<div class="field-range-row">
 								<input
@@ -869,7 +1144,18 @@
 								<label class="field-label"
 									>Смещение по вертикали (Offset Y %):</label
 								>
-								<span class="field-val">{{ Number(currentPart.offset.y || 0).toFixed(2) }}%</span>
+								<div class="field-label-actions">
+									<span class="field-val">{{ Number(currentPart.offset?.y || 0).toFixed(2) }}%</span>
+									<button
+										v-if="currentPart.offset?.y"
+										type="button"
+										class="mini-btn"
+										title="Сбросить смещение Y в 0"
+										@click="currentPart.offset.y = 0"
+									>
+										🔄 0%
+									</button>
+								</div>
 							</div>
 							<div class="field-range-row">
 								<input
@@ -889,10 +1175,44 @@
 							</div>
 						</div>
 
+						<!-- Rotation Angle (Degrees) around Center -->
+						<div class="control-field">
+							<div class="field-label-row">
+								<label class="field-label">Угол вращения (Degrees):</label>
+								<div class="field-label-actions">
+									<span class="field-val">{{ Math.round(partRotations[selectedPartName] || 0) }}°</span>
+									<button
+										v-if="partRotations[selectedPartName]"
+										type="button"
+										class="mini-btn"
+										title="Сбросить угол вращения в 0°"
+										@click="partRotations[selectedPartName] = 0"
+									>
+										🔄 0°
+									</button>
+								</div>
+							</div>
+							<div class="field-range-row">
+								<input
+									v-model.number="partRotations[selectedPartName]"
+									type="range"
+									min="-720"
+									max="720"
+									step="1"
+									class="studio-range"
+								/>
+								<input
+									v-model.number="partRotations[selectedPartName]"
+									type="number"
+									class="studio-number-input"
+								/>
+							</div>
+						</div>
+
 						<!-- Pivot Point / Anchor -->
 						<div class="control-field">
 							<div class="field-label-row">
-								<label class="field-label">Точка вращения (Pivot X / Y %):</label>
+								<label class="field-label" title="Центр вращения спрайта (по умолчанию 50%, 50% - строго центр)">Точка центра / Пивот (Pivot %):</label>
 								<div class="field-label-actions">
 									<span class="field-val"
 										>{{ Number(currentPivot.x || 0).toFixed(2) }}%, {{ Number(currentPivot.y || 0).toFixed(2) }}%</span
@@ -1812,18 +2132,34 @@ import { useRouter, useRoute } from 'vue-router'
 import { useCharacterRigStudio } from '@/composables/useCharacterRigStudio'
 import EyeDirectionPad from '@/components/game/characters/EyeDirectionPad.vue'
 import RigPartNode from '@/components/game/characters/RigPartNode.vue'
+import CharacterCanvas from '@/components/game/characters/CharacterCanvas.vue'
 import CharacterAnimationEditorModal from '@/components/game/characters/CharacterAnimationEditorModal.vue'
 
 const router = useRouter()
 const route = useRoute()
 const charRigRef = ref(null)
 const charBodyCanvasRef = ref(null)
+const characterCanvasRef = ref(null)
 const stageFrameRef = ref(null)
+const renderEngine = ref('canvas')
 let charResizeObserver = null
 let stageResizeObserver = null
 const partCenters = ref([])
 let updateCentersRafId = null
 let animCentersRafId = null
+
+const stageBleed = ref({ top: 0, bottom: 0, left: 0, right: 0 })
+
+function updateStageBleed() {
+	if (!stageFrameRef.value) return
+	const em = parseFloat(getComputedStyle(stageFrameRef.value).fontSize) || 16
+	stageBleed.value = {
+		top: Math.round(3.5 * em),
+		bottom: Math.round(10.0 * em),
+		left: Math.round(8.0 * em),
+		right: Math.round(8.0 * em)
+	}
+}
 
 const {
 	charactersList,
@@ -1837,7 +2173,6 @@ const {
 	isBackView,
 	characterScale,
 	baseHeightCm,
-	effectiveHeightCm,
 	rootOffset,
 	adjustRootOffset,
 	resetRootOffset,
@@ -1960,6 +2295,35 @@ function invertCenterParts() {
 	visibleCenterParts.value = all.filter((k) => !visibleCenterParts.value.includes(k))
 }
 
+function onCanvasRendered(centers) {
+	if (renderEngine.value !== 'canvas') return
+	if (!showSpriteCenter.value || viewMode.value === 'isometric') {
+		if (partCenters.value.length > 0) {
+			partCenters.value = []
+		}
+		return
+	}
+	const targetNames =
+		visibleCenterParts.value.length > 0 ? visibleCenterParts.value : Object.keys(bodyParts)
+
+	partCenters.value = centers
+		.filter((c) => targetNames.includes(c.name))
+		.map((c) => {
+			const part = bodyParts[c.name]
+			const isRoot = !part?.parent || c.name === 'body'
+			const offsetInfo = isRoot
+				? ' [Корень]'
+				: ` [offset: X=${part?.offset?.x ?? 0}%, Y=${part?.offset?.y ?? 0}%]`
+			return {
+				name: c.name,
+				x: Number(c.x.toFixed(2)),
+				y: Number(c.y.toFixed(2)),
+				isRoot: c.isRoot,
+				title: `Точка центра: ${c.name}${offsetInfo} [Z: ${c.zindex}]`
+			}
+		})
+}
+
 function updatePartCenters() {
 	if (!showSpriteCenter.value || viewMode.value === 'isometric') {
 		if (partCenters.value.length > 0) {
@@ -1967,6 +2331,15 @@ function updatePartCenters() {
 		}
 		return
 	}
+
+	if (renderEngine.value === 'canvas') {
+		if (characterCanvasRef.value) {
+			const centers = characterCanvasRef.value.getPartCenters()
+			onCanvasRendered(centers)
+		}
+		return
+	}
+
 	if (!stageFrameRef.value || !charBodyCanvasRef.value) {
 		return
 	}
@@ -2018,6 +2391,10 @@ function scheduleUpdatePartCenters() {
 }
 
 function startAnimCentersLoop() {
+	if (renderEngine.value === 'canvas') {
+		// Canvas updates reactively and emits @rendered
+		return
+	}
 	if (animCentersRafId) return
 	function loop() {
 		if (!isPlaying.value) {
@@ -2073,6 +2450,9 @@ watch(viewMode, (mode) => {
 	} else {
 		scheduleUpdatePartCenters()
 	}
+})
+watch(renderEngine, () => {
+	scheduleUpdatePartCenters()
 })
 
 // Animation Editor Modal State & Handlers
@@ -2321,7 +2701,7 @@ const newPartName = ref('')
 const newPartParent = ref('body')
 const emotionTargetPart = ref('head')
 
-const rulerMarks = [0, 30, 60, 90, 120, 150, 175, 200, 220, 240]
+const rulerMarks = [-30, 0, 30, 60, 90, 120, 150, 175, 200, 220, 240]
 
 const scalePresets = [
 	{ label: 'Ребёнок / Гном', val: 0.7 },
@@ -2332,7 +2712,18 @@ const scalePresets = [
 ]
 
 // Current selected part
-const currentPart = computed(() => bodyParts[selectedPartName.value] || null)
+const currentPart = computed(() => {
+	const part = bodyParts[selectedPartName.value]
+	if (part) {
+		if (!part.offset) {
+			part.offset = { x: 0, y: 0 }
+		}
+		if (part.scale === undefined) {
+			part.scale = 1.0
+		}
+	}
+	return part || null
+})
 const currentPivot = computed(() => {
 	if (!partPivots[selectedPartName.value]) {
 		partPivots[selectedPartName.value] = { x: 50, y: 50 }
@@ -2523,6 +2914,27 @@ function adjustScale(delta) {
 	)
 }
 
+function onPartScaleInput(partName, val) {
+	const num = Number(val)
+	if (!isNaN(num)) {
+		partScales[partName] = num
+	}
+}
+
+function adjustPartScale(partName, delta) {
+	if (!bodyParts[partName]) return
+	const current = bodyParts[partName].scale ?? 1.0
+	const next = Number(Math.max(0.1, Math.min(3.0, current + delta)).toFixed(2))
+	bodyParts[partName].scale = next
+	partScales[partName] = next
+}
+
+function resetPartScale(partName) {
+	if (!bodyParts[partName]) return
+	bodyParts[partName].scale = 1.0
+	partScales[partName] = 1.0
+}
+
 onMounted(async () => {
 	await loadCharactersList()
 	const targetChar =
@@ -2533,6 +2945,7 @@ onMounted(async () => {
 				: 'default'
 	await selectCharacter(targetChar)
 	updateCharHeight()
+	updateStageBleed()
 	if (charBodyCanvasRef.value) {
 		charResizeObserver = new ResizeObserver(() => {
 			updateCharHeight()
@@ -2542,11 +2955,15 @@ onMounted(async () => {
 	}
 	if (stageFrameRef.value) {
 		stageResizeObserver = new ResizeObserver(() => {
+			updateStageBleed()
 			scheduleUpdatePartCenters()
 		})
 		stageResizeObserver.observe(stageFrameRef.value)
 	}
-	window.addEventListener('resize', scheduleUpdatePartCenters)
+	window.addEventListener('resize', () => {
+		updateStageBleed()
+		scheduleUpdatePartCenters()
+	})
 	window.addEventListener('keydown', onKeyDown)
 	scheduleUpdatePartCenters()
 })
@@ -2693,6 +3110,49 @@ onMounted(async () => {
 	background: rgba(246, 196, 69, 0.25);
 	color: #f6c445;
 	font-weight: bold;
+}
+
+.header-engine-tabs {
+	display: flex;
+	background: rgba(0, 0, 0, 0.35);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 0.4em;
+	padding: 0.15em;
+	gap: 0.2em;
+}
+
+.engine-tab-btn {
+	background: transparent;
+	border: none;
+	color: #94a3b8;
+	padding: 0.3em 0.8em;
+	border-radius: 0.3em;
+	font-size: 0.82em;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	gap: 0.4em;
+	transition: all 0.2s;
+}
+
+.engine-tab-btn:hover {
+	color: #fff;
+}
+
+.engine-tab-btn.__active {
+	background: linear-gradient(135deg, rgba(16, 185, 129, 0.35) 0%, rgba(5, 150, 105, 0.45) 100%);
+	color: #34d399;
+	font-weight: bold;
+	border: 1px solid rgba(52, 211, 153, 0.3);
+}
+
+.char-canvas-stage-wrapper {
+	position: absolute;
+	top: -3.5em;
+	bottom: -10em;
+	left: -8em;
+	right: -8em;
+	pointer-events: auto;
 }
 
 .header-right {
@@ -2911,8 +3371,8 @@ onMounted(async () => {
 .height-ruler {
 	position: absolute;
 	left: 0;
-	top: 0;
-	bottom: 0;
+	top: -3.5em;
+	bottom: -10em;
 	width: 4.5em;
 	border-right: 1px dashed rgba(255, 255, 255, 0.2);
 	pointer-events: none;
@@ -2951,12 +3411,22 @@ onMounted(async () => {
 	font-weight: bold;
 }
 
+.ruler-mark.__negative .mark-line {
+	background: rgba(239, 68, 68, 0.5);
+	width: 1em;
+	height: 0.08em;
+}
+
+.ruler-mark.__negative .mark-text {
+	color: #f87171;
+}
+
 /* Horizontal Center Axis Guide (Vertical Line X: 0) */
 .center-axis-guide {
 	position: absolute;
 	left: 50%;
-	top: 0;
-	bottom: 0;
+	top: -3.5em;
+	bottom: -10em;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
@@ -4092,6 +4562,99 @@ onMounted(async () => {
 .eob-title {
 	font-size: 0.78em;
 	color: #f6c445;
+}
+
+/* Quick Model Scale Bar & Inspector Scale Card */
+.model-quick-scale-bar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	background: rgba(246, 196, 69, 0.08);
+	border: 1px solid rgba(246, 196, 69, 0.25);
+	border-radius: 0.35em;
+	padding: 0.45em 0.6em;
+	margin-bottom: 0.65em;
+	gap: 0.4em;
+}
+
+.mqsb-info {
+	display: flex;
+	align-items: center;
+	gap: 0.35em;
+	flex-wrap: wrap;
+	font-size: 0.76em;
+}
+
+.mqsb-label {
+	color: #94a3b8;
+}
+
+.mqsb-val {
+	color: #ffffff;
+}
+
+.mqsb-target {
+	color: #f6c445;
+	font-weight: 600;
+}
+
+.mqsb-sep {
+	color: rgba(255, 255, 255, 0.2);
+	font-size: 0.85em;
+}
+
+.mqsb-scale {
+	color: #38bdf8;
+	font-family: monospace;
+	font-size: 0.95em;
+}
+
+.mqsb-actions {
+	display: flex;
+	align-items: center;
+	gap: 0.25em;
+}
+
+.mini-btn.__save {
+	color: #22c55e;
+	border-color: rgba(34, 197, 94, 0.3);
+}
+
+.mini-btn.__save:hover {
+	background: rgba(34, 197, 94, 0.2);
+	border-color: #22c55e;
+	color: #ffffff;
+}
+
+.mini-btn.__reset {
+	color: #f6c445;
+	border-color: rgba(246, 196, 69, 0.3);
+}
+
+.mini-btn.__reset:hover {
+	background: rgba(246, 196, 69, 0.2);
+	border-color: #f6c445;
+	color: #ffffff;
+}
+
+.control-field.__highlight-scale-card {
+	background: rgba(246, 196, 69, 0.06);
+	border: 1px solid rgba(246, 196, 69, 0.25);
+	border-radius: 0.35em;
+	padding: 0.55em;
+}
+
+.field-badge-cm {
+	font-size: 0.72em;
+	color: #f6c445;
+	background: rgba(246, 196, 69, 0.15);
+	padding: 0.15em 0.45em;
+	border-radius: 0.25em;
+	font-weight: 600;
+}
+
+.scale-save-row {
+	margin-top: 0.45em;
 }
 
 /* View & Scale Tools */

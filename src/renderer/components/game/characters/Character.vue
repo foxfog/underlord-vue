@@ -11,18 +11,29 @@
 		:style="characterStyle"
 		@click="onCharacterClick"
 	>
-		<div class="char-body" ref="charBodyRef">
-			<!-- Base body sprites -->
-			<template v-for="(sprite, spriteName) in spritesByParent[null]" :key="spriteName">
-				<SpritePart
-					:sprite="sprite"
-					:sprite-name="spriteName"
-					:character-id="character.id"
-					:sprites="character.sprites"
-					:sprites-by-parent="spritesByParent"
-					:equipment-by-slot="character.equipmentBySlot"
-					:part-animations="character.partAnimations || {}"
-				/>
+		<div class="char-body" ref="charBodyRef" :style="charBodyStyle">
+			<!-- Canvas 2D Character Renderer (Default) -->
+			<CharacterCanvas
+				v-if="useCanvas"
+				:character="character"
+				:zoom="characterStyle.scale"
+				:is-interactive="Boolean(character.interaction)"
+				@character-click="onCharacterClick"
+			/>
+
+			<!-- Base body sprites (Legacy DOM Fallback) -->
+			<template v-else>
+				<template v-for="(sprite, spriteName) in spritesByParent[null]" :key="spriteName">
+					<SpritePart
+						:sprite="sprite"
+						:sprite-name="spriteName"
+						:character-id="character.id"
+						:sprites="character.sprites"
+						:sprites-by-parent="spritesByParent"
+						:equipment-by-slot="character.equipmentBySlot"
+						:part-animations="character.partAnimations || {}"
+					/>
+				</template>
 			</template>
 		</div>
 	</div>
@@ -31,11 +42,16 @@
 <script setup>
 import { computed, ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import SpritePart from './SpritePart.vue'
+import CharacterCanvas from './CharacterCanvas.vue'
 
 const props = defineProps({
 	character: {
 		type: Object,
 		required: true
+	},
+	useCanvas: {
+		type: Boolean,
+		default: true
 	}
 })
 
@@ -47,14 +63,44 @@ function onCharacterClick(event) {
 	}
 }
 
+const charBodyStyle = computed(() => {
+	if (!props.useCanvas) return {}
+	return {
+		aspectRatio: '9 / 16',
+		height: '100%',
+		width: 'auto',
+		minWidth: '18em',
+		position: 'relative'
+	}
+})
+
 const charBodyRef = ref(null)
 const isAnimating = ref(false)
 let animationTimeout = null
 
 // Compute positioning style from character.position object
 const characterStyle = computed(() => {
+	let scaleVal = 1
+	if (props.useCanvas) {
+		// When using Canvas engine, CharacterCanvas internally draws the model at biological scale (character.size).
+		// CSS scale on .char is only used for framing zoom (close-ups, e.g. step.scale: 2.0).
+		if (props.character.stepScale !== undefined && props.character.stepScale !== null) {
+			scaleVal = props.character.stepScale
+		} else if (
+			props.character.scale !== undefined &&
+			props.character.size !== undefined &&
+			props.character.size > 0 &&
+			Math.abs(props.character.scale - props.character.size) > 0.001
+		) {
+			scaleVal = props.character.scale
+		}
+	} else {
+		// Legacy DOM engine: .char handles both biological size and step scale
+		scaleVal = props.character.scale ?? props.character.size ?? 1
+	}
+
 	const style = {
-		scale: props.character.scale ?? props.character.size ?? 1
+		scale: scaleVal
 	}
 
 	// Apply root avatar offset if defined (e.g. from values.json root_offset)

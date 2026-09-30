@@ -759,6 +759,7 @@ export function useCharacterRigStudio() {
 					parent: part.parent || null,
 					zindex: part.zindex ?? part['z-index'] ?? 0,
 					opacity: part.opacity !== undefined ? Number(part.opacity) : 1,
+					scale: part.scale !== undefined ? Number(part.scale) : 1,
 					offset: {
 						x: part.offset?.x ?? 0,
 						y: part.offset?.y ?? 0
@@ -791,6 +792,7 @@ export function useCharacterRigStudio() {
 					parent: part.parent || null,
 					zindex: part.zindex ?? part['z-index'] ?? 0,
 					opacity: part.opacity !== undefined ? Number(part.opacity) : 1,
+					scale: part.scale !== undefined ? Number(part.scale) : 1,
 					offset: {
 						x: part.offset?.x ?? 0,
 						y: part.offset?.y ?? 0
@@ -813,6 +815,8 @@ export function useCharacterRigStudio() {
 					image: part.image || '',
 					parent: part.parent || null,
 					zindex: part.zindex ?? part['z-index'] ?? 0,
+					opacity: part.opacity !== undefined ? Number(part.opacity) : 1,
+					scale: part.scale !== undefined ? Number(part.scale) : 1,
 					offset: {
 						x: part.offset?.x ?? 0,
 						y: part.offset?.y ?? 0
@@ -1765,6 +1769,9 @@ export function useCharacterRigStudio() {
 			if (p.opacity !== undefined && p.opacity !== 1 && p.opacity !== null) {
 				item.opacity = Number(Number(p.opacity).toFixed(2))
 			}
+			if (p.scale !== undefined && p.scale !== 1 && p.scale !== null) {
+				item.scale = Number(Number(p.scale).toFixed(3))
+			}
 			if (p.offset && (p.offset.x !== 0 || p.offset.y !== 0)) {
 				item.offset = { x: Number(p.offset.x), y: Number(p.offset.y) }
 			}
@@ -1797,12 +1804,13 @@ export function useCharacterRigStudio() {
 			if (p.opacity !== undefined && p.opacity !== 1 && p.opacity !== null) {
 				item.opacity = Number(Number(p.opacity).toFixed(2))
 			}
-			if (name === 'body') {
-				if (rootOffset.x !== 0 || rootOffset.y !== 0) {
-					item.offset = { x: Number(rootOffset.x.toFixed(2)), y: Number(rootOffset.y.toFixed(2)) }
-				}
-			} else if (p.offset && (p.offset.x !== 0 || p.offset.y !== 0)) {
+			if (p.scale !== undefined && p.scale !== 1 && p.scale !== null) {
+				item.scale = Number(Number(p.scale).toFixed(3))
+			}
+			if (p.offset && (p.offset.x !== 0 || p.offset.y !== 0)) {
 				item.offset = { x: Number(p.offset.x), y: Number(p.offset.y) }
+			} else if (name === 'body' && (rootOffset.x !== 0 || rootOffset.y !== 0)) {
+				item.offset = { x: Number(rootOffset.x.toFixed(2)), y: Number(rootOffset.y.toFixed(2)) }
 			}
 			jsonToSave[name] = item
 		}
@@ -1810,7 +1818,13 @@ export function useCharacterRigStudio() {
 		try {
 			await writeDataFile(`characters/${charId}/body.json`, jsonToSave)
 			copyParts(bodyParts, vnBodyParts)
-			setStatus(`Файл characters/${charId}/body.json успешно сохранен!`)
+			if (characterValues.value) {
+				const scaledSize = Number(characterScale.value.toFixed(3))
+				characterValues.value.size = scaledSize
+				characterValues.value.scale = scaledSize
+				await writeDataFile(`characters/${charId}/values.json`, characterValues.value)
+			}
+			setStatus(`Файл characters/${charId}/body.json и скейл (${characterScale.value.toFixed(3)}x) успешно сохранены!`)
 			return true
 		} catch (err) {
 			console.error('Ошибка сохранения body.json:', err)
