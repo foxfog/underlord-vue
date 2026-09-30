@@ -120,6 +120,8 @@ export class CharacterRigRenderer {
 		this.rootNode = null
 		this.onNeedRedraw = null
 		this.bleed = { top: 0, bottom: 0, left: 0, right: 0 }
+		this.clipCanvas = null
+		this.clipCtx = null
 	}
 
 	/**
@@ -319,10 +321,18 @@ export class CharacterRigRenderer {
 				localMatrix = translateMatrix(localMatrix, tx, ty)
 			}
 
-			// Eye joystick offset for head/eye/eyeball parts
-			if (name.includes('head') || name.includes('eye')) {
-				const eyeX = eyeOffset?.x ? (eyeOffset.x * nodeWidth * 0.08) : 0
-				const eyeY = eyeOffset?.y ? (eyeOffset.y * nodeHeight * 0.08) : 0
+			// Eye joystick offset: ONLY for eyeballs (eyeball-left, eyeball-right, or parts with eyeball/pupil in name)
+			const isEyeball = name.includes('eyeball') || name.includes('pupil')
+			if (isEyeball) {
+				const isLeft = name.includes('left')
+				const isRight = name.includes('right')
+				const off = (isLeft && eyeOffset?.left)
+					? eyeOffset.left
+					: (isRight && eyeOffset?.right)
+						? eyeOffset.right
+						: eyeOffset
+				const eyeX = off?.x ? (off.x * nodeWidth * 0.15) : 0
+				const eyeY = off?.y ? (off.y * nodeHeight * 0.15) : 0
 				if (eyeX || eyeY) {
 					localMatrix = translateMatrix(localMatrix, eyeX, eyeY)
 				}
@@ -349,12 +359,44 @@ export class CharacterRigRenderer {
 				}
 			}
 
-			// Part Scale
+			// Part Scale & 2D Perspective Deform (rotateX, rotateY, scale)
 			const poseScale = partScales[name]
 			const baseScale = isRoot ? 1 : (partDef.scale !== undefined ? Number(partDef.scale) : 1)
-			const effectiveScale = (poseScale !== undefined && poseScale !== 1) ? poseScale : baseScale
-			if (effectiveScale !== 1) {
-				localMatrix = scaleMatrix(localMatrix, effectiveScale, effectiveScale)
+
+			let sx = 1
+			let sy = 1
+
+			if (typeof poseScale === 'number') {
+				sx *= poseScale
+				sy *= poseScale
+			} else if (poseScale && typeof poseScale === 'object') {
+				if (poseScale.scale !== undefined) {
+					sx *= Number(poseScale.scale)
+					sy *= Number(poseScale.scale)
+				}
+				if (poseScale.scaleX !== undefined) sx *= Number(poseScale.scaleX)
+				if (poseScale.scaleY !== undefined) sy *= Number(poseScale.scaleY)
+				if (poseScale.x !== undefined) sx *= Number(poseScale.x)
+				if (poseScale.y !== undefined) sy *= Number(poseScale.y)
+				// Eye perspective rotation: horizontal turn (yaw / rotateY) compresses X: cos(rotateY)
+				if (poseScale.rotateY !== undefined || poseScale.rotY !== undefined) {
+					const ry = (Number(poseScale.rotateY ?? poseScale.rotY) || 0) * Math.PI / 180
+					sx *= Math.max(0.05, Math.abs(Math.cos(ry)))
+				}
+				// Eye perspective rotation: vertical turn (pitch / rotateX) compresses Y: cos(rotateX)
+				if (poseScale.rotateX !== undefined || poseScale.rotX !== undefined) {
+					const rx = (Number(poseScale.rotateX ?? poseScale.rotX) || 0) * Math.PI / 180
+					sy *= Math.max(0.05, Math.abs(Math.cos(rx)))
+				}
+			}
+
+			if (baseScale !== 1) {
+				sx *= baseScale
+				sy *= baseScale
+			}
+
+			if (sx !== 1 || sy !== 1) {
+				localMatrix = scaleMatrix(localMatrix, sx, sy)
 			}
 
 			// Pivot (defaults to center 50%, 50%)
@@ -380,6 +422,14 @@ export class CharacterRigRenderer {
 
 			const nodeData = {
 				name,
+				parentName: partDef.parent || null,
+				clipToParent: Boolean(
+					partDef.clipToParent ??
+					partDef.clip ??
+					partDef['clip_to_parent'] ??
+					partDef['clip-to-parent'] ??
+					(isEyeball && partDef.parent)
+				),
 				isEquipment: isEquip,
 				isRoot,
 				image: img,
@@ -443,17 +493,112 @@ export class CharacterRigRenderer {
 			ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
 		}
 
-		ctx.imageSmoothingEnabled = false
+		if (isIsometric) {
+			ctx.imageSmoothingEnabled = false
+		} else {
+			ctx.imageSmoothingEnabled = true
+			ctx.imageSmoothingQuality = 'high'
+		}
 
 		for (const node of this.renderQueue) {
 			if (!node.image) continue
 			if (node.opacity <= 0) continue
+
+			const parentNode = (node.clipToParent && node.parentName)
+				? this.computedNodes.get(node.parentName)
+				: null
+
+			if (parentNode && parentNode.image) {
+				// Render clipped to parent's visible alpha mask (e.g. eyeball inside eye-sclera)
+				if (!this.clipCanvas && typeof document !== 'undefined') {
+					this.clipCanvas = document.createElement('canvas')
+					this.clipCtx = this.clipCanvas.getContext('2d')
+				}
+
+				if (this.clipCanvas) {
+					if (this.clipCanvas.width !== ctx.canvas.width || this.clipCanvas.height !== ctx.canvas.height) {
+						this.clipCanvas.width = ctx.canvas.width
+						this.clipCanvas.height = ctx.canvas.height
+					}
+
+					this.clipCtx.setTransform(1, 0, 0, 1, 0, 0)
+					this.clipCtx.clearRect(0, 0, this.clipCanvas.width, this.clipCanvas.height)
+
+					if (isIsometric) {
+						this.clipCtx.imageSmoothingEnabled = false
+					} else {
+						this.clipCtx.imageSmoothingEnabled = true
+						this.clipCtx.imageSmoothingQuality = 'high'
+					}
+
+					// 1. Draw parent image to act as alpha mask
+					const [pa, pb, pc, pd, pe, pf] = parentNode.worldMatrix
+					this.clipCtx.setTransform(pa * dpr, pb * dpr, pc * dpr, pd * dpr, pe * dpr, pf * dpr)
+					this.clipCtx.globalAlpha = 1
+					this.clipCtx.drawImage(
+						parentNode.image,
+						-parentNode.pivotPixelX,
+						-parentNode.pivotPixelY,
+						parentNode.width,
+						parentNode.height
+					)
+
+					// 2. Composite child with source-in: keeps child pixels ONLY where parent alpha > 0
+					this.clipCtx.globalCompositeOperation = 'source-in'
+					const [ca, cb, cc, cd, ce, cf] = node.worldMatrix
+					this.clipCtx.setTransform(ca * dpr, cb * dpr, cc * dpr, cd * dpr, ce * dpr, cf * dpr)
+					this.clipCtx.globalAlpha = node.opacity < 1 ? node.opacity : 1
+					this.clipCtx.drawImage(
+						node.image,
+						-node.pivotPixelX,
+						-node.pivotPixelY,
+						node.width,
+						node.height
+					)
+
+					// 3. Reset composite mode
+					this.clipCtx.globalCompositeOperation = 'source-over'
+
+					// 4. Blit clipped child onto main canvas
+					ctx.save()
+					ctx.setTransform(1, 0, 0, 1, 0, 0)
+					ctx.drawImage(this.clipCanvas, 0, 0)
+					ctx.restore()
+
+					// Editor selection / bounding boxes
+					if (selectedPartName && node.name === selectedPartName) {
+						ctx.save()
+						ctx.setTransform(ca * dpr, cb * dpr, cc * dpr, cd * dpr, ce * dpr, cf * dpr)
+						ctx.lineWidth = 2
+						ctx.strokeStyle = '#f59e0b'
+						ctx.strokeRect(-node.pivotPixelX, -node.pivotPixelY, node.width, node.height)
+						ctx.restore()
+					}
+					if (showBoundingBoxes) {
+						ctx.save()
+						ctx.setTransform(ca * dpr, cb * dpr, cc * dpr, cd * dpr, ce * dpr, cf * dpr)
+						ctx.lineWidth = 1
+						ctx.strokeStyle = 'rgba(16, 185, 129, 0.4)'
+						ctx.strokeRect(-node.pivotPixelX, -node.pivotPixelY, node.width, node.height)
+						ctx.restore()
+					}
+					continue
+				}
+			}
 
 			ctx.save()
 
 			// Apply 2D affine matrix multiplied by device pixel ratio (DPR)
 			const [a, b, c, d, e, f] = node.worldMatrix
 			ctx.setTransform(a * dpr, b * dpr, c * dpr, d * dpr, e * dpr, f * dpr)
+
+			// Ensure smoothing mode is maintained within transformed state
+			if (isIsometric) {
+				ctx.imageSmoothingEnabled = false
+			} else {
+				ctx.imageSmoothingEnabled = true
+				ctx.imageSmoothingQuality = 'high'
+			}
 
 			// Apply opacity
 			if (node.opacity < 1) {
@@ -509,6 +654,22 @@ export class CharacterRigRenderer {
 			const bottom = top + node.height
 
 			if (local.x >= left && local.x <= right && local.y >= top && local.y <= bottom) {
+				if (node.clipToParent && node.parentName) {
+					const parentNode = this.computedNodes.get(node.parentName)
+					if (parentNode) {
+						const parentInv = invertMatrix(parentNode.worldMatrix)
+						if (parentInv) {
+							const pLocal = transformPoint(parentInv, x, y)
+							const pLeft = -parentNode.pivotPixelX
+							const pTop = -parentNode.pivotPixelY
+							const pRight = pLeft + parentNode.width
+							const pBottom = pTop + parentNode.height
+							if (pLocal.x < pLeft || pLocal.x > pRight || pLocal.y < pTop || pLocal.y > pBottom) {
+								continue
+							}
+						}
+					}
+				}
 				return node.name
 			}
 		}

@@ -498,7 +498,7 @@
 								:part-opacities="partOpacities"
 								:part-pivots="partPivots"
 								:animated-sprites="animatedSprites"
-								:eye-offset="eyeLinkedOffset"
+								:eye-offset="effectiveEyeOffset"
 								:selected-part-name="selectedPartName"
 								:get-effective-part-image="getEffectivePartImage"
 								:is-isometric="false"
@@ -545,7 +545,7 @@
 										:part-opacities="partOpacities"
 										:part-custom-styles="partCustomStyles"
 										:animated-sprites="animatedSprites"
-										:eye-offset="eyeLinkedOffset"
+										:eye-offset="effectiveEyeOffset"
 										:show-bones="showBones"
 										:get-effective-part-image="getEffectivePartImage"
 										@select-part="onPartClick"
@@ -884,6 +884,21 @@
 							</div>
 						</div>
 
+						<!-- Clip to Parent Toggle (Маска видимости родителя) -->
+						<div v-if="currentPart.parent" class="control-field">
+							<label class="studio-checkbox-label">
+								<input
+									v-model="currentPart.clipToParent"
+									type="checkbox"
+									class="studio-checkbox"
+								/>
+								<span>✂️ Обрезать по родителю (Clip to Parent)</span>
+							</label>
+							<span class="field-hint">
+								Не выпускает отрисовку этой части за пределы непрозрачных пикселей родителя (например, зрачок внутри склеры глаза)
+							</span>
+						</div>
+
 						<!-- Opacity (Степень прозрачности) -->
 						<div class="control-field">
 							<div class="field-label-row">
@@ -1125,8 +1140,8 @@
 								<input
 									v-model.number="currentPart.offset.x"
 									type="range"
-									min="-100"
-									max="100"
+									min="-500"
+									max="500"
 									step="0.01"
 									class="studio-range"
 								/>
@@ -1161,8 +1176,8 @@
 								<input
 									v-model.number="currentPart.offset.y"
 									type="range"
-									min="-150"
-									max="150"
+									min="-500"
+									max="500"
 									step="0.01"
 									class="studio-range"
 								/>
@@ -1315,8 +1330,8 @@
 								<input
 									:value="(partTranslations[selectedPartName] && partTranslations[selectedPartName].x) || 0"
 									type="range"
-									min="-100"
-									max="100"
+									min="-500"
+									max="500"
 									step="0.01"
 									class="studio-range"
 									@input="
@@ -1349,8 +1364,8 @@
 								<input
 									:value="(partTranslations[selectedPartName] && partTranslations[selectedPartName].y) || 0"
 									type="range"
-									min="-100"
-									max="100"
+									min="-500"
+									max="500"
 									step="0.01"
 									class="studio-range"
 									@input="
@@ -1686,6 +1701,229 @@
 							@update:right-offset="onUpdateRightEyeOffset"
 							@select-preset="applyEyePreset"
 						/>
+					</div>
+
+					<!-- Eye Perspective & Pupil Scale System -->
+					<div class="sidebar-section-card">
+						<div class="ssc-header">
+							<span class="ssc-title">Ракурс и размер зрачков</span>
+							<button
+								type="button"
+								class="mini-btn"
+								title="Сбросить зрачки в исходное положение"
+								@click="resetEyes"
+							>
+								🔄 Сброс
+							</button>
+						</div>
+
+						<!-- Pupil Scale Slider -->
+						<div class="control-field">
+							<div class="field-label-row">
+								<label class="field-label">Размер зрачков (Scale):</label>
+								<div class="field-label-actions">
+									<span class="field-val">{{ Number(eyePupilScale).toFixed(2) }}x</span>
+									<button
+										v-if="eyePupilScale !== 1"
+										type="button"
+										class="mini-btn"
+										title="Сбросить размер в 1.0x"
+										@click="eyePupilScale = 1.0"
+									>
+										🔄 1.0x
+									</button>
+								</div>
+							</div>
+							<div class="field-range-row">
+								<input
+									v-model.number="eyePupilScale"
+									type="range"
+									min="0.2"
+									max="2.5"
+									step="0.01"
+									class="studio-range"
+								/>
+								<input
+									v-model.number="eyePupilScale"
+									type="number"
+									step="0.01"
+									min="0.1"
+									max="3.0"
+									class="studio-number-input"
+								/>
+							</div>
+							<!-- Quick Pupil Presets -->
+							<div class="fine-tune-row __compact">
+								<div class="ftr-buttons">
+									<button
+										type="button"
+										class="ftr-btn"
+										title="Сузить зрачки (подозрение / прищур: 0.5x)"
+										@click="eyePupilScale = 0.5"
+									>
+										0.5x (Подозрение)
+									</button>
+									<button
+										type="button"
+										class="ftr-btn __reset"
+										title="Нормальный размер зрачков (1.0x)"
+										@click="eyePupilScale = 1.0"
+									>
+										1.0x (Норма)
+									</button>
+									<button
+										type="button"
+										class="ftr-btn"
+										title="Расширить зрачки (шок / удивление: 1.4x)"
+										@click="eyePupilScale = 1.4"
+									>
+										1.4x (Удивление)
+									</button>
+								</div>
+							</div>
+						</div>
+
+						<!-- Horizontal Turn (Yaw / Rotate Y) -->
+						<div class="control-field">
+							<div class="field-label-row">
+								<label class="field-label">Поворот по горизонтали (Rotate Y / Yaw):</label>
+								<div class="field-label-actions">
+									<span class="field-val">
+										{{ Math.round(eyeTurnH) }}°
+										<small class="field-subval">
+											(X: {{ Math.cos((eyeTurnH * Math.PI) / 180).toFixed(2) }}x)
+										</small>
+									</span>
+									<button
+										v-if="eyeTurnH !== 0"
+										type="button"
+										class="mini-btn"
+										title="Сбросить угол в 0°"
+										@click="eyeTurnH = 0"
+									>
+										🔄 0°
+									</button>
+								</div>
+							</div>
+							<div class="field-range-row">
+								<input
+									v-model.number="eyeTurnH"
+									type="range"
+									min="-85"
+									max="85"
+									step="1"
+									class="studio-range"
+								/>
+								<input
+									v-model.number="eyeTurnH"
+									type="number"
+									min="-85"
+									max="85"
+									step="1"
+									class="studio-number-input"
+								/>
+							</div>
+							<div class="fine-tune-row __compact">
+								<div class="ftr-buttons">
+									<button
+										type="button"
+										class="ftr-btn"
+										title="Влево (-45°)"
+										@click="eyeTurnH = -45"
+									>
+										-45°
+									</button>
+									<button
+										type="button"
+										class="ftr-btn __reset"
+										title="Прямо (0°)"
+										@click="eyeTurnH = 0"
+									>
+										0°
+									</button>
+									<button
+										type="button"
+										class="ftr-btn"
+										title="Вправо (+45°)"
+										@click="eyeTurnH = 45"
+									>
+										+45°
+									</button>
+								</div>
+							</div>
+							<span class="field-hint">💡 Сужает зрачок по ширине при взгляде влево или вправо</span>
+						</div>
+
+						<!-- Vertical Turn (Pitch / Rotate X) -->
+						<div class="control-field">
+							<div class="field-label-row">
+								<label class="field-label">Поворот по вертикали (Rotate X / Pitch):</label>
+								<div class="field-label-actions">
+									<span class="field-val">
+										{{ Math.round(eyeTurnV) }}°
+										<small class="field-subval">
+											(Y: {{ Math.cos((eyeTurnV * Math.PI) / 180).toFixed(2) }}x)
+										</small>
+									</span>
+									<button
+										v-if="eyeTurnV !== 0"
+										type="button"
+										class="mini-btn"
+										title="Сбросить угол в 0°"
+										@click="eyeTurnV = 0"
+									>
+										🔄 0°
+									</button>
+								</div>
+							</div>
+							<div class="field-range-row">
+								<input
+									v-model.number="eyeTurnV"
+									type="range"
+									min="-85"
+									max="85"
+									step="1"
+									class="studio-range"
+								/>
+								<input
+									v-model.number="eyeTurnV"
+									type="number"
+									min="-85"
+									max="85"
+									step="1"
+									class="studio-number-input"
+								/>
+							</div>
+							<div class="fine-tune-row __compact">
+								<div class="ftr-buttons">
+									<button
+										type="button"
+										class="ftr-btn"
+										title="Вверх (-45°)"
+										@click="eyeTurnV = -45"
+									>
+										-45°
+									</button>
+									<button
+										type="button"
+										class="ftr-btn __reset"
+										title="Прямо (0°)"
+										@click="eyeTurnV = 0"
+									>
+										0°
+									</button>
+									<button
+										type="button"
+										class="ftr-btn"
+										title="Вниз (+45°)"
+										@click="eyeTurnV = 45"
+									>
+										+45°
+									</button>
+								</div>
+							</div>
+							<span class="field-hint">💡 Сужает зрачок по высоте при взгляде вверх или вниз</span>
+						</div>
 					</div>
 				</div>
 
@@ -2183,6 +2421,11 @@ const {
 	eyeLinkedOffset,
 	eyeLeftOffset,
 	eyeRightOffset,
+	eyePupilScale,
+	eyeTurnH,
+	eyeTurnV,
+	updateEyeTransforms,
+	resetEyes,
 	EYE_PRESETS,
 	partRotations,
 	partTranslations,
@@ -2228,6 +2471,16 @@ const {
 	saveIsoBodyJson,
 	saveIsoAnimationsJson
 } = useCharacterRigStudio()
+
+const effectiveEyeOffset = computed(() => {
+	if (eyeControlMode.value === 'independent') {
+		return {
+			left: eyeLeftOffset,
+			right: eyeRightOffset
+		}
+	}
+	return eyeLinkedOffset
+})
 
 // Viewport & Display state
 const stageViewportRef = ref(null)
@@ -3153,6 +3406,7 @@ onMounted(async () => {
 	left: -8em;
 	right: -8em;
 	pointer-events: auto;
+	image-rendering: auto;
 }
 
 .header-right {
@@ -3351,6 +3605,7 @@ onMounted(async () => {
 	display: flex;
 	align-items: center;
 	justify-content: center;
+	image-rendering: auto;
 }
 
 .stage-canvas-area.__with-grid {
@@ -3557,6 +3812,7 @@ onMounted(async () => {
 	position: relative;
 	height: 100%;
 	width: fit-content;
+	image-rendering: auto;
 }
 
 /* Sprite Centers Crosshair Overlay */
@@ -4269,6 +4525,29 @@ onMounted(async () => {
 	font-size: 0.78em;
 	color: #f6c445;
 	font-family: monospace;
+}
+
+.field-subval {
+	font-size: 0.85em;
+	color: #60a5fa;
+	margin-left: 0.3em;
+}
+
+.studio-checkbox-label {
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+	font-size: 0.78em;
+	color: #e2e8f0;
+	cursor: pointer;
+	user-select: none;
+}
+
+.studio-checkbox {
+	accent-color: #f6c445;
+	width: 1.1em;
+	height: 1.1em;
+	cursor: pointer;
 }
 
 .field-label-actions {

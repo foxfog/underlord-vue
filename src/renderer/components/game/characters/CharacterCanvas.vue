@@ -5,13 +5,17 @@
 		:class="[
 			`char-${characterId}`,
 			`orientation-${effectiveOrientation}`,
-			{ 'is-interactive': isInteractive }
+			{ 'is-interactive': isInteractive, '__is-isometric': effectiveIsIsometric }
 		]"
 		@click="onCanvasClick"
 		@mousemove="onCanvasMouseMove"
 		@mouseleave="onCanvasMouseLeave"
 	>
-		<canvas ref="canvasRef" class="char-canvas"></canvas>
+		<canvas
+			ref="canvasRef"
+			class="char-canvas"
+			:class="{ '__is-isometric': effectiveIsIsometric }"
+		></canvas>
 	</div>
 </template>
 
@@ -170,6 +174,10 @@ const effectiveOrientation = computed(() => {
 	return props.character?.orientation || props.orientation || 'right'
 })
 
+const effectiveIsIsometric = computed(() => {
+	return Boolean(props.isIsometric || props.character?.isIsometric)
+})
+
 const effectiveEquipment = computed(() => {
 	return props.character?.equipmentBySlot || props.equipmentBySlot || {}
 })
@@ -236,8 +244,8 @@ function updateCanvasSize() {
 		const rect = container.getBoundingClientRect()
 		if (rect.width && width > 0) {
 			const cssScale = rect.width / width
-			if (Math.abs(effectiveZoom - 1.0) < 0.001 && Math.abs(cssScale - 1.0) > 0.02) {
-				effectiveZoom = cssScale
+			if (cssScale > 0) {
+				effectiveZoom = Math.max(effectiveZoom, cssScale)
 			}
 		}
 	}
@@ -245,8 +253,8 @@ function updateCanvasSize() {
 	// Calculate target render scale accounting for devicePixelRatio and visual zoom
 	const targetRenderScale = dpr * Math.max(0.1, effectiveZoom)
 
-	// Safety cap to prevent GPU VRAM exhaustion (max 4096px canvas buffer)
-	const maxBufferDim = 4096
+	// Safety cap to prevent GPU VRAM exhaustion (up to 8192px canvas buffer for high-res close-ups)
+	const maxBufferDim = 8192
 	const maxScaleX = maxBufferDim / width
 	const maxScaleY = maxBufferDim / height
 	const maxScale = Math.max(1, Math.min(maxScaleX, maxScaleY))
@@ -295,7 +303,7 @@ function renderScene() {
 		equipmentBySlot: effectiveEquipment.value,
 		eyeOffset: props.eyeOffset,
 		getEffectivePartImage: props.getEffectivePartImage,
-		isIsometric: props.isIsometric,
+		isIsometric: effectiveIsIsometric.value,
 		isIsometricRotation: props.isIsometricRotation,
 		isometricRotationMode: props.isometricRotationMode,
 		isometricTiltAngle: props.isometricTiltAngle,
@@ -308,7 +316,7 @@ function renderScene() {
 		selectedPartName: props.selectedPartName,
 		showBoundingBoxes: props.showBoundingBoxes,
 		dpr: renderScale,
-		isIsometric: props.isIsometric
+		isIsometric: effectiveIsIsometric.value
 	})
 
 	// Emit computed part centers for overlays / breadcrumbs / gizmos (in CSS pixels)
@@ -443,12 +451,17 @@ defineExpose({
 	left: 0;
 	pointer-events: auto;
 	user-select: none;
+	image-rendering: auto;
 }
 
 .char-canvas {
 	display: block;
 	width: 100%;
 	height: 100%;
+	image-rendering: auto;
+}
+
+.char-canvas.__is-isometric {
 	image-rendering: pixelated;
 	image-rendering: crisp-edges;
 }

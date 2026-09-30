@@ -368,7 +368,7 @@
 									</div>
 								</div>
 
-								<!-- Translate X Slider (-100% to 100%) -->
+								<!-- Translate X Slider (-500% to 500%) -->
 								<div class="cae-control-item">
 									<div class="cae-ci-label-row">
 										<label>Смещение X (Translate X):</label>
@@ -378,16 +378,16 @@
 										<input
 											v-model.number="track.keyframes[activeKeyframeIndex].transform.translateX"
 											type="range"
-											min="-100"
-											max="100"
-											step="0.01"
+											min="-500"
+											max="500"
+											step="0.1"
 											class="cae-range"
 											@input="triggerKeyframePreview(track)"
 										/>
 										<input
 											v-model.number="track.keyframes[activeKeyframeIndex].transform.translateX"
 											type="number"
-											step="0.01"
+											step="0.1"
 											class="cae-number-input"
 											@input="triggerKeyframePreview(track)"
 										/>
@@ -399,10 +399,18 @@
 										>
 											0
 										</button>
+										<button
+											type="button"
+											class="cae-micro-btn"
+											title="Скрыть влево (-300%)"
+											@click="track.keyframes[activeKeyframeIndex].transform.translateX = -300; triggerKeyframePreview(track)"
+										>
+											-300
+										</button>
 									</div>
 								</div>
 
-								<!-- Translate Y Slider (-100% to 100%) -->
+								<!-- Translate Y Slider (-500% to 500%) -->
 								<div class="cae-control-item">
 									<div class="cae-ci-label-row">
 										<label>Смещение Y (Translate Y):</label>
@@ -412,16 +420,16 @@
 										<input
 											v-model.number="track.keyframes[activeKeyframeIndex].transform.translateY"
 											type="range"
-											min="-100"
-											max="100"
-											step="0.01"
+											min="-500"
+											max="500"
+											step="0.1"
 											class="cae-range"
 											@input="triggerKeyframePreview(track)"
 										/>
 										<input
 											v-model.number="track.keyframes[activeKeyframeIndex].transform.translateY"
 											type="number"
-											step="0.01"
+											step="0.1"
 											class="cae-number-input"
 											@input="triggerKeyframePreview(track)"
 										/>
@@ -432,6 +440,14 @@
 											@click="track.keyframes[activeKeyframeIndex].transform.translateY = 0; triggerKeyframePreview(track)"
 										>
 											0
+										</button>
+										<button
+											type="button"
+											class="cae-micro-btn"
+											title="Скрыть вверх (-300%)"
+											@click="track.keyframes[activeKeyframeIndex].transform.translateY = -300; triggerKeyframePreview(track)"
+										>
+											-300
 										</button>
 									</div>
 								</div>
@@ -462,12 +478,112 @@
 										<button
 											type="button"
 											class="cae-micro-btn"
+											title="Подозрение (0.5x)"
+											@click="track.keyframes[activeKeyframeIndex].transform.scale = 0.5; triggerKeyframePreview(track)"
+										>
+											0.5x
+										</button>
+										<button
+											type="button"
+											class="cae-micro-btn"
 											title="Сброс в 1.0x"
 											@click="track.keyframes[activeKeyframeIndex].transform.scale = 1; triggerKeyframePreview(track)"
 										>
 											1x
 										</button>
+										<button
+											type="button"
+											class="cae-micro-btn"
+											title="Удивление (1.4x)"
+											@click="track.keyframes[activeKeyframeIndex].transform.scale = 1.4; triggerKeyframePreview(track)"
+										>
+											1.4x
+										</button>
 									</div>
+								</div>
+
+								<!-- Rotate Y Slider (Horizontal Eye Turn / Yaw: -85° to 85°) -->
+								<div class="cae-control-item">
+									<div class="cae-ci-label-row">
+										<label>Поворот по горизонтали (Rotate Y / Yaw):</label>
+										<span class="cae-ci-val">
+											{{ Math.round(track.keyframes[activeKeyframeIndex].transform.rotateY || 0) }}°
+											<small class="cae-ci-subval">
+												(X-сжатие: {{ Math.cos((((track.keyframes[activeKeyframeIndex].transform.rotateY || 0) * Math.PI) / 180)).toFixed(2) }}x)
+											</small>
+										</span>
+									</div>
+									<div class="cae-slider-input-row">
+										<input
+											v-model.number="track.keyframes[activeKeyframeIndex].transform.rotateY"
+											type="range"
+											min="-85"
+											max="85"
+											step="1"
+											class="cae-range"
+											@input="triggerKeyframePreview(track)"
+										/>
+										<input
+											v-model.number="track.keyframes[activeKeyframeIndex].transform.rotateY"
+											type="number"
+											min="-85"
+											max="85"
+											step="1"
+											class="cae-number-input"
+											@input="triggerKeyframePreview(track)"
+										/>
+										<button
+											type="button"
+											class="cae-micro-btn"
+											title="Сброс в 0°"
+											@click="track.keyframes[activeKeyframeIndex].transform.rotateY = 0; triggerKeyframePreview(track)"
+										>
+											0°
+										</button>
+									</div>
+									<span class="cae-field-hint">💡 Сужает зрачок по горизонтали при повороте взгляда влево/вправо</span>
+								</div>
+
+								<!-- Rotate X Slider (Vertical Eye Turn / Pitch: -85° to 85°) -->
+								<div class="cae-control-item">
+									<div class="cae-ci-label-row">
+										<label>Поворот по вертикали (Rotate X / Pitch):</label>
+										<span class="cae-ci-val">
+											{{ Math.round(track.keyframes[activeKeyframeIndex].transform.rotateX || 0) }}°
+											<small class="cae-ci-subval">
+												(Y-сжатие: {{ Math.cos((((track.keyframes[activeKeyframeIndex].transform.rotateX || 0) * Math.PI) / 180)).toFixed(2) }}x)
+											</small>
+										</span>
+									</div>
+									<div class="cae-slider-input-row">
+										<input
+											v-model.number="track.keyframes[activeKeyframeIndex].transform.rotateX"
+											type="range"
+											min="-85"
+											max="85"
+											step="1"
+											class="cae-range"
+											@input="triggerKeyframePreview(track)"
+										/>
+										<input
+											v-model.number="track.keyframes[activeKeyframeIndex].transform.rotateX"
+											type="number"
+											min="-85"
+											max="85"
+											step="1"
+											class="cae-number-input"
+											@input="triggerKeyframePreview(track)"
+										/>
+										<button
+											type="button"
+											class="cae-micro-btn"
+											title="Сброс в 0°"
+											@click="track.keyframes[activeKeyframeIndex].transform.rotateX = 0; triggerKeyframePreview(track)"
+										>
+											0°
+										</button>
+									</div>
+									<span class="cae-field-hint">💡 Сужает зрачок по вертикали при повороте взгляда вверх/вниз</span>
 								</div>
 
 								<!-- Opacity Slider (0 to 1.0) -->
@@ -838,14 +954,14 @@ function addTrack(partName) {
 		keyframes: [
 			{
 				time: 0,
-				transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1, opacity: 1 },
+				transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1, rotateY: 0, rotateX: 0, opacity: 1 },
 				sprite: null,
 				customCss: '',
 				easing: 'ease-in-out'
 			},
 			{
 				time: Number((localAnim.value.duration || 1.0).toFixed(2)),
-				transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1, opacity: 1 },
+				transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1, rotateY: 0, rotateX: 0, opacity: 1 },
 				sprite: null,
 				customCss: '',
 				easing: 'ease-in-out'
@@ -892,7 +1008,7 @@ function addKeyframeAtCurrentTime(track) {
 
 	const newKf = {
 		time,
-		transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1, opacity: 1 },
+		transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1, rotateY: 0, rotateX: 0, opacity: 1 },
 		sprite: null,
 		customCss: '',
 		easing: 'ease-in-out'
@@ -1481,6 +1597,12 @@ function loadScriptTemplate(name) {
 	font-family: monospace;
 	color: #f3f4f6;
 	font-weight: 600;
+}
+
+.cae-ci-subval {
+	font-size: 0.85em;
+	color: #60a5fa;
+	margin-left: 0.3em;
 }
 
 .cae-ci-hint {

@@ -1,95 +1,96 @@
 {
-	"id": "mc",
-	"name": "Анон",
-	"character_type": "individual",
-	"surname": "Фокс",
-	"nickname": "",
-	"title": "",
-	"names": [
-		"Анон",
-		"Игрок",
-		"Путник"
-	],
-	"icon": "images/sprites/characters/mc/icometric/char.png",
-	"gender": "male",
-	"race": "human",
-	"races": [
-		"human"
-	],
-	"classs": [
-		"warrior"
-	],
-	"fractions": [],
-	"tags": [
-		"gamer",
-		"protagonist",
-		"noob"
-	],
-	"description": "Главный герой, попавший в новый неизведанный мир через интерфейс шлема виртуальной реальности.",
-	"size": 1,
-	"root_offset": {
-		"x": 0,
-		"y": 0
-	},
-	"hpmax": 10,
-	"mpmax": 10,
-	"attack": 2,
-	"defense": 1,
-	"weight": 60,
-	"hp": 10,
-	"mp": 10,
-	"lvl": 1,
-	"exp": 0,
-	"skill_points": 0,
-	"stat_points": 0,
-	"equipment_slots": {
-		"head": null,
-		"mask": null,
-		"neck_1": null,
-		"torso-1": "tshirt",
-		"torso-2": null,
-		"torso-3": null,
-		"legs-2": "jeans",
-		"feet": null,
-		"weapon-hand-1": null,
-		"weapon-hand-2": null,
-		"hands": null,
-		"weapon_off": null,
-		"underpants": "underpants"
-	},
-	"inventory": {
-		"items": [
-			{
-				"itemId": "ygdrasil-coin-old",
-				"quantity": 23
-			},
-			{
-				"itemId": "medicalmask"
-			},
-			{
-				"itemId": "neuro_helmet",
-				"can_drop": false,
-				"can_equip": false
-			}
-		]
-	},
-	"abilities": [
-		{
-			"id": "power_attack",
-			"name": "Мощная атака",
-			"description": "Нанести увеличенный урон врагу (+50% к атаке)"
-		},
-		{
-			"id": "dodge",
-			"name": "Уворот",
-			"description": "Увеличить шанс уклонения на 30%"
-		},
-		{
-			"id": "heal",
-			"name": "Исцеление",
-			"description": "Восстановить 5 HP"
-		}
-	],
-	"height": 175,
-	"age": 24
+  "id": "mc",
+  "name": "Анон",
+  "character_type": "individual",
+  "surname": "Фокс",
+  "nickname": "",
+  "title": "",
+  "names": [
+    "Анон",
+    "Игрок",
+    "Путник"
+  ],
+  "icon": "images/sprites/characters/mc/icometric/char.png",
+  "gender": "male",
+  "race": "human",
+  "races": [
+    "human"
+  ],
+  "classs": [
+    "warrior"
+  ],
+  "fractions": [],
+  "tags": [
+    "gamer",
+    "protagonist",
+    "noob"
+  ],
+  "description": "Главный герой, попавший в новый неизведанный мир через интерфейс шлема виртуальной реальности.",
+  "size": 1,
+  "root_offset": {
+    "x": 0,
+    "y": 0
+  },
+  "hpmax": 10,
+  "mpmax": 10,
+  "attack": 2,
+  "defense": 1,
+  "weight": 60,
+  "hp": 10,
+  "mp": 10,
+  "lvl": 1,
+  "exp": 0,
+  "skill_points": 0,
+  "stat_points": 0,
+  "equipment_slots": {
+    "head": null,
+    "mask": null,
+    "neck_1": null,
+    "torso-1": "tshirt",
+    "torso-2": null,
+    "torso-3": null,
+    "legs-2": "jeans",
+    "feet": null,
+    "weapon-hand-1": null,
+    "weapon-hand-2": null,
+    "hands": null,
+    "weapon_off": null,
+    "underpants": "underpants"
+  },
+  "inventory": {
+    "items": [
+      {
+        "itemId": "ygdrasil-coin-old",
+        "quantity": 23
+      },
+      {
+        "itemId": "medicalmask"
+      },
+      {
+        "itemId": "neuro_helmet",
+        "can_drop": false,
+        "can_equip": false
+      }
+    ]
+  },
+  "abilities": [
+    {
+      "id": "power_attack",
+      "name": "Мощная атака",
+      "description": "Нанести увеличенный урон врагу (+50% к атаке)"
+    },
+    {
+      "id": "dodge",
+      "name": "Уворот",
+      "description": "Увеличить шанс уклонения на 30%"
+    },
+    {
+      "id": "heal",
+      "name": "Исцеление",
+      "description": "Восстановить 5 HP"
+    }
+  ],
+  "height": 175,
+  "age": 24,
+  "scale": 1
 }

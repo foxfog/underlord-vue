@@ -241,14 +241,33 @@ const computedPartStyle = computed(() => {
 		transforms.push(`translate(${trans.x}%, ${trans.y}%)`)
 	}
 
-	if (scale !== undefined && scale !== 1) {
-		transforms.push(`scale(${scale})`)
+	if (scale !== undefined) {
+		if (typeof scale === 'number' && scale !== 1) {
+			transforms.push(`scale(${scale})`)
+		} else if (typeof scale === 'object') {
+			const s = scale.scale ?? 1
+			const rx = scale.rotateX || 0
+			const ry = scale.rotateY || 0
+			const sx = s * (scale.scaleX ?? 1) * Math.max(0.05, Math.abs(Math.cos(ry * Math.PI / 180)))
+			const sy = s * (scale.scaleY ?? 1) * Math.max(0.05, Math.abs(Math.cos(rx * Math.PI / 180)))
+			if (sx !== 1 || sy !== 1) {
+				transforms.push(`scale(${sx.toFixed(3)}, ${sy.toFixed(3)})`)
+			}
+		}
 	}
 
-	// Eye joystick translation for eyes / head
-	if (props.spriteName.includes('head') || props.spriteName.includes('eye')) {
-		const eyeX = props.eyeOffset?.x ? props.eyeOffset.x * 6 : 0
-		const eyeY = props.eyeOffset?.y ? props.eyeOffset.y * 6 : 0
+	// Eye joystick translation: ONLY for eyeballs (eyeball-left, eyeball-right, pupil)
+	const isEyeball = props.spriteName.includes('eyeball') || props.spriteName.includes('pupil')
+	if (isEyeball) {
+		const isLeft = props.spriteName.includes('left')
+		const isRight = props.spriteName.includes('right')
+		const off = (isLeft && props.eyeOffset?.left)
+			? props.eyeOffset.left
+			: (isRight && props.eyeOffset?.right)
+				? props.eyeOffset.right
+				: props.eyeOffset
+		const eyeX = off?.x ? off.x * 12 : 0
+		const eyeY = off?.y ? off.y * 12 : 0
 		if (eyeX || eyeY) {
 			transforms.push(`translate(${eyeX}%, ${eyeY}%)`)
 		}
@@ -305,6 +324,7 @@ const partClasses = computed(() => {
 	pointer-events: none;
 	-webkit-user-drag: none;
 	user-select: none;
+	image-rendering: auto;
 }
 
 /* Skeleton Pivot Marker */

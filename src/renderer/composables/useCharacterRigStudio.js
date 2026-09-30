@@ -110,6 +110,11 @@ export function useCharacterRigStudio() {
 	const eyeLeftOffset = reactive({ x: 0, y: 0 })
 	const eyeRightOffset = reactive({ x: 0, y: 0 })
 
+	// Eye Perspective & Scale System (Pupil scale, Horizontal & Vertical turn)
+	const eyePupilScale = ref(1.0)
+	const eyeTurnH = ref(0) // Horizontal turn (yaw) in degrees (-85° to +85°)
+	const eyeTurnV = ref(0) // Vertical turn (pitch) in degrees (-85° to +85°)
+
 	const EYE_PRESETS = [
 		{ id: 'center', label: 'Прямо', icon: '🎯', left: { x: 0, y: 0 }, right: { x: 0, y: 0 } },
 		{ id: 'camera', label: 'В камеру', icon: '📷', left: { x: 0, y: 0 }, right: { x: 0, y: 0 } },
@@ -131,6 +136,22 @@ export function useCharacterRigStudio() {
 	const partCustomStyles = reactive({})
 	const animatedSprites = reactive({})
 	const partPivots = reactive({})
+
+	function updateEyeTransforms() {
+		for (const partName of Object.keys(bodyParts)) {
+			if (partName.includes('eyeball') || partName.includes('pupil')) {
+				partScales[partName] = {
+					scale: Number(eyePupilScale.value) || 1,
+					rotateY: Number(eyeTurnH.value) || 0,
+					rotateX: Number(eyeTurnV.value) || 0
+				}
+			}
+		}
+	}
+
+	watch([eyePupilScale, eyeTurnH, eyeTurnV], () => {
+		updateEyeTransforms()
+	})
 
 	// Animation Sequencer & Custom Animations
 	const isPlaying = ref(false)
@@ -760,6 +781,7 @@ export function useCharacterRigStudio() {
 					zindex: part.zindex ?? part['z-index'] ?? 0,
 					opacity: part.opacity !== undefined ? Number(part.opacity) : 1,
 					scale: part.scale !== undefined ? Number(part.scale) : 1,
+					clipToParent: Boolean(part.clipToParent),
 					offset: {
 						x: part.offset?.x ?? 0,
 						y: part.offset?.y ?? 0
@@ -793,6 +815,7 @@ export function useCharacterRigStudio() {
 					zindex: part.zindex ?? part['z-index'] ?? 0,
 					opacity: part.opacity !== undefined ? Number(part.opacity) : 1,
 					scale: part.scale !== undefined ? Number(part.scale) : 1,
+					clipToParent: Boolean(part.clipToParent),
 					offset: {
 						x: part.offset?.x ?? 0,
 						y: part.offset?.y ?? 0
@@ -817,6 +840,7 @@ export function useCharacterRigStudio() {
 					zindex: part.zindex ?? part['z-index'] ?? 0,
 					opacity: part.opacity !== undefined ? Number(part.opacity) : 1,
 					scale: part.scale !== undefined ? Number(part.scale) : 1,
+					clipToParent: Boolean(part.clipToParent),
 					offset: {
 						x: part.offset?.x ?? 0,
 						y: part.offset?.y ?? 0
@@ -1027,6 +1051,19 @@ export function useCharacterRigStudio() {
 		eyeRightOffset.y = y
 	}
 
+	function resetEyes() {
+		eyePupilScale.value = 1.0
+		eyeTurnH.value = 0
+		eyeTurnV.value = 0
+		eyeLeftOffset.x = 0
+		eyeLeftOffset.y = 0
+		eyeRightOffset.x = 0
+		eyeRightOffset.y = 0
+		eyeLinkedOffset.x = 0
+		eyeLinkedOffset.y = 0
+		updateEyeTransforms()
+	}
+
 	// Emotion Sprite Override
 	function setEmotion(emotionId) {
 		currentEmotion.value = emotionId
@@ -1104,12 +1141,7 @@ export function useCharacterRigStudio() {
 		for (const k in partPivots) {
 			partPivots[k] = { x: 50, y: 50 }
 		}
-		eyeLeftOffset.x = 0
-		eyeLeftOffset.y = 0
-		eyeRightOffset.x = 0
-		eyeRightOffset.y = 0
-		eyeLinkedOffset.x = 0
-		eyeLinkedOffset.y = 0
+		resetEyes()
 		setStatus('Поза сброшена в исходное положение')
 	}
 
@@ -1325,6 +1357,8 @@ export function useCharacterRigStudio() {
 				translateX: kf.transform?.translateX ?? kf.transform?.x ?? 0,
 				translateY: kf.transform?.translateY ?? kf.transform?.y ?? 0,
 				scale: kf.transform?.scale ?? 1,
+				rotateY: kf.transform?.rotateY ?? kf.transform?.rotY ?? 0,
+				rotateX: kf.transform?.rotateX ?? kf.transform?.rotX ?? 0,
 				opacity: kf.transform?.opacity !== undefined ? Number(kf.transform.opacity) : 1,
 				sprite: kf.sprite || null,
 				customStyles: parseCustomCss(kf.customCss)
@@ -1338,6 +1372,8 @@ export function useCharacterRigStudio() {
 				translateX: last.transform?.translateX ?? last.transform?.x ?? 0,
 				translateY: last.transform?.translateY ?? last.transform?.y ?? 0,
 				scale: last.transform?.scale ?? 1,
+				rotateY: last.transform?.rotateY ?? last.transform?.rotY ?? 0,
+				rotateX: last.transform?.rotateX ?? last.transform?.rotX ?? 0,
 				opacity: last.transform?.opacity !== undefined ? Number(last.transform.opacity) : 1,
 				sprite: last.sprite || null,
 				customStyles: parseCustomCss(last.customCss)
@@ -1370,6 +1406,10 @@ export function useCharacterRigStudio() {
 		const yB = kfB.transform?.translateY ?? kfB.transform?.y ?? 0
 		const sA = kfA.transform?.scale ?? 1
 		const sB = kfB.transform?.scale ?? 1
+		const rotYA = kfA.transform?.rotateY ?? kfA.transform?.rotY ?? 0
+		const rotYB = kfB.transform?.rotateY ?? kfB.transform?.rotY ?? 0
+		const rotXA = kfA.transform?.rotateX ?? kfA.transform?.rotX ?? 0
+		const rotXB = kfB.transform?.rotateX ?? kfB.transform?.rotX ?? 0
 		const opA = kfA.transform?.opacity !== undefined ? Number(kfA.transform.opacity) : 1
 		const opB = kfB.transform?.opacity !== undefined ? Number(kfB.transform.opacity) : 1
 
@@ -1389,6 +1429,8 @@ export function useCharacterRigStudio() {
 			translateX: Number(lerp(xA, xB, easedT).toFixed(2)),
 			translateY: Number(lerp(yA, yB, easedT).toFixed(2)),
 			scale: Number(lerp(sA, sB, easedT).toFixed(3)),
+			rotateY: Number(lerp(rotYA, rotYB, easedT).toFixed(2)),
+			rotateX: Number(lerp(rotXA, rotXB, easedT).toFixed(2)),
 			opacity: Number(lerp(opA, opB, easedT).toFixed(2)),
 			sprite: activeSprite,
 			customStyles: parseCustomCss(kfA.customCss)
@@ -1474,7 +1516,17 @@ export function useCharacterRigStudio() {
 									y: Number(vals.y || 0)
 								}
 							}
-							if (vals.scale !== undefined) partScales[part] = Number(vals.scale)
+							if (vals.scale !== undefined || vals.rotateX !== undefined || vals.rotateY !== undefined) {
+								if (vals.rotateX || vals.rotateY) {
+									partScales[part] = {
+										scale: vals.scale !== undefined ? Number(vals.scale) : 1,
+										rotateX: Number(vals.rotateX || 0),
+										rotateY: Number(vals.rotateY || 0)
+									}
+								} else {
+									partScales[part] = Number(vals.scale !== undefined ? vals.scale : 1)
+								}
+							}
 							if (vals.opacity !== undefined) partOpacities[part] = Number(vals.opacity)
 							if (vals.sprite !== undefined) {
 								if (vals.sprite) animatedSprites[part] = vals.sprite
@@ -1528,8 +1580,16 @@ export function useCharacterRigStudio() {
 						y: state.translateY || 0
 					}
 				}
-				if (state.scale !== undefined) {
-					partScales[part] = state.scale
+				if (state.scale !== undefined || state.rotateX !== undefined || state.rotateY !== undefined) {
+					if (state.rotateX || state.rotateY) {
+						partScales[part] = {
+							scale: state.scale ?? 1,
+							rotateX: state.rotateX || 0,
+							rotateY: state.rotateY || 0
+						}
+					} else {
+						partScales[part] = state.scale ?? 1
+					}
 				}
 				if (state.opacity !== undefined) {
 					partOpacities[part] = state.opacity
@@ -1592,6 +1652,7 @@ export function useCharacterRigStudio() {
 		for (const k in animatedSprites) {
 			delete animatedSprites[k]
 		}
+		updateEyeTransforms()
 	}
 
 	function stepAnimation(animId, time) {
@@ -1775,6 +1836,9 @@ export function useCharacterRigStudio() {
 			if (p.offset && (p.offset.x !== 0 || p.offset.y !== 0)) {
 				item.offset = { x: Number(p.offset.x), y: Number(p.offset.y) }
 			}
+			if (p.clipToParent) {
+				item.clipToParent = true
+			}
 			jsonToSave[name] = item
 		}
 
@@ -1811,6 +1875,9 @@ export function useCharacterRigStudio() {
 				item.offset = { x: Number(p.offset.x), y: Number(p.offset.y) }
 			} else if (name === 'body' && (rootOffset.x !== 0 || rootOffset.y !== 0)) {
 				item.offset = { x: Number(rootOffset.x.toFixed(2)), y: Number(rootOffset.y.toFixed(2)) }
+			}
+			if (p.clipToParent) {
+				item.clipToParent = true
 			}
 			jsonToSave[name] = item
 		}
@@ -1906,7 +1973,12 @@ export function useCharacterRigStudio() {
 		eyeLinkedOffset,
 		eyeLeftOffset,
 		eyeRightOffset,
+		eyePupilScale,
+		eyeTurnH,
+		eyeTurnV,
 		EYE_PRESETS,
+		updateEyeTransforms,
+		resetEyes,
 		// Rotations, Translations, Scales & Posing
 		partRotations,
 		partTranslations,
