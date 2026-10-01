@@ -228,6 +228,9 @@ renderer.onNeedRedraw = () => {
 	requestRender()
 }
 
+const canvasLayoutWidth = ref(1000)
+const canvasLayoutHeight = ref(800)
+
 function updateCanvasSize() {
 	if (!containerRef.value || !canvasRef.value) return
 
@@ -236,6 +239,8 @@ function updateCanvasSize() {
 
 	const width = Math.max(10, Math.round(container.clientWidth))
 	const height = Math.max(10, Math.round(container.clientHeight))
+	canvasLayoutWidth.value = width
+	canvasLayoutHeight.value = height
 	const dpr = window.devicePixelRatio || 1
 
 	// Determine effective zoom from props or on-screen bounding rect
@@ -282,8 +287,8 @@ function renderScene() {
 	const ctx = canvas.getContext('2d')
 	if (!ctx) return
 
-	const width = containerRef.value.clientWidth || 1000
-	const height = containerRef.value.clientHeight || 800
+	const width = canvasLayoutWidth.value || 1000
+	const height = canvasLayoutHeight.value || 800
 	const renderScale = currentRenderScale.value || 1
 
 	// Compute Scene Graph in CSS layout pixels
@@ -320,7 +325,9 @@ function renderScene() {
 	})
 
 	// Emit computed part centers for overlays / breadcrumbs / gizmos (in CSS pixels)
-	emit('rendered', renderer.getPartCenters({ relativeToStage: props.relativeCenters }))
+	queueMicrotask(() => {
+		emit('rendered', renderer.getPartCenters({ relativeToStage: props.relativeCenters }))
+	})
 }
 
 function getCanvasCoords(event) {
@@ -394,6 +401,8 @@ watch(
 		() => props.partOpacities,
 		() => props.partPivots,
 		() => props.animatedSprites,
+		() => props.equipmentBySlot,
+		() => effectiveEquipment.value,
 		() => props.eyeOffset,
 		() => props.selectedPartName,
 		() => props.showBoundingBoxes,

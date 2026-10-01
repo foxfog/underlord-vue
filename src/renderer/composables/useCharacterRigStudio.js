@@ -40,6 +40,41 @@ export function useCharacterRigStudio() {
 	const vnEmotionOverrides = reactive({})
 	const isoEmotionOverrides = reactive({})
 
+	// Equipment & Clothing Rig System State
+	const characterEquipment = ref([])
+	const itemsCatalog = ref([])
+	const activeEquippedIds = ref(new Set())
+	const selectedEquipmentId = ref(null)
+	const availableEquipmentImages = ref([])
+
+	const EQUIPMENT_SLOT_CATEGORIES = [
+		{ id: 'all', label: 'Все', icon: '✨', slots: [] },
+		{ id: 'head', label: 'Голова', icon: '🪖', slots: ['head'] },
+		{ id: 'mask', label: 'Маска', icon: '🎭', slots: ['mask'] },
+		{ id: 'neck', label: 'Шея', icon: '📿', slots: ['neck_1', 'neck-1'] },
+		{ id: 'torso', label: 'Торс', icon: '👕', slots: ['torso-1', 'torso-2', 'torso-3'] },
+		{ id: 'underpants', label: 'Бельё', icon: '🩲', slots: ['underpants'] },
+		{ id: 'hands', label: 'Руки', icon: '🧤', slots: ['hands'] },
+		{ id: 'legs', label: 'Ноги', icon: '👖', slots: ['legs', 'legs-2'] },
+		{ id: 'feet', label: 'Ступни', icon: '👢', slots: ['feet'] },
+		{ id: 'weapon', label: 'Оружие', icon: '⚔️', slots: ['weapon-hand-1', 'weapon-hand-2', 'weapon_off'] }
+	]
+
+	const equipmentBySlotForCanvas = computed(() => {
+		const res = {}
+		for (const eq of characterEquipment.value) {
+			if (!eq || !eq.id) continue
+			if (activeEquippedIds.value.has(eq.id)) {
+				res[eq.id] = {
+					id: eq.id,
+					item: eq,
+					parts: Array.isArray(eq.parts) ? eq.parts : []
+				}
+			}
+		}
+		return res
+	})
+
 	function copyParts(src, target) {
 		Object.keys(target).forEach((k) => delete target[k])
 		for (const [k, v] of Object.entries(src)) {
@@ -650,6 +685,17 @@ export function useCharacterRigStudio() {
 						}
 					}
 				}
+
+				// Also check equipment subdirectory
+				const equipRes = await window.electronAPI.dataEditor.listFiles(`../../public/images/sprites/characters/${charId}/equipment`)
+				if (equipRes.success && Array.isArray(equipRes.files)) {
+					for (const file of equipRes.files) {
+						if (/\.(png|jpe?g|webp|gif)$/i.test(file)) {
+							const path = `images/sprites/characters/${charId}/equipment/${file}`
+							if (!imgs.includes(path)) imgs.push(path)
+						}
+					}
+				}
 			} catch (e) {
 				// ignore
 			}
@@ -861,6 +907,9 @@ export function useCharacterRigStudio() {
 			if (!bodyParts[selectedPartName.value]) {
 				selectedPartName.value = Object.keys(bodyParts)[0] || 'body'
 			}
+
+			// 5. Load Equipment for character
+			await loadCharacterEquipment(charId)
 
 			stopAnimation()
 		} catch (err) {
@@ -1925,6 +1974,246 @@ export function useCharacterRigStudio() {
 		}
 	}
 
+	// ==========================================
+	// Equipment System Methods
+	// ==========================================
+	async function loadCharacterEquipment(charId) {
+		try {
+			if (itemsCatalog.value.length === 0) {
+				const catalog = await readDataFile('items/equipment.json')
+				if (Array.isArray(catalog)) {
+					itemsCatalog.value = catalog
+				}
+			}
+
+			const equipData = await readDataFile(`characters/${charId}/equipment.json`)
+			if (Array.isArray(equipData)) {
+				characterEquipment.value = JSON.parse(JSON.stringify(equipData))
+			} else {
+				characterEquipment.value = []
+			}
+
+			// Collect available equipment images
+			const equipImgs = []
+			const knownDefaultEquip = [
+				'gasmask.png',
+				'jeans.png',
+				'medicalmask.png',
+				'tshirt_arm_left.png',
+				'tshirt_arm_right.png',
+				'tshirt_body.png',
+				'underpants.png'
+			]
+			for (const f of knownDefaultEquip) {
+				equipImgs.push(`images/sprites/characters/${charId}/equipment/${f}`)
+				if (charId !== 'default') {
+					equipImgs.push(`images/sprites/characters/default/equipment/${f}`)
+				}
+			}
+
+			if (typeof window !== 'undefined' && window.electronAPI?.dataEditor?.listFiles) {
+				try {
+					const res = await window.electronAPI.dataEditor.listFiles(
+						`../../public/images/sprites/characters/${charId}/equipment`
+					)
+					if (res.success && Array.isArray(res.files)) {
+						for (const file of res.files) {
+							if (/\.(png|jpe?g|webp|gif)$/i.test(file)) {
+								const path = `images/sprites/characters/${charId}/equipment/${file}`
+								if (!equipImgs.includes(path)) equipImgs.push(path)
+							}
+						}
+					}
+				} catch (e) {
+					// ignore
+				}
+			}
+
+			for (const item of characterEquipment.value) {
+				if (Array.isArray(item.parts)) {
+					for (const p of item.parts) {
+						if (p.image && !equipImgs.includes(p.image)) {
+							equipImgs.push(p.image)
+						}
+					}
+				}
+			}
+			availableEquipmentImages.value = Array.from(new Set(equipImgs))
+
+			// Initial active preview: all items configured on character
+			const initialActive = new Set()
+			for (const item of characterEquipment.value) {
+				if (item.id) initialActive.add(item.id)
+			}
+			activeEquippedIds.value = initialActive
+
+			// Selection
+			if (characterEquipment.value.length > 0) {
+				if (!selectedEquipmentId.value || !characterEquipment.value.some((x) => x.id === selectedEquipmentId.value)) {
+					selectedEquipmentId.value = characterEquipment.value[0].id
+				}
+			} else {
+				selectedEquipmentId.value = null
+			}
+		} catch (err) {
+			console.warn(`[useCharacterRigStudio] Error loading equipment for ${charId}:`, err)
+		}
+	}
+
+	function addEquipmentFromCatalog(itemOrId) {
+		const itemId = typeof itemOrId === 'string' ? itemOrId : itemOrId.id
+		if (!itemId) return
+
+		let existing = characterEquipment.value.find((x) => x.id === itemId)
+		if (!existing) {
+			const catItem = itemsCatalog.value.find((x) => x.id === itemId) || (typeof itemOrId === 'object' ? itemOrId : null)
+			const slot = Array.isArray(catItem?.slot) ? catItem.slot[0] : catItem?.slot
+
+			let defaultParent = 'body'
+			if (slot === 'head' || slot === 'mask') defaultParent = 'head'
+			else if (slot === 'hands') defaultParent = 'arm_left'
+			else if (slot === 'neck_1' || slot === 'neck-1') defaultParent = bodyParts.neck ? 'neck' : 'head'
+			else if (slot === 'weapon-hand-1' || slot === 'weapon-hand-2') {
+				defaultParent = bodyParts.arm3_left ? 'arm3_left' : (bodyParts.arm_left ? 'arm_left' : 'body')
+			}
+
+			existing = {
+				id: itemId,
+				zindex: 1,
+				parts: [
+					{
+						parent: defaultParent,
+						image: catItem?.sprite && catItem.sprite.includes('characters') ? catItem.sprite : '',
+						offset: { x: 0, y: 0 }
+					}
+				]
+			}
+			characterEquipment.value.push(existing)
+			characterEquipment.value = [...characterEquipment.value]
+		}
+
+		const nextSet = new Set(activeEquippedIds.value)
+		nextSet.add(itemId)
+		activeEquippedIds.value = nextSet
+		selectedEquipmentId.value = itemId
+		setStatus(`Предмет «${itemId}» добавлен в гардероб персонажа`)
+	}
+
+	function removeEquipmentItem(itemId) {
+		const idx = characterEquipment.value.findIndex((x) => x.id === itemId)
+		if (idx !== -1) {
+			characterEquipment.value.splice(idx, 1)
+			characterEquipment.value = [...characterEquipment.value]
+			const nextSet = new Set(activeEquippedIds.value)
+			nextSet.delete(itemId)
+			activeEquippedIds.value = nextSet
+			if (selectedEquipmentId.value === itemId) {
+				selectedEquipmentId.value = characterEquipment.value[0]?.id || null
+			}
+			setStatus(`Предмет «${itemId}» удален из гардероба`)
+		}
+	}
+
+	function toggleEquipPreview(itemId) {
+		const nextSet = new Set(activeEquippedIds.value)
+		if (nextSet.has(itemId)) {
+			nextSet.delete(itemId)
+		} else {
+			nextSet.add(itemId)
+		}
+		activeEquippedIds.value = nextSet
+	}
+
+	function setAllEquippedPreview(enable) {
+		if (enable) {
+			const nextSet = new Set()
+			for (const it of characterEquipment.value) {
+				if (it && it.id) nextSet.add(it.id)
+			}
+			activeEquippedIds.value = nextSet
+			setStatus('Все предметы надеты на кукле')
+		} else {
+			activeEquippedIds.value = new Set()
+			setStatus('Все предметы сняты (персонаж голышом)')
+		}
+	}
+
+	function addEquipmentPart(itemId, parent = 'body') {
+		const item = characterEquipment.value.find((x) => x.id === itemId)
+		if (!item) return
+		if (!Array.isArray(item.parts)) item.parts = []
+		item.parts.push({
+			parent: parent || 'body',
+			image: '',
+			offset: { x: 0, y: 0 }
+		})
+		characterEquipment.value = [...characterEquipment.value]
+	}
+
+	function removeEquipmentPart(itemId, partIndex) {
+		const item = characterEquipment.value.find((x) => x.id === itemId)
+		if (!item || !Array.isArray(item.parts)) return
+		if (partIndex >= 0 && partIndex < item.parts.length) {
+			item.parts.splice(partIndex, 1)
+			characterEquipment.value = [...characterEquipment.value]
+		}
+	}
+
+	function updateEquipmentPart(itemId, partIndex, patch) {
+		const item = characterEquipment.value.find((x) => x.id === itemId)
+		if (!item || !Array.isArray(item.parts)) return
+		if (item.parts[partIndex]) {
+			Object.assign(item.parts[partIndex], patch)
+			characterEquipment.value = [...characterEquipment.value]
+		}
+	}
+
+	function updateEquipmentItem(itemId, patch) {
+		const item = characterEquipment.value.find((x) => x.id === itemId)
+		if (!item) return
+		Object.assign(item, patch)
+		characterEquipment.value = [...characterEquipment.value]
+	}
+
+	async function saveEquipmentJson() {
+		const charId = selectedCharacterId.value
+		try {
+			const cleanData = characterEquipment.value.map((eq) => {
+				const itemObj = {
+					id: eq.id
+				}
+				if (eq.zindex !== undefined && eq.zindex !== null && eq.zindex !== 0) {
+					itemObj.zindex = Number(eq.zindex)
+				}
+				itemObj.parts = (eq.parts || []).map((p) => {
+					const partObj = {
+						parent: p.parent || 'body',
+						image: p.image || ''
+					}
+					if (p.zindex !== undefined && p.zindex !== null && p.zindex !== '') {
+						partObj.zindex = Number(p.zindex)
+					}
+					if (p.offset && (Number(p.offset.x) !== 0 || Number(p.offset.y) !== 0)) {
+						partObj.offset = {
+							x: Number(Number(p.offset.x).toFixed(2)),
+							y: Number(Number(p.offset.y).toFixed(2))
+						}
+					}
+					return partObj
+				})
+				return itemObj
+			})
+
+			await writeDataFile(`characters/${charId}/equipment.json`, cleanData)
+			setStatus(`Файл characters/${charId}/equipment.json успешно сохранен!`)
+			return true
+		} catch (err) {
+			console.error(`Ошибка сохранения equipment.json для ${charId}:`, err)
+			setStatus(`Ошибка сохранения equipment.json: ${err.message}`, 'error')
+			return false
+		}
+	}
+
 	if (getCurrentInstance()) {
 		onUnmounted(() => {
 			stopAnimation()
@@ -1987,6 +2276,24 @@ export function useCharacterRigStudio() {
 		partCustomStyles,
 		animatedSprites,
 		partPivots,
+		// Equipment & Clothing Rig System
+		characterEquipment,
+		itemsCatalog,
+		activeEquippedIds,
+		selectedEquipmentId,
+		availableEquipmentImages,
+		EQUIPMENT_SLOT_CATEGORIES,
+		equipmentBySlotForCanvas,
+		loadCharacterEquipment,
+		addEquipmentFromCatalog,
+		removeEquipmentItem,
+		toggleEquipPreview,
+		setAllEquippedPreview,
+		addEquipmentPart,
+		removeEquipmentPart,
+		updateEquipmentPart,
+		updateEquipmentItem,
+		saveEquipmentJson,
 		// Animations
 		BUILTIN_ANIMATIONS,
 		customAnimations,

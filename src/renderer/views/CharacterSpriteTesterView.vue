@@ -101,6 +101,15 @@
 					<span>📏</span>
 					<span>Сохранить скейл</span>
 				</button>
+				<button
+					v-if="activeSidebarTab === 'equipment'"
+					class="action-btn __save-equip"
+					title="Сохранить структуру одежды и экипировки в characters/[id]/equipment.json"
+					@click="saveEquipmentJson"
+				>
+					<span>👗</span>
+					<span>Сохранить экипировку</span>
+				</button>
 			</div>
 		</header>
 
@@ -122,8 +131,8 @@
 				ref="stageViewportRef"
 				:class="{ '__is-panning': isPanningStage }"
 				@mousedown="onStageMouseDown"
-				@touchstart="onStageTouchStart"
-				@wheel.prevent="onStageWheel"
+				@touchstart.passive="onStageTouchStart"
+				@wheel.passive="onStageWheel"
 				@dragstart.prevent
 				@contextmenu.prevent
 			>
@@ -234,7 +243,7 @@
 						class="center-parts-drawer"
 						@click.stop
 						@mousedown.stop
-						@touchstart.stop
+						@touchstart.passive.stop
 					>
 						<!-- Drawer Header -->
 						<div class="cpd-header">
@@ -505,6 +514,7 @@
 								:bleed="stageBleed"
 								:relative-centers="true"
 								:zoom="stageZoom"
+								:equipment-by-slot="equipmentBySlotForCanvas"
 								@select-part="onPartClick"
 								@rendered="onCanvasRendered"
 							/>
@@ -548,6 +558,7 @@
 										:eye-offset="effectiveEyeOffset"
 										:show-bones="showBones"
 										:get-effective-part-image="getEffectivePartImage"
+										:equipment-by-slot="equipmentBySlotForCanvas"
 										@select-part="onPartClick"
 										@part-loaded="scheduleUpdatePartCenters"
 										@part-img-error="onPartImgError($event.event, $event.name)"
@@ -615,6 +626,16 @@
 					>
 						<span class="stb-icon">👀</span>
 						<span class="stb-name">Эмоции и Взгляд</span>
+					</button>
+					<button
+						type="button"
+						class="sidebar-tab-btn"
+						:class="{ __active: activeSidebarTab === 'equipment' }"
+						title="Настройка одежды и экипировки персонажа (equipment.json)"
+						@click="activeSidebarTab = 'equipment'"
+					>
+						<span class="stb-icon">👗</span>
+						<span class="stb-name">Одежда</span>
 					</button>
 					<button
 						type="button"
@@ -2344,6 +2365,29 @@
 						</div>
 					</div>
 				</div>
+
+				<!-- TAB 5: EQUIPMENT & CLOTHING RIG -->
+				<div v-else-if="activeSidebarTab === 'equipment'" class="sidebar-tab-content">
+					<CharacterRigEquipmentPanel
+						:character-id="selectedCharacterId"
+						:body-parts="bodyParts"
+						:character-equipment="characterEquipment"
+						:items-catalog="itemsCatalog"
+						:active-equipped-ids="activeEquippedIds"
+						:selected-equipment-id="selectedEquipmentId"
+						:available-equipment-images="availableEquipmentImages"
+						@select-equipment="selectedEquipmentId = $event"
+						@toggle-equip="toggleEquipPreview"
+						@set-all-equipped="setAllEquippedPreview"
+						@add-from-catalog="addEquipmentFromCatalog"
+						@remove-equipment="removeEquipmentItem"
+						@add-part="addEquipmentPart"
+						@remove-part="removeEquipmentPart"
+						@update-part="updateEquipmentPart"
+						@update-item="updateEquipmentItem"
+						@save-equipment="saveEquipmentJson"
+					/>
+				</div>
 			</aside>
 		</div>
 
@@ -2365,13 +2409,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, reactive, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, reactive, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useCharacterRigStudio } from '@/composables/useCharacterRigStudio'
 import EyeDirectionPad from '@/components/game/characters/EyeDirectionPad.vue'
 import RigPartNode from '@/components/game/characters/RigPartNode.vue'
 import CharacterCanvas from '@/components/game/characters/CharacterCanvas.vue'
 import CharacterAnimationEditorModal from '@/components/game/characters/CharacterAnimationEditorModal.vue'
+import CharacterRigEquipmentPanel from '@/components/game/characters/CharacterRigEquipmentPanel.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -2387,10 +2432,18 @@ let updateCentersRafId = null
 let animCentersRafId = null
 
 const stageBleed = ref({ top: 0, bottom: 0, left: 0, right: 0 })
+let cachedStageFontSize = 16
+
+function getStageFontSize() {
+	if (!stageViewportRef.value && !stageFrameRef.value) return cachedStageFontSize
+	const el = stageFrameRef.value || stageViewportRef.value
+	const fs = parseFloat(getComputedStyle(el).fontSize)
+	if (fs > 0) cachedStageFontSize = fs
+	return cachedStageFontSize
+}
 
 function updateStageBleed() {
-	if (!stageFrameRef.value) return
-	const em = parseFloat(getComputedStyle(stageFrameRef.value).fontSize) || 16
+	const em = getStageFontSize()
 	stageBleed.value = {
 		top: Math.round(3.5 * em),
 		bottom: Math.round(10.0 * em),
@@ -2434,6 +2487,21 @@ const {
 	partCustomStyles,
 	partPivots,
 	animatedSprites,
+	characterEquipment,
+	itemsCatalog,
+	activeEquippedIds,
+	selectedEquipmentId,
+	availableEquipmentImages,
+	equipmentBySlotForCanvas,
+	addEquipmentFromCatalog,
+	removeEquipmentItem,
+	toggleEquipPreview,
+	setAllEquippedPreview,
+	addEquipmentPart,
+	removeEquipmentPart,
+	updateEquipmentPart,
+	updateEquipmentItem,
+	saveEquipmentJson,
 	BUILTIN_ANIMATIONS,
 	customAnimations,
 	animationGroups,
@@ -2707,6 +2775,14 @@ watch(viewMode, (mode) => {
 watch(renderEngine, () => {
 	scheduleUpdatePartCenters()
 })
+watch(
+	equipmentBySlotForCanvas,
+	() => {
+		characterCanvasRef.value?.requestRender()
+		scheduleUpdatePartCenters()
+	},
+	{ deep: true }
+)
 
 // Animation Editor Modal State & Handlers
 const isAnimEditorOpen = ref(false)
@@ -2740,11 +2816,6 @@ function onKeyDown(e) {
 	if (e.key === 'Escape' && isCenterPartsModalOpen.value) {
 		isCenterPartsModalOpen.value = false
 	}
-}
-
-function getStageFontSize() {
-	if (!stageViewportRef.value) return 16
-	return parseFloat(getComputedStyle(stageViewportRef.value).fontSize) || 16
 }
 
 function onStageMouseDown(e) {
@@ -2878,7 +2949,6 @@ function onStageWheel(e) {
 	const step = getZoomStep(stageZoom.value)
 	const delta = e.deltaY < 0 ? step : -step
 	stageZoom.value = Math.min(15.0, Math.max(0.2, Number((stageZoom.value + delta).toFixed(2))))
-	e.preventDefault()
 }
 
 function zoomIn() {
@@ -3197,11 +3267,18 @@ onMounted(async () => {
 				? selectedCharacterId.value
 				: 'default'
 	await selectCharacter(targetChar)
-	updateCharHeight()
-	updateStageBleed()
+	nextTick(() => {
+		if (renderEngine.value !== 'canvas') {
+			updateCharHeight()
+		}
+		updateStageBleed()
+		scheduleUpdatePartCenters()
+	})
 	if (charBodyCanvasRef.value) {
 		charResizeObserver = new ResizeObserver(() => {
-			updateCharHeight()
+			if (renderEngine.value !== 'canvas') {
+				updateCharHeight()
+			}
 			scheduleUpdatePartCenters()
 		})
 		charResizeObserver.observe(charBodyCanvasRef.value)

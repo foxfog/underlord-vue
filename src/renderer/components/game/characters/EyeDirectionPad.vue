@@ -35,7 +35,7 @@
 					ref="linkedPadRef"
 					class="circle-pad"
 					@mousedown="onPadMouseDown($event, 'linked')"
-					@touchstart.prevent="onPadTouchStart($event, 'linked')"
+					@touchstart.passive="onPadTouchStart($event, 'linked')"
 				>
 					<div class="pad-crosshair-h"></div>
 					<div class="pad-crosshair-v"></div>
@@ -61,7 +61,7 @@
 						ref="leftPadRef"
 						class="circle-pad __dual"
 						@mousedown="onPadMouseDown($event, 'left')"
-						@touchstart.prevent="onPadTouchStart($event, 'left')"
+						@touchstart.passive="onPadTouchStart($event, 'left')"
 					>
 						<div class="pad-crosshair-h"></div>
 						<div class="pad-crosshair-v"></div>
@@ -85,7 +85,7 @@
 						ref="rightPadRef"
 						class="circle-pad __dual"
 						@mousedown="onPadMouseDown($event, 'right')"
-						@touchstart.prevent="onPadTouchStart($event, 'right')"
+						@touchstart.passive="onPadTouchStart($event, 'right')"
 					>
 						<div class="pad-crosshair-h"></div>
 						<div class="pad-crosshair-v"></div>

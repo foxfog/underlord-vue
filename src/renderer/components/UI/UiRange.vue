@@ -1,6 +1,6 @@
 <template>
 	<div class="ui-range" :class="{ _disabled: disabled, _nothumb: !showThumb }">
-		<div class="ui-range-body" @mousedown="startDrag" @touchstart="startDrag" ref="rangeBody">
+		<div class="ui-range-body" @mousedown="startDrag" @touchstart.passive="startDrag" ref="rangeBody" style="touch-action: none;">
 			<div class="ui-range-track">
 				<div class="ui-range-progress" :style="{ width: progressWidth + '%' }"></div>
 			</div>
@@ -8,7 +8,7 @@
 				class="ui-range-thumb"
 				:style="{ left: thumbLeftPosition }"
 				@mousedown.stop="startDrag"
-				@touchstart.stop="startDrag"
+				@touchstart.passive.stop="startDrag"
 			></div>
 		</div>
 
@@ -126,11 +126,13 @@ function startDrag(event) {
 
 	document.addEventListener('mousemove', moveHandler)
 	document.addEventListener('mouseup', endHandler)
-	document.addEventListener('touchmove', moveHandler)
-	document.addEventListener('touchend', endHandler)
+	document.addEventListener('touchmove', moveHandler, { passive: true })
+	document.addEventListener('touchend', endHandler, { passive: true })
 
-	// Prevent text selection
-	event.preventDefault()
+	// Prevent text selection for mouse dragging
+	if (!event.type.includes('touch') && event.cancelable) {
+		event.preventDefault()
+	}
 }
 
 // Update value and emit events

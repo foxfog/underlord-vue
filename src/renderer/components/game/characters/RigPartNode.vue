@@ -26,6 +26,18 @@
 			<span class="bpm-label">{{ spriteName }}</span>
 		</div>
 
+		<!-- Equipment parts attached directly to this rig part -->
+		<template v-if="equipmentPartsForThisNode.length > 0">
+			<EquipPart
+				v-for="(eq, idx) in equipmentPartsForThisNode"
+				:key="`eq-${eq.id}-${idx}`"
+				:part="eq.part"
+				:part-name="`${eq.id}-${idx}`"
+				:character-id="characterId"
+				:zindex="eq.part.zindex ?? eq.item?.zindex"
+			/>
+		</template>
+
 		<!-- Recursively render child parts -->
 		<template v-for="(childSprite, childName) in spritesByParent[spriteName]" :key="childName">
 			<RigPartNode
@@ -49,6 +61,7 @@
 				:is-isometric-rotation="isIsometricRotation"
 				:isometric-rotation-mode="isometricRotationMode"
 				:isometric-tilt-angle="isometricTiltAngle"
+				:equipment-by-slot="equipmentBySlot"
 				@select-part="emit('select-part', $event)"
 				@part-loaded="emit('part-loaded', $event)"
 				@part-img-error="emit('part-img-error', $event)"
@@ -59,6 +72,7 @@
 
 <script setup>
 import { computed, ref } from 'vue'
+import EquipPart from './EquipPart.vue'
 
 defineOptions({
 	name: 'RigPartNode'
@@ -144,10 +158,33 @@ const props = defineProps({
 	isometricTiltAngle: {
 		type: Number,
 		default: 26.565
+	},
+	equipmentBySlot: {
+		type: Object,
+		default: () => ({})
 	}
 })
 
 const emit = defineEmits(['select-part', 'part-img-error', 'part-loaded'])
+
+const equipmentPartsForThisNode = computed(() => {
+	if (!props.equipmentBySlot || typeof props.equipmentBySlot !== 'object') return []
+	const res = []
+	for (const slotKey of Object.keys(props.equipmentBySlot)) {
+		const equip = props.equipmentBySlot[slotKey]
+		if (!equip || !Array.isArray(equip.parts)) continue
+		equip.parts.forEach((p) => {
+			if (p.parent === props.spriteName) {
+				res.push({
+					id: equip.id || slotKey,
+					item: equip.item,
+					part: p
+				})
+			}
+		})
+	}
+	return res
+})
 
 const spriteHeight = ref('0')
 

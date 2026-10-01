@@ -94,10 +94,17 @@ export function preloadImage(src, onLoaded = null) {
 		const img = new Image()
 		img.crossOrigin = 'anonymous'
 		img.onload = () => {
-			imageCache.set(src, img)
-			pendingLoads.delete(src)
-			if (onLoaded) onLoaded(img)
-			resolve(img)
+			const finish = () => {
+				imageCache.set(src, img)
+				pendingLoads.delete(src)
+				if (onLoaded) onLoaded(img)
+				resolve(img)
+			}
+			if (typeof img.decode === 'function') {
+				img.decode().then(finish).catch(finish)
+			} else {
+				finish()
+			}
 		}
 		img.onerror = () => {
 			pendingLoads.delete(src)
@@ -516,13 +523,26 @@ export class CharacterRigRenderer {
 				}
 
 				if (this.clipCanvas) {
-					if (this.clipCanvas.width !== ctx.canvas.width || this.clipCanvas.height !== ctx.canvas.height) {
-						this.clipCanvas.width = ctx.canvas.width
-						this.clipCanvas.height = ctx.canvas.height
+					// Bounding box of parent in canvas coordinates to avoid massive full-screen blits
+					const cx = (parentNode.worldCenter?.x ?? 0) * dpr
+					const cy = (parentNode.worldCenter?.y ?? 0) * dpr
+					const radius = Math.ceil(
+						Math.max(parentNode.width, parentNode.height, node.width, node.height) * dpr * 1.5
+					)
+					const minX = Math.max(0, Math.floor(cx - radius))
+					const minY = Math.max(0, Math.floor(cy - radius))
+					const maxX = Math.min(ctx.canvas.width, Math.ceil(cx + radius))
+					const maxY = Math.min(ctx.canvas.height, Math.ceil(cy + radius))
+					const boxW = Math.max(1, maxX - minX)
+					const boxH = Math.max(1, maxY - minY)
+
+					if (this.clipCanvas.width < boxW || this.clipCanvas.height < boxH) {
+						this.clipCanvas.width = Math.max(boxW, 256)
+						this.clipCanvas.height = Math.max(boxH, 256)
 					}
 
 					this.clipCtx.setTransform(1, 0, 0, 1, 0, 0)
-					this.clipCtx.clearRect(0, 0, this.clipCanvas.width, this.clipCanvas.height)
+					this.clipCtx.clearRect(0, 0, boxW, boxH)
 
 					if (isIsometric) {
 						this.clipCtx.imageSmoothingEnabled = false
@@ -531,9 +551,9 @@ export class CharacterRigRenderer {
 						this.clipCtx.imageSmoothingQuality = 'high'
 					}
 
-					// 1. Draw parent image to act as alpha mask
+					// 1. Draw parent image to act as alpha mask (translated by -minX, -minY)
 					const [pa, pb, pc, pd, pe, pf] = parentNode.worldMatrix
-					this.clipCtx.setTransform(pa * dpr, pb * dpr, pc * dpr, pd * dpr, pe * dpr, pf * dpr)
+					this.clipCtx.setTransform(pa * dpr, pb * dpr, pc * dpr, pd * dpr, pe * dpr - minX, pf * dpr - minY)
 					this.clipCtx.globalAlpha = 1
 					this.clipCtx.drawImage(
 						parentNode.image,
@@ -546,7 +566,7 @@ export class CharacterRigRenderer {
 					// 2. Composite child with source-in: keeps child pixels ONLY where parent alpha > 0
 					this.clipCtx.globalCompositeOperation = 'source-in'
 					const [ca, cb, cc, cd, ce, cf] = node.worldMatrix
-					this.clipCtx.setTransform(ca * dpr, cb * dpr, cc * dpr, cd * dpr, ce * dpr, cf * dpr)
+					this.clipCtx.setTransform(ca * dpr, cb * dpr, cc * dpr, cd * dpr, ce * dpr - minX, cf * dpr - minY)
 					this.clipCtx.globalAlpha = node.opacity < 1 ? node.opacity : 1
 					this.clipCtx.drawImage(
 						node.image,
@@ -559,10 +579,10 @@ export class CharacterRigRenderer {
 					// 3. Reset composite mode
 					this.clipCtx.globalCompositeOperation = 'source-over'
 
-					// 4. Blit clipped child onto main canvas
+					// 4. Blit clipped region onto main canvas
 					ctx.save()
 					ctx.setTransform(1, 0, 0, 1, 0, 0)
-					ctx.drawImage(this.clipCanvas, 0, 0)
+					ctx.drawImage(this.clipCanvas, 0, 0, boxW, boxH, minX, minY, boxW, boxH)
 					ctx.restore()
 
 					// Editor selection / bounding boxes
