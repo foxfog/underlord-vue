@@ -99,23 +99,23 @@ export function setEnableOrganicEdges(enabled) {
 
 /**
  * Порог перехода LOD 0 → LOD 1 (в экранных пикселях видимого радиуса гекса `screenRadius`):
- * - Если видимый радиус гекса на экране >= 20px (LOD 0):
+ * - Если видимый радиус гекса на экране >= 30px (LOD 0, zoom >= ~0.83 при R=36):
  *   Включается полная детализация: кривые Безье, случайные UV-смещения текстур для каждой клетки,
  *   анимация волн и полупрозрачная разметка сетки.
- * - Если видимый радиус гекса < 20px (LOD 1):
+ * - Если видимый радиус гекса < 30px (LOD 1, zoom < ~0.83):
  *   Кривые Безье автоматически заменяются на строгие прямые шестиугольники, текстуры объединяются
  *   в пакетные CanvasPattern слои (дает прирост скорости в 10–50 раз на больших картах).
  */
-export const HEX_LOD_SCREEN_RADIUS_ORGANIC = 20
+export const HEX_LOD_SCREEN_RADIUS_ORGANIC = 30
 
 /**
  * Порог перехода LOD 1 → LOD 2 (ультра-упрощенный стратегический обзор Civilization / Total War):
- * - Если видимый радиус гекса на экране < 12px (LOD 2):
+ * - Если видимый радиус гекса на экране < 19px (LOD 2, zoom < ~0.53 при R=36):
  *   Полностью подавляются линии сетки гексов (устраняется муар и темная рябь),
  *   биомы заливаются чистым сплошным цветом без текстур, спрайты холмов скрываются,
  *   а границы государств и крупные реки рисуются четкими контрастными линиями.
  */
-export const HEX_LOD_SCREEN_RADIUS_STRATEGIC = 12
+export const HEX_LOD_SCREEN_RADIUS_STRATEGIC = 19
 
 /**
  * Вычисляет текущий уровень детализации (LOD 0, 1 или 2) по экранному радиусу гексагона.
@@ -184,12 +184,89 @@ export function shouldTriggerHexAnimTick({
 	lastRenderDurationMs = 0,
 	isCameraMoving = false,
 	animFrameIntervalMs = ANIM_FRAME_INTERVAL_MS,
-	frameBudgetMs = FRAME_BUDGET_MS
+	frameBudgetMs = FRAME_BUDGET_MS,
+	enableAnimations = ENABLE_HEX_ANIMATIONS,
+	hasAnimatedElements = true
 }) {
+	if (!enableAnimations) return false
+	if (!hasAnimatedElements) return false
 	if (isCameraMoving) return false
 	const timeSinceAnimRender = currentTime - lastAnimRenderTime
-	const prevFrameHeavy = lastRenderDurationMs > frameBudgetMs
-	return !prevFrameHeavy && timeSinceAnimRender >= animFrameIntervalMs
+	return timeSinceAnimRender >= animFrameIntervalMs
+}
+
+// ==============================================================================
+// 4.1. ВИЗУАЛИЗАЦИЯ И ТЕЧЕНИЕ РЕК (RIVER CONFIG: DELTA & PIXEL FLOW)
+// ==============================================================================
+
+/**
+ * Глобальная конфигурация рендеринга рек:
+ * 1) Дельта и устье реки (впадение в море/океан с плавным расширением и слиянием)
+ * 2) Стилизованная пиксельная анимация течения (светлые и темные тона пикселей вместо пунктира)
+ *
+ * Все параметры открыты для изменения на лету из кода через объект RIVER_CONFIG
+ * или вспомогательную функцию setRiverConfig().
+ */
+export const RIVER_CONFIG = {
+	// --- Основные цвета реки ---
+	colors: {
+		/** Цвет воды реки (по умолчанию совпадает с цветом тайла побережья #0284c7 для бесшовного слияния) */
+		waterColor: '#0284c7',
+		/** Наличие темных береговых границ (по умолчанию false: чистая водная лента без темных бордеров) */
+		hasBorder: false,
+		/** Цвет береговой окантовки (если включена) */
+		borderColor: '#0369a1'
+	},
+
+	// --- Дельта и устье реки (впадение в море / побережье) ---
+	delta: {
+		/** Включить плавное расширение устья при впадении в воду */
+		enabled: true,
+		/** Мягкий коэффициент расширения устья (1.3 .. 1.6 вместо чрезмерного) */
+		flareMultiplier: 1.5,
+		/** Вылет веера дельты в сторону водного гекса */
+		reachRatio: 0.28
+	},
+
+	// --- Пиксельная анимация течения реки (кубики вместо полосок) ---
+	flow: {
+		/** Включить анимацию течения */
+		enabled: true,
+		/** Базовый размер одного кубика течения в пикселях (px × px) */
+		pixelSize: 2.5,
+		/** Скорость перемещения кубиков по течению (px/сек) */
+		speed: 18.0,
+		/** Плотность / детализация кубиков вдоль русла реки */
+		density: 1.0,
+		/** Число параллельных дорожек кубиков по ширине реки (1-3) */
+		lanes: 3,
+		/** Использовать исключительно квадратные кубики (не вытянутые полоски) */
+		cubeOnly: true,
+		/** Светлый тон кубиков (яркие блики на воде) */
+		lightTone: '#7dd3fc',
+		/** Промежуточный тон кубиков (лазурные переливы) */
+		midTone: '#38bdf8',
+		/** Темный тон кубиков (тени глубины, завихрения) */
+		darkTone: '#0369a1',
+		/** Акцентные пенные кубики */
+		foamTone: '#ffffff'
+	}
+}
+
+/**
+ * Позволяет в любой момент динамически изменить настройки рек из внешнего кода.
+ * @param {Object} options - { colors: { ... }, delta: { ... }, flow: { ... } }
+ */
+export function setRiverConfig(options = {}) {
+	if (options.colors) {
+		Object.assign(RIVER_CONFIG.colors, options.colors)
+	}
+	if (options.delta) {
+		Object.assign(RIVER_CONFIG.delta, options.delta)
+	}
+	if (options.flow) {
+		Object.assign(RIVER_CONFIG.flow, options.flow)
+	}
 }
 
 // ==============================================================================
@@ -403,7 +480,8 @@ export const HEX_CONFIG = Object.freeze({
 		borderOffsetRatio: BORDER_OFFSET_RATIO,
 		borderCasingAlpha: BORDER_CASING_ALPHA,
 		borderCoreAlpha: BORDER_CORE_ALPHA
-	}
+	},
+	rivers: RIVER_CONFIG
 })
 
 export default HEX_CONFIG

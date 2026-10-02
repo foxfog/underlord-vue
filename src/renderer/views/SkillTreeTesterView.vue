@@ -3,9 +3,9 @@
 		<!-- Top Navigation Header -->
 		<header class="tester-header">
 			<div class="header-left">
-				<button class="editor-btn editor-btn-back" @click="returnToMenu">
+				<button class="editor-btn editor-btn-back" title="Вернуться к списку тестов" @click="returnToTests">
 					<span class="btn-icon">‹</span>
-					<span>Меню тестов</span>
+					<span>К тестам</span>
 				</button>
 
 				<div class="header-title-box">
@@ -276,8 +276,8 @@ function handleReset() {
 	}
 }
 
-function returnToMenu() {
-	router.push('/home')
+function returnToTests() {
+	router.push('/tests')
 }
 
 onMounted(async () => {

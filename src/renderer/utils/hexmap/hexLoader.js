@@ -16,7 +16,7 @@ export const BIOMES = Object.freeze({
 	plains: { id: 'plains', name: 'Равнина', color: '#7cb342', edgeColor: '#558b2f', icon: '🌾' },
 	desert: { id: 'desert', name: 'Пустыня', color: '#e0a94b', edgeColor: '#b88230', icon: '🏜️' },
 	snow: { id: 'snow', name: 'Снег', color: '#e2e8f0', edgeColor: '#cbd5e1', icon: '❄️' },
-	water: { id: 'water', name: 'Вода / Озеро', color: '#0284c7', edgeColor: '#0369a1', isWater: true, icon: '🌊' },
+	water: { id: 'water', name: 'Побережье', color: '#0284c7', edgeColor: '#0369a1', isWater: true, icon: '🌊' },
 	ocean: { id: 'ocean', name: 'Океан', color: '#1e3a8a', edgeColor: '#172554', isWater: true, icon: '🌊' }
 })
 
@@ -400,8 +400,8 @@ export function syncRoadsForCell(mapData, col, row) {
 		const roadKey = getCanonicalRoadKey(col, row, neighborCoord.col, neighborCoord.row)
 
 		if (hasRoad && neighborHasRoad) {
-			// When connecting cells with different road tiers, stone takes priority
-			const connectionType = (currentCell.road === 'stone' || neighborCell.road === 'stone') ? 'stone' : 'dirt'
+			// A connection is stone only if both adjacent cells are stone; connecting stone to dirt yields dirt
+			const connectionType = (currentCell.road === 'stone' && neighborCell.road === 'stone') ? 'stone' : 'dirt'
 			mapData.roads[roadKey] = {
 				from: { col, row },
 				to: { col: neighborCoord.col, row: neighborCoord.row },
@@ -415,12 +415,13 @@ export function syncRoadsForCell(mapData, col, row) {
 
 /**
  * Rebuilds all road connections between adjacent cells that have roads across the entire map.
+ * Prunes any obsolete or non-adjacent road keys.
  *
  * @param {Object} mapData - Normalized hex map data
  */
 export function rebuildAllRoadConnections(mapData) {
 	if (!mapData || !mapData.cells) return
-	if (!mapData.roads) mapData.roads = {}
+	mapData.roads = {}
 
 	for (const cell of Object.values(mapData.cells)) {
 		if (cell.road && cell.road !== 'none') {

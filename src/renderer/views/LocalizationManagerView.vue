@@ -3,9 +3,9 @@
 		<!-- Top Header Toolbar -->
 		<header class="loc-header">
 			<div class="header-left">
-				<button class="loc-btn loc-btn-back" @click="returnToHome">
+				<button class="loc-btn loc-btn-back" title="Вернуться к списку тестов" @click="returnToTests">
 					<span class="btn-icon">‹</span>
-					<span>Меню</span>
+					<span>К тестам</span>
 				</button>
 				<div class="header-title-box">
 					<span class="header-icon">🌐</span>
@@ -388,8 +388,8 @@ onMounted(async () => {
 	await refreshLocales()
 })
 
-function returnToHome() {
-	router.push('/home')
+function returnToTests() {
+	router.push('/tests')
 }
 
 function goToDataEditor() {

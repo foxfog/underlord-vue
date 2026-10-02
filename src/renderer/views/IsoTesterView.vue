@@ -48,9 +48,9 @@
 		<!-- Top Header Bar -->
 		<header class="iso-header">
 			<div class="header-left">
-				<button class="iso-btn iso-btn-back" @click="returnToHome">
+				<button class="iso-btn iso-btn-back" title="Вернуться к списку тестов" @click="returnToTests">
 					<span class="btn-icon">‹</span>
-					<span>Меню</span>
+					<span>К тестам</span>
 				</button>
 
 				<!-- Location Selector -->
@@ -301,8 +301,8 @@
 					<button class="iso-btn iso-btn-primary" @click="resetLocation">
 						Пройти заново
 					</button>
-					<button class="iso-btn iso-btn-secondary" @click="returnToHome">
-						В меню
+					<button class="iso-btn iso-btn-secondary" title="Вернуться к списку тестов" @click="returnToTests">
+						К тестам
 					</button>
 				</div>
 			</div>
@@ -572,8 +572,8 @@ function resetLocation() {
 	canvasRef.value?.resetLocation?.()
 }
 
-function returnToHome() {
-	router.push('/home')
+function returnToTests() {
+	router.push('/tests')
 }
 
 function goToEditor() {

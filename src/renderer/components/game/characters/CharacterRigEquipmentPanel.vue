@@ -1,5 +1,5 @@
 <template>
-	<div class="char-rig-equip-panel">
+	<div class="char-rig-equip-panel" :class="{ '__is-wide': isWideSidebar }">
 		<!-- HEADER & GLOBAL ACTIONS -->
 		<div class="equip-summary-card">
 			<div class="esc-header">
@@ -15,6 +15,16 @@
 				</div>
 
 				<div class="esc-actions">
+					<button
+						type="button"
+						class="btn-studio-action __toggle-width"
+						:class="{ __active: isWideSidebar }"
+						:title="isWideSidebar ? 'Свернуть сайдбар к компактному размеру (25em)' : 'Развернуть сайдбар для удобной работы в 2 колонки (48em)'"
+						@click="emit('toggle-sidebar-width')"
+					>
+						<span>{{ isWideSidebar ? '📱' : '↔️' }}</span>
+						<span>{{ isWideSidebar ? 'Компактный' : '2 колонки' }}</span>
+					</button>
 					<button
 						type="button"
 						class="btn-studio-action __toggle-all"
@@ -623,6 +633,10 @@ const props = defineProps({
 	availableEquipmentImages: {
 		type: Array,
 		default: () => []
+	},
+	isWideSidebar: {
+		type: Boolean,
+		default: false
 	}
 })
 
@@ -636,7 +650,8 @@ const emit = defineEmits([
 	'remove-part',
 	'update-part',
 	'update-item',
-	'save-equipment'
+	'save-equipment',
+	'toggle-sidebar-width'
 ])
 
 // Filter states
@@ -1008,6 +1023,24 @@ function handleCreateCustomItem() {
 	color: #fda4af;
 }
 
+.btn-studio-action.__toggle-width {
+	background: rgba(14, 165, 233, 0.15);
+	border-color: rgba(56, 189, 248, 0.35);
+	color: #38bdf8;
+}
+
+.btn-studio-action.__toggle-width:hover {
+	background: rgba(14, 165, 233, 0.28);
+	border-color: #38bdf8;
+	color: #ffffff;
+}
+
+.btn-studio-action.__toggle-width.__active {
+	background: rgba(14, 165, 233, 0.25);
+	border-color: #38bdf8;
+	color: #7dd3fc;
+}
+
 .btn-studio-action.__save-equip {
 	background: linear-gradient(135deg, #059669 0%, #10b981 100%);
 	border-color: #34d399;
@@ -1221,12 +1254,42 @@ function handleCreateCustomItem() {
 	display: flex;
 	gap: 0.85em;
 	min-height: 25em;
+	flex: 1;
+	transition: all 0.2s ease;
+}
+
+/* Stacking fallback when sidebar is in compact mode (< 38em) */
+.char-rig-equip-panel:not(.__is-wide) .equip-two-col-layout {
+	flex-direction: column;
+}
+
+.char-rig-equip-panel:not(.__is-wide) .equip-items-list-col {
+	max-width: 100%;
+}
+
+.char-rig-equip-panel:not(.__is-wide) .items-list-scroll {
+	max-height: 24em;
+}
+
+.char-rig-equip-panel.__is-wide .equip-two-col-layout {
+	flex-direction: row;
+}
+
+.char-rig-equip-panel.__is-wide .equip-items-list-col {
+	flex: 1;
+	min-width: 15em;
+	max-width: 24em;
+}
+
+.char-rig-equip-panel.__is-wide .equip-inspector-col {
+	flex: 2;
+	min-width: 20em;
 }
 
 .equip-items-list-col {
 	flex: 1;
 	min-width: 14em;
-	max-width: 19em;
+	max-width: 24em;
 	display: flex;
 	flex-direction: column;
 }
@@ -1255,6 +1318,7 @@ function handleCreateCustomItem() {
 	padding: 0.5em 0.65em;
 	cursor: pointer;
 	transition: all 0.15s ease;
+	min-width: 0;
 }
 
 .item-card:hover {
@@ -1298,6 +1362,7 @@ function handleCreateCustomItem() {
 	display: flex;
 	flex-direction: column;
 	gap: 0.15em;
+	overflow: hidden;
 }
 
 .item-title-row {
@@ -1305,6 +1370,7 @@ function handleCreateCustomItem() {
 	align-items: center;
 	justify-content: space-between;
 	gap: 0.4em;
+	min-width: 0;
 }
 
 .item-name {
@@ -1314,6 +1380,7 @@ function handleCreateCustomItem() {
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+	min-width: 0;
 }
 
 .item-rarity-badge {
@@ -1322,6 +1389,7 @@ function handleCreateCustomItem() {
 	padding: 0.05em 0.35em;
 	border-radius: 0.3em;
 	font-weight: 700;
+	flex-shrink: 0;
 }
 
 .item-rarity-badge.__rare {
@@ -1340,6 +1408,8 @@ function handleCreateCustomItem() {
 	gap: 0.35em;
 	font-size: 0.7em;
 	color: #94a3b8;
+	min-width: 0;
+	flex-wrap: wrap;
 }
 
 .item-id-pill {
@@ -1347,14 +1417,22 @@ function handleCreateCustomItem() {
 	padding: 0.05em 0.35em;
 	border-radius: 0.25em;
 	font-family: monospace;
+	max-width: 10em;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .item-slot-pill {
 	color: #cbd5e1;
+	white-space: nowrap;
 }
 
 .item-status-row {
 	font-size: 0.68em;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .status-badge.__configured {
@@ -1369,6 +1447,8 @@ function handleCreateCustomItem() {
 	display: flex;
 	align-items: center;
 	gap: 0.3em;
+	flex-shrink: 0;
+	margin-left: auto;
 }
 
 .item-action-eye-btn {
@@ -1395,6 +1475,7 @@ function handleCreateCustomItem() {
 	font-weight: 600;
 	padding: 0.25em 0.5em;
 	cursor: pointer;
+	white-space: nowrap;
 }
 
 .item-action-add-btn:hover {

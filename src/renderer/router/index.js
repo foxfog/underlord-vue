@@ -82,6 +82,17 @@ const router = createRouter({
 			name: 'hex-editor',
 			path: '/test/hex-editor',
 			component: () => import('@/views/HexEditorView.vue')
+		},
+		{
+			id: 13,
+			name: 'tests',
+			path: '/tests',
+			component: HomeView,
+			meta: { view: 'tests' }
+		},
+		{
+			path: '/test',
+			redirect: '/tests'
 		}
 	]
 })

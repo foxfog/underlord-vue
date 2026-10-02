@@ -150,34 +150,16 @@ const mergedCharacter = {
 
 В компоненте `Character.vue`:
 ```vue
-<SpritePart 
-  :sprite="sprite" 
-  :sprite-name="spriteName"
-  :character-id="character.id"
-  :sprites="character.sprites"
-  :sprites-by-parent="spritesByParent"
-  :equipment-by-slot="character.equipmentBySlot"
+<CharacterCanvas
+  :character="character"
+  :zoom="characterStyle.scale"
+  :is-interactive="Boolean(character.interaction)"
+  @character-click="onCharacterClick"
 />
 ```
 
-В компоненте `SpritePart.vue`:
-```vue
-<!-- Базовый спрайт -->
-<div class="char-part-sprite">
-  <img :src="sprite.image" ... />
-</div>
-
-<!-- Оборудование для этого спрайта (находится внутри char-part) -->
-<EquipPart 
-  v-if="part.parent === spriteName"
-  :part="part"
-  :part-name="`${equip.id}-${partIndex}`"
-  :character-id="characterId"
-/>
-
-<!-- Дочерние спрайты (рекурсивно) -->
-<SpritePart :sprite="childSprite" ... />
-```
+Внутри `CharacterCanvas.vue` и `characterRigRenderer.js`:
+Слои экипировки из `character.equipmentBySlot` автоматически привязываются к соответствующим родительским суставам (`part.parent`), наследуя их матрицы трансформаций и накладываясь согласно порядку `zindex`.
 
 ## Пример использования
 
@@ -276,8 +258,8 @@ char-part (arm_right)
 ## Файлы компонентов
 
 - [Character.vue](../../src/renderer/components/game/characters/Character.vue) — основной компонент персонажа
-- [SpritePart.vue](../../src/renderer/components/game/characters/SpritePart.vue) — компонент для отображения части спрайта (содержит оборудование внутри себя)
-- [EquipPart.vue](../../src/renderer/components/game/characters/EquipPart.vue) — компонент для отображения части оборудования
+- [CharacterCanvas.vue](../../src/renderer/components/game/characters/CharacterCanvas.vue) — аппаратный рендерер персонажа и надетых слоев экипировки
+- [characterRigRenderer.js](../../src/renderer/utils/character/characterRigRenderer.js) — движок вычисления аффинных матриц трансформаций и Scene Graph
 - [equipment.js](../../src/renderer/utils/equipment.js) — утилиты расчета слотов и валидатор `canCharacterEquipItem`
 - [InventoryContextMenu.vue](../../src/renderer/components/game/inventory/InventoryContextMenu.vue) — контекстное меню экипировки с проверкой требований
 - [InventoryItems.vue](../../src/renderer/components/game/inventory/InventoryItems.vue) — сетка инвентаря и DND экипировки

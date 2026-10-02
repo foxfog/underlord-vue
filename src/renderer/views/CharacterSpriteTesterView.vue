@@ -1,5 +1,5 @@
 <template>
-	<div class="char-tester-view">
+	<div class="char-tester-view" :class="{ '__is-resizing-sidebar': isResizingSidebar }">
 		<!-- Top Navigation & Toolbar -->
 		<header class="tester-header">
 			<div class="header-left">
@@ -55,30 +55,6 @@
 				>
 					<span class="vtb-icon">🎲</span>
 					<span>Изометрия</span>
-				</button>
-			</div>
-
-			<!-- Render Engine Switcher (Canvas 2D vs Legacy DOM) -->
-			<div class="header-engine-tabs">
-				<button
-					type="button"
-					class="engine-tab-btn"
-					:class="{ __active: renderEngine === 'canvas' }"
-					title="Canvas 2D: точные повороты вокруг центра без скачков и разрывов Z-Index"
-					@click="renderEngine = 'canvas'"
-				>
-					<span class="etb-icon">⚡</span>
-					<span>Canvas</span>
-				</button>
-				<button
-					type="button"
-					class="engine-tab-btn"
-					:class="{ __active: renderEngine === 'dom' }"
-					title="DOM / CSS: устаревший режим верстки через <div>"
-					@click="renderEngine = 'dom'"
-				>
-					<span class="etb-icon">🧱</span>
-					<span>DOM</span>
 				</button>
 			</div>
 
@@ -352,48 +328,31 @@
 					<div class="iso-tile-ground">
 						<!-- Isometric 64x32 diamond tile ground -->
 						<div v-if="showGrid" class="iso-diamond-grid"></div>
-						<!-- Isometric character rig root (Strictly pixel art 1:1, no biometric scale!) -->
-						<div
-							class="char character-rig-root iso-character-rig-root"
-							ref="charRigRef"
-							:class="[
-								`char-${selectedCharacterId}`,
-								{ '__flip-x': isoFlipped }
-							]"
-						>
-							<div class="char-body char-body-canvas iso-char-body-canvas" ref="charBodyCanvasRef">
-								<!-- Recursive Isometric Sprites via RigPartNode -->
-								<template
-									v-for="(sprite, name) in spritesByParent[null]"
-									:key="name"
-								>
-									<RigPartNode
-										:sprite="sprite"
-										:sprite-name="name"
-										:character-id="selectedCharacterId"
-										:sprites="bodyParts"
-										:sprites-by-parent="spritesByParent"
-										:selected-part-name="selectedPartName"
-										:part-pivots="partPivots"
-										:part-rotations="partRotations"
-										:part-translations="partTranslations"
-										:part-scales="partScales"
-										:part-opacities="partOpacities"
-										:part-custom-styles="partCustomStyles"
-										:animated-sprites="animatedSprites"
-										:eye-offset="eyeLinkedOffset"
-										:show-bones="showBones"
-										:is-isometric="true"
-										:is-isometric-rotation="isIsometricRotation"
-										:isometric-rotation-mode="isometricRotationMode"
-										:isometric-tilt-angle="isometricTiltAngle"
-										:get-effective-part-image="getEffectivePartImage"
-										@select-part="onPartClick"
-										@part-loaded="scheduleUpdatePartCenters"
-										@part-img-error="onPartImgError($event.event, $event.name)"
-									/>
-								</template>
-							</div>
+						<!-- Isometric character canvas (Pixel art 1:1) -->
+						<div class="iso-canvas-wrapper">
+							<CharacterCanvas
+								ref="characterCanvasRef"
+								:character-id="selectedCharacterId"
+								:body-parts="bodyParts"
+								:character-scale="1"
+								:orientation="isoFlipped ? 'left' : 'right'"
+								:part-rotations="partRotations"
+								:part-translations="partTranslations"
+								:part-scales="partScales"
+								:part-opacities="partOpacities"
+								:part-pivots="partPivots"
+								:animated-sprites="animatedSprites"
+								:eye-offset="eyeLinkedOffset"
+								:selected-part-name="selectedPartName"
+								:get-effective-part-image="getEffectivePartImage"
+								:is-isometric="true"
+								:is-isometric-rotation="isIsometricRotation"
+								:isometric-rotation-mode="isometricRotationMode"
+								:isometric-tilt-angle="isometricTiltAngle"
+								:zoom="stageZoom"
+								:equipment-by-slot="equipmentBySlotForCanvas"
+								@select-part="onPartClick"
+							/>
 						</div>
 					</div>
 
@@ -490,10 +449,7 @@
 						</div>
 
 						<!-- Character Rig Container: Canvas 2D Engine -->
-						<div
-							v-if="renderEngine === 'canvas'"
-							class="char-canvas-stage-wrapper"
-						>
+						<div class="char-canvas-stage-wrapper">
 							<CharacterCanvas
 								ref="characterCanvasRef"
 								:character-id="selectedCharacterId"
@@ -518,53 +474,6 @@
 								@select-part="onPartClick"
 								@rendered="onCanvasRendered"
 							/>
-						</div>
-
-						<!-- Character Rig Container: Legacy DOM Engine (Fallback) -->
-						<div
-							v-else
-							class="char character-rig-root"
-							ref="charRigRef"
-							:class="[
-								`char-${selectedCharacterId}`,
-								`orientation-${orientation === 'inverted' ? 'left' : 'right'}`,
-								{ 'char-back': isBackView }
-							]"
-							:style="{
-								transform: `translate(calc(-50% + ${rootOffset.x}%), ${-rootOffset.y}%) scale(${characterScale})`,
-								transformOrigin: 'center bottom'
-							}"
-						>
-							<div class="char-body char-body-canvas" ref="charBodyCanvasRef">
-								<!-- Recursive Root Sprites via RigPartNode -->
-								<template
-									v-for="(sprite, name) in spritesByParent[null]"
-									:key="name"
-								>
-									<RigPartNode
-										:sprite="sprite"
-										:sprite-name="name"
-										:character-id="selectedCharacterId"
-										:sprites="bodyParts"
-										:sprites-by-parent="spritesByParent"
-										:selected-part-name="selectedPartName"
-										:part-pivots="partPivots"
-										:part-rotations="partRotations"
-										:part-translations="partTranslations"
-										:part-scales="partScales"
-										:part-opacities="partOpacities"
-										:part-custom-styles="partCustomStyles"
-										:animated-sprites="animatedSprites"
-										:eye-offset="effectiveEyeOffset"
-										:show-bones="showBones"
-										:get-effective-part-image="getEffectivePartImage"
-										:equipment-by-slot="equipmentBySlotForCanvas"
-										@select-part="onPartClick"
-										@part-loaded="scheduleUpdatePartCenters"
-										@part-img-error="onPartImgError($event.event, $event.name)"
-									/>
-								</template>
-							</div>
 						</div>
 
 						<!-- Crosshair Sprite Centers Overlay (Top-level, undeformed, 1px crisp crosshairs) -->
@@ -596,15 +505,42 @@
 				</div>
 			</div>
 
+			<!-- RESIZE HANDLE FOR SIDEBAR -->
+			<div
+				class="studio-sidebar-resize-handle"
+				:class="{ '__is-resizing': isResizingSidebar, '__is-wide': sidebarWidthEm >= 38 }"
+				title="Потяните для изменения ширины сайдбара (двойной клик для переключения 25em / 48em)"
+				@mousedown="startSidebarResize"
+				@dblclick="toggleSidebarPresetWidth"
+			>
+				<div class="resize-handle-line"></div>
+				<button
+					type="button"
+					class="resize-toggle-btn"
+					:title="sidebarWidthEm >= 38 ? 'Свернуть сайдбар к стандартной ширине (25em)' : 'Расширить сайдбар (48em, 2 колонки)'"
+					@click.stop="toggleSidebarPresetWidth"
+				>
+					<span class="rtb-arrow">{{ sidebarWidthEm >= 38 ? '▶' : '◀' }}</span>
+				</button>
+			</div>
+
 			<!-- RIGHT SIDEBAR: Tool Panels & Inspectors -->
-			<aside class="studio-sidebar">
+			<aside
+				class="studio-sidebar"
+				:class="{
+					'__resizing': isResizingSidebar,
+					'__wide-mode': sidebarWidthEm >= 38,
+					'__extra-wide': sidebarWidthEm >= 50
+				}"
+				:style="{ width: `${sidebarWidthEm}em` }"
+			>
 				<!-- Sidebar Tabs Switcher -->
 				<div class="sidebar-tabs-nav">
 					<button
 						type="button"
 						class="sidebar-tab-btn"
 						:class="{ __active: activeSidebarTab === 'rig' }"
-						@click="activeSidebarTab = 'rig'"
+						@click="onSelectSidebarTab('rig')"
 					>
 						<span class="stb-icon">🦴</span>
 						<span class="stb-name">Риг и части</span>
@@ -613,7 +549,7 @@
 						type="button"
 						class="sidebar-tab-btn"
 						:class="{ __active: activeSidebarTab === 'pose' }"
-						@click="activeSidebarTab = 'pose'"
+						@click="onSelectSidebarTab('pose')"
 					>
 						<span class="stb-icon">💃</span>
 						<span class="stb-name">Поза и Анимации</span>
@@ -622,7 +558,7 @@
 						type="button"
 						class="sidebar-tab-btn"
 						:class="{ __active: activeSidebarTab === 'emotions' }"
-						@click="activeSidebarTab = 'emotions'"
+						@click="onSelectSidebarTab('emotions')"
 					>
 						<span class="stb-icon">👀</span>
 						<span class="stb-name">Эмоции и Взгляд</span>
@@ -632,7 +568,7 @@
 						class="sidebar-tab-btn"
 						:class="{ __active: activeSidebarTab === 'equipment' }"
 						title="Настройка одежды и экипировки персонажа (equipment.json)"
-						@click="activeSidebarTab = 'equipment'"
+						@click="onSelectSidebarTab('equipment')"
 					>
 						<span class="stb-icon">👗</span>
 						<span class="stb-name">Одежда</span>
@@ -641,7 +577,7 @@
 						type="button"
 						class="sidebar-tab-btn"
 						:class="{ __active: activeSidebarTab === 'view' }"
-						@click="activeSidebarTab = 'view'"
+						@click="onSelectSidebarTab('view')"
 					>
 						<span class="stb-icon">📏</span>
 						<span class="stb-name">Вид и Рост</span>
@@ -2367,7 +2303,7 @@
 				</div>
 
 				<!-- TAB 5: EQUIPMENT & CLOTHING RIG -->
-				<div v-else-if="activeSidebarTab === 'equipment'" class="sidebar-tab-content">
+				<div v-else-if="activeSidebarTab === 'equipment'" class="sidebar-tab-content __equipment-content">
 					<CharacterRigEquipmentPanel
 						:character-id="selectedCharacterId"
 						:body-parts="bodyParts"
@@ -2376,6 +2312,7 @@
 						:active-equipped-ids="activeEquippedIds"
 						:selected-equipment-id="selectedEquipmentId"
 						:available-equipment-images="availableEquipmentImages"
+						:is-wide-sidebar="sidebarWidthEm >= 38"
 						@select-equipment="selectedEquipmentId = $event"
 						@toggle-equip="toggleEquipPreview"
 						@set-all-equipped="setAllEquippedPreview"
@@ -2386,6 +2323,7 @@
 						@update-part="updateEquipmentPart"
 						@update-item="updateEquipmentItem"
 						@save-equipment="saveEquipmentJson"
+						@toggle-sidebar-width="toggleSidebarPresetWidth"
 					/>
 				</div>
 			</aside>
@@ -2413,23 +2351,17 @@ import { ref, computed, onMounted, reactive, onUnmounted, watch, nextTick } from
 import { useRouter, useRoute } from 'vue-router'
 import { useCharacterRigStudio } from '@/composables/useCharacterRigStudio'
 import EyeDirectionPad from '@/components/game/characters/EyeDirectionPad.vue'
-import RigPartNode from '@/components/game/characters/RigPartNode.vue'
 import CharacterCanvas from '@/components/game/characters/CharacterCanvas.vue'
 import CharacterAnimationEditorModal from '@/components/game/characters/CharacterAnimationEditorModal.vue'
 import CharacterRigEquipmentPanel from '@/components/game/characters/CharacterRigEquipmentPanel.vue'
 
 const router = useRouter()
 const route = useRoute()
-const charRigRef = ref(null)
-const charBodyCanvasRef = ref(null)
 const characterCanvasRef = ref(null)
 const stageFrameRef = ref(null)
-const renderEngine = ref('canvas')
-let charResizeObserver = null
 let stageResizeObserver = null
 const partCenters = ref([])
 let updateCentersRafId = null
-let animCentersRafId = null
 
 const stageBleed = ref({ top: 0, bottom: 0, left: 0, right: 0 })
 let cachedStageFontSize = 16
@@ -2565,6 +2497,78 @@ let pendingPanX = 0
 let pendingPanY = 0
 
 const activeSidebarTab = ref('rig')
+
+// Sidebar Resizing & Width Persistence
+const SIDEBAR_STORAGE_KEY = 'underlord_character_rig_studio_sidebar_width'
+const DEFAULT_SIDEBAR_WIDTH_EM = 25
+const WIDE_SIDEBAR_WIDTH_EM = 48
+const MIN_SIDEBAR_WIDTH_EM = 20
+const MAX_SIDEBAR_WIDTH_EM = 70
+
+const savedSidebarWidth = typeof localStorage !== 'undefined' ? parseFloat(localStorage.getItem(SIDEBAR_STORAGE_KEY)) : NaN
+const sidebarWidthEm = ref(
+	!isNaN(savedSidebarWidth) && savedSidebarWidth >= MIN_SIDEBAR_WIDTH_EM && savedSidebarWidth <= MAX_SIDEBAR_WIDTH_EM
+		? savedSidebarWidth
+		: DEFAULT_SIDEBAR_WIDTH_EM
+)
+
+const isResizingSidebar = ref(false)
+let onSidebarMouseMoveRef = null
+let onSidebarMouseUpRef = null
+
+function startSidebarResize(e) {
+	e.preventDefault()
+	isResizingSidebar.value = true
+	const startX = e.clientX
+	const startWidthEm = sidebarWidthEm.value
+	const charTesterEl = document.querySelector('.char-tester-view')
+	const emInPx = charTesterEl ? parseFloat(getComputedStyle(charTesterEl).fontSize) || 16 : 16
+
+	function onMouseMove(moveEvent) {
+		const deltaPx = startX - moveEvent.clientX // Dragging left expands right sidebar
+		const deltaEm = deltaPx / emInPx
+		const newWidthEm = Math.min(Math.max(startWidthEm + deltaEm, MIN_SIDEBAR_WIDTH_EM), MAX_SIDEBAR_WIDTH_EM)
+		sidebarWidthEm.value = Number(newWidthEm.toFixed(1))
+	}
+
+	function onMouseUp() {
+		isResizingSidebar.value = false
+		window.removeEventListener('mousemove', onMouseMove)
+		window.removeEventListener('mouseup', onMouseUp)
+		onSidebarMouseMoveRef = null
+		onSidebarMouseUpRef = null
+		try {
+			localStorage.setItem(SIDEBAR_STORAGE_KEY, String(sidebarWidthEm.value))
+		} catch (_) {}
+	}
+
+	onSidebarMouseMoveRef = onMouseMove
+	onSidebarMouseUpRef = onMouseUp
+	window.addEventListener('mousemove', onMouseMove)
+	window.addEventListener('mouseup', onMouseUp)
+}
+
+function setSidebarWidth(widthEm) {
+	sidebarWidthEm.value = Math.min(Math.max(widthEm, MIN_SIDEBAR_WIDTH_EM), MAX_SIDEBAR_WIDTH_EM)
+	try {
+		localStorage.setItem(SIDEBAR_STORAGE_KEY, String(sidebarWidthEm.value))
+	} catch (_) {}
+}
+
+function toggleSidebarPresetWidth() {
+	if (sidebarWidthEm.value >= 38) {
+		setSidebarWidth(DEFAULT_SIDEBAR_WIDTH_EM)
+	} else {
+		setSidebarWidth(WIDE_SIDEBAR_WIDTH_EM)
+	}
+}
+
+function onSelectSidebarTab(tab) {
+	activeSidebarTab.value = tab
+	if (tab === 'equipment' && sidebarWidthEm.value < 38) {
+		setSidebarWidth(WIDE_SIDEBAR_WIDTH_EM)
+	}
+}
 const showGrid = ref(true)
 const showBones = ref(false)
 const showSpriteCenter = ref(true)
@@ -2617,7 +2621,6 @@ function invertCenterParts() {
 }
 
 function onCanvasRendered(centers) {
-	if (renderEngine.value !== 'canvas') return
 	if (!showSpriteCenter.value || viewMode.value === 'isometric') {
 		if (partCenters.value.length > 0) {
 			partCenters.value = []
@@ -2653,54 +2656,10 @@ function updatePartCenters() {
 		return
 	}
 
-	if (renderEngine.value === 'canvas') {
-		if (characterCanvasRef.value) {
-			const centers = characterCanvasRef.value.getPartCenters()
-			onCanvasRendered(centers)
-		}
-		return
+	if (characterCanvasRef.value) {
+		const centers = characterCanvasRef.value.getPartCenters()
+		onCanvasRendered(centers)
 	}
-
-	if (!stageFrameRef.value || !charBodyCanvasRef.value) {
-		return
-	}
-
-	const stageRect = stageFrameRef.value.getBoundingClientRect()
-	const zoom = stageZoom.value || 1.0
-
-	const newCenters = []
-	const targetNames =
-		visibleCenterParts.value.length > 0 ? visibleCenterParts.value : Object.keys(bodyParts)
-
-	for (const name of targetNames) {
-		const part = bodyParts[name]
-		if (!part) continue
-		const partEl = charBodyCanvasRef.value.querySelector(`._part-${name}`)
-		if (!partEl) continue
-
-		const boxEl = partEl.querySelector('.part-sprite-box') || partEl
-		const rect = boxEl.getBoundingClientRect()
-		if (rect.width === 0 && rect.height === 0) continue
-
-		// Local coordinates inside stageFrame (counteracting stageZoom)
-		const x = (rect.left + rect.width / 2 - stageRect.left) / zoom
-		const y = (rect.top + rect.height / 2 - stageRect.top) / zoom
-
-		const isRoot = !part.parent || name === 'body'
-		const offsetInfo = isRoot
-			? ' [Корень]'
-			: ` [offset: X=${part.offset?.x ?? 0}%, Y=${part.offset?.y ?? 0}%]`
-
-		newCenters.push({
-			name,
-			x: Number(x.toFixed(2)),
-			y: Number(y.toFixed(2)),
-			isRoot,
-			title: `Точка центра: ${name}${offsetInfo}`
-		})
-	}
-
-	partCenters.value = newCenters
 }
 
 function scheduleUpdatePartCenters() {
@@ -2711,44 +2670,12 @@ function scheduleUpdatePartCenters() {
 	})
 }
 
-function startAnimCentersLoop() {
-	if (renderEngine.value === 'canvas') {
-		// Canvas updates reactively and emits @rendered
-		return
-	}
-	if (animCentersRafId) return
-	function loop() {
-		if (!isPlaying.value) {
-			animCentersRafId = null
-			return
-		}
-		updatePartCenters()
-		animCentersRafId = requestAnimationFrame(loop)
-	}
-	animCentersRafId = requestAnimationFrame(loop)
-}
-
-function stopAnimCentersLoop() {
-	if (animCentersRafId) {
-		cancelAnimationFrame(animCentersRafId)
-		animCentersRafId = null
-	}
-	scheduleUpdatePartCenters()
-}
-
 watch(visibleCenterParts, scheduleUpdatePartCenters, { deep: true })
 watch(showSpriteCenter, (val) => {
 	if (val) {
 		scheduleUpdatePartCenters()
 	} else {
 		partCenters.value = []
-	}
-})
-watch(isPlaying, (playing) => {
-	if (playing) {
-		startAnimCentersLoop()
-	} else {
-		stopAnimCentersLoop()
 	}
 })
 watch(selectedCharacterId, () => {
@@ -2771,9 +2698,6 @@ watch(viewMode, (mode) => {
 	} else {
 		scheduleUpdatePartCenters()
 	}
-})
-watch(renderEngine, () => {
-	scheduleUpdatePartCenters()
 })
 watch(
 	equipmentBySlotForCanvas,
@@ -2998,14 +2922,6 @@ onUnmounted(() => {
 		cancelAnimationFrame(updateCentersRafId)
 		updateCentersRafId = null
 	}
-	if (animCentersRafId) {
-		cancelAnimationFrame(animCentersRafId)
-		animCentersRafId = null
-	}
-	if (charResizeObserver) {
-		charResizeObserver.disconnect()
-		charResizeObserver = null
-	}
 	if (stageResizeObserver) {
 		stageResizeObserver.disconnect()
 		stageResizeObserver = null
@@ -3016,6 +2932,14 @@ onUnmounted(() => {
 	window.removeEventListener('touchmove', onStageTouchMove)
 	window.removeEventListener('touchend', onStageTouchEnd)
 	window.removeEventListener('keydown', onKeyDown)
+	if (onSidebarMouseMoveRef) {
+		window.removeEventListener('mousemove', onSidebarMouseMoveRef)
+		onSidebarMouseMoveRef = null
+	}
+	if (onSidebarMouseUpRef) {
+		window.removeEventListener('mouseup', onSidebarMouseUpRef)
+		onSidebarMouseUpRef = null
+	}
 })
 
 // New Part inline form state
@@ -3054,33 +2978,6 @@ const currentPivot = computed(() => {
 	return partPivots[selectedPartName.value]
 })
 
-// Group parts by parent for hierarchy
-const spritesByParent = computed(() => {
-	const grouped = { null: {} }
-	if (!bodyParts) return grouped
-
-	for (const spriteName in bodyParts) {
-		const sprite = bodyParts[spriteName]
-		const parent = sprite.parent || null
-		if (!grouped[parent]) {
-			grouped[parent] = {}
-		}
-	}
-
-	for (const spriteName in bodyParts) {
-		const sprite = bodyParts[spriteName]
-		const parent = sprite.parent || null
-		grouped[parent][spriteName] = sprite
-	}
-
-	// Fallback if no parts have parent === null, take the first part
-	if (Object.keys(grouped[null]).length === 0 && Object.keys(bodyParts).length > 0) {
-		const firstKey = Object.keys(bodyParts)[0]
-		grouped[null][firstKey] = bodyParts[firstKey]
-	}
-
-	return grouped
-})
 
 // Hierarchical flat list with depth for tree rendering
 const hierarchicalPartsList = computed(() => {
@@ -3175,12 +3072,6 @@ const selectedPartDepth = computed(() => {
 	return Math.max(0, selectedAncestorChain.value.length - 1)
 })
 
-const updateCharHeight = () => {
-	if (charBodyCanvasRef.value && charRigRef.value) {
-		const height = charBodyCanvasRef.value.offsetHeight
-		charRigRef.value.style.setProperty('--char-height', `${height}px`)
-	}
-}
 
 const isSingleSpriteBody = computed(() => {
 	return Object.keys(bodyParts).length <= 1
@@ -3217,12 +3108,12 @@ function handleAddNewPart() {
 }
 
 function returnToTests() {
-	router.push('/home')
+	router.push('/tests')
 }
 
 function goToDataEditor() {
 	router.push({
-		path: '/editor',
+		path: '/test/data-editor',
 		query: {
 			tab: 'characters',
 			id: selectedCharacterId.value,
@@ -3268,21 +3159,9 @@ onMounted(async () => {
 				: 'default'
 	await selectCharacter(targetChar)
 	nextTick(() => {
-		if (renderEngine.value !== 'canvas') {
-			updateCharHeight()
-		}
 		updateStageBleed()
 		scheduleUpdatePartCenters()
 	})
-	if (charBodyCanvasRef.value) {
-		charResizeObserver = new ResizeObserver(() => {
-			if (renderEngine.value !== 'canvas') {
-				updateCharHeight()
-			}
-			scheduleUpdatePartCenters()
-		})
-		charResizeObserver.observe(charBodyCanvasRef.value)
-	}
 	if (stageFrameRef.value) {
 		stageResizeObserver = new ResizeObserver(() => {
 			updateStageBleed()
@@ -3442,39 +3321,6 @@ onMounted(async () => {
 	font-weight: bold;
 }
 
-.header-engine-tabs {
-	display: flex;
-	background: rgba(0, 0, 0, 0.35);
-	border: 1px solid rgba(255, 255, 255, 0.1);
-	border-radius: 0.4em;
-	padding: 0.15em;
-	gap: 0.2em;
-}
-
-.engine-tab-btn {
-	background: transparent;
-	border: none;
-	color: #94a3b8;
-	padding: 0.3em 0.8em;
-	border-radius: 0.3em;
-	font-size: 0.82em;
-	cursor: pointer;
-	display: flex;
-	align-items: center;
-	gap: 0.4em;
-	transition: all 0.2s;
-}
-
-.engine-tab-btn:hover {
-	color: #fff;
-}
-
-.engine-tab-btn.__active {
-	background: linear-gradient(135deg, rgba(16, 185, 129, 0.35) 0%, rgba(5, 150, 105, 0.45) 100%);
-	color: #34d399;
-	font-weight: bold;
-	border: 1px solid rgba(52, 211, 153, 0.3);
-}
 
 .char-canvas-stage-wrapper {
 	position: absolute;
@@ -3869,28 +3715,6 @@ onMounted(async () => {
 	margin-right: 0.5em;
 }
 
-/* Character 2D Rigging Hierarchy Rendering */
-.character-rig-root {
-	position: absolute !important;
-	bottom: 0 !important;
-	left: 50% !important;
-	height: 72.917% !important;
-	width: fit-content !important;
-	right: auto !important;
-	top: auto !important;
-	margin: 0 !important;
-	display: flex;
-	align-items: flex-end;
-	justify-content: center;
-	pointer-events: auto;
-}
-
-.char-body-canvas {
-	position: relative;
-	height: 100%;
-	width: fit-content;
-	image-rendering: auto;
-}
 
 /* Sprite Centers Crosshair Overlay */
 .stage-sprite-centers-layer {
@@ -3981,44 +3805,14 @@ onMounted(async () => {
 	box-shadow: 0 1em 2em rgba(0, 0, 0, 0.6);
 }
 
-.iso-character-rig-root {
-	position: absolute !important;
-	bottom: 2.2em !important;
-	left: 50% !important;
-	height: auto !important;
-	width: auto !important;
-	transform: translateX(-50%) !important;
-	transform-origin: bottom center !important;
-	display: flex !important;
-	align-items: flex-end !important;
-	justify-content: center !important;
-	image-rendering: pixelated !important;
-	image-rendering: crisp-edges !important;
-}
-
-.iso-character-rig-root.__flip-x {
-	transform: translateX(-50%) scaleX(-1) !important;
-}
-
-.iso-char-body-canvas {
-	position: relative !important;
-	height: 10em !important;
-	width: auto !important;
-	--char-height: 10em;
-	--iso-char-height: 10em;
-	display: flex !important;
-	align-items: flex-end !important;
-	justify-content: center !important;
-	image-rendering: pixelated !important;
-	image-rendering: crisp-edges !important;
-}
-
-.iso-char-body-canvas :deep(.part-sprite-img) {
-	height: 10em;
-	width: auto;
-	image-rendering: pixelated !important;
-	image-rendering: crisp-edges !important;
-	filter: drop-shadow(0 0.4em 0.8em rgba(0, 0, 0, 0.7));
+.iso-canvas-wrapper {
+	position: absolute;
+	bottom: 2.2em;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 16em;
+	height: 16em;
+	pointer-events: auto;
 }
 
 .iso-controls-panel {
@@ -4187,20 +3981,103 @@ onMounted(async () => {
 	color: #f6c445;
 }
 
+.char-tester-view.__is-resizing-sidebar {
+	user-select: none !important;
+	cursor: col-resize !important;
+}
+
+/* SIDEBAR RESIZE HANDLE */
+.studio-sidebar-resize-handle {
+	width: 0.6em;
+	height: 100%;
+	cursor: col-resize;
+	background: rgba(14, 20, 32, 0.6);
+	border-left: 1px solid rgba(255, 255, 255, 0.08);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	z-index: 15;
+	position: relative;
+	transition: background 0.15s, border-color 0.15s;
+	user-select: none;
+}
+
+.studio-sidebar-resize-handle:hover,
+.studio-sidebar-resize-handle.__is-resizing {
+	background: rgba(246, 196, 69, 0.18);
+	border-left-color: rgba(246, 196, 69, 0.45);
+}
+
+.resize-handle-line {
+	width: 0.12em;
+	height: 3em;
+	background: rgba(255, 255, 255, 0.25);
+	border-radius: 0.06em;
+	transition: background 0.15s, height 0.15s;
+}
+
+.studio-sidebar-resize-handle:hover .resize-handle-line,
+.studio-sidebar-resize-handle.__is-resizing .resize-handle-line {
+	background: #f6c445;
+	height: 4.5em;
+}
+
+.resize-toggle-btn {
+	position: absolute;
+	left: -0.75em;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 1.15em;
+	height: 2.2em;
+	background: rgba(14, 20, 32, 0.95);
+	border: 1px solid rgba(246, 196, 69, 0.35);
+	border-radius: 0.35em 0 0 0.35em;
+	color: #f6c445;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	padding: 0;
+	font-size: 0.7em;
+	box-shadow: -0.2em 0 0.5em rgba(0, 0, 0, 0.4);
+	transition: all 0.15s ease;
+	z-index: 20;
+}
+
+.resize-toggle-btn:hover {
+	background: #f6c445;
+	color: #0b111e;
+	border-color: #f6c445;
+	box-shadow: -0.2em 0 0.8em rgba(246, 196, 69, 0.5);
+}
+
+.rtb-arrow {
+	line-height: 1;
+}
+
 /* SIDEBAR */
 .studio-sidebar {
-	width: 25em;
+	min-width: 20em;
+	max-width: 75%;
 	background: rgba(14, 20, 32, 0.96);
 	border-left: 1px solid rgba(255, 255, 255, 0.1);
 	display: flex;
 	flex-direction: column;
 	flex-shrink: 0;
 	z-index: 10;
+	position: relative;
+	transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.studio-sidebar.__resizing {
+	transition: none !important;
 }
 
 .sidebar-tabs-nav {
 	display: grid;
-	grid-template-columns: repeat(4, 1fr);
+	grid-template-columns: repeat(5, 1fr);
 	background: rgba(10, 14, 22, 0.8);
 	border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }

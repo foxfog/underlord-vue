@@ -3,9 +3,9 @@
 		<!-- Top Toolbar -->
 		<header class="editor-header">
 			<div class="header-left">
-				<button class="editor-btn editor-btn-back" @click="returnToHome">
+				<button class="editor-btn editor-btn-back" title="Вернуться к списку тестов" @click="returnToTests">
 					<span class="btn-icon">‹</span>
-					<span>Меню</span>
+					<span>К тестам</span>
 				</button>
 
 				<div class="header-title-box">
@@ -4062,8 +4062,8 @@ function onSelectEntity(item) {
 	startEdit(item)
 }
 
-function returnToHome() {
-	router.push('/home')
+function returnToTests() {
+	router.push('/tests')
 }
 
 // Helpers for multi-select chips

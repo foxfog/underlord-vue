@@ -3,9 +3,9 @@
 		<!-- Header Toolbar -->
 		<header class="editor-header">
 			<div class="header-left">
-				<button class="editor-btn editor-btn-back" @click="returnToHome">
+				<button class="editor-btn editor-btn-back" title="Вернуться к списку тестов" @click="returnToTests">
 					<span class="btn-icon">‹</span>
-					<span>Меню</span>
+					<span>К тестам</span>
 				</button>
 
 				<!-- Location Loader Selector -->
@@ -2221,8 +2221,8 @@ function resetCamera() {
 	canvasRef.value?.resetCamera?.()
 }
 
-function returnToHome() {
-	router.push('/home')
+function returnToTests() {
+	router.push('/tests')
 }
 
 function onEditorKeyDown(e) {

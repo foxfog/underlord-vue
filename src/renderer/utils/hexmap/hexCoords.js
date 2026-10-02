@@ -61,6 +61,84 @@ export function getHexNeighbor(col, row, edge) {
 }
 
 /**
+ * Returns vertex indices (0..5) for the endpoints of a flat-topped hex edge.
+ * Indices match getHexGroundVertices order:
+ * 0: Right, 1: Bottom-Right, 2: Bottom-Left, 3: Left, 4: Top-Left, 5: Top-Right.
+ *
+ * @param {string} edge - 'N'|'NE'|'SE'|'S'|'SW'|'NW'
+ * @returns {{ from: number, to: number }}
+ */
+export function getHexEdgeVertexIndices(edge) {
+	switch (edge) {
+		case 'N':
+			return { from: 4, to: 5 }
+		case 'NE':
+			return { from: 5, to: 0 }
+		case 'SE':
+			return { from: 0, to: 1 }
+		case 'S':
+			return { from: 2, to: 1 }
+		case 'SW':
+			return { from: 3, to: 2 }
+		case 'NW':
+			return { from: 4, to: 3 }
+		default:
+			return { from: 4, to: 5 }
+	}
+}
+
+/**
+ * Returns the 3 adjacent hex cell coordinates meeting at vertex vIdx (0..5) of cell (col, row).
+ *
+ * @param {number} col
+ * @param {number} row
+ * @param {number} vIdx - Vertex index (0: Right, 1: Bottom-Right, 2: Bottom-Left, 3: Left, 4: Top-Left, 5: Top-Right)
+ * @returns {Array<{ col: number, row: number }>}
+ */
+export function getHexVertexNeighborCells(col, row, vIdx) {
+	switch (vIdx) {
+		case 0:
+			return [
+				{ col, row },
+				getHexNeighbor(col, row, 'NE'),
+				getHexNeighbor(col, row, 'SE')
+			]
+		case 1:
+			return [
+				{ col, row },
+				getHexNeighbor(col, row, 'SE'),
+				getHexNeighbor(col, row, 'S')
+			]
+		case 2:
+			return [
+				{ col, row },
+				getHexNeighbor(col, row, 'S'),
+				getHexNeighbor(col, row, 'SW')
+			]
+		case 3:
+			return [
+				{ col, row },
+				getHexNeighbor(col, row, 'SW'),
+				getHexNeighbor(col, row, 'NW')
+			]
+		case 4:
+			return [
+				{ col, row },
+				getHexNeighbor(col, row, 'NW'),
+				getHexNeighbor(col, row, 'N')
+			]
+		case 5:
+			return [
+				{ col, row },
+				getHexNeighbor(col, row, 'N'),
+				getHexNeighbor(col, row, 'NE')
+			]
+		default:
+			return [{ col, row }]
+	}
+}
+
+/**
  * Converts a hex edge into a canonical unique key so shared edges between
  * two adjacent hexes are identified identically regardless of which hex references them.
  *

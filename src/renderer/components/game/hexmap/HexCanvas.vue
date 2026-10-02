@@ -123,7 +123,7 @@ import {
 	normalizeHexMapData,
 	getFactionVisuals
 } from '@/utils/hexmap/hexLoader.js'
-import { renderHexMap } from '@/utils/hexmap/hexRenderer.js'
+import { renderHexMap, invalidateHexStaticCache } from '@/utils/hexmap/hexRenderer.js'
 
 const props = defineProps({
 	mapData: {
@@ -214,10 +214,29 @@ watch(
 )
 
 // Mark dirty on any external data change that affects rendering
-watch(() => props.mapData, markDirty, { deep: false })
+watch(
+	() => props.mapData,
+	() => {
+		invalidateHexStaticCache()
+		markDirty()
+	},
+	{ deep: false }
+)
 watch(() => props.selectedHex, markDirty)
-watch(() => props.factionsMap, markDirty)
-watch(() => props.discoveredLocations, markDirty)
+watch(
+	() => props.factionsMap,
+	() => {
+		invalidateHexStaticCache()
+		markDirty()
+	}
+)
+watch(
+	() => props.discoveredLocations,
+	() => {
+		invalidateHexStaticCache()
+		markDirty()
+	}
+)
 watch(() => props.activeTool, markDirty)
 
 // Borders State
@@ -226,12 +245,14 @@ watch(
 	() => props.showBorders,
 	(val) => {
 		localShowBorders.value = val
+		invalidateHexStaticCache()
 		markDirty()
 	}
 )
 
 function toggleBorders() {
 	localShowBorders.value = !localShowBorders.value
+	invalidateHexStaticCache()
 	emit('update:showBorders', localShowBorders.value)
 	emit('borders-toggle', localShowBorders.value)
 	markDirty()
@@ -282,7 +303,15 @@ const CAMERA_MOVE_HOLD_MS = 120
 // Если предыдущий рендер занял > FRAME_BUDGET_MS, следующий animTick пропускается.
 let lastRenderDurationMs = 0
 
-function markDirty() {
+function markDirty(invalidateStatic = false) {
+	if (invalidateStatic) {
+		invalidateHexStaticCache()
+	}
+	renderDirty = true
+}
+
+function invalidateCache() {
+	invalidateHexStaticCache()
 	renderDirty = true
 }
 
@@ -333,6 +362,19 @@ const hoveredHexInfo = computed(() => {
 const settlementCells = computed(() => {
 	if (!props.mapData?.cells) return []
 	return Object.values(props.mapData.cells).filter((cell) => cell?.settlement)
+})
+
+// Check if the current map has any animated elements (rivers, water shimmer)
+const hasAnimatedElements = computed(() => {
+	if (!props.mapData) return false
+	if (props.mapData.rivers && Object.keys(props.mapData.rivers).length > 0) return true
+	if (props.mapData.cells) {
+		for (const key in props.mapData.cells) {
+			const terrain = props.mapData.cells[key]?.terrain
+			if (terrain === 'water' || terrain === 'ocean') return true
+		}
+	}
+	return false
 })
 
 // Scale-independent HTML div settlement badges (auto-fading on zoom out, anti-overlap)
@@ -506,6 +548,7 @@ function onSettlementBadgeClick(badge) {
 		cell: badge.cell,
 		event: null
 	})
+	markDirty()
 }
 
 function onSettlementBadgePointerEnter(badge) {
@@ -712,6 +755,7 @@ function onPointerUp(e) {
 				event: e
 			})
 		}
+		markDirty()
 	}
 }
 
@@ -768,6 +812,7 @@ function onContextMenu(e) {
 			isRightClick: true,
 			event: e
 		})
+		markDirty()
 	}
 }
 
@@ -865,7 +910,8 @@ function renderLoop(currentTime) {
 		lastRenderDurationMs,
 		isCameraMoving,
 		animFrameIntervalMs: ANIM_FRAME_INTERVAL_MS,
-		frameBudgetMs: FRAME_BUDGET_MS
+		frameBudgetMs: FRAME_BUDGET_MS,
+		hasAnimatedElements: hasAnimatedElements.value
 	})
 
 	if (!renderDirty && !animTick) {
@@ -884,9 +930,9 @@ function renderLoop(currentTime) {
 		return
 	}
 
-	// Consume dirty flag
+	// Consume dirty flag and update animation timestamp
 	renderDirty = false
-	if (animTick) lastAnimRenderTime = currentTime
+	lastAnimRenderTime = currentTime
 
 	const scale = Math.max(1, props.pixelScale || DEFAULT_PIXEL_SCALE)
 	const elapsedSec = (currentTime - animStartTime) / 1000
@@ -985,7 +1031,9 @@ onUnmounted(() => {
 defineExpose({
 	resetCamera,
 	zoomIn,
-	zoomOut
+	zoomOut,
+	markDirty,
+	invalidateCache
 })
 </script>
 

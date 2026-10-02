@@ -3,9 +3,9 @@
 		<!-- Header Toolbar -->
 		<header class="editor-header">
 			<div class="header-left">
-				<button class="editor-btn editor-btn-back" @click="returnToHome">
+				<button class="editor-btn editor-btn-back" title="Вернуться к списку тестов" @click="returnToTests">
 					<span class="btn-icon">‹</span>
-					<span>Меню</span>
+					<span>К тестам</span>
 				</button>
 
 				<!-- Location / Map Loader Selector (analogous to IsoEditorView) -->
@@ -1163,6 +1163,7 @@ function showToast(text, type = 'info', duration = 3000) {
 
 function markDirty() {
 	isDirty.value = true
+	canvasRef.value?.invalidateCache?.()
 }
 
 watch(mapPitch, (newP) => {
@@ -1506,12 +1507,12 @@ const exportedJsonText = computed(() => {
 	return JSON.stringify(mapData.value, null, 2)
 })
 
-function returnToHome() {
+function returnToTests() {
 	if (isDirty.value) {
-		const confirmed = window.confirm('У вас есть несохранённые изменения. Вы действительно хотите выйти в меню?')
+		const confirmed = window.confirm('У вас есть несохранённые изменения. Вы действительно хотите выйти в меню тестов?')
 		if (!confirmed) return
 	}
-	router.push('/home')
+	router.push('/tests')
 }
 
 function setTool(toolId) {

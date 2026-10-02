@@ -33,15 +33,24 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import MainMenu from '@/components/MainMenu.vue'
 import DynamicContentArea from '@/components/DynamicContentArea.vue'
 import SettingsLeaveConfirmModal from '@/components/SettingsLeaveConfirmModal.vue'
 import { useRegisterModal, handleEscape, clearModalStack } from '@/composables/useModalStack'
 
 const router = useRouter()
-const currentView = ref('main-menu')
+const route = useRoute()
+
+function getInitialView() {
+	if (route.meta?.view) return route.meta.view
+	if (route.query?.view) return route.query.view
+	if (route.query?.tab === 'tests') return 'tests'
+	return 'main-menu'
+}
+
+const currentView = ref(getInitialView())
 const dynamicContentAreaRef = ref(null)
 const isSettingsDirty = ref(false)
 const showLeaveConfirm = ref(false)
@@ -49,9 +58,22 @@ const pendingView = ref(null)
 
 useRegisterModal('home-settings-leave-confirm', showLeaveConfirm, handleLeaveCancel)
 
+watch(
+	() => [route.path, route.meta?.view, route.query?.view, route.query?.tab],
+	() => {
+		const targetView = getInitialView()
+		if (targetView && currentView.value !== targetView) {
+			currentView.value = targetView
+		}
+	}
+)
+
 // Navigation handlers for component switching
 const showMainMenu = () => {
 	currentView.value = 'main-menu'
+	if (route.path === '/tests' || route.query?.view || route.query?.tab) {
+		router.replace('/home')
+	}
 }
 
 const showSettings = () => {

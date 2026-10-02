@@ -247,10 +247,12 @@ export class CharacterRigRenderer {
 		const rulerWidth = Math.max(10, width - bleedLeft - bleedRight)
 
 		// Target character height on canvas
-		// The studio stage-frame represents 240 cm ruler, where baseline character height is 72.917% (175 cm).
-		// In game VN canvas, baseCharHeight is the target character height.
-		const baseCharHeight = rulerHeight * 0.72917 * characterScale
-		const globalScale = baseCharHeight / rootNaturalH
+		// In isometric mode, pixel art preserves 1:1 scale (multiplied by characterScale).
+		// In 2D VN mode, the studio stage represents a 240 cm ruler, where baseline character height is 72.917% (175 cm).
+		const baseCharHeight = isIsometric
+			? rootNaturalH * characterScale
+			: rulerHeight * 0.72917 * characterScale
+		const globalScale = isIsometric ? characterScale : baseCharHeight / rootNaturalH
 
 		const rootWidth = rootNaturalW * globalScale
 		const rootHeight = baseCharHeight

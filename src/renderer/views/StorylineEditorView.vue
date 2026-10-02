@@ -3,9 +3,9 @@
 		<!-- Top Toolbar -->
 		<header class="editor-header">
 			<div class="header-left">
-				<button type="button" class="header-btn header-btn-back" @click="returnToHome">
+				<button type="button" class="header-btn header-btn-back" title="Вернуться к списку тестов" @click="returnToTests">
 					<span class="btn-arrow">‹</span>
-					<span>Тесты</span>
+					<span>К тестам</span>
 				</button>
 
 				<!-- Back to previous scenario button if jumped -->
@@ -380,8 +380,8 @@ function startInspectorResize(e) {
 	window.addEventListener('mouseup', onMouseUp)
 }
 
-function returnToHome() {
-	router.push('/home')
+function returnToTests() {
+	router.push('/tests')
 }
 
 function setViewMode(mode) {

@@ -1,11 +1,11 @@
-﻿<template>
+<template>
 	<div class="combat-tester-view">
 		<!-- Header Bar -->
 		<header class="combat-tester-header">
 			<div class="header-left">
-				<button class="tester-btn tester-btn-back" @click="returnToHome">
+				<button class="tester-btn tester-btn-back" title="Вернуться к списку тестов" @click="returnToTests">
 					<span class="btn-icon">‹</span>
-					<span>Меню</span>
+					<span>К тестам</span>
 				</button>
 				<div class="header-selector-box">
 					<span class="selector-icon">⚔️</span>
@@ -47,8 +47,8 @@ const availableEncounters = [
 const selectedEncounterId = ref('carne_bandits')
 const combatKey = ref(1)
 
-function returnToHome() {
-	router.push('/home')
+function returnToTests() {
+	router.push('/tests')
 }
 
 function restartCombat() {

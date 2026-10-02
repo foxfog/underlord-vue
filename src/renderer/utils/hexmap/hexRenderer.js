@@ -41,6 +41,8 @@ import {
 	getRoadCurvePoint,
 	hashString,
 	getHashFloat,
+	getHexEdgeVertexIndices,
+	getHexVertexNeighborCells,
 	DEFAULT_HEX_MIN_ZOOM,
 	DEFAULT_HEX_MAX_ZOOM
 } from './hexCoords.js'
@@ -57,7 +59,9 @@ import {
 	HEX_LOD_SCREEN_RADIUS_STRATEGIC,
 	calculateLodLevel,
 	HEX_TEXTURE_CROP_PX,
-	HEX_TEXTURE_BLEED
+	HEX_TEXTURE_BLEED,
+	RIVER_CONFIG,
+	setRiverConfig
 } from './hexConfig.js'
 
 export {
@@ -68,7 +72,70 @@ export {
 	ENABLE_HEX_ANIMATIONS,
 	setEnableHexAnimations,
 	ANIM_DISABLE_ZOOM_FRACTION,
-	setAnimDisableZoomFraction
+	setAnimDisableZoomFraction,
+	RIVER_CONFIG,
+	setRiverConfig
+}
+
+// ── Two-Layer Static Landscape Cache State ────────────────────────────────────
+// Offscreen static landscape caches (Ground plane & Relief overlay)
+let _staticGroundCanvas = null
+let _staticGroundCtx = null
+let _staticOverlayCanvas = null
+let _staticOverlayCtx = null
+
+let _lastStaticParams = null
+let _hexStaticVersion = 0
+
+/**
+ * Increment this version whenever map geometry, cells, factions, borders,
+ * or tools mutate the map data, invalidating the offscreen static layers.
+ */
+export function invalidateHexStaticCache() {
+	_hexStaticVersion++
+}
+
+function ensureStaticCanvases(width, height) {
+	if (typeof document === 'undefined') return false
+	if (!_staticGroundCanvas) {
+		_staticGroundCanvas = document.createElement('canvas')
+		_staticGroundCtx = _staticGroundCanvas.getContext('2d')
+	}
+	if (!_staticOverlayCanvas) {
+		_staticOverlayCanvas = document.createElement('canvas')
+		_staticOverlayCtx = _staticOverlayCanvas.getContext('2d')
+	}
+	if (!_staticGroundCtx || !_staticOverlayCtx) return false
+
+	if (_staticGroundCanvas.width !== width || _staticGroundCanvas.height !== height) {
+		_staticGroundCanvas.width = width
+		_staticGroundCanvas.height = height
+	}
+	if (_staticOverlayCanvas.width !== width || _staticOverlayCanvas.height !== height) {
+		_staticOverlayCanvas.width = width
+		_staticOverlayCanvas.height = height
+	}
+	return true
+}
+
+function isStaticCacheValid(params) {
+	if (!_lastStaticParams) return false
+	if (_hexStaticVersion !== _lastStaticParams.staticVersion) return false
+	if (params.mapData !== _lastStaticParams.mapData) return false
+	if (params.viewportWidth !== _lastStaticParams.viewportWidth) return false
+	if (params.viewportHeight !== _lastStaticParams.viewportHeight) return false
+	if (params.cameraX !== _lastStaticParams.cameraX) return false
+	if (params.cameraY !== _lastStaticParams.cameraY) return false
+	if (params.zoom !== _lastStaticParams.zoom) return false
+	if (params.pitch !== _lastStaticParams.pitch) return false
+	if (params.focalDistance !== _lastStaticParams.focalDistance) return false
+	if (params.showBorders !== _lastStaticParams.showBorders) return false
+	if (params.factionsMap !== _lastStaticParams.factionsMap) return false
+	if (params.drawCanvasBadges !== _lastStaticParams.drawCanvasBadges) return false
+	if (params.discoveredLocations !== _lastStaticParams.discoveredLocations) return false
+	if (params.useOrganic !== _lastStaticParams.useOrganic) return false
+	if (params.lodLevel !== _lastStaticParams.lodLevel) return false
+	return true
 }
 
 const BIOME_TEXTURE_PATH = {
@@ -220,6 +287,14 @@ function shadeHexColor(hex, percent) {
 
 /**
  * Main render function for the hex map canvas.
+ * Implements a 2-Layer Static Landscape Cache:
+ * - Layer 1 (Ground): Atmosphere + Base biomes & textures + Territory tint fills
+ * - Dynamic Middle: Water shimmer + Animated rivers
+ * - Layer 2 (Overlay): Hills + Roads + Bridges + Border ribbons + Mountains + Settlements
+ * - Interactive Top: Hover & selection highlights
+ *
+ * When camera is stationary (idle animation ticks, tool changes, hover moves),
+ * Ground and Overlay layers are blitted from cached offscreen canvases in ~0.1ms!
  */
 export function renderHexMap(ctx, mapData, options = {}) {
 	if (!ctx || !mapData) return
@@ -239,25 +314,23 @@ export function renderHexMap(ctx, mapData, options = {}) {
 		drawCanvasBadges = false,
 		showBorders = true,
 		factionsMap = null,
-		animTime = 0 // Seconds for animated rivers
+		animTime = 0, // Seconds for animated rivers
+		skipStaticCache = false
 	} = options
 
 	const radius = mapData.hexRadius || 36
+	const width = ctx.canvas?.width || 800
+	const height = ctx.canvas?.height || 600
 
 	const camera = new HexPerspectiveCamera({
-		viewportWidth: ctx.canvas.width,
-		viewportHeight: ctx.canvas.height,
+		viewportWidth: width,
+		viewportHeight: height,
 		cameraX,
 		cameraY,
 		zoom,
 		pitch,
 		focalDistance
 	})
-
-	ctx.save()
-	if (ctx.imageSmoothingEnabled !== undefined) {
-		ctx.imageSmoothingEnabled = false
-	}
 
 	// 0. Build canonical river lookup map once per frame
 	const riverMap = new Map()
@@ -270,27 +343,13 @@ export function renderHexMap(ctx, mapData, options = {}) {
 
 	// 0.05. Check organic edges setting & calculate dynamic LOD level
 	const mapOrganic = options.organic !== undefined ? options.organic : (mapData?.organic !== undefined ? mapData.organic : ENABLE_ORGANIC_EDGES)
-
-	// Level-Of-Detail (LOD) & Far-Plane Culling Architecture:
-	// screenRadius is the projected radius of a hex cell on screen in pixels
 	const screenRadius = radius * camera.zoom
 	let lodLevel = calculateLodLevel(screenRadius)
-
-	// At LOD 1 and 2, force straight hex geometry for a 10x-50x speedup
 	const useOrganic = lodLevel === 0 && mapOrganic
 
-	// ── Animation zoom threshold ───────────────────────────────────────────────
-	// Если камера отдалена дальше порога или анимации выключены — замораживаем анимации воды и рек (animTime → 0).
-	// Порог вычисляется из ANIM_DISABLE_ZOOM_FRACTION:
-	//   fraction=0.75 → порог ≈ 1.81 при min=0.75, max=5
-	//   zoom < порога или !ENABLE_HEX_ANIMATIONS → effectiveAnimTime = 0 (анимации стоп)
-	//   zoom ≥ порога → effectiveAnimTime = animTime (анимации идут)
 	const _animZoomThreshold = DEFAULT_HEX_MIN_ZOOM + (1 - ANIM_DISABLE_ZOOM_FRACTION) * (DEFAULT_HEX_MAX_ZOOM - DEFAULT_HEX_MIN_ZOOM)
 	const animationsActive = ENABLE_HEX_ANIMATIONS && (ANIM_DISABLE_ZOOM_FRACTION <= 0 || zoom >= _animZoomThreshold)
 	const effectiveAnimTime = animationsActive ? animTime : 0
-
-	// 0.1. Atmospheric horizon sky & mist at the top of the canvas
-	drawAtmosphere(ctx, camera)
 
 	// 0.2. Fast Frustum Grid Bounding Box Culling (cuts 10,000 cells down to ~300 visible cells)
 	const mapBounds = mapData.bounds || {
@@ -304,6 +363,7 @@ export function renderHexMap(ctx, mapData, options = {}) {
 	// Collect visible cells directly from mapData.cells in O(N_visible) time
 	const visibleCells = []
 	const visibleReliefCells = []
+	const visibleWaterCells = []
 	const cellsMap = mapData.cells || {}
 
 	for (let c = vBounds.minCol; c <= vBounds.maxCol; c++) {
@@ -314,11 +374,162 @@ export function renderHexMap(ctx, mapData, options = {}) {
 				if (cell.feature === 'mountain' || cell.settlement || (lodLevel < 2 && cell.feature === 'hills')) {
 					visibleReliefCells.push(cell)
 				}
+				if (lodLevel === 0 && (cell.terrain === 'water' || cell.terrain === 'ocean')) {
+					visibleWaterCells.push(cell)
+				}
 			}
 		}
 	}
 
-	// 1. Draw all hex base cells as batched continuous biome layers (flat ground plane)
+	// Sort ONLY the visible relief cells (hills, mountains, settlements) by Y back-to-front
+	if (visibleReliefCells.length > 1) {
+		visibleReliefCells.sort((a, b) => {
+			const yA = a.row + (a.col % 2 !== 0 ? 0.5 : 0)
+			const yB = b.row + (b.col % 2 !== 0 ? 0.5 : 0)
+			return yA - yB || a.col - b.col
+		})
+	}
+
+	const canUseCache = !skipStaticCache && typeof document !== 'undefined' && width > 0 && height > 0
+
+	if (canUseCache) {
+		const cacheParams = {
+			mapData,
+			viewportWidth: width,
+			viewportHeight: height,
+			cameraX,
+			cameraY,
+			zoom,
+			pitch,
+			focalDistance,
+			showBorders,
+			factionsMap,
+			drawCanvasBadges,
+			discoveredLocations,
+			useOrganic,
+			lodLevel
+		}
+
+		if (!isStaticCacheValid(cacheParams) || !_staticGroundCanvas || !_staticOverlayCanvas) {
+			if (ensureStaticCanvases(width, height)) {
+				// ── Render Layer 1: Static Ground Canvas ──
+				_staticGroundCtx.clearRect(0, 0, width, height)
+				if (_staticGroundCtx.imageSmoothingEnabled !== undefined) {
+					_staticGroundCtx.imageSmoothingEnabled = false
+				}
+				drawAtmosphere(_staticGroundCtx, camera)
+				drawBaseCellsBatched(_staticGroundCtx, camera, mapData, radius, 0, mapData.seed || 0, riverMap, {
+					organic: useOrganic,
+					lodLevel,
+					screenRadius,
+					visibleCells,
+					skipWaterShimmer: true
+				})
+				if (showBorders) {
+					drawPoliticalBorders(_staticGroundCtx, camera, mapData, radius, factionsMap, riverMap, 1, {
+						organic: useOrganic,
+						lodLevel,
+						screenRadius,
+						visibleCells,
+						vBounds
+					})
+				}
+
+				// ── Render Layer 2: Static Overlay Canvas ──
+				_staticOverlayCtx.clearRect(0, 0, width, height)
+				if (_staticOverlayCtx.imageSmoothingEnabled !== undefined) {
+					_staticOverlayCtx.imageSmoothingEnabled = false
+				}
+				if (lodLevel < 2) {
+					for (const cell of visibleReliefCells) {
+						if (cell.feature === 'hills') {
+							drawHills(_staticOverlayCtx, camera, cell, radius)
+						}
+					}
+				}
+				const roadData = buildRoadRenderData(camera, mapData, radius, { lodLevel })
+				renderRoads(_staticOverlayCtx, roadData)
+				drawBridges(_staticOverlayCtx, camera, mapData, radius)
+				if (showBorders) {
+					drawPoliticalBorders(_staticOverlayCtx, camera, mapData, radius, factionsMap, riverMap, 2, {
+						organic: useOrganic,
+						lodLevel,
+						screenRadius,
+						visibleCells,
+						vBounds
+					})
+				}
+				for (const cell of visibleReliefCells) {
+					if (cell.feature === 'mountain') {
+						const mRad = cell.mountainRadius || 1
+						if (isCellVisible(camera, cell.col, cell.row, radius, mRad * 2.8)) {
+							drawMountain(_staticOverlayCtx, camera, cell, radius)
+						}
+					}
+					if (cell.settlement) {
+						const isDiscovered = !discoveredLocations || discoveredLocations.has(cell.settlement.id)
+						drawSettlement(_staticOverlayCtx, camera, cell, radius, isDiscovered, drawCanvasBadges)
+					}
+				}
+
+				_lastStaticParams = { ...cacheParams, staticVersion: _hexStaticVersion }
+			}
+		}
+
+		ctx.save()
+		if (ctx.imageSmoothingEnabled !== undefined) {
+			ctx.imageSmoothingEnabled = false
+		}
+
+		// Composite Layer 1: Static Ground
+		if (_staticGroundCanvas) {
+			ctx.drawImage(_staticGroundCanvas, 0, 0)
+		}
+
+		// Dynamic Middle: Water shimmer animation (LOD 0 only) & Rivers
+		if (lodLevel === 0 && effectiveAnimTime > 0 && visibleWaterCells.length > 0) {
+			for (const cell of visibleWaterCells) {
+				const center = hexToWorldGroundCenter(cell.col, cell.row, radius)
+				drawWaterShimmer(ctx, camera, center.x, center.y, radius, effectiveAnimTime, cell.terrain === 'ocean')
+			}
+		}
+
+		drawRivers(ctx, camera, mapData, radius, effectiveAnimTime, {
+			organic: useOrganic,
+			lodLevel,
+			screenRadius
+		})
+
+		// Composite Layer 2: Static Overlay
+		if (_staticOverlayCanvas) {
+			ctx.drawImage(_staticOverlayCanvas, 0, 0)
+		}
+
+		// Interactive Highlights on top
+		if (hoveredHex) {
+			const hCell = mapData.cells?.[`${hoveredHex.col},${hoveredHex.row}`]
+			drawHexHighlight(ctx, camera, hoveredHex.col, hoveredHex.row, radius, '#38bdf8', 0.25, 2, hCell, mapData.seed || 0, riverMap, useOrganic)
+		}
+		if (selectedHex) {
+			const sCell = mapData.cells?.[`${selectedHex.col},${selectedHex.row}`]
+			drawHexHighlight(ctx, camera, selectedHex.col, selectedHex.row, radius, '#f6c445', 0.35, 3, sCell, mapData.seed || 0, riverMap, useOrganic)
+		}
+		if (activeTool === 'river' && hoveredHex && hoveredEdge) {
+			drawEdgeHighlight(ctx, camera, hoveredHex.col, hoveredHex.row, hoveredEdge.edge, radius, activeRiverWidth, mapData.seed || 0, useOrganic)
+		}
+
+		ctx.restore()
+		return
+	}
+
+	// ── Direct un-cached fallback rendering (Node.js test environments or skipStaticCache) ──
+	ctx.save()
+	if (ctx.imageSmoothingEnabled !== undefined) {
+		ctx.imageSmoothingEnabled = false
+	}
+
+	drawAtmosphere(ctx, camera)
+
 	drawBaseCellsBatched(ctx, camera, mapData, radius, effectiveAnimTime, mapData.seed || 0, riverMap, {
 		organic: useOrganic,
 		lodLevel,
@@ -326,7 +537,6 @@ export function renderHexMap(ctx, mapData, options = {}) {
 		visibleCells
 	})
 
-	// 1.5. Political territory fill (Civilization style, ground tint)
 	if (showBorders) {
 		drawPoliticalBorders(ctx, camera, mapData, radius, factionsMap, riverMap, 1, {
 			organic: useOrganic,
@@ -337,24 +547,12 @@ export function renderHexMap(ctx, mapData, options = {}) {
 		})
 	}
 
-	// 2. Draw rivers along edges (with animated flowing water on ground plane Z = 0)
 	drawRivers(ctx, camera, mapData, radius, effectiveAnimTime, {
 		organic: useOrganic,
 		lodLevel,
 		screenRadius
 	})
 
-	// Sort ONLY the visible relief cells (hills, mountains, settlements) by Y back-to-front
-	// (0-20 items instead of 10,000 cells!)
-	if (visibleReliefCells.length > 1) {
-		visibleReliefCells.sort((a, b) => {
-			const yA = a.row + (a.col % 2 !== 0 ? 0.5 : 0)
-			const yB = b.row + (b.col % 2 !== 0 ? 0.5 : 0)
-			return yA - yB || a.col - b.col
-		})
-	}
-
-	// 3. Draw 2.5D Hill relief sprites (biome-adaptive rolling mounds, inside hexes; skipped at LOD 2)
 	if (lodLevel < 2) {
 		for (const cell of visibleReliefCells) {
 			if (cell.feature === 'hills') {
@@ -363,14 +561,11 @@ export function renderHexMap(ctx, mapData, options = {}) {
 		}
 	}
 
-	// 4. Draw roads across all cells (on top of ground and hill sprites, seamless multi-pass)
 	const roadData = buildRoadRenderData(camera, mapData, radius, { lodLevel })
 	renderRoads(ctx, roadData)
 
-	// 5. Draw bridges where roads cross rivers
 	drawBridges(ctx, camera, mapData, radius)
 
-	// 5.5. Political border ribbons (drawn on top of rivers, roads, and bridges)
 	if (showBorders) {
 		drawPoliticalBorders(ctx, camera, mapData, radius, factionsMap, riverMap, 2, {
 			organic: useOrganic,
@@ -381,8 +576,6 @@ export function renderHexMap(ctx, mapData, options = {}) {
 		})
 	}
 
-	// 6. Draw 2.5D Pop-Up Objects (Mountains and Settlements)
-	// Rendered back-to-front (depth sorted by true ground Y)
 	for (const cell of visibleReliefCells) {
 		if (cell.feature === 'mountain') {
 			const mRad = cell.mountainRadius || 1
@@ -397,7 +590,6 @@ export function renderHexMap(ctx, mapData, options = {}) {
 		}
 	}
 
-	// 7. Draw hovered/selected hex highlights
 	if (hoveredHex) {
 		const hCell = mapData.cells?.[`${hoveredHex.col},${hoveredHex.row}`]
 		drawHexHighlight(ctx, camera, hoveredHex.col, hoveredHex.row, radius, '#38bdf8', 0.25, 2, hCell, mapData.seed || 0, riverMap, useOrganic)
@@ -407,7 +599,6 @@ export function renderHexMap(ctx, mapData, options = {}) {
 		drawHexHighlight(ctx, camera, selectedHex.col, selectedHex.row, radius, '#f6c445', 0.35, 3, sCell, mapData.seed || 0, riverMap, useOrganic)
 	}
 
-	// 7. Draw hovered edge highlight for River tool
 	if (activeTool === 'river' && hoveredHex && hoveredEdge) {
 		drawEdgeHighlight(ctx, camera, hoveredHex.col, hoveredHex.row, hoveredEdge.edge, radius, activeRiverWidth, mapData.seed || 0, useOrganic)
 	}
@@ -604,7 +795,8 @@ function drawBaseCellsBatched(ctx, camera, mapData, radius, animTime, seed = 0, 
 			ctx.strokeStyle = hexToRgba(biome.edgeColor || '#000000', 0.4)
 			ctx.stroke()
 		} else if (lodLevel === 1) {
-			const fadeAlpha = 0.4 * Math.max(0, Math.min(1, (screenRadius - 12) / 8))
+			const lodSpan = HEX_LOD_SCREEN_RADIUS_ORGANIC - HEX_LOD_SCREEN_RADIUS_STRATEGIC
+			const fadeAlpha = 0.4 * Math.max(0, Math.min(1, (screenRadius - HEX_LOD_SCREEN_RADIUS_STRATEGIC) / (lodSpan || 1)))
 			if (fadeAlpha > 0.02) {
 				traceGroupPath()
 				ctx.lineWidth = Math.max(0.5, 0.8 * camera.zoom)
@@ -614,7 +806,7 @@ function drawBaseCellsBatched(ctx, camera, mapData, radius, animTime, seed = 0, 
 		}
 
 		// 3.4. Water shimmer animation for water/ocean (LOD 0 only)
-		if (biome.isWater && lodLevel === 0) {
+		if (biome.isWater && lodLevel === 0 && !options.skipWaterShimmer) {
 			for (const pc of projectedList) {
 				drawWaterShimmer(ctx, camera, pc.center.x, pc.center.y, radius, animTime, pc.cell.terrain === 'ocean')
 			}
@@ -1709,6 +1901,300 @@ export function fillRibbonJunction(ctx, junction, layer) {
 }
 
 /**
+ * Computes a point on a cubic Bezier curve at parameter t (0..1).
+ */
+function getCubicBezierPoint(p0, cp1, cp2, p1, t) {
+	const mt = 1 - t
+	const mt2 = mt * mt
+	const t2 = t * t
+	return {
+		x: mt2 * mt * p0.x + 3 * mt2 * t * cp1.x + 3 * mt * t2 * cp2.x + t2 * t * p1.x,
+		y: mt2 * mt * p0.y + 3 * mt2 * t * cp1.y + 3 * mt * t2 * cp2.y + t2 * t * p1.y
+	}
+}
+
+/**
+ * Computes normalized tangent and perpendicular normal vectors on a cubic Bezier curve at t.
+ */
+function getCubicBezierTangent(p0, cp1, cp2, p1, t) {
+	const mt = 1 - t
+	const dx = 3 * mt * mt * (cp1.x - p0.x) + 6 * mt * t * (cp2.x - cp1.x) + 3 * t * t * (p1.x - cp2.x)
+	const dy = 3 * mt * mt * (cp1.y - p0.y) + 6 * mt * t * (cp2.y - cp1.y) + 3 * t * t * (p1.y - cp2.y)
+	const len = Math.hypot(dx, dy) || 1
+	const tx = dx / len
+	const ty = dy / len
+	return {
+		tx,
+		ty,
+		nx: -ty,
+		ny: tx
+	}
+}
+
+/**
+ * Subdivides a cubic Bezier curve into two sub-curves at parameter u (0..1) using de Casteljau's algorithm.
+ */
+function splitCubicBezier(p0, cp1, cp2, p3, u) {
+	const p01 = { x: p0.x + (cp1.x - p0.x) * u, y: p0.y + (cp1.y - p0.y) * u }
+	const p12 = { x: cp1.x + (cp2.x - cp1.x) * u, y: cp1.y + (cp2.y - cp1.y) * u }
+	const p23 = { x: cp2.x + (p3.x - cp2.x) * u, y: cp2.y + (p3.y - cp2.y) * u }
+
+	const p012 = { x: p01.x + (p12.x - p01.x) * u, y: p01.y + (p12.y - p01.y) * u }
+	const p123 = { x: p12.x + (p23.x - p12.x) * u, y: p12.y + (p23.y - p12.y) * u }
+
+	const p0123 = { x: p012.x + (p123.x - p012.x) * u, y: p012.y + (p123.y - p012.y) * u }
+
+	return {
+		left: { p0, cp1: p01, cp2: p012, p3: p0123 },
+		right: { p0: p0123, cp1: p123, cp2: p23, p3 }
+	}
+}
+
+/**
+ * Checks whether a river edge endpoint touches an adjacent water body cell (sea, ocean, lake).
+ *
+ * @param {Object} river - { col, row, edge }
+ * @param {boolean} isFrom - true for start vertex ('from'), false for end ('to')
+ * @param {Object} mapData
+ * @returns {{ touchesWater: boolean, waterCells: Array }}
+ */
+export function checkRiverVertexTouchesWater(river, isFrom, mapData) {
+	if (!mapData?.cells || !river) return { touchesWater: false, waterCells: [] }
+	const vIndices = getHexEdgeVertexIndices(river.edge)
+	const vIdx = isFrom ? vIndices.from : vIndices.to
+	const neighborCoords = getHexVertexNeighborCells(river.col, river.row, vIdx)
+	const waterCells = []
+
+	for (const nc of neighborCoords) {
+		const cell = mapData.cells[`${nc.col},${nc.row}`]
+		if (cell) {
+			const b = BIOMES[cell.terrain]
+			if (cell.terrain === 'water' || cell.terrain === 'ocean' || b?.isWater) {
+				waterCells.push(cell)
+			}
+		}
+	}
+
+	return {
+		touchesWater: waterCells.length > 0,
+		waterCells
+	}
+}
+
+/**
+ * Calculates geometry for a river delta / estuary gently expanding into a water cell.
+ * River connects at full width at the coastline vertex and flares into the water body,
+ * merging with the exact same water color with zero pinching or early transparency.
+ */
+function buildRiverDeltaGeometry(pCenter, branch, radius, seed = 0) {
+	const rObj = branch.river
+	const scale = pCenter.scale || 1
+	const isFrom = branch.isFrom
+	const baseWidth = branch.baseWidth
+
+	// Direction vector pointing OUTWARDS into open sea water
+	let outUx, outUy
+	if (isFrom) {
+		const dx = rObj.pFrom.x - rObj.pCP1.x
+		const dy = rObj.pFrom.y - rObj.pCP1.y
+		const len = Math.hypot(dx, dy) || 1
+		outUx = dx / len
+		outUy = dy / len
+	} else {
+		const dx = rObj.pTo.x - rObj.pCP2.x
+		const dy = rObj.pTo.y - rObj.pCP2.y
+		const len = Math.hypot(dx, dy) || 1
+		outUx = dx / len
+		outUy = dy / len
+	}
+
+	const outNx = -outUy
+	const outNy = outUx
+
+	const flareMult = RIVER_CONFIG.delta.flareMultiplier || 1.5
+	const deltaWidth = baseWidth * flareMult
+	const reach = radius * (RIVER_CONFIG.delta.reachRatio || 0.28) * scale
+
+	// Points at river mouth on the coast (matching exact river cross-section)
+	const L0 = { x: pCenter.x + outNx * (baseWidth / 2), y: pCenter.y + outNy * (baseWidth / 2) }
+	const R0 = { x: pCenter.x - outNx * (baseWidth / 2), y: pCenter.y - outNy * (baseWidth / 2) }
+
+	// Points in the sea (estuary fan)
+	const P_sea = { x: pCenter.x + outUx * reach, y: pCenter.y + outUy * reach }
+	const L1 = { x: P_sea.x + outNx * (deltaWidth / 2), y: P_sea.y + outNy * (deltaWidth / 2) }
+	const R1 = { x: P_sea.x - outNx * (deltaWidth / 2), y: P_sea.y - outNy * (deltaWidth / 2) }
+	const Mid = { x: P_sea.x + outUx * (reach * 0.15), y: P_sea.y + outUy * (reach * 0.15) }
+
+	return {
+		pMouth: pCenter,
+		branch,
+		river: rObj,
+		isFrom,
+		outU: { x: outUx, y: outUy },
+		outN: { x: outNx, y: outNy },
+		L0,
+		R0,
+		L1,
+		R1,
+		Mid,
+		P_sea,
+		baseWidth,
+		deltaWidth,
+		scale
+	}
+}
+
+/**
+ * Renders stylized pixel-art water currents flowing along rivers.
+ * Draws square pixel cubes (px × px) instead of elongated stripes/dashes,
+ * matching the retro pixel aesthetics of the hex map.
+ * Fully configurable via RIVER_CONFIG (pixel size, speed, density, lanes, tones).
+ */
+function renderRiverPixelFlow(ctx, preparedRivers, riverTurns, riverDeltas, animTime, lodLevel, options = {}) {
+	if (lodLevel >= 2) return // At strategic overview, skip flow animation for high FPS
+
+	const flowCfg = RIVER_CONFIG.flow
+	if (!flowCfg.enabled) return
+
+	const basePx = Math.max(1.5, flowCfg.pixelSize || 2.5)
+	const speed = flowCfg.speed || 18.0
+	const density = Math.max(0.2, flowCfg.density || 1.0)
+	const lightTone = flowCfg.lightTone || '#7dd3fc'
+	const midTone = flowCfg.midTone || '#38bdf8'
+	const darkTone = flowCfg.darkTone || '#0369a1'
+	const foamTone = flowCfg.foamTone || '#ffffff'
+
+	ctx.save()
+
+	// 1. Rivers (cubic Bezier or straight lines)
+	for (const r of preparedRivers) {
+		const isStraight = options.isStraight || !r.pCP1
+		const startX = r.startPt ? r.startPt.x : r.pFrom.x
+		const startY = r.startPt ? r.startPt.y : r.pFrom.y
+		const endX = r.endPt ? r.endPt.x : r.pTo.x
+		const endY = r.endPt ? r.endPt.y : r.pTo.y
+
+		const chordLen = Math.hypot(endX - startX, endY - startY)
+		if (chordLen < 3) continue
+		const approxLen = chordLen * (isStraight ? 1.0 : 1.15)
+		const avgScale = r.avgScale || 1
+		const px = Math.max(1.5, basePx * Math.min(1.4, Math.max(0.65, avgScale)))
+
+		const stepDist = Math.max(6 * avgScale, (14 * avgScale) / density)
+		const numSteps = Math.max(2, Math.round(approxLen / stepDist))
+
+		const lanes = r.tier === 1 ? [0] : (r.tier === 2 ? [-0.24, 0.24] : [-0.30, 0, 0.30])
+		const flowDir = r.flowDir || 1
+
+		for (let lIdx = 0; lIdx < lanes.length; lIdx++) {
+			const laneRatio = lanes[lIdx]
+			const laneVel = laneRatio === 0 ? 1.05 : 0.95
+			const lanePhaseOffset = lIdx * 0.33
+			const animTravel = flowDir * (animTime * speed * avgScale * laneVel)
+
+			for (let s = 0; s < numSteps; s++) {
+				const rawPos = (s * stepDist + animTravel + lanePhaseOffset * approxLen) % approxLen
+				const pos = rawPos < 0 ? rawPos + approxLen : rawPos
+				const t = 0.08 + (pos / approxLen) * 0.84
+
+				let pt, tan
+				if (isStraight) {
+					pt = { x: startX + (endX - startX) * t, y: startY + (endY - startY) * t }
+					const dx = endX - startX
+					const dy = endY - startY
+					const dlen = Math.hypot(dx, dy) || 1
+					tan = { tx: dx / dlen, ty: dy / dlen, nx: -dy / dlen, ny: dx / dlen }
+				} else {
+					pt = getCubicBezierPoint(r.startPt, r.pCP1, r.pCP2, r.endPt, t)
+					tan = getCubicBezierTangent(r.startPt, r.pCP1, r.pCP2, r.endPt, t)
+				}
+
+				const fx = pt.x + tan.nx * (laneRatio * r.baseWidth * 0.85)
+				const fy = pt.y + tan.ny * (laneRatio * r.baseWidth * 0.85)
+
+				// Pixel-art coordinate snapping
+				const snapX = Math.round(fx / px) * px
+				const snapY = Math.round(fy / px) * px
+
+				// Deterministic alternating tones (40% light, 30% dark, 20% mid, 10% foam crest)
+				const toneKey = (s * 3 + lIdx * 7) % 10
+				let tone = lightTone
+				if (toneKey < 4) tone = lightTone
+				else if (toneKey < 7) tone = darkTone
+				else if (toneKey < 9) tone = midTone
+				else tone = foamTone
+
+				ctx.fillStyle = tone
+				// Square pixel cube (px × px)
+				ctx.fillRect(snapX, snapY, px, px)
+			}
+		}
+	}
+
+	// 2. Turns
+	for (const turn of riverTurns) {
+		const scale = turn.scale || 1
+		const px = Math.max(1.5, basePx * Math.min(1.4, Math.max(0.65, scale)))
+		const turnLen = Math.hypot(turn.A1.x - turn.A0.x, turn.A1.y - turn.A0.y)
+		if (turnLen < 3) continue
+
+		const numSteps = Math.max(1, Math.round(turnLen / (10 * scale)))
+		const animTravel = (animTime * speed * scale) % turnLen
+
+		for (let s = 0; s < numSteps; s++) {
+			const rawPos = (s * 10 * scale + animTravel) % turnLen
+			const t = 0.15 + (rawPos / turnLen) * 0.70
+			const mt = 1 - t
+			const fx = mt * mt * turn.A0.x + 2 * mt * t * turn.center.x + t * t * turn.A1.x
+			const fy = mt * mt * turn.A0.y + 2 * mt * t * turn.center.y + t * t * turn.A1.y
+
+			const snapX = Math.round(fx / px) * px
+			const snapY = Math.round(fy / px) * px
+
+			const toneKey = s % 3
+			const tone = toneKey === 0 ? lightTone : (toneKey === 1 ? darkTone : midTone)
+
+			ctx.fillStyle = tone
+			ctx.fillRect(snapX, snapY, px, px)
+		}
+	}
+
+	// 3. Deltas (fanning pixel cubes gently dissolving into the sea)
+	for (const delta of riverDeltas) {
+		const scale = delta.scale || 1
+		const px = Math.max(1.5, basePx * Math.min(1.4, Math.max(0.65, scale)))
+		const fanSteps = 3
+		const animTravel = (animTime * speed * scale) % (delta.deltaWidth * 1.5)
+
+		for (let i = 0; i < fanSteps; i++) {
+			const spread = (i - 1) * 0.35
+			const travelRatio = ((i * 8 + animTravel) % 20) / 20
+			const deltaAlpha = (1 - travelRatio) * 0.75
+			if (deltaAlpha <= 0.05) continue
+
+			const fx =
+				delta.pMouth.x +
+				delta.outU.x * (travelRatio * 16 * scale) +
+				delta.outN.x * (spread * delta.deltaWidth * (1 + travelRatio * 0.4))
+			const fy =
+				delta.pMouth.y +
+				delta.outU.y * (travelRatio * 16 * scale) +
+				delta.outN.y * (spread * delta.deltaWidth * (1 + travelRatio * 0.4))
+
+			const snapX = Math.round(fx / px) * px
+			const snapY = Math.round(fy / px) * px
+
+			ctx.fillStyle = i % 2 === 0 ? lightTone : darkTone
+			ctx.globalAlpha = deltaAlpha
+			ctx.fillRect(snapX, snapY, px, px)
+			ctx.globalAlpha = 1.0
+		}
+	}
+
+	ctx.restore()
+}
+
+/**
  * Draws rivers flowing along edges with perspective scaling and animated currents.
  * Uses organic procedural cubic Bezier meanders with adaptive curvature per tier (Civilization style).
  * Multi-pass rendering pipeline with unified rounded junction fillets, width tapering, and confluence discs.
@@ -1723,6 +2209,10 @@ function drawRivers(ctx, camera, mapData, radius, animTime, options = {}) {
 	const useOrganic = options.organic !== undefined ? options.organic : (mapData?.organic !== undefined ? mapData.organic : ENABLE_ORGANIC_EDGES)
 	const screenRadius = options.screenRadius ?? (radius * camera.zoom)
 	const lodLevel = options.lodLevel !== undefined ? options.lodLevel : calculateLodLevel(screenRadius)
+
+	const waterColor = RIVER_CONFIG.colors?.waterColor || BIOMES.water?.color || '#0284c7'
+	const hasBorder = RIVER_CONFIG.colors?.hasBorder ?? false
+	const borderColor = RIVER_CONFIG.colors?.borderColor || '#0369a1'
 
 	if (!useOrganic) {
 		const preparedRivers = []
@@ -1748,29 +2238,28 @@ function drawRivers(ctx, camera, mapData, radius, animTime, options = {}) {
 			}
 
 			const tier = river.width || 1
-			let baseWidth, shoreExtra, currentDashW
+			let baseWidth, shoreExtra
 			if (tier === 3) {
 				baseWidth = Math.max(2.6, 6.2 * avgScale)
 				shoreExtra = 1.8 * avgScale
-				currentDashW = Math.max(1.2, baseWidth * 0.35)
 			} else if (tier === 2) {
 				baseWidth = Math.max(1.8, 3.6 * avgScale)
 				shoreExtra = 1.4 * avgScale
-				currentDashW = Math.max(0.9, baseWidth * 0.38)
 			} else {
 				baseWidth = Math.max(1.0, 1.9 * avgScale)
 				shoreExtra = 1.0 * avgScale
-				currentDashW = Math.max(0.6, baseWidth * 0.40)
 			}
 			const casingWidth = baseWidth + shoreExtra
 			const flowDir = river.flowDir === -1 ? -1 : 1
 
 			preparedRivers.push({
+				river,
 				pFrom,
 				pTo,
+				startPt: pFrom,
+				endPt: pTo,
 				baseWidth,
 				casingWidth,
-				currentDashW,
 				tier,
 				avgScale,
 				flowDir
@@ -1783,18 +2272,20 @@ function drawRivers(ctx, camera, mapData, radius, animTime, options = {}) {
 		ctx.lineCap = 'round'
 		ctx.lineJoin = 'round'
 
-		// PASS 1: Riverbed Shore Strokes
-		ctx.strokeStyle = '#0284c7'
-		for (const r of preparedRivers) {
-			ctx.lineWidth = r.casingWidth
-			ctx.beginPath()
-			ctx.moveTo(r.pFrom.x, r.pFrom.y)
-			ctx.lineTo(r.pTo.x, r.pTo.y)
-			ctx.stroke()
+		// PASS 1: Riverbed Shore Strokes (if enabled)
+		if (hasBorder) {
+			ctx.strokeStyle = borderColor
+			for (const r of preparedRivers) {
+				ctx.lineWidth = r.casingWidth
+				ctx.beginPath()
+				ctx.moveTo(r.pFrom.x, r.pFrom.y)
+				ctx.lineTo(r.pTo.x, r.pTo.y)
+				ctx.stroke()
+			}
 		}
 
-		// PASS 2: Water Core
-		ctx.strokeStyle = '#38bdf8'
+		// PASS 2: Water Core (same color as coast water #0284c7)
+		ctx.strokeStyle = waterColor
 		for (const r of preparedRivers) {
 			ctx.lineWidth = r.baseWidth
 			ctx.beginPath()
@@ -1803,34 +2294,9 @@ function drawRivers(ctx, camera, mapData, radius, animTime, options = {}) {
 			ctx.stroke()
 		}
 
-		// PASS 3: Animated Flow Dashes (LOD 0 and LOD 1 only, skipped at LOD 2)
+		// PASS 3: Pixel-Art Animated Flow (LOD 0 and LOD 1 only, skipped at LOD 2)
 		if (lodLevel < 2) {
-			ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)'
-			for (const r of preparedRivers) {
-				const dx = r.pTo.x - r.pFrom.x
-				const dy = r.pTo.y - r.pFrom.y
-				const edgeLen = Math.hypot(dx, dy)
-				if (edgeLen > 2) {
-					const ux = dx / edgeLen
-					const uy = dy / edgeLen
-					const dir = r.flowDir
-					const numDashes = Math.max(1, Math.round(edgeLen / (28 * r.avgScale)))
-					const dashLen = Math.max(3, 7 * r.avgScale)
-					ctx.lineWidth = r.currentDashW
-
-					for (let d = 0; d < numDashes; d++) {
-						const basePhase = (d / numDashes + animTime * 0.45 * dir) % 1
-						const phase = (basePhase + 1) % 1
-						const cx = r.pFrom.x + dx * phase
-						const cy = r.pFrom.y + dy * phase
-						const half = dashLen / 2
-						ctx.beginPath()
-						ctx.moveTo(cx - ux * half, cy - uy * half)
-						ctx.lineTo(cx + ux * half, cy + uy * half)
-						ctx.stroke()
-					}
-				}
-			}
+			renderRiverPixelFlow(ctx, preparedRivers, [], [], animTime, lodLevel, { isStraight: true })
 		}
 
 		ctx.restore()
@@ -1875,31 +2341,35 @@ function drawRivers(ctx, camera, mapData, radius, animTime, options = {}) {
 		}
 		let baseWidth
 		let shoreExtra
-		let currentDashW
 		if (tier === 3) {
 			baseWidth = Math.max(2.6, 6.2 * avgScale)
 			shoreExtra = 1.8 * avgScale
-			currentDashW = Math.max(1.2, baseWidth * 0.35)
 		} else if (tier === 2) {
 			baseWidth = Math.max(1.8, 3.6 * avgScale)
 			shoreExtra = 1.4 * avgScale
-			currentDashW = Math.max(0.9, baseWidth * 0.38)
 		} else {
 			// Tier 1: fine mountain creek/brook
 			baseWidth = Math.max(1.0, 1.9 * avgScale)
 			shoreExtra = 1.0 * avgScale
-			currentDashW = Math.max(0.6, baseWidth * 0.40)
 		}
 		const casingWidth = baseWidth + shoreExtra
 		const flowDir = river.flowDir === -1 ? -1 : 1
 
 		const rObj = {
-			pFrom, pCP1, pCP2, pTo,
+			river,
+			pFrom,
+			pCP1,
+			pCP2,
+			pTo,
 			startPt: pFrom,
 			endPt: pTo,
-			casingWidth, baseWidth, currentDashW,
-			tier, avgScale, flowDir,
-			gFrom, gTo
+			casingWidth,
+			baseWidth,
+			tier,
+			avgScale,
+			flowDir,
+			gFrom,
+			gTo
 		}
 		preparedRivers.push(rObj)
 
@@ -1932,7 +2402,6 @@ function drawRivers(ctx, camera, mapData, radius, animTime, options = {}) {
 			dist: len1,
 			casingWidth,
 			baseWidth,
-			currentDashW,
 			tier,
 			flowDir
 		})
@@ -1952,15 +2421,15 @@ function drawRivers(ctx, camera, mapData, radius, animTime, options = {}) {
 			dist: len2,
 			casingWidth,
 			baseWidth,
-			currentDashW,
 			tier,
 			flowDir
 		})
 	}
 
-	// Calculate rounded turn fillets (2 branches) and confluence fillets (3+ branches)
+	// Calculate rounded turn fillets (2 branches), confluence fillets (3+ branches), and deltas (1 branch touching water)
 	const riverTurns = []
 	const riverConfluences = []
+	const riverDeltas = []
 
 	for (const vData of vertexBranches.values()) {
 		if (!vData.pCenter.visible) continue
@@ -1983,8 +2452,7 @@ function drawRivers(ctx, camera, mapData, radius, animTime, options = {}) {
 				A1: turn.A1,
 				b0,
 				b1,
-				scale: vData.pCenter.scale,
-				currentDashW: (b0.currentDashW + b1.currentDashW) / 2
+				scale: vData.pCenter.scale
 			})
 		} else if (k >= 3) {
 			let maxCasing = 0
@@ -2021,78 +2489,79 @@ function drawRivers(ctx, camera, mapData, radius, animTime, options = {}) {
 				maxBaseWidth: maxBase,
 				scale: vData.pCenter.scale
 			})
+		} else if (k === 1) {
+			const b0 = vData.branches[0]
+			const waterContact = checkRiverVertexTouchesWater(b0.river.river, b0.isFrom, mapData)
+			if (waterContact.touchesWater && RIVER_CONFIG.delta.enabled) {
+				const delta = buildRiverDeltaGeometry(vData.pCenter, b0, radius, mapData?.seed || 0)
+				if (delta) {
+					riverDeltas.push(delta)
+				}
+			}
 		}
 	}
 
 	ctx.lineCap = 'round'
 	ctx.lineJoin = 'round'
 
-	// --- PASS 1: Riverbed Shore Strokes, Rounded Junction Fillets, and Confluence Shore Fillets ---
-	for (const r of preparedRivers) {
-		ctx.beginPath()
-		ctx.moveTo(r.startPt.x, r.startPt.y)
-		ctx.bezierCurveTo(r.pCP1.x, r.pCP1.y, r.pCP2.x, r.pCP2.y, r.endPt.x, r.endPt.y)
-		ctx.lineWidth = r.casingWidth
-		ctx.strokeStyle = '#0369a1'
-		ctx.stroke()
-	}
+	// --- PASS 1: Riverbed Shore Strokes (only if hasBorder is enabled) ---
+	if (hasBorder) {
+		for (const r of preparedRivers) {
+			ctx.beginPath()
+			ctx.moveTo(r.startPt.x, r.startPt.y)
+			ctx.bezierCurveTo(r.pCP1.x, r.pCP1.y, r.pCP2.x, r.pCP2.y, r.endPt.x, r.endPt.y)
+			ctx.lineWidth = r.casingWidth
+			ctx.strokeStyle = borderColor
+			ctx.stroke()
+		}
 
-	for (const turn of riverTurns) {
-		strokeTaperedCurve(ctx, turn.A0, turn.center, turn.A1, turn.b0.casingWidth, turn.b1.casingWidth, '#0369a1', '#0369a1', 4)
-	}
+		for (const turn of riverTurns) {
+			strokeTaperedCurve(ctx, turn.A0, turn.center, turn.A1, turn.b0.casingWidth, turn.b1.casingWidth, borderColor, borderColor, 4)
+		}
 
-	for (const conf of riverConfluences) {
-		for (const f of conf.fillets) {
-			strokeTaperedCurve(ctx, f.PA, conf.center, f.PB, f.bA.casingWidth, f.bB.casingWidth, '#0369a1', '#0369a1', 3)
+		for (const conf of riverConfluences) {
+			for (const f of conf.fillets) {
+				strokeTaperedCurve(ctx, f.PA, conf.center, f.PB, f.bA.casingWidth, f.bB.casingWidth, borderColor, borderColor, 3)
+			}
 		}
 	}
 
-	// --- PASS 2: Main River Water Ribbon, Width-Tapered Turn Fillets, and Confluence Pools ---
+	// --- PASS 2: Main River Water Ribbon, Width-Tapered Turn Fillets, Confluence Pools, and Deltas ---
+	// All rendered with pure waterColor (#0284c7) matching the coast water tile
+	ctx.strokeStyle = waterColor
 	for (const r of preparedRivers) {
 		ctx.beginPath()
 		ctx.moveTo(r.startPt.x, r.startPt.y)
 		ctx.bezierCurveTo(r.pCP1.x, r.pCP1.y, r.pCP2.x, r.pCP2.y, r.endPt.x, r.endPt.y)
 		ctx.lineWidth = r.baseWidth
-		ctx.strokeStyle = '#38bdf8'
 		ctx.stroke()
 	}
 
 	for (const turn of riverTurns) {
-		strokeTaperedCurve(ctx, turn.A0, turn.center, turn.A1, turn.b0.baseWidth, turn.b1.baseWidth, '#38bdf8', '#38bdf8', 4)
+		strokeTaperedCurve(ctx, turn.A0, turn.center, turn.A1, turn.b0.baseWidth, turn.b1.baseWidth, waterColor, waterColor, 4)
 	}
 
 	for (const conf of riverConfluences) {
 		for (const f of conf.fillets) {
-			strokeTaperedCurve(ctx, f.PA, conf.center, f.PB, f.bA.baseWidth, f.bB.baseWidth, '#38bdf8', '#38bdf8', 3)
+			strokeTaperedCurve(ctx, f.PA, conf.center, f.PB, f.bA.baseWidth, f.bB.baseWidth, waterColor, waterColor, 3)
 		}
 	}
 
-	// --- PASS 3: Animated Flow Currents ---
-	for (const r of preparedRivers) {
+	// Deltas: gentle expansion into the water tile, seamlessly matching the coast water (#0284c7)
+	for (const delta of riverDeltas) {
 		ctx.beginPath()
-		ctx.moveTo(r.startPt.x, r.startPt.y)
-		ctx.bezierCurveTo(r.pCP1.x, r.pCP1.y, r.pCP2.x, r.pCP2.y, r.endPt.x, r.endPt.y)
-		ctx.lineWidth = r.currentDashW
-		ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)'
-		const dashLen = (r.tier === 1 ? 4 : (r.tier === 2 ? 5 : 6)) * r.avgScale
-		ctx.setLineDash([dashLen, dashLen])
-		ctx.lineDashOffset = -r.flowDir * (animTime * 22 * r.avgScale)
-		ctx.stroke()
-		ctx.setLineDash([])
+		ctx.moveTo(delta.L0.x, delta.L0.y)
+		ctx.lineTo(delta.L1.x, delta.L1.y)
+		ctx.quadraticCurveTo(delta.Mid.x, delta.Mid.y, delta.R1.x, delta.R1.y)
+		ctx.lineTo(delta.R0.x, delta.R0.y)
+		ctx.closePath()
+
+		ctx.fillStyle = waterColor
+		ctx.fill()
 	}
 
-	for (const turn of riverTurns) {
-		ctx.beginPath()
-		ctx.moveTo(turn.A0.x, turn.A0.y)
-		ctx.quadraticCurveTo(turn.center.x, turn.center.y, turn.A1.x, turn.A1.y)
-		ctx.lineWidth = turn.currentDashW
-		ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)'
-		const dashLen = 5 * turn.scale
-		ctx.setLineDash([dashLen, dashLen])
-		ctx.lineDashOffset = -(animTime * 22 * turn.scale)
-		ctx.stroke()
-		ctx.setLineDash([])
-	}
+	// --- PASS 3: Pixel-Art Animated Flow (Square pixel cubes) ---
+	renderRiverPixelFlow(ctx, preparedRivers, riverTurns, riverDeltas, animTime, lodLevel)
 
 	ctx.restore()
 }
@@ -2328,7 +2797,6 @@ export function buildRoadRenderData(camera, mapData, radius, options = {}) {
  * Multi-pass pipeline:
  * - PASS 1: All Road Casings, Smooth Rounded Turns, and Crossroad Hubs
  * - PASS 2: All Road Cores (Surfaces), Smooth Rounded Turns, and Crossroad Hubs
- * - PASS 3: Dirt Ruts
  */
 export function renderRoads(ctx, roadData, filterFn = null) {
 	if (!roadData) return
@@ -2381,33 +2849,6 @@ export function renderRoads(ctx, roadData, filterFn = null) {
 		const coreColor = cr.hasStone ? '#94a3b8' : '#b45309'
 		for (const f of cr.fillets) {
 			strokeTaperedCurve(ctx, f.PA, cr.center, f.PB, f.bA.coreWidth, f.bB.coreWidth, coreColor, coreColor, 3)
-		}
-	}
-
-	// --- PASS 3: Dirt Ruts ---
-	for (const t of trunks) {
-		if (!t.isStone) {
-			ctx.beginPath()
-			ctx.moveTo(t.pMid.x, t.pMid.y)
-			ctx.quadraticCurveTo(t.pQ.x, t.pQ.y, t.endPt.x, t.endPt.y)
-			ctx.lineWidth = 1 * t.scale
-			ctx.strokeStyle = 'rgba(254, 243, 199, 0.4)'
-			ctx.setLineDash([3 * t.scale, 4 * t.scale])
-			ctx.stroke()
-			ctx.setLineDash([])
-		}
-	}
-
-	for (const turn of turns) {
-		if (!turn.b0.isStone && !turn.b1.isStone) {
-			ctx.beginPath()
-			ctx.moveTo(turn.A0.x, turn.A0.y)
-			ctx.quadraticCurveTo(turn.center.x, turn.center.y, turn.A1.x, turn.A1.y)
-			ctx.lineWidth = 1 * turn.scale
-			ctx.strokeStyle = 'rgba(254, 243, 199, 0.4)'
-			ctx.setLineDash([3 * turn.scale, 4 * turn.scale])
-			ctx.stroke()
-			ctx.setLineDash([])
 		}
 	}
 
@@ -2674,6 +3115,61 @@ function drawMountain(ctx, camera, cell, radius) {
 	const drawY = p.y
 	const mRadius = cell.mountainRadius || 1
 
+	if (sc < 0.42) {
+		// Zoomed out (LOD 1 / LOD 2): fast single-peak low-poly mountain
+		const h = (38 + (mRadius - 1) * 16) * sc
+		const w = radius * (0.75 + (mRadius - 1) * 0.18) * sc
+		const peakY = drawY - h
+		const baseY = drawY + 1 * sc * camera.cosT
+
+		ctx.save()
+		// Simple footprint shadow
+		ctx.beginPath()
+		ctx.ellipse(cx, baseY, w * 1.05, w * 0.22 * Math.max(0.3, camera.cosT), 0, 0, Math.PI * 2)
+		ctx.fillStyle = 'rgba(15, 23, 42, 0.35)'
+		ctx.fill()
+
+		// Left lit rock face
+		ctx.beginPath()
+		ctx.moveTo(cx, peakY)
+		ctx.lineTo(cx - w, baseY)
+		ctx.lineTo(cx, baseY)
+		ctx.closePath()
+		ctx.fillStyle = '#94a3b8'
+		ctx.fill()
+
+		// Right shaded rock face
+		ctx.beginPath()
+		ctx.moveTo(cx, peakY)
+		ctx.lineTo(cx, baseY)
+		ctx.lineTo(cx + w, baseY)
+		ctx.closePath()
+		ctx.fillStyle = '#475569'
+		ctx.fill()
+
+		// Snow cap (top 35%)
+		const snowH = h * 0.35
+		const snowW = w * 0.35
+		ctx.beginPath()
+		ctx.moveTo(cx, peakY)
+		ctx.lineTo(cx - snowW, peakY + snowH)
+		ctx.lineTo(cx, peakY + snowH * 1.08)
+		ctx.closePath()
+		ctx.fillStyle = '#ffffff'
+		ctx.fill()
+
+		ctx.beginPath()
+		ctx.moveTo(cx, peakY)
+		ctx.lineTo(cx, peakY + snowH * 1.08)
+		ctx.lineTo(cx + snowW, peakY + snowH)
+		ctx.closePath()
+		ctx.fillStyle = '#e2e8f0'
+		ctx.fill()
+
+		ctx.restore()
+		return
+	}
+
 	// Lateral perspective parallax: peak leans outward when panning sideways
 	const dx = center.x - camera.cameraX
 	const parallaxX = (dx / camera.focalDistance) * (20 * sc)
@@ -2828,6 +3324,59 @@ function drawSettlement(ctx, camera, cell, radius, isDiscovered, drawCanvasBadge
 	const cx = p.x
 	const drawY = p.y
 	const typeDef = SETTLEMENT_TYPES[settlement.type] || SETTLEMENT_TYPES.village
+
+	if (sc < 0.42) {
+		// Zoomed out (LOD 1 / LOD 2): fast compact settlement icon
+		ctx.save()
+		// Small footprint shadow
+		ctx.beginPath()
+		ctx.ellipse(cx, drawY + 1 * sc * camera.cosT, radius * 0.35 * sc, radius * 0.16 * sc * camera.cosT, 0, 0, Math.PI * 2)
+		ctx.fillStyle = 'rgba(15, 23, 42, 0.40)'
+		ctx.fill()
+
+		const iconColor = isDiscovered ? typeDef.color : '#94a3b8'
+		const iconR = Math.max(3, 8 * sc)
+		const iconH = Math.max(4, 12 * sc)
+
+		if (settlement.type === 'camp') {
+			ctx.beginPath()
+			ctx.moveTo(cx, drawY - iconH)
+			ctx.lineTo(cx - iconR, drawY)
+			ctx.lineTo(cx + iconR, drawY)
+			ctx.closePath()
+			ctx.fillStyle = iconColor
+			ctx.fill()
+			ctx.strokeStyle = '#451a03'
+			ctx.lineWidth = 0.8
+			ctx.stroke()
+		} else if (settlement.type === 'village') {
+			const houseW = iconR * 1.6
+			const houseH = iconH
+			const roofH = houseH * 0.5
+			ctx.fillStyle = '#78350f'
+			ctx.fillRect(cx - houseW / 2, drawY - roofH, houseW, roofH)
+			ctx.beginPath()
+			ctx.moveTo(cx, drawY - houseH)
+			ctx.lineTo(cx - houseW / 2 - 1, drawY - roofH)
+			ctx.lineTo(cx + houseW / 2 + 1, drawY - roofH)
+			ctx.closePath()
+			ctx.fillStyle = iconColor
+			ctx.fill()
+		} else {
+			const towW = iconR * 1.4
+			const towH = iconH * 1.2
+			ctx.fillStyle = '#334155'
+			ctx.fillRect(cx - towW / 2, drawY - towH, towW, towH)
+			ctx.fillStyle = iconColor
+			ctx.fillRect(cx - towW / 2, drawY - towH, towW, 3 * sc)
+			ctx.strokeStyle = '#0f172a'
+			ctx.lineWidth = 0.8
+			ctx.strokeRect(cx - towW / 2, drawY - towH, towW, towH)
+		}
+
+		ctx.restore()
+		return
+	}
 
 	ctx.save()
 
