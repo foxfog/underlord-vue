@@ -16,7 +16,7 @@
  *      каждый логический пиксель превращается в четкий блок 2×2 на мониторе).
  * - 3 и выше: Более крупная ретро-пикселизация (3×3, 4×4 блока).
  */
-export let DEFAULT_PIXEL_SCALE = 1
+export let DEFAULT_PIXEL_SCALE = 2
 
 export function setDefaultPixelScale(val) {
 	DEFAULT_PIXEL_SCALE = Math.max(1, Number(val) || 1)
@@ -270,6 +270,59 @@ export function setRiverConfig(options = {}) {
 }
 
 // ==============================================================================
+// 4.2. ПИКСЕЛЬНАЯ АНИМАЦИЯ ВОДНЫХ ГЕКСОВ (WATER CONFIG: PIXEL RIPPLES & SWELLS)
+// ==============================================================================
+
+/**
+ * Конфигурация пиксельных волн и ряби для водных тайлов (побережье / озера и глубокий океан).
+ * Заменяет устаревшие векторные дуги на стилизованные ступенчатые пиксельные волны
+ * в стиле классического 16-bit пиксель-арта с трехтоновым объемом (гребень/блик, тело волны, тень впадины).
+ */
+export const WATER_CONFIG = {
+	/** Включить пиксельную анимацию воды */
+	enabled: true,
+	/** Базовый размер пикселя волны в экранных px (масштабируется перспективой) */
+	pixelSize: 2.0,
+	/** Общий множитель скорости анимации ряби */
+	speed: 1.0,
+	/** Число независимых точек ряби на один водный гексагон (1..5) */
+	ripplesPerHex: 3,
+	/** Плавный дрейф волн с течением/ветром */
+	drift: true,
+	/** Цветовая палитра для мелководья и побережья (water) */
+	coast: {
+		/** Яркий солнечный блик/пена на гребне волны */
+		highlight: '#ffffff',
+		/** Основное светлое тело волны (лазурный) */
+		mid: '#7dd3fc',
+		/** Подчеркивающая нижняя тень впадины волны (глубокий бирюзовый) */
+		shadow: '#0369a1'
+	},
+	/** Цветовая палитра для глубокого океана (ocean) */
+	ocean: {
+		/** Мягкий ледяной блик на океанской волне */
+		highlight: '#93c5fd',
+		/** Основное тело океанской волны (королевский синий) */
+		mid: '#3b82f6',
+		/** Глубокая темная впадина/бездна */
+		shadow: '#172554'
+	}
+}
+
+export function setWaterConfig(cfg) {
+	if (!cfg || typeof cfg !== 'object') return
+	if (cfg.enabled !== undefined) WATER_CONFIG.enabled = Boolean(cfg.enabled)
+	if (cfg.pixelSize !== undefined)
+		WATER_CONFIG.pixelSize = Math.max(1, Number(cfg.pixelSize) || 2.0)
+	if (cfg.speed !== undefined) WATER_CONFIG.speed = Math.max(0, Number(cfg.speed) || 1.0)
+	if (cfg.ripplesPerHex !== undefined)
+		WATER_CONFIG.ripplesPerHex = Math.max(1, Math.min(6, Math.round(cfg.ripplesPerHex)))
+	if (cfg.drift !== undefined) WATER_CONFIG.drift = Boolean(cfg.drift)
+	if (cfg.coast) Object.assign(WATER_CONFIG.coast, cfg.coast)
+	if (cfg.ocean) Object.assign(WATER_CONFIG.ocean, cfg.ocean)
+}
+
+// ==============================================================================
 // 5. ТЕКСТУРЫ БИОМОВ И ЗЕМЛИ (BIOME TEXTURES)
 // ==============================================================================
 
@@ -388,14 +441,42 @@ export const HEX_CORNER_JITTER_RATIO = 0.16
 export const BORDER_OFFSET_RATIO = 0.08
 
 /**
+ * Прозрачность (alpha) линий сетки/бордеров гексагонов (0.0 .. 1.0).
+ * По умолчанию 0.4. При 0 линии сетки полностью скрываются.
+ */
+export let HEX_BORDER_ALPHA = 0
+
+export function setHexBorderAlpha(alpha) {
+	HEX_BORDER_ALPHA = Math.max(0, Math.min(1, Number(alpha) ?? 0.4))
+}
+
+/**
  * Прозрачность (alpha) внешнего темного канта государственной границы (0.0 .. 1.0).
  */
-export const BORDER_CASING_ALPHA = 0.78
+export let BORDER_CASING_ALPHA = 0.78
+
+export function setBorderCasingAlpha(alpha) {
+	BORDER_CASING_ALPHA = Math.max(0, Math.min(1, Number(alpha) ?? 0.78))
+}
 
 /**
  * Прозрачность (alpha) внутреннего цветного ореола государственной границы (0.0 .. 1.0).
  */
-export const BORDER_CORE_ALPHA = 0.3
+export let BORDER_CORE_ALPHA = 0.3
+
+export function setBorderCoreAlpha(alpha) {
+	BORDER_CORE_ALPHA = Math.max(0, Math.min(1, Number(alpha) ?? 0.3))
+}
+
+/**
+ * Прозрачность (alpha) фоновой заливки территории государства (0.0 .. 1.0).
+ * По умолчанию 0.16 (мягкая тонировка клеток цветом фракции).
+ */
+export let FACTION_FILL_ALPHA = 0.16
+
+export function setFactionFillAlpha(alpha) {
+	FACTION_FILL_ALPHA = Math.max(0, Math.min(1, Number(alpha) ?? 0.16))
+}
 
 // ==============================================================================
 // СВОДНЫЙ ОБЪЕКТ КОНФИГУРАЦИИ (HEX_CONFIG)
@@ -478,10 +559,60 @@ export const HEX_CONFIG = Object.freeze({
 		defaultTilt: DEFAULT_HEX_TILT,
 		cornerJitterRatio: HEX_CORNER_JITTER_RATIO,
 		borderOffsetRatio: BORDER_OFFSET_RATIO,
-		borderCasingAlpha: BORDER_CASING_ALPHA,
-		borderCoreAlpha: BORDER_CORE_ALPHA
+		get hexBorderAlpha() {
+			return HEX_BORDER_ALPHA
+		},
+		set hexBorderAlpha(v) {
+			setHexBorderAlpha(v)
+		},
+		get borderCasingAlpha() {
+			return BORDER_CASING_ALPHA
+		},
+		set borderCasingAlpha(v) {
+			setBorderCasingAlpha(v)
+		},
+		get borderCoreAlpha() {
+			return BORDER_CORE_ALPHA
+		},
+		set borderCoreAlpha(v) {
+			setBorderCoreAlpha(v)
+		},
+		get factionFillAlpha() {
+			return FACTION_FILL_ALPHA
+		},
+		set factionFillAlpha(v) {
+			setFactionFillAlpha(v)
+		}
 	},
-	rivers: RIVER_CONFIG
+	borders: {
+		get hexAlpha() {
+			return HEX_BORDER_ALPHA
+		},
+		set hexAlpha(v) {
+			setHexBorderAlpha(v)
+		},
+		get casingAlpha() {
+			return BORDER_CASING_ALPHA
+		},
+		set casingAlpha(v) {
+			setBorderCasingAlpha(v)
+		},
+		get coreAlpha() {
+			return BORDER_CORE_ALPHA
+		},
+		set coreAlpha(v) {
+			setBorderCoreAlpha(v)
+		},
+		get fillAlpha() {
+			return FACTION_FILL_ALPHA
+		},
+		set fillAlpha(v) {
+			setFactionFillAlpha(v)
+		},
+		offsetRatio: BORDER_OFFSET_RATIO
+	},
+	rivers: RIVER_CONFIG,
+	water: WATER_CONFIG
 })
 
 export default HEX_CONFIG

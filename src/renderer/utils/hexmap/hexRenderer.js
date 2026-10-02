@@ -47,6 +47,8 @@ import {
 	DEFAULT_HEX_MAX_ZOOM
 } from './hexCoords.js'
 import {
+	DEFAULT_PIXEL_SCALE,
+	setDefaultPixelScale,
 	ENABLE_BIOME_TEXTURES,
 	setEnableBiomeTextures,
 	ENABLE_ORGANIC_EDGES,
@@ -61,10 +63,22 @@ import {
 	HEX_TEXTURE_CROP_PX,
 	HEX_TEXTURE_BLEED,
 	RIVER_CONFIG,
-	setRiverConfig
+	setRiverConfig,
+	HEX_BORDER_ALPHA,
+	setHexBorderAlpha,
+	BORDER_CASING_ALPHA,
+	setBorderCasingAlpha,
+	BORDER_CORE_ALPHA,
+	setBorderCoreAlpha,
+	FACTION_FILL_ALPHA,
+	setFactionFillAlpha,
+	WATER_CONFIG,
+	setWaterConfig
 } from './hexConfig.js'
 
 export {
+	DEFAULT_PIXEL_SCALE,
+	setDefaultPixelScale,
 	ENABLE_BIOME_TEXTURES,
 	setEnableBiomeTextures,
 	ENABLE_ORGANIC_EDGES,
@@ -74,7 +88,17 @@ export {
 	ANIM_DISABLE_ZOOM_FRACTION,
 	setAnimDisableZoomFraction,
 	RIVER_CONFIG,
-	setRiverConfig
+	setRiverConfig,
+	WATER_CONFIG,
+	setWaterConfig,
+	HEX_BORDER_ALPHA,
+	setHexBorderAlpha,
+	BORDER_CASING_ALPHA,
+	setBorderCasingAlpha,
+	BORDER_CORE_ALPHA,
+	setBorderCoreAlpha,
+	FACTION_FILL_ALPHA,
+	setFactionFillAlpha
 }
 
 // ── Two-Layer Static Landscape Cache State ────────────────────────────────────
@@ -127,6 +151,8 @@ function isStaticCacheValid(params) {
 	if (params.cameraX !== _lastStaticParams.cameraX) return false
 	if (params.cameraY !== _lastStaticParams.cameraY) return false
 	if (params.zoom !== _lastStaticParams.zoom) return false
+	if (params.logicalZoom !== _lastStaticParams.logicalZoom) return false
+	if (params.pixelScale !== _lastStaticParams.pixelScale) return false
 	if (params.pitch !== _lastStaticParams.pitch) return false
 	if (params.focalDistance !== _lastStaticParams.focalDistance) return false
 	if (params.showBorders !== _lastStaticParams.showBorders) return false
@@ -135,6 +161,10 @@ function isStaticCacheValid(params) {
 	if (params.discoveredLocations !== _lastStaticParams.discoveredLocations) return false
 	if (params.useOrganic !== _lastStaticParams.useOrganic) return false
 	if (params.lodLevel !== _lastStaticParams.lodLevel) return false
+	if (params.hexBorderAlpha !== _lastStaticParams.hexBorderAlpha) return false
+	if (params.borderCasingAlpha !== _lastStaticParams.borderCasingAlpha) return false
+	if (params.borderCoreAlpha !== _lastStaticParams.borderCoreAlpha) return false
+	if (params.factionFillAlpha !== _lastStaticParams.factionFillAlpha) return false
 	return true
 }
 
@@ -342,13 +372,17 @@ export function renderHexMap(ctx, mapData, options = {}) {
 	}
 
 	// 0.05. Check organic edges setting & calculate dynamic LOD level
+	const pixelScale = Math.max(1, Number(options.pixelScale ?? DEFAULT_PIXEL_SCALE) || 1)
+	const logicalZoom = options.logicalZoom !== undefined ? Number(options.logicalZoom) : (zoom * pixelScale)
+
 	const mapOrganic = options.organic !== undefined ? options.organic : (mapData?.organic !== undefined ? mapData.organic : ENABLE_ORGANIC_EDGES)
-	const screenRadius = radius * camera.zoom
+	// screenRadius is the physical/visual radius of the hex on the display (independent of internal render pixelScale buffer downsampling)
+	const screenRadius = radius * logicalZoom
 	let lodLevel = calculateLodLevel(screenRadius)
 	const useOrganic = lodLevel === 0 && mapOrganic
 
 	const _animZoomThreshold = DEFAULT_HEX_MIN_ZOOM + (1 - ANIM_DISABLE_ZOOM_FRACTION) * (DEFAULT_HEX_MAX_ZOOM - DEFAULT_HEX_MIN_ZOOM)
-	const animationsActive = ENABLE_HEX_ANIMATIONS && (ANIM_DISABLE_ZOOM_FRACTION <= 0 || zoom >= _animZoomThreshold)
+	const animationsActive = ENABLE_HEX_ANIMATIONS && (ANIM_DISABLE_ZOOM_FRACTION <= 0 || logicalZoom >= _animZoomThreshold)
 	const effectiveAnimTime = animationsActive ? animTime : 0
 
 	// 0.2. Fast Frustum Grid Bounding Box Culling (cuts 10,000 cells down to ~300 visible cells)
@@ -400,6 +434,8 @@ export function renderHexMap(ctx, mapData, options = {}) {
 			cameraX,
 			cameraY,
 			zoom,
+			logicalZoom,
+			pixelScale,
 			pitch,
 			focalDistance,
 			showBorders,
@@ -407,7 +443,11 @@ export function renderHexMap(ctx, mapData, options = {}) {
 			drawCanvasBadges,
 			discoveredLocations,
 			useOrganic,
-			lodLevel
+			lodLevel,
+			hexBorderAlpha: HEX_BORDER_ALPHA,
+			borderCasingAlpha: BORDER_CASING_ALPHA,
+			borderCoreAlpha: BORDER_CORE_ALPHA,
+			factionFillAlpha: FACTION_FILL_ALPHA
 		}
 
 		if (!isStaticCacheValid(cacheParams) || !_staticGroundCanvas || !_staticOverlayCanvas) {
@@ -425,20 +465,20 @@ export function renderHexMap(ctx, mapData, options = {}) {
 					visibleCells,
 					skipWaterShimmer: true
 				})
+
+				// ── Render Layer 2: Static Overlay Canvas ──
+				_staticOverlayCtx.clearRect(0, 0, width, height)
+				if (_staticOverlayCtx.imageSmoothingEnabled !== undefined) {
+					_staticOverlayCtx.imageSmoothingEnabled = false
+				}
 				if (showBorders) {
-					drawPoliticalBorders(_staticGroundCtx, camera, mapData, radius, factionsMap, riverMap, 1, {
+					drawPoliticalBorders(_staticOverlayCtx, camera, mapData, radius, factionsMap, riverMap, 1, {
 						organic: useOrganic,
 						lodLevel,
 						screenRadius,
 						visibleCells,
 						vBounds
 					})
-				}
-
-				// ── Render Layer 2: Static Overlay Canvas ──
-				_staticOverlayCtx.clearRect(0, 0, width, height)
-				if (_staticOverlayCtx.imageSmoothingEnabled !== undefined) {
-					_staticOverlayCtx.imageSmoothingEnabled = false
 				}
 				if (lodLevel < 2) {
 					for (const cell of visibleReliefCells) {
@@ -486,12 +526,9 @@ export function renderHexMap(ctx, mapData, options = {}) {
 			ctx.drawImage(_staticGroundCanvas, 0, 0)
 		}
 
-		// Dynamic Middle: Water shimmer animation (LOD 0 only) & Rivers
+		// Dynamic Middle: Water pixel shimmer animation (LOD 0 only) & Rivers
 		if (lodLevel === 0 && effectiveAnimTime > 0 && visibleWaterCells.length > 0) {
-			for (const cell of visibleWaterCells) {
-				const center = hexToWorldGroundCenter(cell.col, cell.row, radius)
-				drawWaterShimmer(ctx, camera, center.x, center.y, radius, effectiveAnimTime, cell.terrain === 'ocean')
-			}
+			drawWaterShimmerBatch(ctx, camera, visibleWaterCells, radius, effectiveAnimTime)
 		}
 
 		drawRivers(ctx, camera, mapData, radius, effectiveAnimTime, {
@@ -537,6 +574,12 @@ export function renderHexMap(ctx, mapData, options = {}) {
 		visibleCells
 	})
 
+	drawRivers(ctx, camera, mapData, radius, effectiveAnimTime, {
+		organic: useOrganic,
+		lodLevel,
+		screenRadius
+	})
+
 	if (showBorders) {
 		drawPoliticalBorders(ctx, camera, mapData, radius, factionsMap, riverMap, 1, {
 			organic: useOrganic,
@@ -546,12 +589,6 @@ export function renderHexMap(ctx, mapData, options = {}) {
 			vBounds
 		})
 	}
-
-	drawRivers(ctx, camera, mapData, radius, effectiveAnimTime, {
-		organic: useOrganic,
-		lodLevel,
-		screenRadius
-	})
 
 	if (lodLevel < 2) {
 		for (const cell of visibleReliefCells) {
@@ -638,7 +675,8 @@ function drawAtmosphere(ctx, camera) {
  */
 function drawBaseCellsBatched(ctx, camera, mapData, radius, animTime, seed = 0, riverMap = null, options = {}) {
 	const useOrganic = options.organic !== undefined ? options.organic : (mapData?.organic !== undefined ? mapData.organic : ENABLE_ORGANIC_EDGES)
-	const screenRadius = options.screenRadius ?? (radius * camera.zoom)
+	const pixelScale = Math.max(1, Number(options.pixelScale ?? DEFAULT_PIXEL_SCALE) || 1)
+	const screenRadius = options.screenRadius ?? (radius * camera.zoom * pixelScale)
 	const lodLevel = options.lodLevel !== undefined ? options.lodLevel : calculateLodLevel(screenRadius)
 
 	let visibleCells = options.visibleCells
@@ -787,21 +825,23 @@ function drawBaseCellsBatched(ctx, camera, mapData, radius, animTime, seed = 0, 
 
 		// 3.3. Hex edge stroke:
 		// - LOD 0: Full border stroke
-		// - LOD 1: Smoothly fade border alpha from 0.4 down to 0 as screenRadius approaches 12
+		// - LOD 1: Smoothly fade border alpha from HEX_BORDER_ALPHA down to 0 as screenRadius approaches strategic threshold
 		// - LOD 2: Completely suppress cell border strokes (eliminates dark moiré grid)
-		if (lodLevel === 0) {
-			traceGroupPath()
-			ctx.lineWidth = Math.max(0.6, 1 * camera.zoom)
-			ctx.strokeStyle = hexToRgba(biome.edgeColor || '#000000', 0.4)
-			ctx.stroke()
-		} else if (lodLevel === 1) {
-			const lodSpan = HEX_LOD_SCREEN_RADIUS_ORGANIC - HEX_LOD_SCREEN_RADIUS_STRATEGIC
-			const fadeAlpha = 0.4 * Math.max(0, Math.min(1, (screenRadius - HEX_LOD_SCREEN_RADIUS_STRATEGIC) / (lodSpan || 1)))
-			if (fadeAlpha > 0.02) {
+		if (HEX_BORDER_ALPHA > 0.001) {
+			if (lodLevel === 0) {
 				traceGroupPath()
-				ctx.lineWidth = Math.max(0.5, 0.8 * camera.zoom)
-				ctx.strokeStyle = hexToRgba(biome.edgeColor || '#000000', fadeAlpha)
+				ctx.lineWidth = Math.max(0.6, 1 * camera.zoom)
+				ctx.strokeStyle = hexToRgba(biome.edgeColor || '#000000', HEX_BORDER_ALPHA)
 				ctx.stroke()
+			} else if (lodLevel === 1) {
+				const lodSpan = HEX_LOD_SCREEN_RADIUS_ORGANIC - HEX_LOD_SCREEN_RADIUS_STRATEGIC
+				const fadeAlpha = HEX_BORDER_ALPHA * Math.max(0, Math.min(1, (screenRadius - HEX_LOD_SCREEN_RADIUS_STRATEGIC) / (lodSpan || 1)))
+				if (fadeAlpha > 0.01) {
+					traceGroupPath()
+					ctx.lineWidth = Math.max(0.5, 0.8 * camera.zoom)
+					ctx.strokeStyle = hexToRgba(biome.edgeColor || '#000000', fadeAlpha)
+					ctx.stroke()
+				}
 			}
 		}
 
@@ -928,9 +968,11 @@ function drawHexCell(ctx, camera, cell, radius, animTime, seed = 0, riverMap = n
 		ctx.fillStyle = biome.color
 		ctx.fill()
 
-		ctx.lineWidth = Math.max(0.6, 1 * camera.zoom)
-		ctx.strokeStyle = hexToRgba(biome.edgeColor || '#000000', 0.4)
-		ctx.stroke()
+		if (HEX_BORDER_ALPHA > 0.001) {
+			ctx.lineWidth = Math.max(0.6, 1 * camera.zoom)
+			ctx.strokeStyle = hexToRgba(biome.edgeColor || '#000000', HEX_BORDER_ALPHA)
+			ctx.stroke()
+		}
 
 		if (biome.isWater) {
 			drawWaterShimmer(ctx, camera, center.x, center.y, radius, animTime, cell.terrain === 'ocean')
@@ -1068,10 +1110,12 @@ function drawHexCell(ctx, camera, cell, radius, animTime, seed = 0, riverMap = n
 	}
 
 	// 3. Hex edge stroke — drawn on top of texture for clean visual separation
-	traceOutlinePath()
-	ctx.lineWidth = Math.max(0.6, 1 * avgScale)
-	ctx.strokeStyle = hexToRgba(biome.edgeColor || '#000000', 0.4)
-	ctx.stroke()
+	if (HEX_BORDER_ALPHA > 0.001) {
+		traceOutlinePath()
+		ctx.lineWidth = Math.max(0.6, 1 * avgScale)
+		ctx.strokeStyle = hexToRgba(biome.edgeColor || '#000000', HEX_BORDER_ALPHA)
+		ctx.stroke()
+	}
 
 	// 4. Water waves animation for water/ocean
 	if (biome.isWater) {
@@ -1080,26 +1124,208 @@ function drawHexCell(ctx, camera, cell, radius, animTime, seed = 0, riverMap = n
 	}
 }
 
+// ── Pixel Art Water Shimmer & Wavelet Batching Engine ────────────────────────
+// Reusable flat arrays (x, y, w, h) to eliminate per-frame garbage collection.
+const _waterBatches = {
+	coastHL: [],
+	coastMid: [],
+	coastShadow: [],
+	oceanHL: [],
+	oceanMid: [],
+	oceanShadow: []
+}
+
+function clearWaterBatches() {
+	_waterBatches.coastHL.length = 0
+	_waterBatches.coastMid.length = 0
+	_waterBatches.coastShadow.length = 0
+	_waterBatches.oceanHL.length = 0
+	_waterBatches.oceanMid.length = 0
+	_waterBatches.oceanShadow.length = 0
+}
+
 /**
- * Subtle water shimmer for ocean and lakes on the ground plane.
+ * Normalized relative offsets for ripple spots inside a flat-topped hex.
+ * Flat-topped hex inscribed radius is (sqrt(3)/2) * R ≈ 0.866 * R.
+ * Offsets are kept safely within [-0.32 .. +0.32] * R so ripples never bleed into neighboring land hexes.
  */
-function drawWaterShimmer(ctx, camera, cx, cy, radius, animTime, isOcean) {
-	const pCenter = camera.project(cx, cy, 0)
-	if (!pCenter.visible) return
+const WATER_RIPPLE_SPOTS = [
+	{ relX: -0.22, relY: -0.16, phaseOffset: 0.00 },
+	{ relX: 0.18, relY: -0.06, phaseOffset: 0.36 },
+	{ relX: -0.06, relY: 0.20, phaseOffset: 0.72 },
+	{ relX: 0.20, relY: 0.16, phaseOffset: 0.18 },
+	{ relX: -0.18, relY: 0.08, phaseOffset: 0.54 }
+]
 
+/**
+ * Appends pixel art ripple rectangles for a single water hex cell to the batch buffers.
+ */
+function appendCellWaterRipples(camera, cx, cy, radius, animTime, isOcean, batches) {
+	if (!WATER_CONFIG.enabled || animTime <= 0) return
+
+	// Spatial hash for deterministic pseudo-random offsets per cell
+	const cellSeed = ((Math.round(cx) * 73856093) ^ (Math.round(cy) * 19349663)) >>> 0
+	const numSpots = Math.max(1, Math.min(WATER_RIPPLE_SPOTS.length, WATER_CONFIG.ripplesPerHex || 3))
+	const cycleDuration = isOcean ? 3.4 : 2.6
+	const animSpeed = WATER_CONFIG.speed || 1.0
+	const basePx = WATER_CONFIG.pixelSize || 2.0
+	const driftEnabled = WATER_CONFIG.drift ?? true
+
+	const hlBatch = isOcean ? batches.oceanHL : batches.coastHL
+	const midBatch = isOcean ? batches.oceanMid : batches.coastMid
+	const shadowBatch = isOcean ? batches.oceanShadow : batches.coastShadow
+
+	for (let s = 0; s < numSpots; s++) {
+		const spot = WATER_RIPPLE_SPOTS[s]
+		const spotSeed = (cellSeed ^ (s * 1013904223)) >>> 0
+
+		// Local cell offset with subtle deterministic jitter
+		const jitterX = (getHashFloat(spotSeed, 1) - 0.5) * 0.12 * radius
+		const jitterY = (getHashFloat(spotSeed, 2) - 0.5) * 0.10 * radius
+		const baseX = cx + spot.relX * radius + jitterX
+		const baseY = cy + spot.relY * radius + jitterY
+
+		// Periodic life cycle (active 62% of period, calm 38%)
+		const spotPhase = (spot.phaseOffset + getHashFloat(spotSeed, 3) * 0.28) * cycleDuration
+		const t = ((animTime * animSpeed + spotPhase) % cycleDuration) / cycleDuration
+		if (t > 0.62) continue
+
+		// Smooth bell curve intensity (0 -> 1 -> 0)
+		const u = t / 0.62
+		const intensity = Math.sin(u * Math.PI)
+		if (intensity < 0.10) continue
+
+		// Wind drift and gentle vertical bob on water surface
+		const drift = driftEnabled ? (u - 0.5) * (isOcean ? 6.0 : 4.0) : 0
+		const bob = Math.sin(animTime * 2.6 + getHashFloat(spotSeed, 4) * 6.28) * (0.9 * camera.cosT)
+
+		const worldX = baseX + drift
+		const worldY = baseY + bob
+
+		const p = camera.project(worldX, worldY, 0)
+		if (!p.visible) continue
+
+		// Compute pixel block size scaled with camera perspective distance
+		const px = Math.max(1, Math.round(basePx * Math.min(1.4, Math.max(0.65, p.scale))))
+		const scrX = Math.round(p.x)
+		const scrY = Math.round(p.y)
+
+		if (intensity < 0.32) {
+			// Early birth / late fade: subtle 2-3 pixel glint
+			const glintW = (2 + Math.round(intensity * 3)) * px
+			const glintX = scrX - Math.floor(glintW / 2)
+			midBatch.push(glintX, scrY, glintW, px)
+			const hlW = px
+			hlBatch.push(scrX - Math.floor(hlW / 2), scrY - px, hlW, px)
+		} else {
+			// Full 3-tier stepped pixel wave crest with highlight, body, and shadow
+			const bodyW = (4 + Math.round(intensity * 4)) * px
+			const bodyX = scrX - Math.floor(bodyW / 2)
+			midBatch.push(bodyX, scrY, bodyW, px)
+
+			// Highlight crest on top (center-aligned)
+			const hlW = Math.max(px, (1 + Math.round(intensity * 2)) * px)
+			const hlX = scrX - Math.floor(hlW / 2)
+			hlBatch.push(hlX, scrY - px, hlW, px)
+
+			// Shadow trough directly underneath
+			const shW = Math.max(px, (2 + Math.round(intensity * 3)) * px)
+			const shX = scrX - Math.floor(shW / 2)
+			shadowBatch.push(shX, scrY + px, shW, px)
+
+			// Detached side sparkles at crest peak
+			if (intensity > 0.68) {
+				const tipOffset = Math.floor(bodyW / 2) + px
+				midBatch.push(scrX - tipOffset - px, scrY, px, px)
+				midBatch.push(scrX + tipOffset, scrY, px, px)
+			}
+		}
+	}
+}
+
+/**
+ * Flushes all queued pixel wave rectangles to the canvas using minimal state changes.
+ */
+function flushWaterBatches(ctx) {
 	ctx.save()
-	const waveOffset = Math.sin(animTime * 2 + cx * 0.05 + cy * 0.05) * (radius * 0.15)
-	const pLeft = camera.project(cx - radius * 0.4, cy + waveOffset, 0)
-	const pMid = camera.project(cx, cy + waveOffset - 2, 0)
-	const pRight = camera.project(cx + radius * 0.4, cy + waveOffset, 0)
+	if (ctx.imageSmoothingEnabled !== undefined) {
+		ctx.imageSmoothingEnabled = false
+	}
 
-	ctx.strokeStyle = isOcean ? 'rgba(96, 165, 250, 0.28)' : 'rgba(255, 255, 255, 0.32)'
-	ctx.lineWidth = Math.max(0.8, 1.4 * pCenter.scale)
-	ctx.beginPath()
-	ctx.moveTo(pLeft.x, pLeft.y)
-	ctx.quadraticCurveTo(pMid.x, pMid.y, pRight.x, pRight.y)
-	ctx.stroke()
+	// 1. Coast Shadows
+	if (_waterBatches.coastShadow.length > 0) {
+		ctx.fillStyle = WATER_CONFIG.coast.shadow
+		const arr = _waterBatches.coastShadow
+		for (let i = 0; i < arr.length; i += 4) {
+			ctx.fillRect(arr[i], arr[i + 1], arr[i + 2], arr[i + 3])
+		}
+	}
+	// 2. Coast Midtone Body
+	if (_waterBatches.coastMid.length > 0) {
+		ctx.fillStyle = WATER_CONFIG.coast.mid
+		const arr = _waterBatches.coastMid
+		for (let i = 0; i < arr.length; i += 4) {
+			ctx.fillRect(arr[i], arr[i + 1], arr[i + 2], arr[i + 3])
+		}
+	}
+	// 3. Coast Sunlight Highlights / Crest
+	if (_waterBatches.coastHL.length > 0) {
+		ctx.fillStyle = WATER_CONFIG.coast.highlight
+		const arr = _waterBatches.coastHL
+		for (let i = 0; i < arr.length; i += 4) {
+			ctx.fillRect(arr[i], arr[i + 1], arr[i + 2], arr[i + 3])
+		}
+	}
+
+	// 4. Ocean Deep Shadows
+	if (_waterBatches.oceanShadow.length > 0) {
+		ctx.fillStyle = WATER_CONFIG.ocean.shadow
+		const arr = _waterBatches.oceanShadow
+		for (let i = 0; i < arr.length; i += 4) {
+			ctx.fillRect(arr[i], arr[i + 1], arr[i + 2], arr[i + 3])
+		}
+	}
+	// 5. Ocean Wave Body
+	if (_waterBatches.oceanMid.length > 0) {
+		ctx.fillStyle = WATER_CONFIG.ocean.mid
+		const arr = _waterBatches.oceanMid
+		for (let i = 0; i < arr.length; i += 4) {
+			ctx.fillRect(arr[i], arr[i + 1], arr[i + 2], arr[i + 3])
+		}
+	}
+	// 6. Ocean Crest Highlights
+	if (_waterBatches.oceanHL.length > 0) {
+		ctx.fillStyle = WATER_CONFIG.ocean.highlight
+		const arr = _waterBatches.oceanHL
+		for (let i = 0; i < arr.length; i += 4) {
+			ctx.fillRect(arr[i], arr[i + 1], arr[i + 2], arr[i + 3])
+		}
+	}
+
 	ctx.restore()
+}
+
+/**
+ * Batched rendering of animated pixel-art ripples across all visible water cells.
+ */
+export function drawWaterShimmerBatch(ctx, camera, visibleWaterCells, radius, animTime) {
+	if (!WATER_CONFIG.enabled || animTime <= 0 || !visibleWaterCells || visibleWaterCells.length === 0) return
+	clearWaterBatches()
+	for (const cell of visibleWaterCells) {
+		const center = hexToWorldGroundCenter(cell.col, cell.row, radius)
+		appendCellWaterRipples(camera, center.x, center.y, radius, animTime, cell.terrain === 'ocean', _waterBatches)
+	}
+	flushWaterBatches(ctx)
+}
+
+/**
+ * Single-cell pixel shimmer rendering (used when drawing individual hexes without batching).
+ */
+export function drawWaterShimmer(ctx, camera, cx, cy, radius, animTime, isOcean) {
+	if (!WATER_CONFIG.enabled || animTime <= 0) return
+	clearWaterBatches()
+	appendCellWaterRipples(camera, cx, cy, radius, animTime, isOcean, _waterBatches)
+	flushWaterBatches(ctx)
 }
 
 /**
@@ -1128,7 +1354,8 @@ export function drawPoliticalBorders(ctx, camera, mapData, radius, factionsMap =
 	if (!ctx || !mapData || !mapData.cells) return
 
 	const cells = mapData.cells
-	const screenRadius = options.screenRadius ?? (radius * camera.zoom)
+	const pixelScale = Math.max(1, Number(options.pixelScale ?? DEFAULT_PIXEL_SCALE) || 1)
+	const screenRadius = options.screenRadius ?? (radius * camera.zoom * pixelScale)
 	const lodLevel = options.lodLevel !== undefined ? options.lodLevel : calculateLodLevel(screenRadius)
 	const useOrganic = options.organic !== undefined ? options.organic : (mapData?.organic !== undefined ? mapData.organic : ENABLE_ORGANIC_EDGES)
 	const vB = options.vBounds
@@ -1184,7 +1411,7 @@ export function drawPoliticalBorders(ctx, camera, mapData, radius, factionsMap =
 		if (!group) {
 			const visuals = getFactionVisuals(fId, factionsMap) || {}
 			const borderColor = cell.borderColor || visuals.borderColor || '#38bdf8'
-			const fillColor = cell.fillColor || visuals.fillColor || hexToRgba(borderColor, 0.16)
+			const fillColor = cell.fillColor || visuals.fillColor || hexToRgba(borderColor, FACTION_FILL_ALPHA)
 			group = {
 				factionId: fId,
 				visuals,
@@ -1556,8 +1783,8 @@ export function drawPoliticalBorders(ctx, camera, mapData, radius, factionsMap =
 			if (chains.length === 0) continue
 
 			// PASS 2A1: Wide soft inward halo (LOD 0 close-up only)
-			if (lodLevel === 0) {
-				ctx.strokeStyle = hexToRgba(color, 0.12)
+			if (lodLevel === 0 && BORDER_CORE_ALPHA > 0.001) {
+				ctx.strokeStyle = hexToRgba(color, Math.min(1, BORDER_CORE_ALPHA * 0.4))
 				for (const chain of chains) {
 					const avgScale = chain.avgScale || 1.0
 					ctx.lineWidth = Math.max(4.0, 9.5 * avgScale)
@@ -1582,8 +1809,8 @@ export function drawPoliticalBorders(ctx, camera, mapData, radius, factionsMap =
 			}
 
 			// PASS 2A2: Focused inner halo (LOD 0 and LOD 1, skipped at LOD 2 strategic zoom)
-			if (lodLevel < 2) {
-				ctx.strokeStyle = hexToRgba(color, 0.22)
+			if (lodLevel < 2 && BORDER_CORE_ALPHA > 0.001) {
+				ctx.strokeStyle = hexToRgba(color, Math.min(1, BORDER_CORE_ALPHA * 0.733))
 				for (const chain of chains) {
 					const avgScale = chain.avgScale || 1.0
 					ctx.lineWidth = Math.max(2.2, 5.0 * avgScale)
@@ -1608,26 +1835,28 @@ export function drawPoliticalBorders(ctx, camera, mapData, radius, factionsMap =
 			}
 
 			// PASS 2B: Crisp heraldic main stroke (rendered across all LOD levels; bolder at LOD 2)
-			ctx.strokeStyle = hexToRgba(color, 0.78)
-			for (const chain of chains) {
-				const avgScale = chain.avgScale || 1.0
-				ctx.lineWidth = Math.max(1.3, (lodLevel === 2 ? 2.8 : 2.4) * avgScale)
-				ctx.beginPath()
-				ctx.moveTo(chain[0].pFrom.x, chain[0].pFrom.y)
-				for (let i = 0; i < chain.length; i++) {
-					const seg = chain[i]
-					if (!useOrganic) {
-						ctx.lineTo(seg.pTo.x, seg.pTo.y)
-					} else {
-						ctx.bezierCurveTo(seg.pCP1A.x, seg.pCP1A.y, seg.pCP2A.x, seg.pCP2A.y, seg.pMid1.x, seg.pMid1.y)
-						ctx.bezierCurveTo(seg.pCP1B.x, seg.pCP1B.y, seg.pCP2B.x, seg.pCP2B.y, seg.pMid2.x, seg.pMid2.y)
-						ctx.bezierCurveTo(seg.pCP1C.x, seg.pCP1C.y, seg.pCP2C.x, seg.pCP2C.y, seg.pTo.x, seg.pTo.y)
+			if (BORDER_CASING_ALPHA > 0.001) {
+				ctx.strokeStyle = hexToRgba(color, BORDER_CASING_ALPHA)
+				for (const chain of chains) {
+					const avgScale = chain.avgScale || 1.0
+					ctx.lineWidth = Math.max(1.3, (lodLevel === 2 ? 2.8 : 2.4) * avgScale)
+					ctx.beginPath()
+					ctx.moveTo(chain[0].pFrom.x, chain[0].pFrom.y)
+					for (let i = 0; i < chain.length; i++) {
+						const seg = chain[i]
+						if (!useOrganic) {
+							ctx.lineTo(seg.pTo.x, seg.pTo.y)
+						} else {
+							ctx.bezierCurveTo(seg.pCP1A.x, seg.pCP1A.y, seg.pCP2A.x, seg.pCP2A.y, seg.pMid1.x, seg.pMid1.y)
+							ctx.bezierCurveTo(seg.pCP1B.x, seg.pCP1B.y, seg.pCP2B.x, seg.pCP2B.y, seg.pMid2.x, seg.pMid2.y)
+							ctx.bezierCurveTo(seg.pCP1C.x, seg.pCP1C.y, seg.pCP2C.x, seg.pCP2C.y, seg.pTo.x, seg.pTo.y)
+						}
 					}
+					if (chain.isClosed) {
+						ctx.closePath()
+					}
+					ctx.stroke()
 				}
-				if (chain.isClosed) {
-					ctx.closePath()
-				}
-				ctx.stroke()
 			}
 		}
 	}
@@ -1725,6 +1954,68 @@ export function strokeTaperedCurve(ctx, p0, p1, p2, w0, w1, c0, c1, steps = 4) {
 		ctx.moveTo(prevPt.x, prevPt.y)
 		ctx.lineTo(pB.x, pB.y)
 		ctx.lineWidth = w
+		ctx.strokeStyle = color
+		ctx.stroke()
+		prevPt = pB
+	}
+}
+
+/**
+ * Strokes a cubic Bezier curve with linearly tapering line width from w0 to w1.
+ * Optimized with fast-path single Bezier stroke when w0 === w1.
+ */
+export function strokeTaperedCubicBezier(ctx, p0, cp1, cp2, p3, w0, w1, color, steps = 10) {
+	if (Math.abs(w0 - w1) < 0.1) {
+		ctx.beginPath()
+		ctx.moveTo(p0.x, p0.y)
+		ctx.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, p3.x, p3.y)
+		ctx.lineWidth = Math.max(0.2, w0)
+		ctx.strokeStyle = color
+		ctx.stroke()
+		return
+	}
+
+	let prevPt = p0
+	for (let i = 0; i < steps; i++) {
+		const tB = (i + 1) / steps
+		const tMid = (i + 0.5) / steps
+		const pB = getCubicBezierPoint(p0, cp1, cp2, p3, tB)
+		const w = w0 + tMid * (w1 - w0)
+		ctx.beginPath()
+		ctx.moveTo(prevPt.x, prevPt.y)
+		ctx.lineTo(pB.x, pB.y)
+		ctx.lineWidth = Math.max(0.2, w)
+		ctx.strokeStyle = color
+		ctx.stroke()
+		prevPt = pB
+	}
+}
+
+/**
+ * Strokes a straight line with linearly tapering line width from w0 to w1.
+ * Optimized with fast-path single line stroke when w0 === w1.
+ */
+export function strokeTaperedLine(ctx, p0, p1, w0, w1, color, steps = 8) {
+	if (Math.abs(w0 - w1) < 0.1) {
+		ctx.beginPath()
+		ctx.moveTo(p0.x, p0.y)
+		ctx.lineTo(p1.x, p1.y)
+		ctx.lineWidth = Math.max(0.2, w0)
+		ctx.strokeStyle = color
+		ctx.stroke()
+		return
+	}
+
+	let prevPt = p0
+	for (let i = 0; i < steps; i++) {
+		const tB = (i + 1) / steps
+		const tMid = (i + 0.5) / steps
+		const pB = { x: p0.x + (p1.x - p0.x) * tB, y: p0.y + (p1.y - p0.y) * tB }
+		const w = w0 + tMid * (w1 - w0)
+		ctx.beginPath()
+		ctx.moveTo(prevPt.x, prevPt.y)
+		ctx.lineTo(pB.x, pB.y)
+		ctx.lineWidth = Math.max(0.2, w)
 		ctx.strokeStyle = color
 		ctx.stroke()
 		prevPt = pB
@@ -2040,6 +2331,7 @@ function buildRiverDeltaGeometry(pCenter, branch, radius, seed = 0) {
 		P_sea,
 		baseWidth,
 		deltaWidth,
+		reach,
 		scale
 	}
 }
@@ -2109,8 +2401,19 @@ function renderRiverPixelFlow(ctx, preparedRivers, riverTurns, riverDeltas, anim
 					tan = getCubicBezierTangent(r.startPt, r.pCP1, r.pCP2, r.endPt, t)
 				}
 
-				const fx = pt.x + tan.nx * (laneRatio * r.baseWidth * 0.85)
-				const fy = pt.y + tan.ny * (laneRatio * r.baseWidth * 0.85)
+				let widthFactor = 1.0
+				let tipFade = 1.0
+				if (r.isSource) {
+					const flowProgress = r.sourceAtStart ? t : 1.0 - t
+					widthFactor = Math.max(0.1, flowProgress)
+					if (flowProgress < 0.25) {
+						tipFade = Math.max(0, flowProgress / 0.25)
+					}
+				}
+
+				const currentBaseWidth = r.baseWidth * widthFactor
+				const fx = pt.x + tan.nx * (laneRatio * currentBaseWidth * 0.85)
+				const fy = pt.y + tan.ny * (laneRatio * currentBaseWidth * 0.85)
 
 				// Pixel-art coordinate snapping
 				const snapX = Math.round(fx / px) * px
@@ -2124,9 +2427,15 @@ function renderRiverPixelFlow(ctx, preparedRivers, riverTurns, riverDeltas, anim
 				else if (toneKey < 9) tone = midTone
 				else tone = foamTone
 
+				if (tipFade < 1.0) {
+					ctx.globalAlpha = tipFade
+				}
 				ctx.fillStyle = tone
 				// Square pixel cube (px × px)
 				ctx.fillRect(snapX, snapY, px, px)
+				if (tipFade < 1.0) {
+					ctx.globalAlpha = 1.0
+				}
 			}
 		}
 	}
@@ -2163,35 +2472,102 @@ function renderRiverPixelFlow(ctx, preparedRivers, riverTurns, riverDeltas, anim
 	for (const delta of riverDeltas) {
 		const scale = delta.scale || 1
 		const px = Math.max(1.5, basePx * Math.min(1.4, Math.max(0.65, scale)))
-		const fanSteps = 3
-		const animTravel = (animTime * speed * scale) % (delta.deltaWidth * 1.5)
+		const reachDist = Math.max(12 * scale, delta.reach || (20 * scale))
+		const stepDist = Math.max(7 * scale, (14 * scale) / density)
+		const numSteps = Math.max(2, Math.round(reachDist / stepDist))
+		const lanes = [-0.32, 0, 0.32]
+		const animDist = animTime * speed * scale
 
-		for (let i = 0; i < fanSteps; i++) {
-			const spread = (i - 1) * 0.35
-			const travelRatio = ((i * 8 + animTravel) % 20) / 20
-			const deltaAlpha = (1 - travelRatio) * 0.75
-			if (deltaAlpha <= 0.05) continue
+		for (let lIdx = 0; lIdx < lanes.length; lIdx++) {
+			const spread = lanes[lIdx]
+			const lanePhaseOffset = lIdx * 0.33 * reachDist
 
-			const fx =
-				delta.pMouth.x +
-				delta.outU.x * (travelRatio * 16 * scale) +
-				delta.outN.x * (spread * delta.deltaWidth * (1 + travelRatio * 0.4))
-			const fy =
-				delta.pMouth.y +
-				delta.outU.y * (travelRatio * 16 * scale) +
-				delta.outN.y * (spread * delta.deltaWidth * (1 + travelRatio * 0.4))
+			for (let s = 0; s < numSteps; s++) {
+				const rawDist = (s * stepDist + animDist + lanePhaseOffset) % reachDist
+				const dist = rawDist < 0 ? rawDist + reachDist : rawDist
+				const progress = dist / reachDist
+				const deltaAlpha = Math.max(0, 1 - progress) * 0.8
+				if (deltaAlpha <= 0.05) continue
 
-			const snapX = Math.round(fx / px) * px
-			const snapY = Math.round(fy / px) * px
+				const fx =
+					delta.pMouth.x +
+					delta.outU.x * dist +
+					delta.outN.x * (spread * delta.deltaWidth * (0.35 + progress * 0.65))
+				const fy =
+					delta.pMouth.y +
+					delta.outU.y * dist +
+					delta.outN.y * (spread * delta.deltaWidth * (0.35 + progress * 0.65))
 
-			ctx.fillStyle = i % 2 === 0 ? lightTone : darkTone
-			ctx.globalAlpha = deltaAlpha
-			ctx.fillRect(snapX, snapY, px, px)
-			ctx.globalAlpha = 1.0
+				const snapX = Math.round(fx / px) * px
+				const snapY = Math.round(fy / px) * px
+
+				const toneKey = (s * 3 + lIdx * 7) % 10
+				let tone = lightTone
+				if (toneKey < 4) tone = lightTone
+				else if (toneKey < 7) tone = darkTone
+				else if (toneKey < 9) tone = midTone
+				else tone = foamTone
+
+				ctx.fillStyle = tone
+				ctx.globalAlpha = deltaAlpha
+				ctx.fillRect(snapX, snapY, px, px)
+				ctx.globalAlpha = 1.0
+			}
 		}
 	}
 
 	ctx.restore()
+}
+
+/**
+ * Analyzes the river network to identify source vertices (headwaters where incoming flow is 0).
+ * Returns a Set of vertex keys that are river sources.
+ */
+export function getRiverSourceVertexKeys(rivers, radius, mapData, useOrganic) {
+	const vertexFlow = new Map()
+
+	function getVKey(pt) {
+		return `${Math.round(pt.x * 10)},${Math.round(pt.y * 10)}`
+	}
+
+	for (const river of rivers) {
+		const center = hexToWorldGroundCenter(river.col, river.row, radius)
+		const groundVerts = useOrganic
+			? getOrganicHexGroundVertices(center.x, center.y, radius, mapData?.seed || 0)
+			: getHexGroundVertices(center.x, center.y, radius)
+		const { from: gFrom, to: gTo } = getHexEdgeEndpoints(groundVerts, river.edge)
+		const flowDir = river.flowDir === -1 ? -1 : 1
+
+		const kFrom = getVKey(gFrom)
+		const kTo = getVKey(gTo)
+
+		let eFrom = vertexFlow.get(kFrom)
+		if (!eFrom) {
+			eFrom = { incoming: 0, outgoing: 0 }
+			vertexFlow.set(kFrom, eFrom)
+		}
+		let eTo = vertexFlow.get(kTo)
+		if (!eTo) {
+			eTo = { incoming: 0, outgoing: 0 }
+			vertexFlow.set(kTo, eTo)
+		}
+
+		if (flowDir === 1) {
+			eFrom.outgoing++
+			eTo.incoming++
+		} else {
+			eTo.outgoing++
+			eFrom.incoming++
+		}
+	}
+
+	const sourceKeys = new Set()
+	for (const [key, vf] of vertexFlow.entries()) {
+		if (vf.incoming === 0 && vf.outgoing > 0) {
+			sourceKeys.add(key)
+		}
+	}
+	return sourceKeys
 }
 
 /**
@@ -2207,12 +2583,19 @@ function drawRivers(ctx, camera, mapData, radius, animTime, options = {}) {
 	if (rivers.length === 0) return
 
 	const useOrganic = options.organic !== undefined ? options.organic : (mapData?.organic !== undefined ? mapData.organic : ENABLE_ORGANIC_EDGES)
-	const screenRadius = options.screenRadius ?? (radius * camera.zoom)
+	const pixelScale = Math.max(1, Number(options.pixelScale ?? DEFAULT_PIXEL_SCALE) || 1)
+	const screenRadius = options.screenRadius ?? (radius * camera.zoom * pixelScale)
 	const lodLevel = options.lodLevel !== undefined ? options.lodLevel : calculateLodLevel(screenRadius)
 
 	const waterColor = RIVER_CONFIG.colors?.waterColor || BIOMES.water?.color || '#0284c7'
 	const hasBorder = RIVER_CONFIG.colors?.hasBorder ?? false
 	const borderColor = RIVER_CONFIG.colors?.borderColor || '#0369a1'
+
+	function getVertexKey(pt) {
+		return `${Math.round(pt.x * 10)},${Math.round(pt.y * 10)}`
+	}
+
+	const sourceVertexKeys = getRiverSourceVertexKeys(rivers, radius, mapData, useOrganic)
 
 	if (!useOrganic) {
 		const preparedRivers = []
@@ -2252,6 +2635,37 @@ function drawRivers(ctx, camera, mapData, radius, animTime, options = {}) {
 			const casingWidth = baseWidth + shoreExtra
 			const flowDir = river.flowDir === -1 ? -1 : 1
 
+			const keyFrom = getVertexKey(gFrom)
+			const keyTo = getVertexKey(gTo)
+			let isSource = false
+			let sourceAtStart = false
+			if (flowDir === 1 && sourceVertexKeys.has(keyFrom)) {
+				isSource = true
+				sourceAtStart = true
+			} else if (flowDir === -1 && sourceVertexKeys.has(keyTo)) {
+				isSource = true
+				sourceAtStart = false
+			}
+
+			let wStart = baseWidth
+			let wEnd = baseWidth
+			let casingStart = casingWidth
+			let casingEnd = casingWidth
+
+			if (isSource) {
+				if (sourceAtStart) {
+					wStart = 0.2
+					wEnd = baseWidth
+					casingStart = 0.2
+					casingEnd = casingWidth
+				} else {
+					wStart = baseWidth
+					wEnd = 0.2
+					casingStart = casingWidth
+					casingEnd = 0.2
+				}
+			}
+
 			preparedRivers.push({
 				river,
 				pFrom,
@@ -2262,7 +2676,13 @@ function drawRivers(ctx, camera, mapData, radius, animTime, options = {}) {
 				casingWidth,
 				tier,
 				avgScale,
-				flowDir
+				flowDir,
+				isSource,
+				sourceAtStart,
+				wStart,
+				wEnd,
+				casingStart,
+				casingEnd
 			})
 		}
 
@@ -2276,22 +2696,14 @@ function drawRivers(ctx, camera, mapData, radius, animTime, options = {}) {
 		if (hasBorder) {
 			ctx.strokeStyle = borderColor
 			for (const r of preparedRivers) {
-				ctx.lineWidth = r.casingWidth
-				ctx.beginPath()
-				ctx.moveTo(r.pFrom.x, r.pFrom.y)
-				ctx.lineTo(r.pTo.x, r.pTo.y)
-				ctx.stroke()
+				strokeTaperedLine(ctx, r.startPt, r.endPt, r.casingStart, r.casingEnd, borderColor)
 			}
 		}
 
 		// PASS 2: Water Core (same color as coast water #0284c7)
 		ctx.strokeStyle = waterColor
 		for (const r of preparedRivers) {
-			ctx.lineWidth = r.baseWidth
-			ctx.beginPath()
-			ctx.moveTo(r.pFrom.x, r.pFrom.y)
-			ctx.lineTo(r.pTo.x, r.pTo.y)
-			ctx.stroke()
+			strokeTaperedLine(ctx, r.startPt, r.endPt, r.wStart, r.wEnd, waterColor)
 		}
 
 		// PASS 3: Pixel-Art Animated Flow (LOD 0 and LOD 1 only, skipped at LOD 2)
@@ -2307,10 +2719,6 @@ function drawRivers(ctx, camera, mapData, radius, animTime, options = {}) {
 
 	const preparedRivers = []
 	const vertexBranches = new Map()
-
-	function getVertexKey(pt) {
-		return `${Math.round(pt.x * 10)},${Math.round(pt.y * 10)}`
-	}
 
 	for (const river of rivers) {
 		// ── Cheap early-out: skip entirely if hex is outside frustum ──────────
@@ -2355,6 +2763,37 @@ function drawRivers(ctx, camera, mapData, radius, animTime, options = {}) {
 		const casingWidth = baseWidth + shoreExtra
 		const flowDir = river.flowDir === -1 ? -1 : 1
 
+		const keyFrom = getVertexKey(gFrom)
+		const keyTo = getVertexKey(gTo)
+		let isSource = false
+		let sourceAtStart = false
+		if (flowDir === 1 && sourceVertexKeys.has(keyFrom)) {
+			isSource = true
+			sourceAtStart = true
+		} else if (flowDir === -1 && sourceVertexKeys.has(keyTo)) {
+			isSource = true
+			sourceAtStart = false
+		}
+
+		let wStart = baseWidth
+		let wEnd = baseWidth
+		let casingStart = casingWidth
+		let casingEnd = casingWidth
+
+		if (isSource) {
+			if (sourceAtStart) {
+				wStart = 0.2
+				wEnd = baseWidth
+				casingStart = 0.2
+				casingEnd = casingWidth
+			} else {
+				wStart = baseWidth
+				wEnd = 0.2
+				casingStart = casingWidth
+				casingEnd = 0.2
+			}
+		}
+
 		const rObj = {
 			river,
 			pFrom,
@@ -2369,7 +2808,13 @@ function drawRivers(ctx, camera, mapData, radius, animTime, options = {}) {
 			avgScale,
 			flowDir,
 			gFrom,
-			gTo
+			gTo,
+			isSource,
+			sourceAtStart,
+			wStart,
+			wEnd,
+			casingStart,
+			casingEnd
 		}
 		preparedRivers.push(rObj)
 
@@ -2387,7 +2832,6 @@ function drawRivers(ctx, camera, mapData, radius, animTime, options = {}) {
 		const u2x = d2x / len2
 		const u2y = d2y / len2
 
-		const keyFrom = getVertexKey(gFrom)
 		let entryFrom = vertexBranches.get(keyFrom)
 		if (!entryFrom) {
 			entryFrom = { pCenter: pFrom, branches: [] }
@@ -2406,7 +2850,6 @@ function drawRivers(ctx, camera, mapData, radius, animTime, options = {}) {
 			flowDir
 		})
 
-		const keyTo = getVertexKey(gTo)
 		let entryTo = vertexBranches.get(keyTo)
 		if (!entryTo) {
 			entryTo = { pCenter: pTo, branches: [] }
@@ -2491,11 +2934,14 @@ function drawRivers(ctx, camera, mapData, radius, animTime, options = {}) {
 			})
 		} else if (k === 1) {
 			const b0 = vData.branches[0]
-			const waterContact = checkRiverVertexTouchesWater(b0.river.river, b0.isFrom, mapData)
-			if (waterContact.touchesWater && RIVER_CONFIG.delta.enabled) {
-				const delta = buildRiverDeltaGeometry(vData.pCenter, b0, radius, mapData?.seed || 0)
-				if (delta) {
-					riverDeltas.push(delta)
+			const isFlowingIntoVertex = (b0.isFrom && b0.flowDir === -1) || (!b0.isFrom && b0.flowDir !== -1)
+			if (isFlowingIntoVertex) {
+				const waterContact = checkRiverVertexTouchesWater(b0.river.river, b0.isFrom, mapData)
+				if (waterContact.touchesWater && RIVER_CONFIG.delta.enabled) {
+					const delta = buildRiverDeltaGeometry(vData.pCenter, b0, radius, mapData?.seed || 0)
+					if (delta) {
+						riverDeltas.push(delta)
+					}
 				}
 			}
 		}
@@ -2507,12 +2953,7 @@ function drawRivers(ctx, camera, mapData, radius, animTime, options = {}) {
 	// --- PASS 1: Riverbed Shore Strokes (only if hasBorder is enabled) ---
 	if (hasBorder) {
 		for (const r of preparedRivers) {
-			ctx.beginPath()
-			ctx.moveTo(r.startPt.x, r.startPt.y)
-			ctx.bezierCurveTo(r.pCP1.x, r.pCP1.y, r.pCP2.x, r.pCP2.y, r.endPt.x, r.endPt.y)
-			ctx.lineWidth = r.casingWidth
-			ctx.strokeStyle = borderColor
-			ctx.stroke()
+			strokeTaperedCubicBezier(ctx, r.startPt, r.pCP1, r.pCP2, r.endPt, r.casingStart, r.casingEnd, borderColor)
 		}
 
 		for (const turn of riverTurns) {
@@ -2530,11 +2971,7 @@ function drawRivers(ctx, camera, mapData, radius, animTime, options = {}) {
 	// All rendered with pure waterColor (#0284c7) matching the coast water tile
 	ctx.strokeStyle = waterColor
 	for (const r of preparedRivers) {
-		ctx.beginPath()
-		ctx.moveTo(r.startPt.x, r.startPt.y)
-		ctx.bezierCurveTo(r.pCP1.x, r.pCP1.y, r.pCP2.x, r.pCP2.y, r.endPt.x, r.endPt.y)
-		ctx.lineWidth = r.baseWidth
-		ctx.stroke()
+		strokeTaperedCubicBezier(ctx, r.startPt, r.pCP1, r.pCP2, r.endPt, r.wStart, r.wEnd, waterColor)
 	}
 
 	for (const turn of riverTurns) {

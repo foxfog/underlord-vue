@@ -957,6 +957,8 @@ function renderLoop(currentTime) {
 		cameraX: cameraX.value,
 		cameraY: cameraY.value,
 		zoom: zoom.value / scale,
+		logicalZoom: zoom.value,
+		pixelScale: scale,
 		pitch: pitch.value,
 		hoveredHex: hoveredHex.value,
 		selectedHex: props.selectedHex,
