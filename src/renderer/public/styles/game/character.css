@@ -8,10 +8,7 @@
 	right: 0%;
 	margin: auto;
 	transform-origin: center 95%;
-	image-rendering: auto;
-	&.orientation-left {
-		transform: scaleX(-1);
-	}
+
 	&.is-interactive {
 		cursor: pointer;
 		transition: filter 0.2s ease;

@@ -13,10 +13,11 @@ import {
 import { BORDER_STATE_TYPES, BORDER_STATE_TAGS } from './hexConfig.js'
 
 export const BIOMES = Object.freeze({
-	grass: { id: 'grass', name: 'Трава', color: '#3d8b40', edgeColor: '#2b692e', icon: '🌿' },
-	plains: { id: 'plains', name: 'Равнина', color: '#7cb342', edgeColor: '#558b2f', icon: '🌾' },
-	desert: { id: 'desert', name: 'Пустыня', color: '#e0a94b', edgeColor: '#b88230', icon: '🏜️' },
-	snow: { id: 'snow', name: 'Снег', color: '#e2e8f0', edgeColor: '#cbd5e1', icon: '❄️' },
+	grass: { id: 'grass', name: 'Трава', color: '#8eaf4f', edgeColor: '#6b8e3d', icon: '🌿' },
+	plains: { id: 'plains', name: 'Равнина', color: '#bbab70', edgeColor: '#9e8e56', icon: '🌾' },
+	desert: { id: 'desert', name: 'Пустыня', color: '#e3ab5f', edgeColor: '#b88230', icon: '🏜️' },
+	snow: { id: 'snow', name: 'Снег', color: '#d6e0e4', edgeColor: '#cbd5e1', icon: '❄️' },
+	tundra: { id: 'tundra', name: 'Тундра', color: '#848173', edgeColor: '#68665a', icon: '❄️' },
 	water: { id: 'water', name: 'Побережье', color: '#0284c7', edgeColor: '#0369a1', isWater: true, icon: '🌊' },
 	ocean: { id: 'ocean', name: 'Океан', color: '#1e3a8a', edgeColor: '#172554', isWater: true, icon: '🌊' }
 })

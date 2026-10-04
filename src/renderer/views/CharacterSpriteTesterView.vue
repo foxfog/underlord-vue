@@ -468,6 +468,7 @@
 								:get-effective-part-image="getEffectivePartImage"
 								:is-isometric="false"
 								:bleed="stageBleed"
+								:preserve-canonical-ruler-height="false"
 								:relative-centers="true"
 								:zoom="stageZoom"
 								:equipment-by-slot="equipmentBySlotForCanvas"
@@ -2316,6 +2317,7 @@
 						@select-equipment="selectedEquipmentId = $event"
 						@toggle-equip="toggleEquipPreview"
 						@set-all-equipped="setAllEquippedPreview"
+						@reset-default-equipped="resetToDefaultEquippedPreview"
 						@add-from-catalog="addEquipmentFromCatalog"
 						@remove-equipment="removeEquipmentItem"
 						@add-part="addEquipmentPart"
@@ -2429,6 +2431,7 @@ const {
 	removeEquipmentItem,
 	toggleEquipPreview,
 	setAllEquippedPreview,
+	resetToDefaultEquippedPreview,
 	addEquipmentPart,
 	removeEquipmentPart,
 	updateEquipmentPart,

@@ -15,6 +15,9 @@
 			<!-- Canvas 2D Character Renderer -->
 			<CharacterCanvas
 				:character="character"
+				:scene="scene"
+				:floor-offset="floorOffset"
+				:part-animations="character.partAnimations"
 				:zoom="characterStyle.scale"
 				:is-interactive="Boolean(character.interaction)"
 				@character-click="onCharacterClick"
@@ -31,6 +34,14 @@ const props = defineProps({
 	character: {
 		type: Object,
 		required: true
+	},
+	scene: {
+		type: Object,
+		default: null
+	},
+	floorOffset: {
+		type: [Number, String],
+		default: null
 	}
 })
 
@@ -74,13 +85,7 @@ const characterStyle = computed(() => {
 		scale: scaleVal
 	}
 
-	// Apply root avatar offset if defined (e.g. from values.json root_offset)
-	if (props.character.root_offset) {
-		const ro = props.character.root_offset
-		if (ro.x || ro.y) {
-			style.translate = `${ro.x || 0}% ${-(ro.y || 0)}%`
-		}
-	}
+
 
 	// Determine which position to use
 	// If we have fromPosition and NOT animating yet, use fromPosition

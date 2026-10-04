@@ -20,7 +20,7 @@ The game canvas is 1920x1080 and scales through `--size`.
 
 - World: [Maps](docs/systems/MapSystem.md), [Scene hotspots](docs/systems/SceneHotspots.md), [Calendar](docs/systems/TimeCalendar.md), [NPC schedules](docs/systems/NPCScheduleSystem.md).
 - Story and UI: [Story architecture](docs/systems/StoryArchitecture.md), [Storyline editor](docs/systems/StorylineEditorSystem.md), [UI controls](docs/ui/UIControl.md), [Dialogue](docs/ui/DialogueSystem.md).
-- Characters: [Body and equipment](docs/characters/BodyStructure.md), [Rig studio](docs/characters/CharacterRigStudio.md), [Stats](docs/systems/CharacterStatsSystem.md).
+- Characters: [Body and equipment](docs/characters/BodyStructure.md), [Rig studio](docs/characters/CharacterRigStudio.md), [Animation](docs/characters/Animation.md), [Stats](docs/systems/CharacterStatsSystem.md).
 - Gameplay: [Combat](docs/systems/CombatSystem.md), [Crafting](docs/systems/CraftingSystem.md), [Skills](docs/systems/SkillTreeSystem.md), [Mobs](docs/systems/MobSystem.md), [Quests](src/renderer/composables/useQuests.js), [Inventory](docs/systems/Inventory.md), [Encyclopedia](docs/systems/EncyclopediaSystem.md).
 - Tools and persistence: [Data editor](docs/systems/DataEditorSystem.md), [Save system](docs/systems/SaveSystem.md), [Isometric maps](docs/systems/IsometricSystem.md), [Hex maps](docs/systems/HexMapSystem.md).
 

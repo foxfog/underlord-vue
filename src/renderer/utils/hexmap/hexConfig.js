@@ -545,12 +545,12 @@ export const ROAD_CONFIG = {
 		/** Плотность частиц внутри полотна дороги */
 		innerDensity: 0.1,
 		/** Плотность рассеивания гравия по бокам полотна (мягкие обочины) */
-		scatterDensity: 0.1,
+		scatterDensity: 1,
 		/**
 		 * Максимальная ширина разброса частиц в стороны от кромки полотна (в долях от ширины дороги):
 		 * создает плавный переход с частого расположения у края к редкому на удалении
 		 */
-		scatterWidthRatio: 3,
+		scatterWidthRatio: 2.5,
 		/** Число ступеней прогрессивного спада частоты частиц от края вглубь биома */
 		scatterTiers: 3,
 
@@ -564,7 +564,84 @@ export const ROAD_CONFIG = {
 		/** Число ступеней прогрессивного спада для каменной дороги */
 		stoneScatterTiers: 2,
 		/** Дополнительное рассеивание частиц на перекрёстках и пересечениях дорог для бесшовного слияния */
-		crossroadScatter: true
+		crossroadScatter: true,
+		/** Общая точка концентрации частиц обочины (0.0 = у дороги, 0.5 = в центре, 1.0 = на внешнем краю) */
+		concentration: 0.2,
+		/**
+		 * Динамические строки слоёв частиц для гравийных дорог.
+		 * Каждая строка задает отдельный тип частиц с настройками цвета, частоты,
+		 * флага равномерности (uniform: true/false) и прозрачности.
+		 */
+		dirtPalette: [
+			{ 
+				id: 'dp_dark', 
+				name: 'Тёмная земля', 
+				color: '#6b4f46', 
+				frequency: 1.0, 
+				uniform: false, 
+				spread: 0.25, 
+				opacity: 0.9 
+			},
+			{ 
+				id: 'dp_base', 
+				name: 'Основной гравий', 
+				color: '#8d6e63', 
+				frequency: 0.9, 
+				uniform: true, 
+				spread: 0.35, 
+				opacity: 0.85 
+			},
+			{ 
+				id: 'dp_light', 
+				name: 'Светлые камешки', 
+				color: '#bcaaa4', 
+				frequency: 0.6, 
+				uniform: false, 
+				spread: 0.3, 
+				opacity: 0.75 
+			},
+			{ 
+				id: 'dp_sand', 
+				name: 'Песчинки обочины', 
+				color: '#c59a8a', 
+				frequency: 0.4, 
+				uniform: true, 
+				spread: 0.3, 
+				opacity: 0.65 
+			}
+		],
+		/**
+		 * Динамические строки слоёв частиц для каменных дорог.
+		 */
+		stonePalette: [
+			{ 
+				id: 'sp_dark', 
+				name: 'Швы кладки', 
+				color: '#747f92', 
+				frequency: 1.0, 
+				uniform: false, 
+				spread: 0.25, 
+				opacity: 0.95 
+			},
+			{ 
+				id: 'sp_base', 
+				name: 'Брусчатка', 
+				color: '#9eaec4', 
+				frequency: 0.9, 
+				uniform: true, 
+				spread: 0.35, 
+				opacity: 0.85 
+			},
+			{ 
+				id: 'sp_light', 
+				name: 'Сколы камня', 
+				color: '#8194ac', 
+				frequency: 0.5, 
+				uniform: false, 
+				spread: 0.3, 
+				opacity: 0.75 
+			}
+		]
 	}
 }
 
@@ -609,6 +686,365 @@ export function setRoadConfig(options = {}) {
 		if (options.particles.outer) {
 			ROAD_CONFIG.particles.outer = Object.assign(ROAD_CONFIG.particles.outer || {}, options.particles.outer)
 		}
+		if (options.particles.dirtPalette) {
+			ROAD_CONFIG.particles.dirtPalette = options.particles.dirtPalette
+		}
+		if (options.particles.stonePalette) {
+			ROAD_CONFIG.particles.stonePalette = options.particles.stonePalette
+		}
+	}
+}
+
+/**
+ * Добавляет новую строку слоя частиц к указанному типу дорог.
+ * @param {'dirt'|'stone'} roadType
+ * @param {Object} layer
+ */
+export function addRoadParticleLayer(roadType = 'dirt', layer = {}) {
+	const palette = roadType === 'stone' ? ROAD_CONFIG.particles.stonePalette : ROAD_CONFIG.particles.dirtPalette
+	if (!palette) return
+	palette.push({
+		id: `rp_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+		name: layer.name || 'Новый тип частиц',
+		color: layer.color || (roadType === 'stone' ? '#9eaec4' : '#8d6e63'),
+		frequency: Math.max(0.05, Math.min(2.0, Number(layer.frequency) || 1.0)),
+		uniform: Boolean(layer.uniform),
+		...(layer.concentration !== undefined && layer.concentration !== null ? { concentration: Math.max(0, Math.min(1, Number(layer.concentration))) } : {}),
+		spread: Math.max(0.05, Math.min(1.0, Number(layer.spread ?? 0.3))),
+		opacity: Math.max(0, Math.min(1, Number(layer.opacity ?? 0.8)))
+	})
+}
+
+/**
+ * Удаляет строку слоя частиц из палитры дороги по индексу.
+ * @param {'dirt'|'stone'} roadType
+ * @param {number} index
+ */
+export function removeRoadParticleLayer(roadType = 'dirt', index) {
+	const palette = roadType === 'stone' ? ROAD_CONFIG.particles.stonePalette : ROAD_CONFIG.particles.dirtPalette
+	if (!palette || index < 0 || index >= palette.length) return
+	palette.splice(index, 1)
+}
+
+// ==============================================================================
+// 4.4. МЕЖБИОМНЫЕ ПЕРЕХОДЫ И ЧАСТИЦЫ БИОМОВ (BIOME TRANSITION PARTICLES)
+// ==============================================================================
+
+/**
+ * Конфигурация системы внешних частиц для бесшовного органического перетекания биомов:
+ * - Каждая грань между разнородными биомами генерирует взаимное рассеивание частиц.
+ * - Каждая строка цвета задает тип частиц, частоту, флаг равномерности (uniform: true/false),
+ *   точку концентрации удаленности (0% = граница, 50% = середина, 100% = дальний край) и прозрачность.
+ */
+export const BIOME_PARTICLE_CONFIG = {
+	/** Включить систему межбиомных частиц перехода */
+	enabled: true,
+	/** Базовый размер частицы в пикселях (согласован с 2x retro сеткой) */
+	pixelSize: 4.0,
+	/** Масштабировать размер частиц при зуме */
+	scaleWithZoom: true,
+	/** Общий множитель прозрачности для всех биомных частиц */
+	opacity: 0.5,
+	/** Общий множитель плотности генерации частиц */
+	density: 1.0,
+	/** Общая точка концентрации частиц (0.0 = у границы, 0.5 = в центре, 1.0 = на внешнем краю) */
+	concentration: 0.2,
+	/**
+	 * Относительная глубина рассеивания частиц вглубь соседней клетки
+	 * (в долях от радиуса гексагона, например 0.35 = 35% от радиуса)
+	 */
+	reachRatio: 0.25,
+	/** Смешивать ли сушу с водными биомами (false = береговая линия остается чистой) */
+	blendWithWater: false,
+	/** Палитры слоёв частиц для каждого биома */
+	palettes: {
+		grass: [
+			{ 
+				id: 'g_dark', 
+				name: 'Тёмный мох', 
+				color: '#729452', 
+				frequency: 0.85, 
+				uniform: false, 
+				spread: 0.25, 
+				opacity: 0.85 
+			},
+			{ 
+				id: 'g_base', 
+				name: 'Трава основа', 
+				color: '#8eaf4f', 
+				frequency: 1.0, 
+				uniform: true, 
+				spread: 0.35, 
+				opacity: 0.8 
+			},
+			{ 
+				id: 'g_light', 
+				name: 'Светлые травинки', 
+				color: '#a2c45e', 
+				frequency: 0.65, 
+				uniform: false, 
+				spread: 0.3, 
+				opacity: 0.75 
+			},
+			{ 
+				id: 'g_specks', 
+				name: 'Равномерная зелень', 
+				color: '#8fb04f', 
+				frequency: 0.4, 
+				uniform: true, 
+				spread: 0.3, 
+				opacity: 0.6 
+			}
+		],
+		plains: [
+			{ 
+				id: 'p_dark', 
+				name: 'Сухой подлесок', 
+				color: '#a39a66', 
+				frequency: 0.85, 
+				uniform: false, 
+				spread: 0.25, 
+				opacity: 0.85 
+			},
+			{ 
+				id: 'p_base', 
+				name: 'Степь основа', 
+				color: '#bbab70', 
+				frequency: 1.0, 
+				uniform: true, 
+				spread: 0.35, 
+				opacity: 0.8 
+			},
+			{ 
+				id: 'p_straw', 
+				name: 'Светлая солома', 
+				color: '#cbb777', 
+				frequency: 0.65, 
+				uniform: false, 
+				spread: 0.3, 
+				opacity: 0.75 
+			}
+		],
+		desert: [
+			{ 
+				id: 'd_shadow', 
+				name: 'Охра / Тень бархана', 
+				color: '#ca8e4c', 
+				frequency: 0.9, 
+				uniform: false, 
+				spread: 0.25, 
+				opacity: 0.85 
+			},
+			{ 
+				id: 'd_base', 
+				name: 'Песок основа', 
+				color: '#e3ab5f', 
+				frequency: 1.0, 
+				uniform: true, 
+				spread: 0.35, 
+				opacity: 0.8 
+			},
+			{ 
+				id: 'd_light', 
+				name: 'Светлый гребень', 
+				color: '#ecb565', 
+				frequency: 0.65, 
+				uniform: false, 
+				spread: 0.3, 
+				opacity: 0.75 
+			},
+			{ 
+				id: 'd_dust', 
+				name: 'Равномерная пыль', 
+				color: '#e8b063', 
+				frequency: 0.4, 
+				uniform: true, 
+				spread: 0.3, 
+				opacity: 0.5 
+			}
+		],
+		snow: [
+			{ 
+				id: 's_shadow', 
+				name: 'Холодная тень', 
+				color: '#c3c9d5', 
+				frequency: 0.85, 
+				uniform: false, 
+				spread: 0.25, 
+				opacity: 0.85 
+			},
+			{ 
+				id: 's_base', 
+				name: 'Снежный наст', 
+				color: '#d6e0e4', 
+				frequency: 1.0, 
+				uniform: true, 
+				spread: 0.35, 
+				opacity: 0.85 
+			},
+			{ 
+				id: 's_ice', 
+				name: 'Ледяные крупицы', 
+				color: '#e7f4f4', 
+				frequency: 0.55, 
+				uniform: false, 
+				spread: 0.3, 
+				opacity: 0.8 
+			}
+		],
+		tundra: [
+			{ 
+				id: 't_peat', 
+				name: 'Тёмный торф', 
+				color: '#746b58', 
+				frequency: 0.9, 
+				uniform: false, 
+				spread: 0.25, 
+				opacity: 0.85 
+			},
+			{ 
+				id: 't_moss', 
+				name: 'Каменистый мох', 
+				color: '#848173', 
+				frequency: 1.0, 
+				uniform: true, 
+				spread: 0.35, 
+				opacity: 0.8 
+			},
+			{ 
+				id: 't_lichen', 
+				name: 'Светлый лишайник', 
+				color: '#adafa6', 
+				frequency: 0.65, 
+				uniform: false, 
+				spread: 0.3, 
+				opacity: 0.75 
+			}
+		]
+	}
+}
+
+/**
+ * Динамическое изменение конфигурации частиц биомов.
+ */
+export function setBiomeParticleConfig(options = {}) {
+	if (!options || typeof options !== 'object') return
+	if (options.enabled !== undefined) BIOME_PARTICLE_CONFIG.enabled = Boolean(options.enabled)
+	if (options.pixelSize !== undefined) BIOME_PARTICLE_CONFIG.pixelSize = Math.max(1, Number(options.pixelSize) || 3)
+	if (options.scaleWithZoom !== undefined) BIOME_PARTICLE_CONFIG.scaleWithZoom = Boolean(options.scaleWithZoom)
+	if (options.opacity !== undefined) BIOME_PARTICLE_CONFIG.opacity = Math.max(0, Math.min(1, Number(options.opacity) || 1))
+	if (options.density !== undefined) BIOME_PARTICLE_CONFIG.density = Math.max(0.05, Math.min(5, Number(options.density) || 1))
+	if (options.concentration !== undefined) BIOME_PARTICLE_CONFIG.concentration = Math.max(0, Math.min(1, Number(options.concentration) || 0.2))
+	if (options.reachRatio !== undefined) BIOME_PARTICLE_CONFIG.reachRatio = Math.max(0.05, Math.min(1.0, Number(options.reachRatio) || 0.35))
+	if (options.blendWithWater !== undefined) BIOME_PARTICLE_CONFIG.blendWithWater = Boolean(options.blendWithWater)
+	if (options.palettes && typeof options.palettes === 'object') {
+		for (const [key, list] of Object.entries(options.palettes)) {
+			if (Array.isArray(list)) {
+				BIOME_PARTICLE_CONFIG.palettes[key] = list
+			}
+		}
+	}
+}
+
+/**
+ * Добавляет новую строку слоя частиц к указанному биому.
+ * @param {string} biomeKey ('grass', 'plains', 'desert', 'snow', 'tundra')
+ * @param {Object} layer
+ */
+export function addBiomeParticleLayer(biomeKey = 'grass', layer = {}) {
+	if (!BIOME_PARTICLE_CONFIG.palettes[biomeKey]) {
+		BIOME_PARTICLE_CONFIG.palettes[biomeKey] = []
+	}
+	const palette = BIOME_PARTICLE_CONFIG.palettes[biomeKey]
+	palette.push({
+		id: `bp_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+		name: layer.name || 'Новый тип частиц',
+		color: layer.color || '#8eaf4f',
+		frequency: Math.max(0.05, Math.min(2.0, Number(layer.frequency) || 1.0)),
+		uniform: Boolean(layer.uniform),
+		...(layer.concentration !== undefined && layer.concentration !== null ? { concentration: Math.max(0, Math.min(1, Number(layer.concentration))) } : {}),
+		spread: Math.max(0.05, Math.min(1.0, Number(layer.spread ?? 0.3))),
+		opacity: Math.max(0, Math.min(1, Number(layer.opacity ?? 0.8)))
+	})
+}
+
+/**
+ * Удаляет строку слоя частиц из палитры биома по индексу.
+ * @param {string} biomeKey
+ * @param {number} index
+ */
+export function removeBiomeParticleLayer(biomeKey, index) {
+	const palette = BIOME_PARTICLE_CONFIG.palettes?.[biomeKey]
+	if (!palette || index < 0 || index >= palette.length) return
+	palette.splice(index, 1)
+}
+
+// ==============================================================================
+// 4.5. УТЁСЫ И ПЛЯЖИ ВОКРУГ ВОДЫ (COASTLINES, CLIFFS & BEACHES)
+// ==============================================================================
+
+/**
+ * Конфигурация побережий (утёсы, пляжи, солнце-ориентированное затенение и набегающий прибой):
+ * - Чередование пляжей и скалистых утесов вдоль кромки берега.
+ * - Глубина песчаной косы и рассеивание песчинок вглубь суши.
+ * - Учет угла наклона камеры (foreshortening) и сторон света:
+ *   - Вода с Севера (N) -> узкие полоски пляжа/утеса, утес освещен тонким солнечным бликом (солнце с СЗ).
+ *   - Вода с Запада/Востока -> средняя ширина полосы.
+ *   - Вода с СЗ, СВ, З, В -> солнечный край утеса (светлая скала).
+ *   - Вода с ЮЗ, Ю, ЮВ -> теневой край утеса (глубокая тень скалы на воду).
+ * - Плавное сужение песчаной полосы на концах пляжных зон до нуля (без резких стыков и наслоений).
+ * - Анимированный накат волн прибоя (спокойная волна без обратного отката, растворяется на песке).
+ */
+export const COAST_CONFIG = {
+	/** Включить процедурную систему пляжей на побережьях */
+	enabled: true,
+	/** Доля побережий, покрытых песчаными пляжами (0.0 = только зелёный берег, 1.0 = все берега с пляжами) */
+	beachCoverage: 0.75,
+	/** Базовая глубина песчаной полосы пляжа (в долях от радиуса гексагона, например 0.18 = 18% от R) */
+	beachDepth: 0.18,
+	/** Общая прозрачность пляжей */
+	beachOpacity: 0.85,
+	/** Базовый размер пикселя рассеивания песка на границе с сушей */
+	pixelSize: 3.0,
+	/** Плотность пиксельного рассеивания песка */
+	ditherDensity: 0.9,
+	/** Анимация наката волн прибоя на пляжи */
+	waves: {
+		/** Включить накат прибоя */
+		enabled: true,
+		/** Скорость цикла прибоя (спокойный темп) */
+		speed: 0.6,
+		/** Максимальный вынос волны на песок (в экранных пикселях: 1-2.5 px) */
+		reachPx: 1.8,
+		/** Цвет прибойной пены / гребня (мягкий полупрозрачный аквамарин) */
+		color: '#bae6fd',
+		/** Цвет мягкого свечения / ореола прибоя */
+		glowColor: '#e0f2fe',
+		/** Прозрачность волны (деликатная полупрозрачность) */
+		opacity: 0.45
+	},
+	/** Цвета пляжей */
+	beachColors: {
+		wetSand: '#a68550',
+		sand: '#dfbe82',
+		sandLight: '#ecd9a4',
+		ditherSand: '#cfa968'
+	}
+}
+
+export function setCoastConfig(options = {}) {
+	if (!options || typeof options !== 'object') return
+	if (options.enabled !== undefined) COAST_CONFIG.enabled = Boolean(options.enabled)
+	if (options.beachCoverage !== undefined) COAST_CONFIG.beachCoverage = Math.max(0, Math.min(1, Number(options.beachCoverage)))
+	if (options.beachDepth !== undefined) COAST_CONFIG.beachDepth = Math.max(0.04, Math.min(0.5, Number(options.beachDepth)))
+	if (options.beachOpacity !== undefined) COAST_CONFIG.beachOpacity = Math.max(0, Math.min(1, Number(options.beachOpacity)))
+	if (options.pixelSize !== undefined) COAST_CONFIG.pixelSize = Math.max(1, Number(options.pixelSize) || 3)
+	if (options.ditherDensity !== undefined) COAST_CONFIG.ditherDensity = Math.max(0.1, Math.min(3, Number(options.ditherDensity)))
+	if (options.waves && typeof options.waves === 'object') {
+		Object.assign(COAST_CONFIG.waves, options.waves)
+	}
+	if (options.beachColors && typeof options.beachColors === 'object') {
+		Object.assign(COAST_CONFIG.beachColors, options.beachColors)
 	}
 }
 
@@ -940,7 +1376,9 @@ export const HEX_CONFIG = Object.freeze({
 	},
 	rivers: RIVER_CONFIG,
 	water: WATER_CONFIG,
-	roads: ROAD_CONFIG
+	roads: ROAD_CONFIG,
+	biomeParticles: BIOME_PARTICLE_CONFIG,
+	coasts: COAST_CONFIG
 })
 
 export default HEX_CONFIG

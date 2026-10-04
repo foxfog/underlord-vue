@@ -88,23 +88,20 @@
 
 		{ "type": "scene", "id": "city_street", "mods": ["fog"] },
 
-		{ "variable": "global.currentMap = 'cybercity'" },
-
-		{ "variable": "global.currentLocation = 'factory'" },
-
-		{ "variable": "global.calendarType = 'real'" },
-
-		{ "variable": "global.year = 2138" },
-
-		{ "variable": "global.month = 12" },
-
-		{ "variable": "global.dayOfMonth = 18" },
-
-		{ "variable": "global.day = 0" },
-
-		{ "variable": "global.time = '20:52'" },
-
-		{ "variable": "global.timeOfDay = 'evening'" },
+		{
+			"type": "variables",
+			"operations": [
+				"global.currentMap = 'cybercity'",
+				"global.currentLocation = 'factory'",
+				"global.calendarType = 'real'",
+				"global.year = 2138",
+				"global.month = 12",
+				"global.dayOfMonth = 18",
+				"global.day = 0",
+				"global.time = '20:52'",
+				"global.timeOfDay = 'evening'"
+			]
+		},
 
 		{
 			"type": "ui",

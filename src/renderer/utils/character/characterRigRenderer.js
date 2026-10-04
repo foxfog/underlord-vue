@@ -193,6 +193,57 @@ export class CharacterRigRenderer {
 	}
 
 	/**
+	 * Collects all image paths referenced by bodyParts and equipment
+	 */
+	collectAllImagePaths({
+		bodyParts = {},
+		animatedSprites = {},
+		equipmentBySlot = {},
+		getEffectivePartImage = null
+	} = {}) {
+		const paths = new Set()
+		const partNames = Object.keys(bodyParts)
+		for (const name of partNames) {
+			const part = bodyParts[name]
+			const p = this.getPartImagePath(name, part, animatedSprites, getEffectivePartImage)
+			if (p) paths.add(p)
+		}
+		if (equipmentBySlot && typeof equipmentBySlot === 'object') {
+			for (const slotKey of Object.keys(equipmentBySlot)) {
+				const equip = equipmentBySlot[slotKey]
+				if (!equip || !equip.parts) continue
+				equip.parts.forEach((eqPart) => {
+					const p = this.normalizeImagePath(eqPart.image)
+					if (p) paths.add(p)
+				})
+			}
+		}
+		return Array.from(paths)
+	}
+
+	/**
+	 * Checks if all required images are already cached and complete
+	 */
+	areAllImagesLoaded(params = {}) {
+		const paths = this.collectAllImagePaths(params)
+		if (paths.length === 0) return true
+		for (const src of paths) {
+			const img = getImageFromCache(src)
+			if (!img) return false
+		}
+		return true
+	}
+
+	/**
+	 * Preloads all images for the character and resolves when all are decoded and ready
+	 */
+	preloadAllParts(params = {}) {
+		const paths = this.collectAllImagePaths(params)
+		if (paths.length === 0) return Promise.resolve([])
+		return Promise.all(paths.map((p) => preloadImage(p)))
+	}
+
+	/**
 	 * Traverses the body parts hierarchy and computes the 2D affine transformation matrices.
 	 *
 	 * Coordinate system:
@@ -224,7 +275,8 @@ export class CharacterRigRenderer {
 		isIsometricRotation = true,
 		isometricRotationMode = 'trapezoid',
 		isometricTiltAngle = 26.565,
-		bleed = { top: 0, bottom: 0, left: 0, right: 0 }
+		bleed = { top: 0, bottom: 0, left: 0, right: 0 },
+		preserveCanonicalRulerHeight = true
 	}) {
 		this.computedNodes.clear()
 		this.renderQueue = []
@@ -299,9 +351,11 @@ export class CharacterRigRenderer {
 		// Target character height on canvas
 		// In isometric mode, pixel art preserves 1:1 scale (multiplied by characterScale).
 		// In 2D VN mode, the studio stage represents a 240 cm ruler, where baseline character height is 72.917% (175 cm).
+		// When preserveCanonicalRulerHeight is true (default for scenes), character height is evaluated against full stage height.
+		const scaleRulerHeight = preserveCanonicalRulerHeight && !isIsometric ? height : rulerHeight
 		const baseCharHeight = isIsometric
 			? rootNaturalH * characterScale
-			: rulerHeight * 0.72917 * characterScale
+			: scaleRulerHeight * 0.72917 * characterScale
 		const globalScale = isIsometric ? characterScale : baseCharHeight / rootNaturalH
 
 		const rootWidth = rootNaturalW * globalScale
@@ -374,10 +428,13 @@ export class CharacterRigRenderer {
 			// Part translations (from posing/joystick/animations)
 			const trans = partTranslations[name]
 			if (trans && (trans.x || trans.y)) {
-				// Translate relative to child size
-				const tx = (nodeWidth * (trans.x || 0)) / 100
-				const ty = (nodeHeight * (trans.y || 0)) / 100
-				translateMatrix(localMatrix, tx, ty, localMatrix)
+				const txVal = Number(trans.x) || 0
+				const tyVal = Number(trans.y) || 0
+				if (isFinite(txVal) && isFinite(tyVal)) {
+					const tx = (nodeWidth * txVal) / 100
+					const ty = (nodeHeight * tyVal) / 100
+					translateMatrix(localMatrix, tx, ty, localMatrix)
+				}
 			}
 
 			// Eye joystick offset: ONLY for eyeballs (eyeball-left, eyeball-right, or parts with eyeball/pupil in name)
@@ -398,8 +455,8 @@ export class CharacterRigRenderer {
 			}
 
 			// Part Rotation
-			const rot = partRotations[name] || 0
-			if (rot) {
+			const rot = Number(partRotations[name]) || 0
+			if (rot && isFinite(rot)) {
 				const rotRad = (rot * Math.PI) / 180
 				if (isIsometric && isIsometricRotation) {
 					if (isometricRotationMode === 'dimetric') {
@@ -420,23 +477,27 @@ export class CharacterRigRenderer {
 
 			// Part Scale & 2D Perspective Deform (rotateX, rotateY, scale)
 			const poseScale = partScales[name]
-			const baseScale = isRoot ? 1 : (partDef.scale !== undefined ? Number(partDef.scale) : 1)
+			const baseScale = isRoot ? 1 : (partDef.scale !== undefined && isFinite(partDef.scale) ? Number(partDef.scale) : 1)
 
 			let sx = 1
 			let sy = 1
 
-			if (typeof poseScale === 'number') {
+			if (typeof poseScale === 'number' && isFinite(poseScale)) {
 				sx *= poseScale
 				sy *= poseScale
 			} else if (poseScale && typeof poseScale === 'object') {
-				if (poseScale.scale !== undefined) {
-					sx *= Number(poseScale.scale)
-					sy *= Number(poseScale.scale)
+				if (typeof poseScale.scale === 'number' && isFinite(poseScale.scale)) {
+					sx *= poseScale.scale
+					sy *= poseScale.scale
 				}
-				if (poseScale.scaleX !== undefined) sx *= Number(poseScale.scaleX)
-				if (poseScale.scaleY !== undefined) sy *= Number(poseScale.scaleY)
-				if (poseScale.x !== undefined) sx *= Number(poseScale.x)
-				if (poseScale.y !== undefined) sy *= Number(poseScale.y)
+				if (typeof poseScale.scaleX === 'number' && isFinite(poseScale.scaleX) && poseScale.scaleX !== poseScale.scale) {
+					sx *= poseScale.scaleX
+				}
+				if (typeof poseScale.scaleY === 'number' && isFinite(poseScale.scaleY) && poseScale.scaleY !== poseScale.scale) {
+					sy *= poseScale.scaleY
+				}
+				if (typeof poseScale.x === 'number' && isFinite(poseScale.x)) sx *= poseScale.x
+				if (typeof poseScale.y === 'number' && isFinite(poseScale.y)) sy *= poseScale.y
 				// Eye perspective rotation: horizontal turn (yaw / rotateY) compresses X: cos(rotateY)
 				if (poseScale.rotateY !== undefined || poseScale.rotY !== undefined) {
 					const ry = (Number(poseScale.rotateY ?? poseScale.rotY) || 0) * Math.PI / 180
@@ -449,10 +510,13 @@ export class CharacterRigRenderer {
 				}
 			}
 
-			if (baseScale !== 1) {
+			if (baseScale !== 1 && isFinite(baseScale)) {
 				sx *= baseScale
 				sy *= baseScale
 			}
+
+			if (!isFinite(sx) || sx <= 0) sx = 1
+			if (!isFinite(sy) || sy <= 0) sy = 1
 
 			if (sx !== 1 || sy !== 1) {
 				scaleMatrix(localMatrix, sx, sy, localMatrix)
@@ -470,9 +534,9 @@ export class CharacterRigRenderer {
 			const poseOpacity = partOpacities[name]
 			const baseOpacity = partDef.opacity
 			let opacity = 1
-			if (poseOpacity !== undefined && poseOpacity !== null) {
+			if (poseOpacity !== undefined && poseOpacity !== null && isFinite(poseOpacity)) {
 				opacity = Math.max(0, Math.min(1, Number(poseOpacity)))
-			} else if (baseOpacity !== undefined && baseOpacity !== null) {
+			} else if (baseOpacity !== undefined && baseOpacity !== null && isFinite(baseOpacity)) {
 				opacity = Math.max(0, Math.min(1, Number(baseOpacity)))
 			}
 

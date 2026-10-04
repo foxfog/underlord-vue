@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { calculateEquipmentBySlot } from '../../utils/equipment'
+import { getCharacterAnimation, normalizeAnimationDefinition } from '../../utils/character/characterAnimationEngine'
 
 export function useStoryCharacters({ characterData } = {}) {
 	const visibleCharacters = ref([])
@@ -123,7 +124,11 @@ export function useStoryCharacters({ characterData } = {}) {
 			}
 
 			// Set orientation
-			character.orientation = step.orientation || 'right'
+			if (step.orientation) {
+				character.orientation = step.orientation
+			} else if (!character.orientation) {
+				character.orientation = character.defaultOrientation || 'right'
+			}
 
 			// Set back flag
 			character.back = step.back ?? false
@@ -140,6 +145,16 @@ export function useStoryCharacters({ characterData } = {}) {
 			// Apply class if provided
 			if (step.class && typeof step === 'object') {
 				character.customClass = step.class
+			}
+
+			// Apply floorOffset or bleed if provided in step
+			if (step.floorOffset !== undefined) {
+				character.floorOffset = step.floorOffset
+			} else if (step.position?.floorOffset !== undefined) {
+				character.floorOffset = step.position.floorOffset
+			}
+			if (step.bleed !== undefined) {
+				character.bleed = step.bleed
 			}
 
 			rebuildEquipmentBySlot(characterId)
@@ -207,23 +222,55 @@ export function useStoryCharacters({ characterData } = {}) {
 			character.partAnimations = {}
 		}
 
+		const baseDuration = step.duration !== undefined ? Number(step.duration) : 0.5
+		const repeat = step.repeat || 'once'
+		const repeatCount = Math.max(1, Number(step.repeatCount || 1))
+		let totalDurationSec = baseDuration
+		if (repeat === 'count') {
+			totalDurationSec = baseDuration * repeatCount
+		} else if (repeat === 'pingpong' && step.repeatCount) {
+			totalDurationSec = baseDuration * 2 * repeatCount
+		}
+		const durationMs = repeat === 'loop' ? (step.duration ? step.duration * 1000 : 0) : totalDurationSec * 1000
+
 		const animConfig = {
 			styles: step.styles || null,
 			class: step.class || null,
-			animationDuration: step.duration ? step.duration * 1000 : null
+			keyframes: step.keyframes || null,
+			tracks: step.tracks || null,
+			duration: baseDuration,
+			repeat,
+			repeatCount,
+			animationDuration: durationMs,
+			startTime: performance.now()
 		}
 
 		character.partAnimations[partName] = animConfig
 
+		// Sync with visibleCharacters array so Canvas re-renders immediately
+		const visIndex = visibleCharacters.value.findIndex((c) => c.id === characterId)
+		if (visIndex !== -1) {
+			visibleCharacters.value[visIndex] = {
+				...visibleCharacters.value[visIndex],
+				partAnimations: { ...character.partAnimations }
+			}
+		}
+
 		console.log(
-			`🎬 [${characterId}] Part animation: part=${partName}, class=${animConfig.class}, duration=${step.duration}s, styles=${JSON.stringify(animConfig.styles)}`
+			`🎬 [${characterId}] Part animation: part=${partName}, class=${animConfig.class}, duration=${baseDuration}s, repeat=${repeat}, repeatCount=${repeatCount}`
 		)
 
-		if (step.duration && step.duration > 0) {
-			const durationMs = step.duration * 1000
+		if (durationMs > 0) {
 			scheduleTimer(() => {
 				if (character.partAnimations && character.partAnimations[partName]) {
 					delete character.partAnimations[partName]
+					const vIdx = visibleCharacters.value.findIndex((c) => c.id === characterId)
+					if (vIdx !== -1) {
+						visibleCharacters.value[vIdx] = {
+							...visibleCharacters.value[vIdx],
+							partAnimations: { ...character.partAnimations }
+						}
+					}
 					console.log(`🎬 [${characterId}] Part animation cleared: part=${partName}`)
 				}
 			}, durationMs)
@@ -236,57 +283,93 @@ export function useStoryCharacters({ characterData } = {}) {
 		const character = characterData.value[characterId]
 		if (!character || !animId) return
 
-		const duration = step.duration || 0.5
-		const durationMs = duration * 1000
+		const animDef = getCharacterAnimation(animId) || (step.tracks || step.keyframes ? normalizeAnimationDefinition(step) : null)
+		const baseDuration = step.duration !== undefined ? Number(step.duration) : (animDef?.duration || (animId === 'cough' ? 1.3 : 0.5))
+		const repeat = step.repeat || animDef?.repeat || 'once'
+		const repeatCount = Math.max(1, Number(step.repeatCount || animDef?.repeatCount || 1))
+
+		let totalDurationSec = baseDuration
+		if (repeat === 'count') {
+			totalDurationSec = baseDuration * repeatCount
+		} else if (repeat === 'pingpong' && step.repeatCount) {
+			totalDurationSec = baseDuration * 2 * repeatCount
+		}
+		const durationMs = repeat === 'loop' ? (step.duration ? step.duration * 1000 : 0) : totalDurationSec * 1000
 
 		if (!character.partAnimations) {
 			character.partAnimations = {}
 		}
 
-		if (animId === 'cough') {
-			character.partAnimations['neck'] = {
-				class: 'cough-head',
-				animationDuration: durationMs
+		const animConfig = {
+			animation: animId,
+			class: animId,
+			duration: baseDuration,
+			repeat,
+			repeatCount,
+			animationDuration: durationMs,
+			startTime: performance.now(),
+			tracks: step.tracks || animDef?.tracks || null,
+			keyframes: step.keyframes || null,
+			styles: step.styles || null
+		}
+
+		const targetParts = []
+		if (animDef && Array.isArray(animDef.tracks) && animDef.tracks.length > 0) {
+			for (const track of animDef.tracks) {
+				if (track.target) {
+					character.partAnimations[track.target] = { ...animConfig }
+					targetParts.push(track.target)
+				}
 			}
+		} else if (animId === 'cough') {
+			character.partAnimations['neck'] = animConfig
+			character.partAnimations['head'] = { ...animConfig }
+			targetParts.push('neck', 'head')
 		} else if (animId === 'tremble') {
-			character.partAnimations['body'] = {
-				class: 'tremble',
-				animationDuration: durationMs
-			}
+			character.partAnimations['body'] = animConfig
+			targetParts.push('body')
 		} else if (step.tracks && Array.isArray(step.tracks)) {
 			for (const track of step.tracks) {
 				if (track.target) {
 					character.partAnimations[track.target] = {
+						...animConfig,
 						styles: track.styles || null,
-						class: track.class || null,
-						animationDuration: durationMs
+						class: track.class || null
 					}
+					targetParts.push(track.target)
 				}
 			}
 		} else {
 			const targetPart = step.part || 'head'
-			character.partAnimations[targetPart] = {
-				class: animId,
-				styles: step.styles || null,
-				animationDuration: durationMs
+			character.partAnimations[targetPart] = animConfig
+			targetParts.push(targetPart)
+		}
+
+		// Sync with visibleCharacters array
+		const visIndex = visibleCharacters.value.findIndex((c) => c.id === characterId)
+		if (visIndex !== -1) {
+			visibleCharacters.value[visIndex] = {
+				...visibleCharacters.value[visIndex],
+				partAnimations: { ...character.partAnimations }
 			}
 		}
 
-		console.log(`🎬 [${characterId}] Character animation: ${animId}, duration=${duration}s`)
+		console.log(
+			`🎬 [${characterId}] Character animation: ${animId}, duration=${baseDuration}s, repeat=${repeat}, repeatCount=${repeatCount}`
+		)
 
-		if (duration > 0) {
+		if (durationMs > 0) {
 			scheduleTimer(() => {
 				if (character.partAnimations) {
-					if (animId === 'cough') {
-						delete character.partAnimations['neck']
-					} else if (animId === 'tremble') {
-						delete character.partAnimations['body']
-					} else if (step.tracks) {
-						for (const track of step.tracks) {
-							delete character.partAnimations[track.target]
+					for (const p of targetParts) {
+						delete character.partAnimations[p]
+					}
+					const vIdx = visibleCharacters.value.findIndex((c) => c.id === characterId)
+					if (vIdx !== -1) {
+						visibleCharacters.value[vIdx] = {
+							...visibleCharacters.value[vIdx],
+							partAnimations: { ...character.partAnimations }
 						}
-					} else {
-						delete character.partAnimations[step.part || 'head']
 					}
 				}
 			}, durationMs)

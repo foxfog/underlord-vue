@@ -45,6 +45,15 @@
 					</button>
 					<button
 						type="button"
+						class="btn-studio-action __reset-default"
+						title="Вернуть дефолтную экипировку, изначально заданную в JSON персонажа"
+						@click="emit('reset-default-equipped')"
+					>
+						<span>🔄</span>
+						<span>По умолч.</span>
+					</button>
+					<button
+						type="button"
 						class="btn-studio-action __save-equip"
 						title="Сохранить файл characters/[id]/equipment.json"
 						@click="emit('save-equipment')"
@@ -644,6 +653,7 @@ const emit = defineEmits([
 	'select-equipment',
 	'toggle-equip',
 	'set-all-equipped',
+	'reset-default-equipped',
 	'add-from-catalog',
 	'remove-equipment',
 	'add-part',
@@ -990,6 +1000,7 @@ function handleCreateCustomItem() {
 	display: flex;
 	align-items: center;
 	gap: 0.45em;
+	flex-wrap: wrap;
 }
 
 .btn-studio-action {
@@ -1021,6 +1032,11 @@ function handleCreateCustomItem() {
 .btn-studio-action.__strip-all:hover {
 	border-color: #f43f5e;
 	color: #fda4af;
+}
+
+.btn-studio-action.__reset-default:hover {
+	border-color: #818cf8;
+	color: #a5b4fc;
 }
 
 .btn-studio-action.__toggle-width {

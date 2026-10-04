@@ -1,6 +1,10 @@
 {
   "body": {
-    "image": "images/sprites/characters/mc/body.png"
+    "image": "images/sprites/characters/mc/body.png",
+    "offset": {
+      "x": 0,
+      "y": 17.62
+    }
   },
   "neck": {
     "image": "images/sprites/characters/mc/neck.png",

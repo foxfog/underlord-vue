@@ -505,6 +505,14 @@
 								{{ r }} гекс{{ r > 1 ? 'а' : '' }}
 							</button>
 						</div>
+
+						<button
+							class="editor-btn editor-btn-secondary"
+							style="margin-top: 0.8em; width: 100%;"
+							@click="activeTool = 'particles'; particleTargetCategory = 'biome'; selectedParticleBiome = selectedBiome"
+						>
+							✨ Настройка частиц биомов
+						</button>
 					</div>
 
 					<!-- Tool 2: Factions & Borders (Civilization) -->
@@ -659,6 +667,370 @@
 						<p class="section-hint">
 							💡 Повторный клик тем же типом дороги удаляет дорогу с клетки.
 						</p>
+
+						<button
+							class="editor-btn editor-btn-secondary"
+							style="margin-top: 0.8em; width: 100%;"
+							@click="activeTool = 'particles'; particleTargetCategory = 'road'; selectedParticleRoad = selectedRoadType"
+						>
+							✨ Настройка частиц дорог
+						</button>
+					</div>
+
+					<!-- Tool: Particles & Biome/Road Blending Studio -->
+					<div v-if="activeTool === 'particles'" class="tool-section particles-studio-section">
+						<div class="section-title">Слои и переходы частиц</div>
+						<p class="section-desc">
+							Настройка органических частиц для плавных переходов между биомами и мягких обочин дорог.
+						</p>
+
+						<!-- Категория: Биомы, Дороги или Побережья -->
+						<div class="sub-label">Категория:</div>
+						<div class="palette-grid">
+							<button
+								class="palette-btn"
+								:class="{ __active: particleTargetCategory === 'biome' }"
+								@click="particleTargetCategory = 'biome'"
+							>
+								<span class="palette-icon">🌿</span>
+								<span class="palette-name">Биомы</span>
+							</button>
+							<button
+								class="palette-btn"
+								:class="{ __active: particleTargetCategory === 'road' }"
+								@click="particleTargetCategory = 'road'"
+							>
+								<span class="palette-icon">🛣️</span>
+								<span class="palette-name">Дороги</span>
+							</button>
+							<button
+								class="palette-btn"
+								:class="{ __active: particleTargetCategory === 'coast' }"
+								@click="particleTargetCategory = 'coast'"
+							>
+								<span class="palette-icon">🌊</span>
+								<span class="palette-name">Побережья</span>
+							</button>
+						</div>
+
+						<!-- Если выбраны БИОМЫ -->
+						<template v-if="particleTargetCategory === 'biome'">
+							<div class="sub-label" style="margin-top: 0.8em;">Выберите биом:</div>
+							<div class="palette-grid">
+								<button
+									v-for="b in biomesList.filter(item => !item.isWater)"
+									:key="b.id"
+									class="palette-btn"
+									:class="{ __active: selectedParticleBiome === b.id }"
+									@click="selectedParticleBiome = b.id"
+								>
+									<span class="palette-color-swatch" :style="{ background: b.color }"></span>
+									<span class="palette-name">{{ b.name }}</span>
+								</button>
+							</div>
+
+							<!-- Глобальные параметры биомов -->
+							<div class="particle-global-settings" style="margin-top: 0.8em;">
+								<div class="inspector-field">
+									<label class="field-label">
+										<input type="checkbox" v-model="BIOME_PARTICLE_CONFIG.enabled" @change="onParticleChange" />
+										Включить частицы биомов
+									</label>
+								</div>
+								<div class="inspector-field">
+									<label class="field-label">Размер частиц: {{ BIOME_PARTICLE_CONFIG.pixelSize }}px</label>
+									<input type="range" min="1" max="5" step="1" v-model.number="BIOME_PARTICLE_CONFIG.pixelSize" @input="onParticleChange" class="inspector-range" />
+								</div>
+								<div class="inspector-field">
+									<label class="field-label">Глубина перехода: {{ (BIOME_PARTICLE_CONFIG.reachRatio * 100).toFixed(0) }}%</label>
+									<input type="range" min="0.1" max="0.8" step="0.05" v-model.number="BIOME_PARTICLE_CONFIG.reachRatio" @input="onParticleChange" class="inspector-range" />
+								</div>
+								<div class="inspector-field">
+									<label class="field-label">Плотность: {{ (BIOME_PARTICLE_CONFIG.density * 100).toFixed(0) }}%</label>
+									<input type="range" min="0.2" max="2.5" step="0.1" v-model.number="BIOME_PARTICLE_CONFIG.density" @input="onParticleChange" class="inspector-range" />
+								</div>
+								<div class="inspector-field">
+									<label class="field-label">Концентрация: {{ ((BIOME_PARTICLE_CONFIG.concentration ?? 0.2) * 100).toFixed(0) }}% ({{ (BIOME_PARTICLE_CONFIG.concentration ?? 0.2) <= 0.2 ? 'у границы' : (BIOME_PARTICLE_CONFIG.concentration ?? 0.2) >= 0.8 ? 'вдали' : 'в центре' }})</label>
+									<input type="range" min="0.0" max="1.0" step="0.05" v-model.number="BIOME_PARTICLE_CONFIG.concentration" @input="onParticleChange" class="inspector-range" />
+								</div>
+								<div class="inspector-field">
+									<label class="field-label">
+										<input type="checkbox" v-model="BIOME_PARTICLE_CONFIG.blendWithWater" @change="onParticleChange" />
+										Смешивать с береговой водой
+									</label>
+								</div>
+							</div>
+
+							<!-- Список слоёв частиц биома -->
+							<div class="sub-label" style="margin-top: 0.8em;">
+								Слои частиц для "{{ BIOMES[selectedParticleBiome]?.name || selectedParticleBiome }}" ({{ (BIOME_PARTICLE_CONFIG.palettes[selectedParticleBiome] || []).length }}):
+							</div>
+
+							<div class="particle-layers-list">
+								<div
+									v-for="(rule, idx) in (BIOME_PARTICLE_CONFIG.palettes[selectedParticleBiome] || [])"
+									:key="rule.id || idx"
+									class="particle-layer-card"
+								>
+									<div class="layer-card-header">
+										<div class="layer-color-group">
+											<input type="color" v-model="rule.color" @input="onParticleChange" class="color-picker-input" />
+											<input type="text" v-model="rule.color" @input="onParticleChange" class="color-hex-input" />
+										</div>
+										<input type="text" v-model="rule.name" placeholder="Название" class="layer-name-input" />
+										<button class="num-btn btn-danger" title="Удалить слой" @click="handleRemoveBiomeLayer(selectedParticleBiome, idx)">🗑️</button>
+									</div>
+
+									<div class="layer-card-body">
+										<div class="layer-param-row">
+											<div class="layer-param-item">
+												<span class="param-label">Частота: {{ (rule.frequency * 100).toFixed(0) }}%</span>
+												<input type="range" min="0.1" max="2.0" step="0.05" v-model.number="rule.frequency" @input="onParticleChange" class="inspector-range-sm" />
+											</div>
+											<div class="layer-param-item">
+												<span class="param-label">Прозрачность: {{ (rule.opacity * 100).toFixed(0) }}%</span>
+												<input type="range" min="0.05" max="1.0" step="0.05" v-model.number="rule.opacity" @input="onParticleChange" class="inspector-range-sm" />
+											</div>
+										</div>
+
+										<div class="layer-param-row" style="margin-top: 0.4em;">
+											<label class="uniform-check-label">
+												<input type="checkbox" v-model="rule.uniform" @change="onParticleChange" />
+												<span>Равномерно по всей зоне</span>
+											</label>
+										</div>
+									</div>
+								</div>
+
+								<button
+									class="editor-btn editor-btn-action"
+									style="width: 100%; margin-top: 0.6em;"
+									@click="handleAddBiomeLayer(selectedParticleBiome)"
+								>
+									➕ Добавить тип частиц
+								</button>
+							</div>
+						</template>
+
+						<!-- Если выбраны ДОРОГИ -->
+						<template v-else>
+							<div class="sub-label" style="margin-top: 0.8em;">Тип дороги:</div>
+							<div class="palette-grid">
+								<button
+									class="palette-btn"
+									:class="{ __active: selectedParticleRoad === 'dirt' }"
+									@click="selectedParticleRoad = 'dirt'"
+								>
+									<span class="palette-icon">🪵</span>
+									<span class="palette-name">Гравийная</span>
+								</button>
+								<button
+									class="palette-btn"
+									:class="{ __active: selectedParticleRoad === 'stone' }"
+									@click="selectedParticleRoad = 'stone'"
+								>
+									<span class="palette-icon">🧱</span>
+									<span class="palette-name">Каменная</span>
+								</button>
+							</div>
+
+							<!-- Глобальные параметры дорог -->
+							<div class="particle-global-settings" style="margin-top: 0.8em;">
+								<div class="inspector-field">
+									<label class="field-label">
+										<input type="checkbox" v-model="ROAD_CONFIG.particles.enabled" @change="onParticleChange" />
+										Включить частицы дорог
+									</label>
+								</div>
+								<div class="inspector-field">
+									<label class="field-label">Размер частиц: {{ ROAD_CONFIG.particles.pixelSize }}px</label>
+									<input type="range" min="1" max="5" step="1" v-model.number="ROAD_CONFIG.particles.pixelSize" @input="onParticleChange" class="inspector-range" />
+								</div>
+								<div class="inspector-field">
+									<label class="field-label">Прозрачность обочины: {{ ((ROAD_CONFIG.particles.outerOpacity ?? 0.8) * 100).toFixed(0) }}%</label>
+									<input type="range" min="0.1" max="1.0" step="0.05" v-model.number="ROAD_CONFIG.particles.outerOpacity" @input="onParticleChange" class="inspector-range" />
+								</div>
+								<div class="inspector-field">
+									<label class="field-label">Ширина разброса: {{ (ROAD_CONFIG.particles.scatterWidthRatio ?? 2.5).toFixed(1) }}x</label>
+									<input type="range" min="1.0" max="4.0" step="0.2" v-model.number="ROAD_CONFIG.particles.scatterWidthRatio" @input="onParticleChange" class="inspector-range" />
+								</div>
+								<div class="inspector-field">
+									<label class="field-label">Концентрация: {{ (((ROAD_CONFIG.particles.concentration ?? 0.2)) * 100).toFixed(0) }}% ({{ (ROAD_CONFIG.particles.concentration ?? 0.2) <= 0.2 ? 'у дороги' : (ROAD_CONFIG.particles.concentration ?? 0.2) >= 0.8 ? 'на краю' : 'в центре' }})</label>
+									<input type="range" min="0.0" max="1.0" step="0.05" v-model.number="ROAD_CONFIG.particles.concentration" @input="onParticleChange" class="inspector-range" />
+								</div>
+							</div>
+
+							<!-- Список слоёв частиц дороги -->
+							<div class="sub-label" style="margin-top: 0.8em;">
+								Слои частиц для {{ selectedParticleRoad === 'stone' ? 'Каменной' : 'Гравийной' }} дороги ({{ (selectedParticleRoad === 'stone' ? ROAD_CONFIG.particles.stonePalette : ROAD_CONFIG.particles.dirtPalette).length }}):
+							</div>
+
+							<div class="particle-layers-list">
+								<div
+									v-for="(rule, idx) in (selectedParticleRoad === 'stone' ? ROAD_CONFIG.particles.stonePalette : ROAD_CONFIG.particles.dirtPalette)"
+									:key="rule.id || idx"
+									class="particle-layer-card"
+								>
+									<div class="layer-card-header">
+										<div class="layer-color-group">
+											<input type="color" v-model="rule.color" @input="onParticleChange" class="color-picker-input" />
+											<input type="text" v-model="rule.color" @input="onParticleChange" class="color-hex-input" />
+										</div>
+										<input type="text" v-model="rule.name" placeholder="Название" class="layer-name-input" />
+										<button class="num-btn btn-danger" title="Удалить слой" @click="handleRemoveRoadLayer(selectedParticleRoad, idx)">🗑️</button>
+									</div>
+
+									<div class="layer-card-body">
+										<div class="layer-param-row">
+											<div class="layer-param-item">
+												<span class="param-label">Частота: {{ (rule.frequency * 100).toFixed(0) }}%</span>
+												<input type="range" min="0.1" max="2.0" step="0.05" v-model.number="rule.frequency" @input="onParticleChange" class="inspector-range-sm" />
+											</div>
+											<div class="layer-param-item">
+												<span class="param-label">Прозрачность: {{ (rule.opacity * 100).toFixed(0) }}%</span>
+												<input type="range" min="0.05" max="1.0" step="0.05" v-model.number="rule.opacity" @input="onParticleChange" class="inspector-range-sm" />
+											</div>
+										</div>
+
+										<div class="layer-param-row" style="margin-top: 0.4em;">
+											<label class="uniform-check-label">
+												<input type="checkbox" v-model="rule.uniform" @change="onParticleChange" />
+												<span>Равномерно по всей зоне</span>
+											</label>
+										</div>
+									</div>
+								</div>
+
+								<button
+									class="editor-btn editor-btn-action"
+									style="width: 100%; margin-top: 0.6em;"
+									@click="handleAddRoadLayer(selectedParticleRoad)"
+								>
+									➕ Добавить тип частиц
+								</button>
+							</div>
+						</template>
+
+						<!-- Если выбраны ПОБЕРЕЖЬЯ (Пляжи и Прибой) -->
+						<template v-if="particleTargetCategory === 'coast'">
+							<div class="particle-global-settings" style="margin-top: 0.8em;">
+								<div class="inspector-field">
+									<label class="field-label">
+										<input type="checkbox" v-model="COAST_CONFIG.enabled" @change="onParticleChange" />
+										Включить систему пляжей
+									</label>
+								</div>
+								<div class="inspector-field">
+									<label class="field-label">
+										Покрытие побережий пляжами: {{ (COAST_CONFIG.beachCoverage * 100).toFixed(0) }}%
+										<span style="opacity: 0.7; font-size: 0.9em;">({{ COAST_CONFIG.beachCoverage <= 0.05 ? 'без пляжей' : COAST_CONFIG.beachCoverage >= 0.95 ? 'сплошные пляжи' : 'песчаные бухты' }})</span>
+									</label>
+									<input type="range" min="0.0" max="1.0" step="0.05" v-model.number="COAST_CONFIG.beachCoverage" @input="onParticleChange" class="inspector-range" />
+								</div>
+							</div>
+
+							<!-- Секция: Пляжи -->
+							<div class="sub-label" style="margin-top: 0.8em;">🏖️ Песчаные пляжи:</div>
+							<div class="particle-global-settings">
+								<div class="inspector-field">
+									<label class="field-label">Глубина полосы пляжа: {{ (COAST_CONFIG.beachDepth * 100).toFixed(0) }}% от гекса</label>
+									<input type="range" min="0.05" max="0.45" step="0.01" v-model.number="COAST_CONFIG.beachDepth" @input="onParticleChange" class="inspector-range" />
+								</div>
+								<div class="inspector-field">
+									<label class="field-label">Прозрачность песка: {{ (COAST_CONFIG.beachOpacity * 100).toFixed(0) }}%</label>
+									<input type="range" min="0.1" max="1.0" step="0.05" v-model.number="COAST_CONFIG.beachOpacity" @input="onParticleChange" class="inspector-range" />
+								</div>
+								<div class="inspector-field">
+									<label class="field-label">Размер частиц рассеивания: {{ COAST_CONFIG.pixelSize }}px</label>
+									<input type="range" min="1" max="5" step="1" v-model.number="COAST_CONFIG.pixelSize" @input="onParticleChange" class="inspector-range" />
+								</div>
+								<div class="inspector-field">
+									<label class="field-label">Плотность рассеивания песка: {{ (COAST_CONFIG.ditherDensity * 100).toFixed(0) }}%</label>
+									<input type="range" min="0.2" max="2.5" step="0.1" v-model.number="COAST_CONFIG.ditherDensity" @input="onParticleChange" class="inspector-range" />
+								</div>
+								<!-- Цвета песка -->
+								<div class="sub-label" style="margin-top: 0.4em; font-size: 0.85em;">Палитра пляжей:</div>
+								<div class="inspector-field">
+									<div class="layer-card-header" style="padding: 0.3em 0;">
+										<div class="layer-color-group">
+											<input type="color" v-model="COAST_CONFIG.beachColors.wetSand" @input="onParticleChange" class="color-picker-input" />
+											<input type="text" v-model="COAST_CONFIG.beachColors.wetSand" @input="onParticleChange" class="color-hex-input" />
+										</div>
+										<span class="field-label" style="margin-left: 0.4em;">Мокрый песок у воды</span>
+									</div>
+								</div>
+								<div class="inspector-field">
+									<div class="layer-card-header" style="padding: 0.3em 0;">
+										<div class="layer-color-group">
+											<input type="color" v-model="COAST_CONFIG.beachColors.sand" @input="onParticleChange" class="color-picker-input" />
+											<input type="text" v-model="COAST_CONFIG.beachColors.sand" @input="onParticleChange" class="color-hex-input" />
+										</div>
+										<span class="field-label" style="margin-left: 0.4em;">Сухой золотистый песок</span>
+									</div>
+								</div>
+								<div class="inspector-field">
+									<div class="layer-card-header" style="padding: 0.3em 0;">
+										<div class="layer-color-group">
+											<input type="color" v-model="COAST_CONFIG.beachColors.sandLight" @input="onParticleChange" class="color-picker-input" />
+											<input type="text" v-model="COAST_CONFIG.beachColors.sandLight" @input="onParticleChange" class="color-hex-input" />
+										</div>
+										<span class="field-label" style="margin-left: 0.4em;">Светлый песок дюн</span>
+									</div>
+								</div>
+								<div class="inspector-field">
+									<div class="layer-card-header" style="padding: 0.3em 0;">
+										<div class="layer-color-group">
+											<input type="color" v-model="COAST_CONFIG.beachColors.ditherSand" @input="onParticleChange" class="color-picker-input" />
+											<input type="text" v-model="COAST_CONFIG.beachColors.ditherSand" @input="onParticleChange" class="color-hex-input" />
+										</div>
+										<span class="field-label" style="margin-left: 0.4em;">Песчинки в траву</span>
+									</div>
+								</div>
+							</div>
+
+							<!-- Секция: Волны прибоя -->
+							<div class="sub-label" style="margin-top: 0.8em;">🌊 Анимация волн прибоя:</div>
+							<div class="particle-global-settings">
+								<div class="inspector-field">
+									<label class="field-label">
+										<input type="checkbox" v-model="COAST_CONFIG.waves.enabled" @change="onParticleChange" />
+										Включить накат прибоя на пляжи
+									</label>
+								</div>
+								<div class="inspector-field">
+									<label class="field-label">Скорость прибоя: {{ COAST_CONFIG.waves.speed.toFixed(1) }}x</label>
+									<input type="range" min="0.2" max="2.0" step="0.1" v-model.number="COAST_CONFIG.waves.speed" @input="onParticleChange" class="inspector-range" />
+								</div>
+								<div class="inspector-field">
+									<label class="field-label">Вынос волны на песок: {{ COAST_CONFIG.waves.reachPx }}px</label>
+									<input type="range" min="0.5" max="3.5" step="0.1" v-model.number="COAST_CONFIG.waves.reachPx" @input="onParticleChange" class="inspector-range" />
+								</div>
+								<div class="inspector-field">
+									<label class="field-label">Прозрачность пены волны: {{ (COAST_CONFIG.waves.opacity * 100).toFixed(0) }}%</label>
+									<input type="range" min="0.1" max="1.0" step="0.05" v-model.number="COAST_CONFIG.waves.opacity" @input="onParticleChange" class="inspector-range" />
+								</div>
+								<!-- Цвета волны -->
+								<div class="sub-label" style="margin-top: 0.4em; font-size: 0.85em;">Палитра прибоя:</div>
+								<div class="inspector-field">
+									<div class="layer-card-header" style="padding: 0.3em 0;">
+										<div class="layer-color-group">
+											<input type="color" v-model="COAST_CONFIG.waves.color" @input="onParticleChange" class="color-picker-input" />
+											<input type="text" v-model="COAST_CONFIG.waves.color" @input="onParticleChange" class="color-hex-input" />
+										</div>
+										<span class="field-label" style="margin-left: 0.4em;">Пена гребня волны</span>
+									</div>
+								</div>
+								<div class="inspector-field">
+									<div class="layer-card-header" style="padding: 0.3em 0;">
+										<div class="layer-color-group">
+											<input type="color" v-model="COAST_CONFIG.waves.glowColor" @input="onParticleChange" class="color-picker-input" />
+											<input type="text" v-model="COAST_CONFIG.waves.glowColor" @input="onParticleChange" class="color-hex-input" />
+										</div>
+										<span class="field-label" style="margin-left: 0.4em;">Ореол свечения</span>
+									</div>
+								</div>
+							</div>
+						</template>
 					</div>
 
 					<!-- Tool 6: Settlements -->
@@ -1114,6 +1486,16 @@ import {
 } from '@/utils/hexmap/hexLoader.js'
 import { DEFAULT_SHOW_STATE_BORDERS } from '@/utils/hexmap/hexConfig.js'
 import {
+	ROAD_CONFIG,
+	addRoadParticleLayer,
+	removeRoadParticleLayer,
+	BIOME_PARTICLE_CONFIG,
+	addBiomeParticleLayer,
+	removeBiomeParticleLayer,
+	COAST_CONFIG,
+	setCoastConfig
+} from '@/utils/hexmap/hexRenderer.js'
+import {
 	HEX_EDGES,
 	getHexesInRadius,
 	getCanonicalEdgeKey,
@@ -1312,9 +1694,55 @@ const toolsList = [
 	{ id: 'mountain', name: 'Горы', icon: '🏔️', desc: 'Горные пики и массивы (радиус 1..3)' },
 	{ id: 'river', name: 'Реки', icon: '🌊', desc: 'Реки по граням гексов (ширина 1..3)' },
 	{ id: 'road', name: 'Дороги', icon: '🛣️', desc: 'Поклеточные дороги (стиль Civilization)' },
+	{ id: 'particles', name: 'Частицы', icon: '✨', desc: 'Настройка слоёв и переходов частиц для биомов и дорог' },
 	{ id: 'settlement', name: 'Поселение', icon: '🏰', desc: 'Лагеря, деревни, города и крепости' },
 	{ id: 'eraser', name: 'Ластик', icon: '🧹', desc: 'Стирание рек, дорог и объектов' }
 ]
+
+const particleTargetCategory = ref('biome') // 'biome' | 'road' | 'coast'
+const selectedParticleRoad = ref('dirt') // 'dirt' | 'stone'
+const selectedParticleBiome = ref('grass') // 'grass' | 'plains' | 'desert' | 'snow' | 'tundra'
+
+function onParticleChange() {
+	canvasRef.value?.invalidateCache?.()
+}
+
+function handleAddRoadLayer(roadType) {
+	addRoadParticleLayer(roadType, {
+		name: roadType === 'stone' ? 'Новый осколок' : 'Новая песчинка',
+		color: roadType === 'stone' ? '#9eaec4' : '#8d6e63',
+		frequency: 1.0,
+		uniform: false,
+		concentration: 0.5,
+		spread: 0.3,
+		opacity: 0.8
+	})
+	onParticleChange()
+}
+
+function handleRemoveRoadLayer(roadType, index) {
+	removeRoadParticleLayer(roadType, index)
+	onParticleChange()
+}
+
+function handleAddBiomeLayer(biomeKey) {
+	const defaultColor = BIOMES[biomeKey]?.color || '#8eaf4f'
+	addBiomeParticleLayer(biomeKey, {
+		name: 'Новый тип частиц',
+		color: defaultColor,
+		frequency: 1.0,
+		uniform: false,
+		concentration: 0.5,
+		spread: 0.3,
+		opacity: 0.8
+	})
+	onParticleChange()
+}
+
+function handleRemoveBiomeLayer(biomeKey, index) {
+	removeBiomeParticleLayer(biomeKey, index)
+	onParticleChange()
+}
 
 const biomesList = Object.values(BIOMES)
 const settlementTypesList = Object.values(SETTLEMENT_TYPES)
@@ -3338,5 +3766,130 @@ onUnmounted(() => {
 .toast-leave-to {
 	opacity: 0;
 	transform: translateY(1em);
+}
+
+/* Particles Studio Styles */
+.particles-studio-section {
+	display: flex;
+	flex-direction: column;
+	gap: 0.6em;
+}
+
+.particle-global-settings {
+	background: rgba(15, 23, 42, 0.65);
+	border: 1px solid rgba(56, 189, 248, 0.25);
+	border-radius: 0.4em;
+	padding: 0.6em;
+	display: flex;
+	flex-direction: column;
+	gap: 0.5em;
+}
+
+.particle-layers-list {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5em;
+}
+
+.particle-layer-card {
+	background: rgba(30, 41, 59, 0.55);
+	border: 1px solid rgba(148, 163, 184, 0.25);
+	border-radius: 0.4em;
+	padding: 0.5em;
+	display: flex;
+	flex-direction: column;
+	gap: 0.4em;
+}
+
+.layer-card-header {
+	display: flex;
+	align-items: center;
+	gap: 0.4em;
+}
+
+.layer-color-group {
+	display: flex;
+	align-items: center;
+	gap: 0.2em;
+}
+
+.color-picker-input {
+	width: 1.8em;
+	height: 1.8em;
+	padding: 0;
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	border-radius: 0.3em;
+	cursor: pointer;
+	background: transparent;
+}
+
+.color-hex-input {
+	width: 5.2em;
+	background: #0f172a;
+	border: 1px solid rgba(148, 163, 184, 0.3);
+	border-radius: 0.25em;
+	color: #f8fafc;
+	font-family: monospace;
+	font-size: 0.75em;
+	padding: 0.25em 0.4em;
+}
+
+.layer-name-input {
+	flex: 1;
+	background: #0f172a;
+	border: 1px solid rgba(148, 163, 184, 0.3);
+	border-radius: 0.25em;
+	color: #f8fafc;
+	font-size: 0.75em;
+	padding: 0.25em 0.4em;
+}
+
+.layer-param-row {
+	display: flex;
+	align-items: center;
+	gap: 0.6em;
+}
+
+.layer-param-item {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 0.15em;
+}
+
+.layer-param-item.__disabled {
+	opacity: 0.4;
+	pointer-events: none;
+}
+
+.param-label {
+	font-size: 0.7em;
+	color: #94a3b8;
+}
+
+.inspector-range-sm {
+	width: 100%;
+	height: 0.3em;
+	accent-color: #38bdf8;
+	cursor: pointer;
+}
+
+.uniform-check-label {
+	display: flex;
+	align-items: center;
+	gap: 0.3em;
+	font-size: 0.72em;
+	color: #cbd5e1;
+	cursor: pointer;
+	white-space: nowrap;
+}
+
+.btn-danger {
+	color: #f87171 !important;
+	border-color: rgba(248, 113, 113, 0.3) !important;
+}
+
+.btn-danger:hover {
+	background: rgba(239, 68, 68, 0.2) !important;
 }
 </style>

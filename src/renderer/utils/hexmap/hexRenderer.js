@@ -68,6 +68,12 @@ import {
 	setRiverConfig,
 	ROAD_CONFIG,
 	setRoadConfig,
+	addRoadParticleLayer,
+	removeRoadParticleLayer,
+	BIOME_PARTICLE_CONFIG,
+	setBiomeParticleConfig,
+	addBiomeParticleLayer,
+	removeBiomeParticleLayer,
 	HEX_BORDER_ALPHA,
 	setHexBorderAlpha,
 	BORDER_CASING_ALPHA,
@@ -78,6 +84,8 @@ import {
 	setFactionFillAlpha,
 	WATER_CONFIG,
 	setWaterConfig,
+	COAST_CONFIG,
+	setCoastConfig,
 	HEX_SURFACE_ANIMATION_FPS
 } from './hexConfig.js'
 
@@ -96,8 +104,16 @@ export {
 	setRiverConfig,
 	ROAD_CONFIG,
 	setRoadConfig,
+	addRoadParticleLayer,
+	removeRoadParticleLayer,
+	BIOME_PARTICLE_CONFIG,
+	setBiomeParticleConfig,
+	addBiomeParticleLayer,
+	removeBiomeParticleLayer,
 	WATER_CONFIG,
 	setWaterConfig,
+	COAST_CONFIG,
+	setCoastConfig,
 	HEX_BORDER_ALPHA,
 	setHexBorderAlpha,
 	BORDER_CASING_ALPHA,
@@ -589,6 +605,18 @@ export function renderHexMap(ctx, mapData, options = {}) {
 					visibleCells,
 					skipWaterShimmer: true
 				})
+				renderStaticCoastlines(_staticGroundCtx, camera, mapData, radius, mapData.seed || 0, riverMap, {
+					organic: useOrganic,
+					lodLevel,
+					screenRadius,
+					visibleCells
+				})
+				renderBiomeTransitionParticles(_staticGroundCtx, camera, mapData, radius, mapData.seed || 0, riverMap, {
+					organic: useOrganic,
+					lodLevel,
+					screenRadius,
+					visibleCells
+				})
 
 				// ── Render Layer 2: Static Overlay Canvas ──
 				_staticOverlayCtx.clearRect(0, 0, width, height)
@@ -659,6 +687,12 @@ export function renderHexMap(ctx, mapData, options = {}) {
 				isCameraMoving,
 				mapData
 			})
+			renderCoastSurfWaves(ctx, camera, mapData, radius, effectiveAnimTime, mapData.seed || 0, riverMap, {
+				organic: useOrganic,
+				lodLevel,
+				screenRadius,
+				visibleCells
+			})
 		}
 
 		drawRivers(ctx, camera, mapData, radius, effectiveAnimTime, {
@@ -700,6 +734,24 @@ export function renderHexMap(ctx, mapData, options = {}) {
 	drawAtmosphere(ctx, camera)
 
 	drawBaseCellsBatched(ctx, camera, mapData, radius, effectiveAnimTime, mapData.seed || 0, riverMap, {
+		organic: useOrganic,
+		lodLevel,
+		screenRadius,
+		visibleCells
+	})
+	renderStaticCoastlines(ctx, camera, mapData, radius, mapData.seed || 0, riverMap, {
+		organic: useOrganic,
+		lodLevel,
+		screenRadius,
+		visibleCells
+	})
+	renderCoastSurfWaves(ctx, camera, mapData, radius, effectiveAnimTime, mapData.seed || 0, riverMap, {
+		organic: useOrganic,
+		lodLevel,
+		screenRadius,
+		visibleCells
+	})
+	renderBiomeTransitionParticles(ctx, camera, mapData, radius, mapData.seed || 0, riverMap, {
 		organic: useOrganic,
 		lodLevel,
 		screenRadius,
@@ -993,6 +1045,909 @@ function drawBaseCellsBatched(ctx, camera, mapData, radius, animTime, seed = 0, 
 			flushWaterBatches(ctx)
 			ctx.restore()
 		}
+	}
+}
+
+/**
+ * Renders organic transition particles between neighboring hexes of different biomes.
+ * Creates smooth dithered blending across shared boundaries (zero-lag baked determinism).
+ */
+export function renderBiomeTransitionParticles(ctx, camera, mapData, radius, seed = 0, riverMap = null, options = {}) {
+	if (!BIOME_PARTICLE_CONFIG.enabled) return
+	const globalOpacity = Math.max(0, Math.min(1, Number(BIOME_PARTICLE_CONFIG.opacity ?? 1.0)))
+	if (globalOpacity <= 0.001) return
+
+	const lodLevel = options.lodLevel !== undefined ? options.lodLevel : 0
+	if (lodLevel >= 2) return
+
+	let visibleCells = options.visibleCells
+	if (!visibleCells) {
+		const cellEntries = Object.values(mapData.cells || {})
+		if (cellEntries.length === 0) return
+		visibleCells = []
+		for (const cell of cellEntries) {
+			if (isCellVisible(camera, cell.col, cell.row, radius)) {
+				visibleCells.push(cell)
+			}
+		}
+	}
+	if (visibleCells.length === 0) return
+
+	const REF_ZOOM_SCALE = 2.8
+	const basePixelSize = Math.max(1, Math.min(8, Math.round(Number(BIOME_PARTICLE_CONFIG.pixelSize) || 3.0)))
+	const scaleWithZoom = BIOME_PARTICLE_CONFIG.scaleWithZoom !== false
+	const curPSize = scaleWithZoom
+		? Math.max(1, Math.min(basePixelSize, Math.round(basePixelSize * ((camera.zoom || 1.0) / REF_ZOOM_SCALE))))
+		: basePixelSize
+
+	const particleBuckets = new Map()
+	function addBiomePt(color, px, py, size) {
+		if (!color || color === 'transparent') return
+		let arr = particleBuckets.get(color)
+		if (!arr) {
+			arr = []
+			particleBuckets.set(color, arr)
+		}
+		const s = size || 1
+		arr.push(Math.round(px - s * 0.5), Math.round(py - s * 0.5), s, s)
+	}
+
+	const visitedEdges = new Set()
+	const cellsMap = mapData.cells || {}
+	const useOrganic = options.organic !== undefined ? options.organic : (mapData?.organic !== undefined ? mapData.organic : ENABLE_ORGANIC_EDGES)
+	const blendWithWater = Boolean(BIOME_PARTICLE_CONFIG.blendWithWater)
+	const reachRatio = Math.max(0.05, Math.min(1.0, Number(BIOME_PARTICLE_CONFIG.reachRatio) || 0.35))
+	const globalDensity = Math.max(0.05, Math.min(5.0, Number(BIOME_PARTICLE_CONFIG.density) || 1.0))
+	const globalConcentration = Math.max(0, Math.min(1, Number(BIOME_PARTICLE_CONFIG.concentration ?? 0.2)))
+	const palettes = BIOME_PARTICLE_CONFIG.palettes || {}
+	const cosT = camera.cosT !== undefined ? camera.cosT : 1.0
+
+	for (const cell of visibleCells) {
+		const colA = cell.col
+		const rowA = cell.row
+		const terrainA = cell.terrain || 'grass'
+		const centerA = hexToWorldGroundCenter(colA, rowA, radius)
+
+		const polyA = useOrganic ? getOrganicCellPolygon(colA, rowA, radius, seed, riverMap) : null
+		const gvA = !useOrganic ? getHexGroundVertices(centerA.x, centerA.y, radius) : null
+
+		for (let edgeIdx = 0; edgeIdx < HEX_EDGES.length; edgeIdx++) {
+			const edgeDir = HEX_EDGES[edgeIdx]
+			const canonKey = getCanonicalEdgeKey(colA, rowA, edgeDir)
+			if (visitedEdges.has(canonKey)) continue
+			visitedEdges.add(canonKey)
+
+			const neighbor = getHexNeighbor(colA, rowA, edgeDir)
+			const cellB = cellsMap[`${neighbor.col},${neighbor.row}`]
+			if (!cellB) continue
+			const terrainB = cellB.terrain || 'grass'
+			if (terrainA === terrainB) continue
+
+			const isWaterA = BIOMES[terrainA]?.isWater
+			const isWaterB = BIOMES[terrainB]?.isWater
+			if (!blendWithWater && (isWaterA || isWaterB)) continue
+
+			const paletteA = palettes[terrainA] || []
+			const paletteB = palettes[terrainB] || []
+			if (paletteA.length === 0 && paletteB.length === 0) continue
+
+			const centerB = hexToWorldGroundCenter(neighbor.col, neighbor.row, radius)
+
+			let pFrom, pTo, pCP1A, pCP2A, pMid1, pCP1B, pCP2B, pMid2, pCP1C, pCP2C
+			if (useOrganic) {
+				const peA = polyA?.perimeter?.find(p => p.edge === edgeDir)
+				if (!peA) continue
+
+				const m1 = peA.mid1 || peA.mid || peA.from
+				const m2 = peA.mid2 || peA.to
+				const cp1C = peA.cp1C || peA.cp2B || m2
+				const cp2C = peA.cp2C || peA.to
+
+				pFrom = camera.project(peA.from.x, peA.from.y, 0)
+				pCP1A = camera.project(peA.cp1A.x, peA.cp1A.y, 0)
+				pCP2A = camera.project(peA.cp2A.x, peA.cp2A.y, 0)
+				pMid1 = camera.project(m1.x, m1.y, 0)
+				pCP1B = camera.project(peA.cp1B.x, peA.cp1B.y, 0)
+				pCP2B = camera.project(peA.cp2B.x, peA.cp2B.y, 0)
+				pMid2 = camera.project(m2.x, m2.y, 0)
+				pCP1C = camera.project(cp1C.x, cp1C.y, 0)
+				pCP2C = camera.project(cp2C.x, cp2C.y, 0)
+				pTo = camera.project(peA.to.x, peA.to.y, 0)
+
+				if (!pFrom.visible && !pTo.visible && !pMid1.visible && !pMid2.visible) continue
+			} else {
+				const ep = getHexEdgeEndpoints(gvA, edgeDir)
+				pFrom = camera.project(ep.from.x, ep.from.y, 0)
+				pTo = camera.project(ep.to.x, ep.to.y, 0)
+				if (!pFrom.visible && !pTo.visible) continue
+			}
+
+			const avgScale = (pFrom.scale + pTo.scale) * 0.5
+			const maxReachWorld = radius * reachRatio
+			const maxReachScreen = maxReachWorld * avgScale
+
+			const pMinX = (useOrganic ? Math.min(pFrom.x, pTo.x, pMid1.x, pMid2.x) : Math.min(pFrom.x, pTo.x)) - maxReachScreen
+			const pMaxX = (useOrganic ? Math.max(pFrom.x, pTo.x, pMid1.x, pMid2.x) : Math.max(pFrom.x, pTo.x)) + maxReachScreen
+			const pMinY = (useOrganic ? Math.min(pFrom.y, pTo.y, pMid1.y, pMid2.y) : Math.min(pFrom.y, pTo.y)) - maxReachScreen
+			const pMaxY = (useOrganic ? Math.max(pFrom.y, pTo.y, pMid1.y, pMid2.y) : Math.max(pFrom.y, pTo.y)) + maxReachScreen
+
+			if (pMaxX < 0 || pMinX > camera.viewportWidth || pMaxY < 0 || pMinY > camera.viewportHeight) {
+				continue
+			}
+
+			const pCenterA = camera.project(centerA.x, centerA.y, 0)
+			const pCenterB = camera.project(centerB.x, centerB.y, 0)
+			const vAB_x = pCenterB.x - pCenterA.x
+			const vAB_y = pCenterB.y - pCenterA.y
+
+			const curveLenPx = useOrganic
+				? (Math.hypot(pMid1.x - pFrom.x, pMid1.y - pFrom.y) +
+				   Math.hypot(pMid2.x - pMid1.x, pMid2.y - pMid1.y) +
+				   Math.hypot(pTo.x - pMid2.x, pTo.y - pMid2.y))
+				: Math.hypot(pTo.x - pFrom.x, pTo.y - pFrom.y)
+
+			const stepPx = Math.max(2.5, curPSize * 1.35)
+			const numSteps = Math.max(4, Math.min(64, Math.round(curveLenPx / stepPx)))
+			const numTiers = Math.max(3, Math.min(8, Math.round(maxReachScreen / (curPSize * 2.4))))
+
+			function evalPointAndTangent(t) {
+				if (!useOrganic) {
+					return {
+						cx: pFrom.x * (1 - t) + pTo.x * t,
+						cy: pFrom.y * (1 - t) + pTo.y * t,
+						tx: pTo.x - pFrom.x,
+						ty: pTo.y - pFrom.y
+					}
+				}
+				let A, B, C, D, u
+				if (t <= 1 / 3) {
+					u = t * 3
+					A = pFrom; B = pCP1A; C = pCP2A; D = pMid1
+				} else if (t <= 2 / 3) {
+					u = (t - 1 / 3) * 3
+					A = pMid1; B = pCP1B; C = pCP2B; D = pMid2
+				} else {
+					u = (t - 2 / 3) * 3
+					A = pMid2; B = pCP1C; C = pCP2C; D = pTo
+				}
+				const u1 = 1 - u
+				const u1_2 = u1 * u1
+				const u_2 = u * u
+				const cx = u1_2 * u1 * A.x + 3 * u1_2 * u * B.x + 3 * u1 * u_2 * C.x + u_2 * u * D.x
+				const cy = u1_2 * u1 * A.y + 3 * u1_2 * u * B.y + 3 * u1 * u_2 * C.y + u_2 * u * D.y
+				const tx = 3 * u1_2 * (B.x - A.x) + 6 * u1 * u * (C.x - B.x) + 3 * u_2 * (D.x - C.x)
+				const ty = 3 * u1_2 * (B.y - A.y) + 6 * u1 * u * (C.y - B.y) + 3 * u_2 * (D.y - C.y)
+				return { cx, cy, tx, ty }
+			}
+
+			for (let sideIdx = 0; sideIdx < 2; sideIdx++) {
+				const side = sideIdx === 0 ? 1 : -1
+				const curPalette = side === 1 ? paletteA : paletteB
+				if (!curPalette || curPalette.length === 0) continue
+
+				let hasActiveRule = false
+				for (let r = 0; r < curPalette.length; r++) {
+					if (Number(curPalette[r].frequency || 1.0) > 0.001) {
+						hasActiveRule = true
+						break
+					}
+				}
+				if (!hasActiveRule) continue
+
+				for (let s = 0; s < numSteps; s++) {
+					for (let k = 0; k < numTiers; k++) {
+						const h = hashString(`${canonKey}:${side}:${s}:${k}:${seed}`)
+						const randS = (getHashFloat(h, 1) + 1) * 0.5
+						const randK = (getHashFloat(h, 2) + 1) * 0.5
+						const randSpawn = (getHashFloat(h, 3) + 1) * 0.5
+						const randPick = (getHashFloat(h, 4) + 1) * 0.5
+
+						// 1. Continuous longitudinal jitter along the curve
+						const t = Math.max(0.01, Math.min(0.99, (s + (randS - 0.5) * 0.95) / numSteps))
+
+						// 2. Continuous distance across boundary with power-shaping (clusters near border)
+						const uTier = (k + Math.max(0.05, Math.min(0.95, randK))) / numTiers
+						const d = Math.max(0.015, Math.min(1.0, Math.pow(uTier, 1.45)))
+
+						// 3. Border falloff (strong density near border, smoothly thinning outwards)
+						const falloff = Math.exp(-2.4 * d)
+
+						// 4. Evaluate layer palette rules
+						let totalWeight = 0
+						const weights = []
+						for (let rIdx = 0; rIdx < curPalette.length; rIdx++) {
+							const rule = curPalette[rIdx]
+							const freq = Math.max(0.01, Number(rule.frequency) || 1.0)
+							let w
+							if (rule.uniform) {
+								w = freq
+							} else {
+								const conc = (rule.concentration !== undefined && rule.concentration !== null)
+									? Math.max(0, Math.min(1, Number(rule.concentration)))
+									: globalConcentration
+								const spread = Math.max(0.05, Math.min(1.0, Number(rule.spread ?? 0.28)))
+								const diff = d - conc
+								w = freq * Math.exp(-(diff * diff) / (2 * spread * spread))
+							}
+							weights.push(w)
+							totalWeight += w
+						}
+
+						if (totalWeight <= 0.0001) continue
+
+						// 5. Spawn probability with falloff and global density
+						const avgWeight = totalWeight / curPalette.length
+						const spawnChance = Math.min(0.92, avgWeight * 0.55 * falloff * globalDensity)
+						if (randSpawn > spawnChance) continue
+
+						// 6. Pick rule based on relative weights
+						const pickThreshold = randPick * totalWeight
+						let accum = 0
+						let chosenRule = curPalette[0]
+						for (let rIdx = 0; rIdx < curPalette.length; rIdx++) {
+							accum += weights[rIdx]
+							if (pickThreshold <= accum) {
+								chosenRule = curPalette[rIdx]
+								break
+							}
+						}
+
+						// 7. Evaluate exact curve position and normal
+						const pt = evalPointAndTangent(t)
+						let tx = pt.tx, ty = pt.ty
+						let tL = Math.hypot(tx, ty)
+						if (tL < 0.0001) {
+							tx = pTo.x - pFrom.x
+							ty = pTo.y - pFrom.y
+							tL = Math.hypot(tx, ty) || 1
+						}
+						let nx = -ty / tL
+						let ny = tx / tL
+						if (nx * vAB_x + ny * vAB_y < 0) {
+							nx = -nx
+							ny = -ny
+						}
+
+						// 8. Offset perpendicular to curve with 3D perspective foreshortening on Y
+						const offsetDist = side * d * maxReachScreen
+						const px = pt.cx + nx * offsetDist
+						const py = pt.cy + ny * offsetDist * cosT
+
+						if (px < -10 || px > camera.viewportWidth + 10 || py < -10 || py > camera.viewportHeight + 10) continue
+
+						// 9. Add particle with rule opacity
+						const finalOpacity = Math.max(0, Math.min(1, Number(chosenRule.opacity ?? 0.8) * globalOpacity))
+						const finalColor = resolveColorWithAlpha(chosenRule.color, finalOpacity)
+						addBiomePt(finalColor, px, py, curPSize)
+					}
+				}
+			}
+		}
+	}
+
+	for (const [color, coords] of particleBuckets) {
+		if (coords.length === 0) continue
+		ctx.fillStyle = color
+		for (let i = 0; i < coords.length; i += 4) {
+			ctx.fillRect(coords[i], coords[i + 1], coords[i + 2], coords[i + 3])
+		}
+	}
+}
+
+/**
+ * Evaluates position and tangent vector on a hex edge (organic 3-segment compound cubic Bezier or straight line).
+ */
+function evalCoastCurvePointAndTangent(pFrom, pTo, pCP1A, pCP2A, pMid1, pCP1B, pCP2B, pMid2, pCP1C, pCP2C, t, useOrganic) {
+	if (!useOrganic) {
+		return {
+			cx: pFrom.x * (1 - t) + pTo.x * t,
+			cy: pFrom.y * (1 - t) + pTo.y * t,
+			tx: pTo.x - pFrom.x,
+			ty: pTo.y - pFrom.y
+		}
+	}
+	let A, B, C, D, u
+	if (t <= 1 / 3) {
+		u = t * 3
+		A = pFrom; B = pCP1A; C = pCP2A; D = pMid1
+	} else if (t <= 2 / 3) {
+		u = (t - 1 / 3) * 3
+		A = pMid1; B = pCP1B; C = pCP2B; D = pMid2
+	} else {
+		u = (t - 2 / 3) * 3
+		A = pMid2; B = pCP1C; C = pCP2C; D = pTo
+	}
+	const u1 = 1 - u
+	const u1_2 = u1 * u1
+	const u_2 = u * u
+	const cx = u1_2 * u1 * A.x + 3 * u1_2 * u * B.x + 3 * u1 * u_2 * C.x + u_2 * u * D.x
+	const cy = u1_2 * u1 * A.y + 3 * u1_2 * u * B.y + 3 * u1 * u_2 * C.y + u_2 * u * D.y
+	const tx = 3 * u1_2 * (B.x - A.x) + 6 * u1 * u * (C.x - B.x) + 3 * u_2 * (D.x - C.x)
+	const ty = 3 * u1_2 * (B.y - A.y) + 6 * u1 * u * (C.y - B.y) + 3 * u_2 * (D.y - C.y)
+	return { cx, cy, tx, ty }
+}
+
+/**
+ * Renders static beach coastline features along borders between land and water cells:
+ * - Pure sandy beaches (cliffs removed): clean transition between sand and natural shoreline.
+ * - Smooth tapering at beach ends: beach width tapers gracefully to 0 at the tips (no abrupt 90-deg breaks).
+ * - Seamless corner joints: shared corner normals are mathematically welded so adjacent beach segments connect without gaps or overlaps.
+ * - Direction-aware perspective foreshortening: narrower along northern edges, wider facing camera.
+ * - Multi-band sandy ribbon (wet sand, golden dry sand core, light sand dunes) + dithered sand specks.
+ */
+export function renderStaticCoastlines(ctx, camera, mapData, radius, seed = 0, riverMap = null, options = {}) {
+	if (!COAST_CONFIG.enabled) return
+	const lodLevel = options.lodLevel !== undefined ? options.lodLevel : 0
+	if (lodLevel >= 2) return
+
+	const coverage = Math.max(0, Math.min(1, Number(COAST_CONFIG.beachCoverage) ?? 0.75))
+	if (coverage <= 0.001) return
+
+	let visibleCells = options.visibleCells
+	if (!visibleCells) {
+		const cellEntries = Object.values(mapData.cells || {})
+		if (cellEntries.length === 0) return
+		visibleCells = []
+		for (const cell of cellEntries) {
+			if (isCellVisible(camera, cell.col, cell.row, radius)) {
+				visibleCells.push(cell)
+			}
+		}
+	}
+	if (visibleCells.length === 0) return
+
+	const cellsMap = mapData.cells || {}
+	const useOrganic = options.organic !== undefined ? options.organic : (mapData?.organic !== undefined ? mapData.organic : ENABLE_ORGANIC_EDGES)
+	const cosT = camera.cosT !== undefined ? camera.cosT : 1.0
+
+	const beachDepthRatio = Math.max(0.04, Math.min(0.5, Number(COAST_CONFIG.beachDepth) || 0.18))
+	const beachOpacity = Math.max(0, Math.min(1, Number(COAST_CONFIG.beachOpacity) ?? 0.85))
+	const basePixelSize = Math.max(1, Math.min(8, Math.round(Number(COAST_CONFIG.pixelSize) || 3.0)))
+	const ditherDensity = Math.max(0.1, Math.min(3.0, Number(COAST_CONFIG.ditherDensity) || 0.9))
+
+	const REF_ZOOM_SCALE = 2.8
+	const curPSize = Math.max(1, Math.min(basePixelSize, Math.round(basePixelSize * ((camera.zoom || 1.0) / REF_ZOOM_SCALE))))
+
+	const bColors = COAST_CONFIG.beachColors || {}
+	const wetSandColor = resolveColorWithAlpha(bColors.wetSand || '#a68550', beachOpacity * 0.90)
+	const sandColor = resolveColorWithAlpha(bColors.sand || '#dfbe82', beachOpacity * 0.95)
+	const sandLightColor = resolveColorWithAlpha(bColors.sandLight || '#ecd9a4', beachOpacity * 0.70)
+	const ditherSandColor = bColors.ditherSand || '#cfa968'
+
+	const particleBuckets = new Map()
+	function addDitherPt(color, px, py, size) {
+		if (!color || color === 'transparent') return
+		let arr = particleBuckets.get(color)
+		if (!arr) {
+			arr = []
+			particleBuckets.set(color, arr)
+		}
+		const s = size || 1
+		arr.push(Math.round(px - s * 0.5), Math.round(py - s * 0.5), s, s)
+	}
+
+	// ── Pass 1: Discover all coast edges bordering water & determine beach presence ──
+	const coastEdges = []
+	const visitedEdges = new Set()
+	const vertexBeachCount = new Map()
+	const vertexNormalSum = new Map()
+
+	const vKey = (pt) => `${Math.round(pt.x * 2)},${Math.round(pt.y * 2)}`
+
+	for (const cell of visibleCells) {
+		const colA = cell.col
+		const rowA = cell.row
+		const terrainA = cell.terrain || 'grass'
+		const isWaterA = Boolean(BIOMES[terrainA]?.isWater || terrainA === 'water' || terrainA === 'ocean' || terrainA === 'deepWater')
+		if (isWaterA) continue
+
+		const centerA = hexToWorldGroundCenter(colA, rowA, radius)
+		const polyA = useOrganic ? getOrganicCellPolygon(colA, rowA, radius, seed, riverMap) : null
+		const gvA = !useOrganic ? getHexGroundVertices(centerA.x, centerA.y, radius) : null
+
+		for (let edgeIdx = 0; edgeIdx < HEX_EDGES.length; edgeIdx++) {
+			const edgeDir = HEX_EDGES[edgeIdx]
+			const canonKey = getCanonicalEdgeKey(colA, rowA, edgeDir)
+			if (visitedEdges.has(canonKey)) continue
+
+			const neighbor = getHexNeighbor(colA, rowA, edgeDir)
+			const cellB = cellsMap[`${neighbor.col},${neighbor.row}`]
+			if (!cellB) continue
+			const terrainB = cellB.terrain || 'grass'
+			const isWaterB = Boolean(BIOMES[terrainB]?.isWater || terrainB === 'water' || terrainB === 'ocean' || terrainB === 'deepWater')
+			if (!isWaterB) continue
+
+			visitedEdges.add(canonKey)
+
+			let fromPt, toPt, pFrom, pTo, pCP1A, pCP2A, pMid1, pCP1B, pCP2B, pMid2, pCP1C, pCP2C
+			if (useOrganic) {
+				const peA = polyA?.perimeter?.find(p => p.edge === edgeDir)
+				if (!peA) continue
+				const m1 = peA.mid1 || peA.mid || peA.from
+				const m2 = peA.mid2 || peA.to
+				const cp1C = peA.cp1C || peA.cp2B || m2
+				const cp2C = peA.cp2C || peA.to
+
+				fromPt = peA.from
+				toPt = peA.to
+				pFrom = camera.project(fromPt.x, fromPt.y, 0)
+				pCP1A = camera.project(peA.cp1A.x, peA.cp1A.y, 0)
+				pCP2A = camera.project(peA.cp2A.x, peA.cp2A.y, 0)
+				pMid1 = camera.project(m1.x, m1.y, 0)
+				pCP1B = camera.project(peA.cp1B.x, peA.cp1B.y, 0)
+				pCP2B = camera.project(peA.cp2B.x, peA.cp2B.y, 0)
+				pMid2 = camera.project(m2.x, m2.y, 0)
+				pCP1C = camera.project(cp1C.x, cp1C.y, 0)
+				pCP2C = camera.project(cp2C.x, cp2C.y, 0)
+				pTo = camera.project(toPt.x, toPt.y, 0)
+
+				if (!pFrom.visible && !pTo.visible && !pMid1.visible && !pMid2.visible) continue
+			} else {
+				const ep = getHexEdgeEndpoints(gvA, edgeDir)
+				fromPt = ep.from
+				toPt = ep.to
+				pFrom = camera.project(fromPt.x, fromPt.y, 0)
+				pTo = camera.project(toPt.x, toPt.y, 0)
+				if (!pFrom.visible && !pTo.visible) continue
+			}
+
+			const avgScale = (pFrom.scale + pTo.scale) * 0.5
+			const pCenterA = camera.project(centerA.x, centerA.y, 0)
+			const centerB = hexToWorldGroundCenter(neighbor.col, neighbor.row, radius)
+			const pCenterB = camera.project(centerB.x, centerB.y, 0)
+			const vAB_x = pCenterB.x - pCenterA.x
+			const vAB_y = pCenterB.y - pCenterA.y
+
+			// Directional width factor (perspective foreshortening)
+			let widthMul = 1.0
+			if (edgeDir === 'N') {
+				widthMul = 0.55
+			} else if (edgeDir === 'NW' || edgeDir === 'NE') {
+				widthMul = 0.82
+			} else if (edgeDir === 'SW' || edgeDir === 'SE') {
+				widthMul = 1.05
+			} else if (edgeDir === 'S') {
+				widthMul = 1.25
+			}
+
+			// Continuous spatial noise for contiguous beach bays
+			const midWorldX = (fromPt.x + toPt.x) * 0.5
+			const midWorldY = (fromPt.y + toPt.y) * 0.5
+			const waveX = Math.sin((midWorldX / (radius * 3.8)) + seed * 0.31)
+			const waveY = Math.cos((midWorldY / (radius * 3.8)) + seed * 0.17)
+			const beachScore = 0.5 + 0.45 * (waveX * 0.65 + waveY * 0.35)
+			const isBeach = coverage >= 0.98 || beachScore <= coverage
+
+			if (!isBeach) continue
+
+			// Calculate start and end normals of the edge (pointing into water)
+			const ptStart = evalCoastCurvePointAndTangent(pFrom, pTo, pCP1A, pCP2A, pMid1, pCP1B, pCP2B, pMid2, pCP1C, pCP2C, 0, useOrganic)
+			let tL0 = Math.hypot(ptStart.tx, ptStart.ty) || 1
+			let n0_x = -ptStart.ty / tL0, n0_y = ptStart.tx / tL0
+			if (n0_x * vAB_x + n0_y * vAB_y < 0) { n0_x = -n0_x; n0_y = -n0_y; }
+
+			const ptEnd = evalCoastCurvePointAndTangent(pFrom, pTo, pCP1A, pCP2A, pMid1, pCP1B, pCP2B, pMid2, pCP1C, pCP2C, 1, useOrganic)
+			let tL1 = Math.hypot(ptEnd.tx, ptEnd.ty) || 1
+			let n1_x = -ptEnd.ty / tL1, n1_y = ptEnd.tx / tL1
+			if (n1_x * vAB_x + n1_y * vAB_y < 0) { n1_x = -n1_x; n1_y = -n1_y; }
+
+			const kFrom = vKey(fromPt)
+			const kTo = vKey(toPt)
+			vertexBeachCount.set(kFrom, (vertexBeachCount.get(kFrom) || 0) + 1)
+			vertexBeachCount.set(kTo, (vertexBeachCount.get(kTo) || 0) + 1)
+
+			const curN0 = vertexNormalSum.get(kFrom) || { nx: 0, ny: 0 }
+			curN0.nx += n0_x
+			curN0.ny += n0_y
+			vertexNormalSum.set(kFrom, curN0)
+
+			const curN1 = vertexNormalSum.get(kTo) || { nx: 0, ny: 0 }
+			curN1.nx += n1_x
+			curN1.ny += n1_y
+			vertexNormalSum.set(kTo, curN1)
+
+			coastEdges.push({
+				canonKey,
+				edgeDir,
+				fromPt,
+				toPt,
+				kFrom,
+				kTo,
+				pFrom,
+				pTo,
+				pCP1A,
+				pCP2A,
+				pMid1,
+				pCP1B,
+				pCP2B,
+				pMid2,
+				pCP1C,
+				pCP2C,
+				avgScale,
+				vAB_x,
+				vAB_y,
+				widthMul,
+				n0_x,
+				n0_y,
+				n1_x,
+				n1_y
+			})
+		}
+	}
+
+	if (coastEdges.length === 0) return
+
+	// Normalize averaged vertex normals for corner joints
+	const jointNormals = new Map()
+	for (const [k, nSum] of vertexNormalSum) {
+		const len = Math.hypot(nSum.nx, nSum.ny) || 1
+		jointNormals.set(k, { nx: nSum.nx / len, ny: nSum.ny / len })
+	}
+
+	// ── Pass 2: Render each beach edge with smooth tapering at endpoints and seamless mitered joints ──
+	for (const e of coastEdges) {
+		const countFrom = vertexBeachCount.get(e.kFrom) || 1
+		const countTo = vertexBeachCount.get(e.kTo) || 1
+
+		// If a vertex has >= 2 beach edges meeting, it is an interior joint (width = 1.0).
+		// If it has only 1, it is a tip of the beach (width = 0.0, tapers down).
+		const w0 = countFrom >= 2 ? 1.0 : 0.0
+		const w1 = countTo >= 2 ? 1.0 : 0.0
+
+		const jN_from = jointNormals.get(e.kFrom) || { nx: e.n0_x, ny: e.n0_y }
+		const jN_to = jointNormals.get(e.kTo) || { nx: e.n1_x, ny: e.n1_y }
+
+		const totalBeachDepth = radius * beachDepthRatio * e.avgScale * e.widthMul
+		const numSamples = useOrganic ? 16 : 6
+		const pts = []
+
+		for (let i = 0; i <= numSamples; i++) {
+			const t = i / numSamples
+			const pt = evalCoastCurvePointAndTangent(
+				e.pFrom, e.pTo, e.pCP1A, e.pCP2A, e.pMid1, e.pCP1B, e.pCP2B, e.pMid2, e.pCP1C, e.pCP2C,
+				t, useOrganic
+			)
+			const tL = Math.hypot(pt.tx, pt.ty) || 1
+			let curve_nx = -pt.ty / tL
+			let curve_ny = pt.tx / tL
+			if (curve_nx * e.vAB_x + curve_ny * e.vAB_y < 0) {
+				curve_nx = -curve_nx
+				curve_ny = -curve_ny
+			}
+
+			// Seamless blend between joint normal at endpoints and curve normal along interior
+			let nx, ny
+			if (t <= 0.25 && w0 === 1.0) {
+				const blend = t / 0.25
+				nx = jN_from.nx * (1 - blend) + curve_nx * blend
+				ny = jN_from.ny * (1 - blend) + curve_ny * blend
+				const nL = Math.hypot(nx, ny) || 1
+				nx /= nL; ny /= nL
+			} else if (t >= 0.75 && w1 === 1.0) {
+				const blend = (t - 0.75) / 0.25
+				nx = curve_nx * (1 - blend) + jN_to.nx * blend
+				ny = curve_ny * (1 - blend) + jN_to.ny * blend
+				const nL = Math.hypot(nx, ny) || 1
+				nx /= nL; ny /= nL
+			} else {
+				nx = curve_nx
+				ny = curve_ny
+			}
+
+			// Tapering width function w(t)
+			let w
+			if (w0 === 1.0 && w1 === 1.0) {
+				w = 1.0
+			} else if (w0 === 0.0 && w1 === 1.0) {
+				// Smoothstep from 0 at t=0 to 1 at t=1
+				w = t * t * (3 - 2 * t)
+			} else if (w0 === 1.0 && w1 === 0.0) {
+				// Smoothstep from 1 at t=0 to 0 at t=1
+				const inv = 1 - t
+				w = inv * inv * (3 - 2 * inv)
+			} else {
+				// Isolated single beach edge: smooth sine bell
+				w = Math.sin(Math.PI * t)
+			}
+
+			const depth = totalBeachDepth * w
+			pts.push({ cx: pt.cx, cy: pt.cy, nx, ny, depth, w })
+		}
+
+		// Helper to fill a multi-tone sand band
+		function fillSandBand(d0, d1, color) {
+			ctx.beginPath()
+			for (let i = 0; i < pts.length; i++) {
+				const p = pts[i]
+				const x = p.cx - p.nx * (d0 * p.depth)
+				const y = p.cy - p.ny * (d0 * p.depth) * cosT
+				if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y)
+			}
+			for (let i = pts.length - 1; i >= 0; i--) {
+				const p = pts[i]
+				const x = p.cx - p.nx * (d1 * p.depth)
+				const y = p.cy - p.ny * (d1 * p.depth) * cosT
+				ctx.lineTo(x, y)
+			}
+			ctx.closePath()
+			ctx.fillStyle = color
+			ctx.fill()
+		}
+
+		// 1. Wet sand ribbon along waterline
+		fillSandBand(0.0, 0.25, wetSandColor)
+		// 2. Main golden sand core
+		fillSandBand(0.20, 0.70, sandColor)
+		// 3. Dry light sand outer band
+		fillSandBand(0.65, 1.00, sandLightColor)
+
+		// 4. Dithered scatter particles into adjacent land biome (scales with local width)
+		const numDitherSteps = Math.max(4, Math.min(28, Math.round(pts.length * 1.4)))
+		const numTiers = 3
+		for (let s = 0; s < numDitherSteps; s++) {
+			for (let k = 0; k < numTiers; k++) {
+				const h = hashString(`${e.canonKey}:sand:${s}:${k}:${seed}`)
+				const randS = (getHashFloat(h, 1) + 1) * 0.5
+				const randK = (getHashFloat(h, 2) + 1) * 0.5
+				const randSpawn = (getHashFloat(h, 3) + 1) * 0.5
+
+				const t = Math.max(0.02, Math.min(0.98, (s + (randS - 0.5) * 0.85) / numDitherSteps))
+				const idxExact = t * (pts.length - 1)
+				const i0 = Math.floor(idxExact)
+				const i1 = Math.min(pts.length - 1, i0 + 1)
+				const f = idxExact - i0
+				const p0 = pts[i0], p1 = pts[i1]
+				const localDepth = p0.depth * (1 - f) + p1.depth * f
+				const localW = p0.w * (1 - f) + p1.w * f
+
+				if (localDepth < 2.0 || localW < 0.15) continue // Don't scatter particles past tapered tips
+
+				const cx = p0.cx * (1 - f) + p1.cx * f
+				const cy = p0.cy * (1 - f) + p1.cy * f
+				const nx = p0.nx * (1 - f) + p1.nx * f
+				const ny = p0.ny * (1 - f) + p1.ny * f
+
+				const dFrac = 0.85 + (k + randK) / numTiers * 0.60
+				const falloff = Math.exp(-2.6 * (dFrac - 0.85) / 0.60)
+				if (randSpawn > falloff * 0.75 * ditherDensity * localW) continue
+
+				const offsetDist = dFrac * localDepth
+				const px = cx - nx * offsetDist
+				const py = cy - ny * offsetDist * cosT
+				if (px < -10 || px > camera.viewportWidth + 10 || py < -10 || py > camera.viewportHeight + 10) continue
+
+				const ptAlpha = Math.max(0, Math.min(1, falloff * beachOpacity * 0.85 * localW))
+				addDitherPt(resolveColorWithAlpha(ditherSandColor, ptAlpha), px, py, curPSize)
+			}
+		}
+	}
+
+	// Render dithered sand particles in batch
+	for (const [color, coords] of particleBuckets) {
+		if (coords.length === 0) continue
+		ctx.fillStyle = color
+		for (let i = 0; i < coords.length; i += 4) {
+			ctx.fillRect(coords[i], coords[i + 1], coords[i + 2], coords[i + 3])
+		}
+	}
+}
+
+/**
+ * Renders animated rolling wave surf along beach coastline edges:
+ * - Unidirectional forward advance onto wet sand (no backwards slide).
+ * - Gentle dissolve at the crest (dissolving visually acts as the natural retreat).
+ * - Calmer, relaxing pace with 65% quiet interval between wave surges.
+ * - Soft, translucent aquamarine/sky-blue foam (never harsh glaring white).
+ * - Tapers smoothly to 0 width at beach tips matching the sand boundary.
+ */
+export function renderCoastSurfWaves(ctx, camera, mapData, radius, animTime = 0, seed = 0, riverMap = null, options = {}) {
+	if (!COAST_CONFIG.enabled || !COAST_CONFIG.waves?.enabled) return
+	const lodLevel = options.lodLevel !== undefined ? options.lodLevel : 0
+	if (lodLevel >= 2) return
+
+	const coverage = Math.max(0, Math.min(1, Number(COAST_CONFIG.beachCoverage) ?? 0.75))
+	if (coverage <= 0.001) return
+
+	const waveCfg = COAST_CONFIG.waves
+	const waveSpeed = Math.max(0.2, Math.min(2.0, Number(waveCfg.speed) || 0.6))
+	const maxReachPx = Math.max(0.5, Math.min(4.0, Number(waveCfg.reachPx) || 1.8))
+	const baseWaveOpacity = Math.max(0, Math.min(1, Number(waveCfg.opacity) ?? 0.45))
+	if (baseWaveOpacity <= 0.01) return
+
+	let visibleCells = options.visibleCells
+	if (!visibleCells) {
+		const cellEntries = Object.values(mapData.cells || {})
+		if (cellEntries.length === 0) return
+		visibleCells = []
+		for (const cell of cellEntries) {
+			if (isCellVisible(camera, cell.col, cell.row, radius)) {
+				visibleCells.push(cell)
+			}
+		}
+	}
+	if (visibleCells.length === 0) return
+
+	const cellsMap = mapData.cells || {}
+	const useOrganic = options.organic !== undefined ? options.organic : (mapData?.organic !== undefined ? mapData.organic : ENABLE_ORGANIC_EDGES)
+	const cosT = camera.cosT !== undefined ? camera.cosT : 1.0
+	const visitedEdges = new Set()
+
+	// ── Pass 1: Gather beach edges and count vertex connections for tapering ──
+	const beachWaveEdges = []
+	const vertexWaveCount = new Map()
+	const vKey = (pt) => `${Math.round(pt.x * 2)},${Math.round(pt.y * 2)}`
+
+	for (const cell of visibleCells) {
+		const colA = cell.col
+		const rowA = cell.row
+		const terrainA = cell.terrain || 'grass'
+		const isWaterA = Boolean(BIOMES[terrainA]?.isWater || terrainA === 'water' || terrainA === 'ocean' || terrainA === 'deepWater')
+		if (isWaterA) continue
+
+		const centerA = hexToWorldGroundCenter(colA, rowA, radius)
+		const polyA = useOrganic ? getOrganicCellPolygon(colA, rowA, radius, seed, riverMap) : null
+		const gvA = !useOrganic ? getHexGroundVertices(centerA.x, centerA.y, radius) : null
+
+		for (let edgeIdx = 0; edgeIdx < HEX_EDGES.length; edgeIdx++) {
+			const edgeDir = HEX_EDGES[edgeIdx]
+			const canonKey = getCanonicalEdgeKey(colA, rowA, edgeDir)
+			if (visitedEdges.has(canonKey)) continue
+
+			const neighbor = getHexNeighbor(colA, rowA, edgeDir)
+			const cellB = cellsMap[`${neighbor.col},${neighbor.row}`]
+			if (!cellB) continue
+			const terrainB = cellB.terrain || 'grass'
+			const isWaterB = Boolean(BIOMES[terrainB]?.isWater || terrainB === 'water' || terrainB === 'ocean' || terrainB === 'deepWater')
+			if (!isWaterB) continue
+
+			visitedEdges.add(canonKey)
+
+			let fromPt, toPt, pFrom, pTo, pCP1A, pCP2A, pMid1, pCP1B, pCP2B, pMid2, pCP1C, pCP2C
+			if (useOrganic) {
+				const peA = polyA?.perimeter?.find(p => p.edge === edgeDir)
+				if (!peA) continue
+				const m1 = peA.mid1 || peA.mid || peA.from
+				const m2 = peA.mid2 || peA.to
+				const cp1C = peA.cp1C || peA.cp2B || m2
+				const cp2C = peA.cp2C || peA.to
+
+				fromPt = peA.from
+				toPt = peA.to
+				pFrom = camera.project(fromPt.x, fromPt.y, 0)
+				pCP1A = camera.project(peA.cp1A.x, peA.cp1A.y, 0)
+				pCP2A = camera.project(peA.cp2A.x, peA.cp2A.y, 0)
+				pMid1 = camera.project(m1.x, m1.y, 0)
+				pCP1B = camera.project(peA.cp1B.x, peA.cp1B.y, 0)
+				pCP2B = camera.project(peA.cp2B.x, peA.cp2B.y, 0)
+				pMid2 = camera.project(m2.x, m2.y, 0)
+				pCP1C = camera.project(cp1C.x, cp1C.y, 0)
+				pCP2C = camera.project(cp2C.x, cp2C.y, 0)
+				pTo = camera.project(toPt.x, toPt.y, 0)
+
+				if (!pFrom.visible && !pTo.visible && !pMid1.visible && !pMid2.visible) continue
+			} else {
+				const ep = getHexEdgeEndpoints(gvA, edgeDir)
+				fromPt = ep.from
+				toPt = ep.to
+				pFrom = camera.project(fromPt.x, fromPt.y, 0)
+				pTo = camera.project(ep.to.x, ep.to.y, 0)
+				if (!pFrom.visible && !pTo.visible) continue
+			}
+
+			// Check beach presence
+			const midWorldX = (fromPt.x + toPt.x) * 0.5
+			const midWorldY = (fromPt.y + toPt.y) * 0.5
+			const waveX = Math.sin((midWorldX / (radius * 3.8)) + seed * 0.31)
+			const waveY = Math.cos((midWorldY / (radius * 3.8)) + seed * 0.17)
+			const beachScore = 0.5 + 0.45 * (waveX * 0.65 + waveY * 0.35)
+			if (coverage < 0.98 && beachScore > coverage) continue
+
+			const avgScale = (pFrom.scale + pTo.scale) * 0.5
+			const pCenterA = camera.project(centerA.x, centerA.y, 0)
+			const centerB = hexToWorldGroundCenter(neighbor.col, neighbor.row, radius)
+			const pCenterB = camera.project(centerB.x, centerB.y, 0)
+			const vAB_x = pCenterB.x - pCenterA.x
+			const vAB_y = pCenterB.y - pCenterA.y
+
+			const kFrom = vKey(fromPt)
+			const kTo = vKey(toPt)
+			vertexWaveCount.set(kFrom, (vertexWaveCount.get(kFrom) || 0) + 1)
+			vertexWaveCount.set(kTo, (vertexWaveCount.get(kTo) || 0) + 1)
+
+			beachWaveEdges.push({
+				canonKey,
+				kFrom,
+				kTo,
+				pFrom,
+				pTo,
+				pCP1A,
+				pCP2A,
+				pMid1,
+				pCP1B,
+				pCP2B,
+				pMid2,
+				pCP1C,
+				pCP2C,
+				avgScale,
+				vAB_x,
+				vAB_y
+			})
+		}
+	}
+
+	if (beachWaveEdges.length === 0) return
+
+	// ── Pass 2: Animate wave surge on active beach edges ──
+	const surgeDuration = 0.35 // Wave surges during first 35% of cycle; remaining 65% is calm pause
+
+	for (const e of beachWaveEdges) {
+		const edgeHash = hashString(`wave:${e.canonKey}:${seed}`)
+		const edgePhase = (getHashFloat(edgeHash, 3) + 1) * Math.PI
+		const cycle = (animTime * waveSpeed + edgePhase) % (Math.PI * 2)
+		const tau = cycle / (Math.PI * 2) // 0.0 to 1.0
+
+		// If in calm pause interval, do not render wave
+		if (tau > surgeDuration) continue
+
+		// Monotonic forward progress from 0.0 to 1.0 (no backwards sliding)
+		const progress = tau / surgeDuration
+
+		// Dissolving fade: rises smoothly and dissolves completely as it reaches peak reach
+		const dissolveAlpha = Math.sin(progress * Math.PI) * baseWaveOpacity
+		if (dissolveAlpha <= 0.015) continue
+
+		const countFrom = vertexWaveCount.get(e.kFrom) || 1
+		const countTo = vertexWaveCount.get(e.kTo) || 1
+		const w0 = countFrom >= 2 ? 1.0 : 0.0
+		const w1 = countTo >= 2 ? 1.0 : 0.0
+
+		const numSamples = useOrganic ? 12 : 4
+		const reach = maxReachPx * progress * Math.min(1.4, Math.max(0.7, e.avgScale))
+
+		ctx.beginPath()
+		for (let i = 0; i <= numSamples; i++) {
+			const t = i / numSamples
+			const pt = evalCoastCurvePointAndTangent(
+				e.pFrom, e.pTo, e.pCP1A, e.pCP2A, e.pMid1, e.pCP1B, e.pCP2B, e.pMid2, e.pCP1C, e.pCP2C,
+				t, useOrganic
+			)
+			const tL = Math.hypot(pt.tx, pt.ty) || 1
+			let nx = -pt.ty / tL
+			let ny = pt.tx / tL
+			if (nx * e.vAB_x + ny * e.vAB_y < 0) {
+				nx = -nx
+				ny = -ny
+			}
+
+			// Taper reach with local beach width
+			let w
+			if (w0 === 1.0 && w1 === 1.0) {
+				w = 1.0
+			} else if (w0 === 0.0 && w1 === 1.0) {
+				w = t * t * (3 - 2 * t)
+			} else if (w0 === 1.0 && w1 === 0.0) {
+				const inv = 1 - t
+				w = inv * inv * (3 - 2 * inv)
+			} else {
+				w = Math.sin(Math.PI * t)
+			}
+
+			// Offset moves monotonically forward onto the wet sand along -nx, -ny (into land)
+			const currentOffset = reach * w
+			const wx = pt.cx - nx * currentOffset
+			const wy = pt.cy - ny * currentOffset * cosT
+			if (i === 0) ctx.moveTo(wx, wy); else ctx.lineTo(wx, wy)
+		}
+
+		// Soft luminous halo
+		ctx.strokeStyle = resolveColorWithAlpha(waveCfg.glowColor || '#e0f2fe', dissolveAlpha * 0.40)
+		ctx.lineWidth = Math.max(1.5, 2.2 * e.avgScale)
+		ctx.stroke()
+
+		// Translucent foam crest line
+		ctx.strokeStyle = resolveColorWithAlpha(waveCfg.color || '#bae6fd', dissolveAlpha * 0.85)
+		ctx.lineWidth = Math.max(1.0, 1.2 * e.avgScale)
+		ctx.stroke()
 	}
 }
 
@@ -3967,6 +4922,8 @@ function renderRoadParticles(ctx, trunks, turns, crossroads) {
 	const rawStoneScatterDensity = Number(partCfg.stone?.scatterDensity ?? partCfg.stoneScatterDensity) || 1.0
 	const stoneScatterDensity = Math.max(0.05, Math.min(4.0, rawStoneScatterDensity > 10 ? 2.0 : rawStoneScatterDensity))
 
+	const globalRoadConcentration = Math.max(0, Math.min(1, Number(partCfg.concentration ?? 0.2)))
+
 	// Two separate particle coordinate buckets to guarantee stone particles always render on top of dirt particles
 	const dirtBuckets = new Map()
 	const stoneBuckets = new Map()
@@ -4106,11 +5063,47 @@ function renderRoadParticles(ctx, trunks, turns, crossroads) {
 							const px = cx + nx * d
 							const py = cy + ny * d
 
-							// If inner particles are OFF, outer particles take the road line color!
-							const rawColor = !stoneInnerEnabled
-								? stoneLineBaseColor
-								: getStoneColor(s, stoneLanes + k, seed)
-							const finalColor = resolveColorWithAlpha(rawColor, stoneOuterOpacity)
+							// If stone palette is configured, sample rule with concentration and uniform flags
+							let rawColor = stoneLineBaseColor
+							let ruleOpacity = 1.0
+							if (partCfg.stonePalette && partCfg.stonePalette.length > 0) {
+								let totalW = 0
+								const weights = []
+								for (let r = 0; r < partCfg.stonePalette.length; r++) {
+									const rule = partCfg.stonePalette[r]
+									const freq = Math.max(0.01, Number(rule.frequency) || 1.0)
+									let w
+									if (rule.uniform) {
+										w = freq
+									} else {
+										const conc = (rule.concentration !== undefined && rule.concentration !== null)
+											? Math.max(0, Math.min(1, Number(rule.concentration)))
+											: globalRoadConcentration
+										const spread = Math.max(0.05, Math.min(1.0, Number(rule.spread ?? 0.3)))
+										const diff = rowFrac - conc
+										w = freq * Math.exp(-(diff * diff) / (2 * spread * spread))
+									}
+									weights.push(w)
+									totalW += w
+								}
+								if (totalW > 0.0001) {
+									const pickVal = ((getHashFloat(seed + s * 13 + k * 29 + sideSeed * 5, 0) + 1) * 0.5) * totalW
+									let accum = 0
+									let chosen = partCfg.stonePalette[0]
+									for (let r = 0; r < partCfg.stonePalette.length; r++) {
+										accum += weights[r]
+										if (pickVal <= accum) {
+											chosen = partCfg.stonePalette[r]
+											break
+										}
+									}
+									rawColor = chosen.color
+									ruleOpacity = Number(chosen.opacity ?? 1.0)
+								}
+							} else if (stoneInnerEnabled) {
+								rawColor = getStoneColor(s, stoneLanes + k, seed)
+							}
+							const finalColor = resolveColorWithAlpha(rawColor, stoneOuterOpacity * ruleOpacity)
 							addPt(finalColor, px, py, curPSize, true)
 						}
 					}
@@ -4175,11 +5168,47 @@ function renderRoadParticles(ctx, trunks, turns, crossroads) {
 								if (Math.hypot(px - hubCenter.x, py - hubCenter.y) < stoneHubRadius * 0.8) continue
 							}
 
-							// If inner particles are OFF, outer particles take the road line color!
-							const rawColor = !dirtInnerEnabled
-								? dirtLineBaseColor
-								: getDirtColor(s, dirtLanes + k, seed)
-							const finalColor = resolveColorWithAlpha(rawColor, dirtOuterOpacity)
+							// If dirt palette is configured, sample rule with concentration and uniform flags
+							let rawColor = dirtLineBaseColor
+							let ruleOpacity = 1.0
+							if (partCfg.dirtPalette && partCfg.dirtPalette.length > 0) {
+								let totalW = 0
+								const weights = []
+								for (let r = 0; r < partCfg.dirtPalette.length; r++) {
+									const rule = partCfg.dirtPalette[r]
+									const freq = Math.max(0.01, Number(rule.frequency) || 1.0)
+									let w
+									if (rule.uniform) {
+										w = freq
+									} else {
+										const conc = (rule.concentration !== undefined && rule.concentration !== null)
+											? Math.max(0, Math.min(1, Number(rule.concentration)))
+											: globalRoadConcentration
+										const spread = Math.max(0.05, Math.min(1.0, Number(rule.spread ?? 0.3)))
+										const diff = rowFrac - conc
+										w = freq * Math.exp(-(diff * diff) / (2 * spread * spread))
+									}
+									weights.push(w)
+									totalW += w
+								}
+								if (totalW > 0.0001) {
+									const pickVal = ((getHashFloat(seed + s * 13 + k * 29 + sideSeed * 5, 0) + 1) * 0.5) * totalW
+									let accum = 0
+									let chosen = partCfg.dirtPalette[0]
+									for (let r = 0; r < partCfg.dirtPalette.length; r++) {
+										accum += weights[r]
+										if (pickVal <= accum) {
+											chosen = partCfg.dirtPalette[r]
+											break
+										}
+									}
+									rawColor = chosen.color
+									ruleOpacity = Number(chosen.opacity ?? 1.0)
+								}
+							} else if (dirtInnerEnabled) {
+								rawColor = getDirtColor(s, dirtLanes + k, seed)
+							}
+							const finalColor = resolveColorWithAlpha(rawColor, dirtOuterOpacity * ruleOpacity)
 							addPt(finalColor, px, py, curPSize, false)
 						}
 					}

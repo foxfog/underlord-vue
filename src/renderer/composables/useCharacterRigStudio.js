@@ -1,4 +1,5 @@
 import { ref, computed, reactive, onUnmounted, getCurrentInstance, watch } from 'vue'
+import { loadCharacterAnimations } from '../utils/character/characterAnimationEngine'
 
 export function useCharacterRigStudio() {
 	// Active character selection
@@ -62,14 +63,17 @@ export function useCharacterRigStudio() {
 
 	const equipmentBySlotForCanvas = computed(() => {
 		const res = {}
+		let index = 0
 		for (const eq of characterEquipment.value) {
 			if (!eq || !eq.id) continue
 			if (activeEquippedIds.value.has(eq.id)) {
-				res[eq.id] = {
+				const key = res[eq.id] ? `${eq.id}__${index}` : eq.id
+				res[key] = {
 					id: eq.id,
 					item: eq,
 					parts: Array.isArray(eq.parts) ? eq.parts : []
 				}
+				index++
 			}
 		}
 		return res
@@ -796,6 +800,16 @@ export function useCharacterRigStudio() {
 			vnScale.value = loadedScale
 			rootOffset.x = Number(characterValues.value.root_offset?.x || 0)
 			rootOffset.y = Number(characterValues.value.root_offset?.y || 0)
+			if (
+				characterValues.value.orientation === 'left' ||
+				characterValues.value.orientation === 'inverted' ||
+				characterValues.value.defaultOrientation === 'left' ||
+				characterValues.value.defaultOrientation === 'inverted'
+			) {
+				orientation.value = 'inverted'
+			} else {
+				orientation.value = 'default'
+			}
 
 			// 1. Load 2D body.json
 			let body = await readDataFile(`characters/${charId}/body.json`)
@@ -1200,8 +1214,10 @@ export function useCharacterRigStudio() {
 			const data = await readDataFile(`characters/${charId}/animations.json`)
 			if (data && Array.isArray(data)) {
 				vnCustomAnimations.value = data
+				loadCharacterAnimations(data)
 			} else if (data && Array.isArray(data.animations)) {
 				vnCustomAnimations.value = data.animations
+				loadCharacterAnimations(data.animations)
 			} else {
 				vnCustomAnimations.value = []
 			}
@@ -1964,6 +1980,7 @@ export function useCharacterRigStudio() {
 				x: Number(rootOffset.x.toFixed(2)),
 				y: Number(rootOffset.y.toFixed(2))
 			}
+			characterValues.value.orientation = orientation.value === 'inverted' ? 'left' : 'right'
 			await writeDataFile(`characters/${charId}/values.json`, characterValues.value)
 			setStatus(`Скейл (${scaledSize}x) и смещение аватара сохранены в values.json!`)
 			return { success: true }
@@ -1977,12 +1994,75 @@ export function useCharacterRigStudio() {
 	// ==========================================
 	// Equipment System Methods
 	// ==========================================
+	function extractDefaultEquippedIds(values, equipmentList = []) {
+		const result = new Set()
+
+		// 1. Check equipment_slots in values.json (e.g. { "torso-1": "tshirt", "legs-2": "jeans", "head": null })
+		if (values?.equipment_slots && typeof values.equipment_slots === 'object') {
+			for (const slotVal of Object.values(values.equipment_slots)) {
+				if (!slotVal) continue
+				if (typeof slotVal === 'string' || typeof slotVal === 'number') {
+					result.add(String(slotVal))
+				} else if (typeof slotVal === 'object') {
+					const id = slotVal.id || slotVal.itemId || slotVal.item?.id
+					if (id) result.add(String(id))
+				}
+			}
+		}
+
+		// 2. Check character inventory items with isEquipped: true
+		if (Array.isArray(values?.inventory?.items)) {
+			for (const invItem of values.inventory.items) {
+				if (invItem && (invItem.isEquipped || invItem.is_equipped)) {
+					const id = invItem.itemId || invItem.id
+					if (id) result.add(String(id))
+				}
+			}
+		}
+
+		// 3. Check default_equipment or equipment in values.json if defined
+		const directEquip =
+			values?.default_equipment ||
+			values?.defaultEquipment ||
+			(Array.isArray(values?.equipment) ? values.equipment : null)
+		if (Array.isArray(directEquip)) {
+			for (const it of directEquip) {
+				if (typeof it === 'string' || typeof it === 'number') {
+					result.add(String(it))
+				} else if (it?.id) {
+					result.add(String(it.id))
+				} else if (it?.itemId) {
+					result.add(String(it.itemId))
+				}
+			}
+		}
+
+		// 4. Check items in equipment.json explicitly marked as default or equipped
+		if (Array.isArray(equipmentList)) {
+			for (const eq of equipmentList) {
+				if (eq && (eq.default || eq.is_default || eq.isDefault || eq.equipped || eq.is_equipped || eq.isEquipped)) {
+					if (eq.id) result.add(String(eq.id))
+				}
+			}
+		}
+
+		return result
+	}
+
 	async function loadCharacterEquipment(charId) {
 		try {
 			if (itemsCatalog.value.length === 0) {
 				const catalog = await readDataFile('items/equipment.json')
 				if (Array.isArray(catalog)) {
 					itemsCatalog.value = catalog
+				}
+			}
+
+			// Ensure character values are available for charId
+			if (!characterValues.value || !characterValues.value.id || characterValues.value.id !== charId) {
+				const values = await readDataFile(`characters/${charId}/values.json`)
+				if (values) {
+					characterValues.value = values
 				}
 			}
 
@@ -2040,17 +2120,21 @@ export function useCharacterRigStudio() {
 			}
 			availableEquipmentImages.value = Array.from(new Set(equipImgs))
 
-			// Initial active preview: all items configured on character
+			// Initial active preview: only default items specified in JSON (values.json equipment_slots, etc.)
+			const defaultEquipped = extractDefaultEquippedIds(characterValues.value, characterEquipment.value)
 			const initialActive = new Set()
 			for (const item of characterEquipment.value) {
-				if (item.id) initialActive.add(item.id)
+				if (item?.id && defaultEquipped.has(item.id)) {
+					initialActive.add(item.id)
+				}
 			}
 			activeEquippedIds.value = initialActive
 
-			// Selection
+			// Selection: prefer active/equipped item, fallback to first item
 			if (characterEquipment.value.length > 0) {
+				const firstEquipped = characterEquipment.value.find((x) => initialActive.has(x.id))
 				if (!selectedEquipmentId.value || !characterEquipment.value.some((x) => x.id === selectedEquipmentId.value)) {
-					selectedEquipmentId.value = characterEquipment.value[0].id
+					selectedEquipmentId.value = firstEquipped?.id || characterEquipment.value[0].id
 				}
 			} else {
 				selectedEquipmentId.value = null
@@ -2136,6 +2220,18 @@ export function useCharacterRigStudio() {
 			activeEquippedIds.value = new Set()
 			setStatus('Все предметы сняты (персонаж голышом)')
 		}
+	}
+
+	function resetToDefaultEquippedPreview() {
+		const defaultEquipped = extractDefaultEquippedIds(characterValues.value, characterEquipment.value)
+		const nextSet = new Set()
+		for (const item of characterEquipment.value) {
+			if (item?.id && defaultEquipped.has(item.id)) {
+				nextSet.add(item.id)
+			}
+		}
+		activeEquippedIds.value = nextSet
+		setStatus(`Надета дефолтная экипировка из JSON (${nextSet.size} предм.)`)
 	}
 
 	function addEquipmentPart(itemId, parent = 'body') {
@@ -2289,6 +2385,7 @@ export function useCharacterRigStudio() {
 		removeEquipmentItem,
 		toggleEquipPreview,
 		setAllEquippedPreview,
+		resetToDefaultEquippedPreview,
 		addEquipmentPart,
 		removeEquipmentPart,
 		updateEquipmentPart,

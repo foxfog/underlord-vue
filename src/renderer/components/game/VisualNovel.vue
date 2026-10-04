@@ -8,7 +8,7 @@
 		@goto="goto"
 		@hotspot-click="onHotspotClick"
 	/>
-	<CharacterList :characters="visibleCharacters" @character-click="$emit('character-click', $event)" />
+	<CharacterList :characters="visibleCharacters" :scene="currentScene" @character-click="$emit('character-click', $event)" />
 
 	<TitleBlock
 		v-if="!isUiHidden"
@@ -58,7 +58,7 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref, provide } from 'vue'
 import TextInputModal from './modals/TextInputModal.vue'
 import StoryAudio from './StoryAudio.vue'
 import Background from './visual-novel/Background.vue'
@@ -133,6 +133,8 @@ const {
 	startFastForward,
 	stopFastForward
 } = vn
+
+provide('currentScene', currentScene)
 
 function onHotspotClick(payload) {
 	if (!payload) return
