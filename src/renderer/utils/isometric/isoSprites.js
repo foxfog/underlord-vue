@@ -54,12 +54,21 @@ function notifySpriteLoaded(url) {
 	}
 }
 
+// Hot-path memo: relative src -> Image. Avoids rebuilding the full URL
+// (regex + string concat) on every draw call for every tile/wall each frame.
+const spriteBySrc = new Map()
+
 export function loadSprite(src) {
 	if (!src) return null
+	const memo = spriteBySrc.get(src)
+	if (memo) return memo
+
 	const fullUrl = buildAssetUrl(src)
 
 	if (imageCache.has(fullUrl)) {
-		return imageCache.get(fullUrl)
+		const cached = imageCache.get(fullUrl)
+		spriteBySrc.set(src, cached)
+		return cached
 	}
 
 	if (typeof Image === 'undefined') {
@@ -70,6 +79,7 @@ export function loadSprite(src) {
 	img.onload = () => notifySpriteLoaded(fullUrl)
 	img.src = fullUrl
 	imageCache.set(fullUrl, img)
+	spriteBySrc.set(src, img)
 	return img
 }
 
@@ -242,6 +252,10 @@ export function getTileSpritePath(tile) {
 	return `images/sprites/isometric/tiles/bot/${resolvedKey}.png`
 }
 
+// Raw texture key (tile.texture or mapped type) -> Image. The resolved path depends
+// only on this key, so we can skip trim/toLowerCase/template-string work per tile per frame.
+const tileSpriteByKey = new Map()
+
 /**
  * Retrieves the loaded Image object for a floor tile.
  *
@@ -249,9 +263,14 @@ export function getTileSpritePath(tile) {
  * @returns {HTMLImageElement|null}
  */
 export function resolveTileSprite(tile) {
-	const path = getTileSpritePath(tile)
-	if (!path) return null
-	return loadSprite(path)
+	if (!tile) return null
+	const rawKey = tile.texture || TILE_TEXTURE_MAP[tile.type] || null
+	if (!rawKey) return null
+	const memo = tileSpriteByKey.get(rawKey)
+	if (memo) return memo
+	const img = loadSprite(getTileSpritePath(tile))
+	if (img) tileSpriteByKey.set(rawKey, img)
+	return img
 }
 
 /**
@@ -329,4 +348,6 @@ export function resolveWallSprite(edge, wall) {
 export function clearSpriteCache() {
 	imageCache.clear()
 	resolvedCharacterUrls.clear()
+	spriteBySrc.clear()
+	tileSpriteByKey.clear()
 }

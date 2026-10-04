@@ -8,64 +8,114 @@
 // x' = a*x + c*y + e
 // y' = b*x + d*y + f
 
-export function createIdentityMatrix() {
-	return [1, 0, 0, 1, 0, 0]
+export function createIdentityMatrix(out = null) {
+	const target = out || [1, 0, 0, 1, 0, 0]
+	target[0] = 1
+	target[1] = 0
+	target[2] = 0
+	target[3] = 1
+	target[4] = 0
+	target[5] = 0
+	return target
 }
 
-export function multiplyMatrices(m1, m2) {
-	return [
-		m1[0] * m2[0] + m1[2] * m2[1],
-		m1[1] * m2[0] + m1[3] * m2[1],
-		m1[0] * m2[2] + m1[2] * m2[3],
-		m1[1] * m2[2] + m1[3] * m2[3],
-		m1[0] * m2[4] + m1[2] * m2[5] + m1[4],
-		m1[1] * m2[4] + m1[3] * m2[5] + m1[5]
-	]
+export function multiplyMatrices(m1, m2, out = null) {
+	const a0 = m1[0], a1 = m1[1], a2 = m1[2], a3 = m1[3], a4 = m1[4], a5 = m1[5]
+	const b0 = m2[0], b1 = m2[1], b2 = m2[2], b3 = m2[3], b4 = m2[4], b5 = m2[5]
+	const target = out || new Array(6)
+	target[0] = a0 * b0 + a2 * b1
+	target[1] = a1 * b0 + a3 * b1
+	target[2] = a0 * b2 + a2 * b3
+	target[3] = a1 * b2 + a3 * b3
+	target[4] = a0 * b4 + a2 * b5 + a4
+	target[5] = a1 * b4 + a3 * b5 + a5
+	return target
 }
 
-export function translateMatrix(m, tx, ty) {
-	return multiplyMatrices(m, [1, 0, 0, 1, tx, ty])
+export function translateMatrix(m, tx, ty, out = null) {
+	const target = out || new Array(6)
+	target[0] = m[0]
+	target[1] = m[1]
+	target[2] = m[2]
+	target[3] = m[3]
+	target[4] = m[0] * tx + m[2] * ty + m[4]
+	target[5] = m[1] * tx + m[3] * ty + m[5]
+	return target
 }
 
-export function rotateMatrix(m, radians) {
+export function rotateMatrix(m, radians, out = null) {
 	const cos = Math.cos(radians)
 	const sin = Math.sin(radians)
-	return multiplyMatrices(m, [cos, sin, -sin, cos, 0, 0])
+	const a = m[0], b = m[1], c = m[2], d = m[3]
+	const target = out || new Array(6)
+	target[0] = a * cos + c * sin
+	target[1] = b * cos + d * sin
+	target[2] = a * -sin + c * cos
+	target[3] = b * -sin + d * cos
+	target[4] = m[4]
+	target[5] = m[5]
+	return target
 }
 
-export function scaleMatrix(m, sx, sy = sx) {
-	return multiplyMatrices(m, [sx, 0, 0, sy, 0, 0])
+export function scaleMatrix(m, sx, sy = sx, out = null) {
+	const target = out || new Array(6)
+	target[0] = m[0] * sx
+	target[1] = m[1] * sx
+	target[2] = m[2] * sy
+	target[3] = m[3] * sy
+	target[4] = m[4]
+	target[5] = m[5]
+	return target
 }
 
-export function skewXMatrix(m, radians) {
-	return multiplyMatrices(m, [1, 0, Math.tan(radians), 1, 0, 0])
+export function skewXMatrix(m, radians, out = null) {
+	const tan = Math.tan(radians)
+	const a = m[0], b = m[1], c = m[2], d = m[3]
+	const target = out || new Array(6)
+	target[0] = a
+	target[1] = b
+	target[2] = a * tan + c
+	target[3] = b * tan + d
+	target[4] = m[4]
+	target[5] = m[5]
+	return target
 }
 
-export function invertMatrix(m) {
-	const [a, b, c, d, e, f] = m
+export function invertMatrix(m, out = null) {
+	const a = m[0], b = m[1], c = m[2], d = m[3], e = m[4], f = m[5]
 	const det = a * d - b * c
 	if (Math.abs(det) < 1e-8) return null
 	const invDet = 1 / det
-	return [
-		d * invDet,
-		-b * invDet,
-		-c * invDet,
-		a * invDet,
-		(c * f - d * e) * invDet,
-		(b * e - a * f) * invDet
-	]
+	const target = out || new Array(6)
+	target[0] = d * invDet
+	target[1] = -b * invDet
+	target[2] = -c * invDet
+	target[3] = a * invDet
+	target[4] = (c * f - d * e) * invDet
+	target[5] = (b * e - a * f) * invDet
+	return target
 }
 
-export function transformPoint(m, x, y) {
-	return {
-		x: m[0] * x + m[2] * y + m[4],
-		y: m[1] * x + m[3] * y + m[5]
+export function transformPoint(m, x, y, out = null) {
+	const px = m[0] * x + m[2] * y + m[4]
+	const py = m[1] * x + m[3] * y + m[5]
+	if (out) {
+		out.x = px
+		out.y = py
+		return out
 	}
+	return { x: px, y: py }
 }
+
 
 // Global Image Cache to prevent flickering and avoid reloading
 const imageCache = new Map()
 const pendingLoads = new Map()
+
+export function clearCharacterRigImageCache() {
+	imageCache.clear()
+	pendingLoads.clear()
+}
 
 export function getImageFromCache(src) {
 	if (!src) return null
@@ -270,12 +320,12 @@ export class CharacterRigRenderer {
 		const rootCenterY = groundBaselineY - (rootHeight / 2) - (rootHeight * (rootOffset.y || 0)) / 100
 
 		// Root base matrix
-		let rootMatrix = createIdentityMatrix()
-		rootMatrix = translateMatrix(rootMatrix, rootCenterX, rootCenterY)
+		const rootMatrix = createIdentityMatrix()
+		translateMatrix(rootMatrix, rootCenterX, rootCenterY, rootMatrix)
 
 		// Orientation flip (left/right)
 		if (orientation === 'left' || orientation === 'inverted') {
-			rootMatrix = scaleMatrix(rootMatrix, -1, 1)
+			scaleMatrix(rootMatrix, -1, 1, rootMatrix)
 		}
 
 		// Recursive function to process node and its children
@@ -318,8 +368,8 @@ export class CharacterRigRenderer {
 				attachY = (parentHeight * offY) / 200
 			}
 
-			// Matrix at attachment center
-			let localMatrix = translateMatrix(parentMatrix, attachX, attachY)
+			// Matrix at attachment center (initial clone of parent with attachment offset)
+			const localMatrix = translateMatrix(parentMatrix, attachX, attachY)
 
 			// Part translations (from posing/joystick/animations)
 			const trans = partTranslations[name]
@@ -327,7 +377,7 @@ export class CharacterRigRenderer {
 				// Translate relative to child size
 				const tx = (nodeWidth * (trans.x || 0)) / 100
 				const ty = (nodeHeight * (trans.y || 0)) / 100
-				localMatrix = translateMatrix(localMatrix, tx, ty)
+				translateMatrix(localMatrix, tx, ty, localMatrix)
 			}
 
 			// Eye joystick offset: ONLY for eyeballs (eyeball-left, eyeball-right, or parts with eyeball/pupil in name)
@@ -343,7 +393,7 @@ export class CharacterRigRenderer {
 				const eyeX = off?.x ? (off.x * nodeWidth * 0.15) : 0
 				const eyeY = off?.y ? (off.y * nodeHeight * 0.15) : 0
 				if (eyeX || eyeY) {
-					localMatrix = translateMatrix(localMatrix, eyeX, eyeY)
+					translateMatrix(localMatrix, eyeX, eyeY, localMatrix)
 				}
 			}
 
@@ -356,15 +406,15 @@ export class CharacterRigRenderer {
 						const tilt = Number(isometricTiltAngle) || 26.565
 						const skewRad = -Math.sin(rotRad * 2) * (tilt * 0.55 * Math.PI / 180)
 						const scaleYVal = 0.75 + 0.25 * Math.cos(rotRad)
-						localMatrix = rotateMatrix(localMatrix, rotRad)
-						localMatrix = skewXMatrix(localMatrix, skewRad)
-						localMatrix = scaleMatrix(localMatrix, 1, scaleYVal)
+						rotateMatrix(localMatrix, rotRad, localMatrix)
+						skewXMatrix(localMatrix, skewRad, localMatrix)
+						scaleMatrix(localMatrix, 1, scaleYVal, localMatrix)
 					} else {
 						// Standard 2D rotation fallback for canvas
-						localMatrix = rotateMatrix(localMatrix, rotRad)
+						rotateMatrix(localMatrix, rotRad, localMatrix)
 					}
 				} else {
-					localMatrix = rotateMatrix(localMatrix, rotRad)
+					rotateMatrix(localMatrix, rotRad, localMatrix)
 				}
 			}
 
@@ -405,7 +455,7 @@ export class CharacterRigRenderer {
 			}
 
 			if (sx !== 1 || sy !== 1) {
-				localMatrix = scaleMatrix(localMatrix, sx, sy)
+				scaleMatrix(localMatrix, sx, sy, localMatrix)
 			}
 
 			// Pivot (defaults to center 50%, 50%)
@@ -717,5 +767,21 @@ export class CharacterRigRenderer {
 			})
 		}
 		return centers
+	}
+
+	/**
+	 * Releases cached nodes, queues, and offscreen canvas buffer
+	 */
+	destroy() {
+		this.computedNodes.clear()
+		this.renderQueue.length = 0
+		this.rootNode = null
+		this.onNeedRedraw = null
+		if (this.clipCanvas) {
+			this.clipCanvas.width = 0
+			this.clipCanvas.height = 0
+			this.clipCanvas = null
+			this.clipCtx = null
+		}
 	}
 }

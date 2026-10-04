@@ -91,7 +91,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, shallowRef, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import {
 	screenToHex,
 	getClosestEdgeToPoint,
@@ -115,6 +115,7 @@ import {
 	ANIM_FRAME_INTERVAL_MS,
 	FRAME_BUDGET_MS,
 	FPS_LIMIT_INTERVAL_MS,
+	DEFAULT_SHOW_STATE_BORDERS,
 	shouldTriggerHexAnimTick
 } from '@/utils/hexmap/hexConfig.js'
 import {
@@ -123,7 +124,11 @@ import {
 	normalizeHexMapData,
 	getFactionVisuals
 } from '@/utils/hexmap/hexLoader.js'
-import { renderHexMap, invalidateHexStaticCache } from '@/utils/hexmap/hexRenderer.js'
+import {
+	renderHexMap,
+	invalidateHexStaticCache,
+	clearHexStaticCache
+} from '@/utils/hexmap/hexRenderer.js'
 
 const props = defineProps({
 	mapData: {
@@ -176,7 +181,7 @@ const props = defineProps({
 	},
 	showBorders: {
 		type: Boolean,
-		default: true
+		default: DEFAULT_SHOW_STATE_BORDERS
 	},
 	factionsMap: {
 		type: [Array, Object],
@@ -259,18 +264,18 @@ function toggleBorders() {
 }
 
 // Camera State (3D Perspective with dynamic zoom-pitch coupling: min 0° at 0.5x zoom, max 60° at 3.75x zoom)
-const cameraX = ref(0)
-const cameraY = ref(0)
-const zoom = ref(1.0)
+const cameraX = shallowRef(0)
+const cameraY = shallowRef(0)
+const zoom = shallowRef(1.0)
 const pitch = ref(
 	props.pitch !== undefined && props.pitch !== null
 		? Math.max(0, Math.min(60, props.pitch))
 		: calculateDynamicPitch(zoom.value)
 )
-const isDragging = ref(false)
-const isTilting = ref(false)
+const isDragging = shallowRef(false)
+const isTilting = shallowRef(false)
 const dragStart = { x: 0, y: 0, camX: 0, camY: 0, pitch: 48 }
-const hasMovedSignificantly = ref(false)
+const hasMovedSignificantly = shallowRef(false)
 
 watch(
 	() => props.pitch,
@@ -288,7 +293,8 @@ const hoveredEdge = ref(null)
 
 // Animation Frame
 let animationFrameId = null
-const animStartTime = performance.now()
+let accumulatedAnimTime = 1.0
+let lastLoopTimestamp = 0
 
 // ── Dirty-flag render throttling ─────────────────────────────────────────────
 // renderDirty=true → перерисовать в следующем кадре (пан/зум/ховер/resize/данные)
@@ -315,9 +321,19 @@ function invalidateCache() {
 	renderDirty = true
 }
 
-function markCameraMove() {
+/**
+ * Регистрирует активное ручное перемещение камеры пользователем (мышь / колесо / клавиатура).
+ * Только при ручном вводе анимации ландшафта (вода, реки) временно замирают в кадре.
+ * Программное следование за персонажем или анимация перемещения между гексами
+ * вызывают только markDirty(), НЕ прерывая анимации воды.
+ */
+function markUserInputCameraMove() {
 	lastCameraMoveTime = performance.now()
 	markDirty()
+}
+
+function markCameraMove() {
+	markUserInputCameraMove()
 }
 
 // Discovered settlements set
@@ -378,9 +394,20 @@ const hasAnimatedElements = computed(() => {
 })
 
 // Scale-independent HTML div settlement badges (auto-fading on zoom out, anti-overlap)
-const visibleSettlementBadges = computed(() => {
-	if (settlementCells.value.length === 0 || canvasWidth.value <= 0 || canvasHeight.value <= 0) {
-		return []
+// Uses shallowRef updated in renderLoop (rAF) to decouple from high-frequency mouse events
+const visibleSettlementBadges = shallowRef([])
+
+function updateVisibleSettlementBadges() {
+	if (
+		!props.mapData ||
+		settlementCells.value.length === 0 ||
+		canvasWidth.value <= 0 ||
+		canvasHeight.value <= 0
+	) {
+		if (visibleSettlementBadges.value.length > 0) {
+			visibleSettlementBadges.value = []
+		}
+		return
 	}
 
 	const scale = Math.max(1, props.pixelScale || DEFAULT_PIXEL_SCALE)
@@ -533,8 +560,8 @@ const visibleSettlementBadges = computed(() => {
 		}
 	}
 
-	return accepted
-})
+	visibleSettlementBadges.value = accepted
+}
 
 function onSettlementBadgeClick(badge) {
 	emit('settlement-click', {
@@ -559,6 +586,13 @@ function onSettlementBadgePointerEnter(badge) {
 function onSettlementBadgePointerLeave() {
 	hoveredHex.value = null
 }
+
+// Badges are recomputed only on dirty frames (see renderLoop), so every input
+// that affects badge state must mark the frame dirty.
+watch(
+	[hoveredHex, () => props.currentLocation, () => props.readOnly, settlementCells],
+	() => markDirty()
+)
 
 function getCanvasCoords(event) {
 	if (!canvasRef.value) return { x: 0, y: 0 }
@@ -604,7 +638,6 @@ function onPointerDown(e) {
 		hasMovedSignificantly.value = false
 		dragStart.y = e.clientY
 		dragStart.pitch = pitch.value
-		markCameraMove()
 		containerRef.value?.setPointerCapture?.(e.pointerId)
 		return
 	}
@@ -616,7 +649,6 @@ function onPointerDown(e) {
 		dragStart.y = e.clientY
 		dragStart.camX = cameraX.value
 		dragStart.camY = cameraY.value
-		markCameraMove()
 		containerRef.value?.setPointerCapture?.(e.pointerId)
 	} else if (e.button === 0) {
 		isDragging.value = true
@@ -625,7 +657,6 @@ function onPointerDown(e) {
 		dragStart.y = e.clientY
 		dragStart.camX = cameraX.value
 		dragStart.camY = cameraY.value
-		markCameraMove()
 		containerRef.value?.setPointerCapture?.(e.pointerId)
 	}
 }
@@ -635,12 +666,12 @@ function onPointerMove(e) {
 		const dy = e.clientY - dragStart.y
 		if (Math.abs(dy) > 3) {
 			hasMovedSignificantly.value = true
+			const newPitch = Math.max(0, Math.min(60, Math.round(dragStart.pitch - dy * 0.25)))
+			pitch.value = newPitch
+			emit('pitch-change', pitch.value)
+			emit('update:pitch', pitch.value)
+			markUserInputCameraMove()
 		}
-		const newPitch = Math.max(0, Math.min(60, Math.round(dragStart.pitch - dy * 0.25)))
-		pitch.value = newPitch
-		emit('pitch-change', pitch.value)
-		emit('update:pitch', pitch.value)
-		markCameraMove()
 		return
 	}
 
@@ -653,11 +684,11 @@ function onPointerMove(e) {
 			const cosT = Math.max(0.2, Math.cos(theta))
 			cameraX.value = dragStart.camX - dx / zoom.value
 			cameraY.value = dragStart.camY - dy / (zoom.value * cosT)
-			markCameraMove()
+			markUserInputCameraMove()
 		}
 		// While actively dragging/panning the map, suppress raycast hover and DOM updates
-		hoveredHex.value = null
-		hoveredEdge.value = null
+		if (hoveredHex.value !== null) hoveredHex.value = null
+		if (hoveredEdge.value !== null) hoveredEdge.value = null
 		return
 	}
 
@@ -673,10 +704,14 @@ function onPointerMove(e) {
 	const hex = screenToHex(ground.x, ground.y, radius, 1.0)
 
 	// Check bounds
-	const minCol = props.mapData.bounds?.minCol ?? 0
-	const maxCol = props.mapData.bounds?.maxCol ?? (props.mapData.cols || 20) - 1
-	const minRow = props.mapData.bounds?.minRow ?? 0
-	const maxRow = props.mapData.bounds?.maxRow ?? (props.mapData.rows || 15) - 1
+	const cols = props.mapData.cols || 20
+	const rows = props.mapData.rows || 15
+	const halfW = Math.floor(cols / 2)
+	const halfH = Math.floor(rows / 2)
+	const minCol = props.mapData.bounds?.minCol ?? -halfW
+	const maxCol = props.mapData.bounds?.maxCol ?? (cols - 1 - halfW)
+	const minRow = props.mapData.bounds?.minRow ?? -halfH
+	const maxRow = props.mapData.bounds?.maxRow ?? (rows - 1 - halfH)
 
 	if (hex.col >= minCol && hex.col <= maxCol && hex.row >= minRow && hex.row <= maxRow) {
 		const prevCol = hoveredHex.value?.col
@@ -790,13 +825,13 @@ function onWheel(e) {
 		pitch.value = newPitch
 		emit('pitch-change', pitch.value)
 		emit('update:pitch', pitch.value)
-		markCameraMove()
+		markUserInputCameraMove()
 		return
 	}
 
 	const zoomStep = e.deltaY < 0 ? HEX_ZOOM_WHEEL_STEP : -HEX_ZOOM_WHEEL_STEP
 	applyZoom(zoom.value + zoomStep)
-	markCameraMove()
+	markUserInputCameraMove()
 }
 
 function onContextMenu(e) {
@@ -818,21 +853,25 @@ function onContextMenu(e) {
 
 function zoomIn() {
 	applyZoom(zoom.value + HEX_ZOOM_BTN_STEP_IN)
-	markCameraMove()
+	markUserInputCameraMove()
 }
 
 function zoomOut() {
 	applyZoom(zoom.value - HEX_ZOOM_BTN_STEP_OUT)
-	markCameraMove()
+	markUserInputCameraMove()
 }
 
 function resetCamera() {
 	if (!canvasRef.value || !props.mapData) return
 	const radius = props.mapData.hexRadius || DEFAULT_HEX_RADIUS
-	const minCol = props.mapData.bounds?.minCol ?? 0
-	const maxCol = props.mapData.bounds?.maxCol ?? (props.mapData.cols || 20) - 1
-	const minRow = props.mapData.bounds?.minRow ?? 0
-	const maxRow = props.mapData.bounds?.maxRow ?? (props.mapData.rows || 15) - 1
+	const cols = props.mapData.cols || 20
+	const rows = props.mapData.rows || 15
+	const halfW = Math.floor(cols / 2)
+	const halfH = Math.floor(rows / 2)
+	const minCol = props.mapData.bounds?.minCol ?? -halfW
+	const maxCol = props.mapData.bounds?.maxCol ?? (cols - 1 - halfW)
+	const minRow = props.mapData.bounds?.minRow ?? -halfH
+	const maxRow = props.mapData.bounds?.maxRow ?? (rows - 1 - halfH)
 
 	const centerGround = hexToWorldGroundCenter(
 		Math.floor((minCol + maxCol) / 2),
@@ -847,6 +886,155 @@ function resetCamera() {
 	emit('pitch-change', pitch.value)
 	emit('update:pitch', pitch.value)
 	markDirty()
+}
+
+let cameraTweenId = null
+
+function cancelCameraTween() {
+	if (cameraTweenId) {
+		cancelAnimationFrame(cameraTweenId)
+		cameraTweenId = null
+	}
+}
+
+/**
+ * Программное перемещение / полет камеры к мировым координатам (x, y).
+ * НЕ считает это ручным вводом пользователя, поэтому анимации воды и рек продолжают работать без прерываний!
+ * @param {Object} options - { x, y, zoom, pitch, duration = 0 }
+ * @returns {Promise}
+ */
+function panTo(options = {}) {
+	cancelCameraTween()
+
+	const startX = cameraX.value
+	const startY = cameraY.value
+	const startZoom = zoom.value
+	const startPitch = pitch.value
+
+	const endX = options.x !== undefined ? options.x : startX
+	const endY = options.y !== undefined ? options.y : startY
+	const endZoom = options.zoom !== undefined ? Math.min(DEFAULT_HEX_MAX_ZOOM, Math.max(DEFAULT_HEX_MIN_ZOOM, options.zoom)) : startZoom
+	const endPitch = options.pitch !== undefined ? Math.max(0, Math.min(60, options.pitch)) : startPitch
+	const duration = Number(options.duration) || 0
+
+	if (duration <= 0) {
+		cameraX.value = endX
+		cameraY.value = endY
+		zoom.value = endZoom
+		if (pitch.value !== endPitch) {
+			pitch.value = endPitch
+			emit('pitch-change', pitch.value)
+			emit('update:pitch', pitch.value)
+		}
+		markDirty()
+		return Promise.resolve()
+	}
+
+	return new Promise((resolve) => {
+		const startTime = performance.now()
+		function step(now) {
+			const elapsed = now - startTime
+			const progress = Math.min(1, elapsed / duration)
+			// Плавная квадратичная интерполяция (easeInOut)
+			const ease = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress
+
+			cameraX.value = startX + (endX - startX) * ease
+			cameraY.value = startY + (endY - startY) * ease
+			zoom.value = startZoom + (endZoom - startZoom) * ease
+			const curPitch = Math.round(startPitch + (endPitch - startPitch) * ease)
+			if (pitch.value !== curPitch) {
+				pitch.value = curPitch
+				emit('pitch-change', pitch.value)
+				emit('update:pitch', pitch.value)
+			}
+			markDirty()
+
+			if (progress < 1) {
+				cameraTweenId = requestAnimationFrame(step)
+			} else {
+				cameraTweenId = null
+				resolve()
+			}
+		}
+		cameraTweenId = requestAnimationFrame(step)
+	})
+}
+
+/**
+ * Программное центрирование камеры на гексагоне (col, row).
+ * Поддерживает плавный перелёт (duration > 0), не прерывая анимации воды и рек.
+ */
+function centerOnHex(col, row, options = {}) {
+	if (!props.mapData) return Promise.resolve()
+	const radius = props.mapData.hexRadius || DEFAULT_HEX_RADIUS
+	const center = hexToWorldGroundCenter(col, row, radius)
+	return panTo({ x: center.x, y: center.y, ...options })
+}
+
+/**
+ * Следование камеры за движущимся персонажем или точкой на карте.
+ * Обновляет позицию камеры без прерывания анимаций воды.
+ */
+function followTarget(worldX, worldY) {
+	cancelCameraTween()
+	cameraX.value = worldX
+	cameraY.value = worldY
+	markDirty()
+}
+
+/**
+ * Управление камерой с клавиатуры (стрелки / WASD, +/- для зума).
+ * Считается активным ручным вводом пользователя — анимации воды временно замирают в кадре.
+ */
+function onKeyDown(e) {
+	if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable)) {
+		return
+	}
+	if (e.ctrlKey || e.altKey || e.metaKey) return
+
+	const theta = (pitch.value * Math.PI) / 180
+	const cosT = Math.max(0.2, Math.cos(theta))
+	const panStep = Math.max(20, Math.round(56 / zoom.value))
+	let moved = false
+
+	switch (e.code) {
+		case 'ArrowLeft':
+		case 'KeyA':
+			cameraX.value -= panStep
+			moved = true
+			break
+		case 'ArrowRight':
+		case 'KeyD':
+			cameraX.value += panStep
+			moved = true
+			break
+		case 'ArrowUp':
+		case 'KeyW':
+			cameraY.value -= Math.round(panStep / cosT)
+			moved = true
+			break
+		case 'ArrowDown':
+		case 'KeyS':
+			cameraY.value += Math.round(panStep / cosT)
+			moved = true
+			break
+		case 'Equal':
+		case 'NumpadAdd':
+			applyZoom(zoom.value + HEX_ZOOM_BTN_STEP_IN)
+			moved = true
+			break
+		case 'Minus':
+		case 'NumpadSubtract':
+			applyZoom(zoom.value - HEX_ZOOM_BTN_STEP_OUT)
+			moved = true
+			break
+	}
+
+	if (moved) {
+		e.preventDefault()
+		cancelCameraTween()
+		markUserInputCameraMove()
+	}
 }
 
 let offscreenCanvas = null
@@ -931,12 +1119,23 @@ function renderLoop(currentTime) {
 	}
 
 	// Consume dirty flag and update animation timestamp
+	const frameWasDirty = renderDirty
 	renderDirty = false
 	lastAnimRenderTime = currentTime
 
 	const scale = Math.max(1, props.pixelScale || DEFAULT_PIXEL_SCALE)
-	const elapsedSec = (currentTime - animStartTime) / 1000
-	const animTime = isCameraMoving ? 0 : elapsedSec
+	if (!lastLoopTimestamp) {
+		lastLoopTimestamp = currentTime
+	}
+	const dtSec = Math.min(Math.max(0, (currentTime - lastLoopTimestamp) / 1000), 0.1)
+	lastLoopTimestamp = currentTime
+
+	// Advance animation time ONLY when camera is stationary.
+	// When zooming or panning (isCameraMoving === true), animation time is frozen so particles stay in place ("замирают")!
+	if (!isCameraMoving) {
+		accumulatedAnimTime += dtSec
+	}
+	const animTime = accumulatedAnimTime
 
 	ensureOffscreen(canvasWidth.value, canvasHeight.value)
 	if (!offscreenCtx) {
@@ -969,7 +1168,8 @@ function renderLoop(currentTime) {
 		drawCanvasBadges: false,
 		showBorders: localShowBorders.value,
 		factionsMap: props.factionsMap,
-		animTime
+		animTime,
+		isCameraMoving
 	})
 
 	// 3. Blit offscreen buffer to visible canvas with STRICT nearest-neighbor (no blur/smoothing)
@@ -988,6 +1188,12 @@ function renderLoop(currentTime) {
 		canvasRef.value.width,
 		canvasRef.value.height
 	)
+
+	// Synchronize HTML overlay badges with the rendered canvas frame.
+	// Pure animation ticks (rivers/water) don't move badges, so skip them.
+	if (frameWasDirty) {
+		updateVisibleSettlementBadges()
+	}
 
 	// Сохраняем время рендера для frame budget guard следующего кадра
 	lastRenderDurationMs = performance.now() - _t0
@@ -1008,6 +1214,7 @@ onMounted(() => {
 		resizeObserver.observe(containerRef.value)
 	}
 	window.addEventListener('resize', resizeCanvas)
+	window.addEventListener('keydown', onKeyDown)
 	// Wheel зарегистрирован вручную с { passive: false } чтобы:
 	//  1. Подавить Chrome Violation "non-passive event listener" (Vue @wheel.prevent не может это)
 	//  2. Сохранить возможность вызывать e.preventDefault() для блокировки скролла страницы
@@ -1022,18 +1229,28 @@ onUnmounted(() => {
 		resizeObserver = null
 	}
 	window.removeEventListener('resize', resizeCanvas)
+	window.removeEventListener('keydown', onKeyDown)
 	containerRef.value?.removeEventListener('wheel', onWheel)
+	cancelCameraTween()
 	if (animationFrameId) {
 		cancelAnimationFrame(animationFrameId)
 	}
-	offscreenCanvas = null
+	if (offscreenCanvas) {
+		offscreenCanvas.width = 0
+		offscreenCanvas.height = 0
+		offscreenCanvas = null
+	}
 	offscreenCtx = null
+	clearHexStaticCache()
 })
 
 defineExpose({
 	resetCamera,
 	zoomIn,
 	zoomOut,
+	panTo,
+	centerOnHex,
+	followTarget,
 	markDirty,
 	invalidateCache
 })

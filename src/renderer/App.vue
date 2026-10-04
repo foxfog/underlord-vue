@@ -1,12 +1,14 @@
 <template>
 	<router-view />
 	<BgMusic />
+	<PerformanceOverlay v-if="store.video.showFpsOverlay" />
 </template>
 
 <script setup>
 import { onMounted, onUnmounted, watch } from 'vue'
 import { useSettingsStore } from '@/stores/settings'
 import BgMusic from '@/components/sounds/BgMusic.vue'
+import PerformanceOverlay from '@/components/UI/PerformanceOverlay.vue'
 
 const store = useSettingsStore()
 
@@ -46,12 +48,21 @@ watch(
 	}
 )
 
+function onKeyDown(e) {
+	if (e.code === 'F3') {
+		e.preventDefault()
+		store.toggleFpsOverlay()
+	}
+}
+
 onMounted(() => {
 	window.addEventListener('resize', handleResize, { passive: true })
+	window.addEventListener('keydown', onKeyDown)
 })
 
 onUnmounted(() => {
 	window.removeEventListener('resize', handleResize)
+	window.removeEventListener('keydown', onKeyDown)
 	if (resizeTimer) clearTimeout(resizeTimer)
 })
 </script>

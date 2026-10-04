@@ -64,8 +64,9 @@ import {
 	loadHexMap,
 	loadFactionsData
 } from '@/utils/hexmap/hexLoader.js'
+import { DEFAULT_SHOW_STATE_BORDERS } from '@/utils/hexmap/hexConfig.js'
 
-const showBorders = ref(true)
+const showBorders = ref(DEFAULT_SHOW_STATE_BORDERS)
 
 const props = defineProps({
 	currentLocation: {

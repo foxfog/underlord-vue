@@ -19,6 +19,7 @@ import {
 	getCanonicalRoadKey,
 	checkBridgeBetweenHexes,
 	getFactionVisuals,
+	isStateFaction,
 	hexToRgba
 } from './hexLoader.js'
 import {
@@ -43,6 +44,7 @@ import {
 	getHashFloat,
 	getHexEdgeVertexIndices,
 	getHexVertexNeighborCells,
+	getHexesInRadius,
 	DEFAULT_HEX_MIN_ZOOM,
 	DEFAULT_HEX_MAX_ZOOM
 } from './hexCoords.js'
@@ -64,6 +66,8 @@ import {
 	HEX_TEXTURE_BLEED,
 	RIVER_CONFIG,
 	setRiverConfig,
+	ROAD_CONFIG,
+	setRoadConfig,
 	HEX_BORDER_ALPHA,
 	setHexBorderAlpha,
 	BORDER_CASING_ALPHA,
@@ -73,7 +77,8 @@ import {
 	FACTION_FILL_ALPHA,
 	setFactionFillAlpha,
 	WATER_CONFIG,
-	setWaterConfig
+	setWaterConfig,
+	HEX_SURFACE_ANIMATION_FPS
 } from './hexConfig.js'
 
 export {
@@ -89,6 +94,8 @@ export {
 	setAnimDisableZoomFraction,
 	RIVER_CONFIG,
 	setRiverConfig,
+	ROAD_CONFIG,
+	setRoadConfig,
 	WATER_CONFIG,
 	setWaterConfig,
 	HEX_BORDER_ALPHA,
@@ -117,6 +124,110 @@ let _hexStaticVersion = 0
  */
 export function invalidateHexStaticCache() {
 	_hexStaticVersion++
+	_shoreVectorCache.clear()
+}
+
+/**
+ * Completely frees offscreen static canvases and GPU texture allocations on unmount.
+ */
+let _cachedWaterPath2D = null
+let _cachedWaterPathKey = ''
+let _lastFrozenAnimTime = 1.0
+
+/**
+ * Cached normalized vector (dx, dy) pointing to nearest land shore per cell.
+ * Keyed by `${col},${row}`. Cleared when map static cache invalidates.
+ */
+const _shoreVectorCache = new Map()
+
+/**
+ * Calculates a normalized 2D world-space vector (dx, dy) pointing towards the nearest shore (non-water cell).
+ * Checks radius 1 first (immediate 6 neighbors), then radius 2.
+ * If no land is nearby (deep open ocean), falls back to open water wind angle.
+ */
+function getCellShoreVector(col, row, mapData, radius, openWaterAngle = 0.4) {
+	if (!mapData || !mapData.cells) {
+		return { dx: Math.cos(openWaterAngle), dy: Math.sin(openWaterAngle), hasShore: false }
+	}
+	const cacheKey = `${col},${row}`
+	const cached = _shoreVectorCache.get(cacheKey)
+	if (cached) return cached
+
+	const center = hexToWorldGroundCenter(col, row, radius)
+	let sumX = 0
+	let sumY = 0
+	let count = 0
+
+	// 1. Check immediate 6 neighbors (radius 1)
+	for (const edge of HEX_EDGES) {
+		const nCoord = getHexNeighbor(col, row, edge)
+		const nKey = `${nCoord.col},${nCoord.row}`
+		const nCell = mapData.cells[nKey]
+		if (nCell) {
+			const isWater = nCell.terrain === 'water' || nCell.terrain === 'ocean'
+			if (!isWater) {
+				const nCenter = hexToWorldGroundCenter(nCoord.col, nCoord.row, radius)
+				sumX += (nCenter.x - center.x)
+				sumY += (nCenter.y - center.y)
+				count++
+			}
+		}
+	}
+
+	// 2. If no immediate neighbors are land, check radius 2 (up to 18 surrounding cells)
+	if (count === 0) {
+		const r2Coords = getHexesInRadius(col, row, 2)
+		for (const coord of r2Coords) {
+			if (coord.col === col && coord.row === row) continue
+			const nKey = `${coord.col},${coord.row}`
+			const nCell = mapData.cells[nKey]
+			if (nCell && nCell.terrain !== 'water' && nCell.terrain !== 'ocean') {
+				const nCenter = hexToWorldGroundCenter(coord.col, coord.row, radius)
+				const distSq = (nCenter.x - center.x) ** 2 + (nCenter.y - center.y) ** 2
+				const w = 1 / Math.sqrt(distSq)
+				sumX += (nCenter.x - center.x) * w
+				sumY += (nCenter.y - center.y) * w
+				count++
+			}
+		}
+	}
+
+	let result
+	if (count > 0) {
+		const len = Math.hypot(sumX, sumY)
+		if (len > 0.001) {
+			result = { dx: sumX / len, dy: sumY / len, hasShore: true }
+		} else {
+			result = { dx: Math.cos(openWaterAngle), dy: Math.sin(openWaterAngle), hasShore: false }
+		}
+	} else {
+		result = { dx: Math.cos(openWaterAngle), dy: Math.sin(openWaterAngle), hasShore: false }
+	}
+
+	_shoreVectorCache.set(cacheKey, result)
+	return result
+}
+
+export function clearHexStaticCache() {
+	_hexStaticVersion++
+	_lastStaticParams = null
+	_shoreVectorCache.clear()
+	if (_staticGroundCanvas) {
+		_staticGroundCanvas.width = 0
+		_staticGroundCanvas.height = 0
+		_staticGroundCanvas = null
+		_staticGroundCtx = null
+	}
+	if (_staticOverlayCanvas) {
+		_staticOverlayCanvas.width = 0
+		_staticOverlayCanvas.height = 0
+		_staticOverlayCanvas = null
+		_staticOverlayCtx = null
+	}
+	_biomePatternCache.clear()
+	_cachedWaterPath2D = null
+	_cachedWaterPathKey = ''
+	_lastFrozenAnimTime = 1.0
 }
 
 function ensureStaticCanvases(width, height) {
@@ -381,9 +492,22 @@ export function renderHexMap(ctx, mapData, options = {}) {
 	let lodLevel = calculateLodLevel(screenRadius)
 	const useOrganic = lodLevel === 0 && mapOrganic
 
+	const isCameraMoving = Boolean(options.isCameraMoving)
 	const _animZoomThreshold = DEFAULT_HEX_MIN_ZOOM + (1 - ANIM_DISABLE_ZOOM_FRACTION) * (DEFAULT_HEX_MAX_ZOOM - DEFAULT_HEX_MIN_ZOOM)
 	const animationsActive = ENABLE_HEX_ANIMATIONS && (ANIM_DISABLE_ZOOM_FRACTION <= 0 || logicalZoom >= _animZoomThreshold)
-	const effectiveAnimTime = animationsActive ? animTime : 0
+	// Surface animations (rivers, water caustics, wave crests) throttled to target FPS (default 30)
+	const animFps = HEX_SURFACE_ANIMATION_FPS || 30
+	const animStepSec = 1 / animFps
+	const steppedAnimTime = Math.floor(animTime / animStepSec) * animStepSec
+
+	// When moving/zooming camera or when animations are disabled by zoom threshold,
+	// freeze animation time in place ("замирают") so particles and river cubes remain visible.
+	let effectiveAnimTime = steppedAnimTime
+	if (isCameraMoving || !animationsActive) {
+		effectiveAnimTime = _lastFrozenAnimTime > 0 ? _lastFrozenAnimTime : (steppedAnimTime || 1.0)
+	} else {
+		_lastFrozenAnimTime = steppedAnimTime || 1.0
+	}
 
 	// 0.2. Fast Frustum Grid Bounding Box Culling (cuts 10,000 cells down to ~300 visible cells)
 	const mapBounds = mapData.bounds || {
@@ -408,7 +532,7 @@ export function renderHexMap(ctx, mapData, options = {}) {
 				if (cell.feature === 'mountain' || cell.settlement || (lodLevel < 2 && cell.feature === 'hills')) {
 					visibleReliefCells.push(cell)
 				}
-				if (lodLevel === 0 && (cell.terrain === 'water' || cell.terrain === 'ocean')) {
+				if (lodLevel < 2 && (cell.terrain === 'water' || cell.terrain === 'ocean')) {
 					visibleWaterCells.push(cell)
 				}
 			}
@@ -526,15 +650,23 @@ export function renderHexMap(ctx, mapData, options = {}) {
 			ctx.drawImage(_staticGroundCanvas, 0, 0)
 		}
 
-		// Dynamic Middle: Water pixel shimmer animation (LOD 0 only) & Rivers
-		if (lodLevel === 0 && effectiveAnimTime > 0 && visibleWaterCells.length > 0) {
-			drawWaterShimmerBatch(ctx, camera, visibleWaterCells, radius, effectiveAnimTime)
+		// Dynamic Middle: Water pixel shimmer animation & surface noise (LOD 0 & 1) & Rivers
+		if (lodLevel < 2 && visibleWaterCells.length > 0) {
+			drawWaterShimmerBatch(ctx, camera, visibleWaterCells, radius, effectiveAnimTime, lodLevel, {
+				useOrganic,
+				seed: mapData.seed || 0,
+				riverMap,
+				isCameraMoving,
+				mapData
+			})
 		}
 
 		drawRivers(ctx, camera, mapData, radius, effectiveAnimTime, {
 			organic: useOrganic,
 			lodLevel,
-			screenRadius
+			screenRadius,
+			pixelScale,
+			isCameraMoving
 		})
 
 		// Composite Layer 2: Static Overlay
@@ -577,7 +709,9 @@ export function renderHexMap(ctx, mapData, options = {}) {
 	drawRivers(ctx, camera, mapData, radius, effectiveAnimTime, {
 		organic: useOrganic,
 		lodLevel,
-		screenRadius
+		screenRadius,
+		pixelScale,
+		isCameraMoving
 	})
 
 	if (showBorders) {
@@ -845,11 +979,19 @@ function drawBaseCellsBatched(ctx, camera, mapData, radius, animTime, seed = 0, 
 			}
 		}
 
-		// 3.4. Water shimmer animation for water/ocean (LOD 0 only)
-		if (biome.isWater && lodLevel === 0 && !options.skipWaterShimmer) {
+		// 3.4. Water shimmer animation for water/ocean (LOD 0 & 1)
+		if (biome.isWater && lodLevel < 2 && !options.skipWaterShimmer) {
+			clearWaterBatches()
 			for (const pc of projectedList) {
-				drawWaterShimmer(ctx, camera, pc.center.x, pc.center.y, radius, animTime, pc.cell.terrain === 'ocean')
+				const isOcean = pc.cell.terrain === 'ocean'
+				appendCellWaterSurfaceNoise(camera, pc.center.x, pc.center.y, radius, animTime, isOcean, _waterBatches, pc.cell.col, pc.cell.row, seed)
+				appendCellWaterRipples(camera, pc.center.x, pc.center.y, radius, animTime, isOcean, _waterBatches, pc.cell.col, pc.cell.row, seed, mapData)
 			}
+			ctx.save()
+			traceGroupPath()
+			ctx.clip()
+			flushWaterBatches(ctx)
+			ctx.restore()
 		}
 	}
 }
@@ -975,7 +1117,20 @@ function drawHexCell(ctx, camera, cell, radius, animTime, seed = 0, riverMap = n
 		}
 
 		if (biome.isWater) {
-			drawWaterShimmer(ctx, camera, center.x, center.y, radius, animTime, cell.terrain === 'ocean')
+			ctx.save()
+			ctx.beginPath()
+			ctx.moveTo(pVerts[0].x, pVerts[0].y)
+			for (let i = 1; i < 6; i++) {
+				ctx.lineTo(pVerts[i].x, pVerts[i].y)
+			}
+			ctx.closePath()
+			ctx.clip()
+			drawWaterShimmer(ctx, camera, center.x, center.y, radius, animTime, cell.terrain === 'ocean', 0, {
+				col: cell.col,
+				row: cell.row,
+				seed
+			})
+			ctx.restore()
 		}
 		return
 	}
@@ -1120,73 +1275,179 @@ function drawHexCell(ctx, camera, cell, radius, animTime, seed = 0, riverMap = n
 	// 4. Water waves animation for water/ocean
 	if (biome.isWater) {
 		const center = hexToWorldGroundCenter(cell.col, cell.row, radius)
-		drawWaterShimmer(ctx, camera, center.x, center.y, radius, animTime, cell.terrain === 'ocean')
+		ctx.save()
+		traceOutlinePath()
+		ctx.clip()
+		drawWaterShimmer(ctx, camera, center.x, center.y, radius, animTime, cell.terrain === 'ocean', 0, {
+			col: cell.col,
+			row: cell.row,
+			seed
+		})
+		ctx.restore()
 	}
 }
 
 // ── Pixel Art Water Shimmer & Wavelet Batching Engine ────────────────────────
-// Reusable flat arrays (x, y, w, h) to eliminate per-frame garbage collection.
+// Reusable flat arrays (x, y, w, h) for lightweight pixel-art wave crests and surface particles
 const _waterBatches = {
-	coastHL: [],
-	coastMid: [],
-	coastShadow: [],
-	oceanHL: [],
-	oceanMid: [],
-	oceanShadow: []
+	hl: [],
+	mid: [],
+	shadow: []
 }
+
+// Backward-compatibility aliases for legacy property access
+Object.defineProperties(_waterBatches, {
+	coastHL: { get() { return this.hl } },
+	coastMid: { get() { return this.mid } },
+	coastShadow: { get() { return this.shadow } },
+	oceanHL: { get() { return this.hl } },
+	oceanMid: { get() { return this.mid } },
+	oceanShadow: { get() { return this.shadow } }
+})
 
 function clearWaterBatches() {
-	_waterBatches.coastHL.length = 0
-	_waterBatches.coastMid.length = 0
-	_waterBatches.coastShadow.length = 0
-	_waterBatches.oceanHL.length = 0
-	_waterBatches.oceanMid.length = 0
-	_waterBatches.oceanShadow.length = 0
+	_waterBatches.hl.length = 0
+	_waterBatches.mid.length = 0
+	_waterBatches.shadow.length = 0
 }
 
+
+
 /**
- * Normalized relative offsets for ripple spots inside a flat-topped hex.
- * Flat-topped hex inscribed radius is (sqrt(3)/2) * R ≈ 0.866 * R.
- * Offsets are kept safely within [-0.32 .. +0.32] * R so ripples never bleed into neighboring land hexes.
+ * Appends 1-pixel twinkling water surface particles (light sun glints and dark depth specks)
+ * for a single water cell.
+ * Particles are stationary in world coordinates (do NOT move/drift), appear and disappear in place,
+ * and scale density with zoom so close zoom feels rich and distant zoom is crisp.
  */
-const WATER_RIPPLE_SPOTS = [
-	{ relX: -0.22, relY: -0.16, phaseOffset: 0.00 },
-	{ relX: 0.18, relY: -0.06, phaseOffset: 0.36 },
-	{ relX: -0.06, relY: 0.20, phaseOffset: 0.72 },
-	{ relX: 0.20, relY: 0.16, phaseOffset: 0.18 },
-	{ relX: -0.18, relY: 0.08, phaseOffset: 0.54 }
-]
+function appendCellWaterSurfaceNoise(camera, cx, cy, radius, animTime, isOcean, batches, col = 0, row = 0, mapSeed = 0) {
+	const noiseCfg = WATER_CONFIG.surfaceNoise
+	if (!noiseCfg || !noiseCfg.enabled) return
+
+	const pCenter = camera.project(cx, cy, 0)
+	if (!pCenter.visible) return
+
+	const cellScale = pCenter.scale || camera.zoom || 1
+	const effectiveScreenRadius = radius * cellScale
+
+	// Density scales with zoom: fewer at distance, more at close-up zoom, configurable via WATER_CONFIG.surfaceNoise
+	const density = Math.max(0.1, noiseCfg.density ?? 1.0)
+	const pRange = noiseCfg.particlesPerHex || { min: 10, normal: 16, max: 26 }
+	let numSpots = pRange.normal || 16
+	if (effectiveScreenRadius < 45) {
+		numSpots = pRange.min || 10
+	} else if (effectiveScreenRadius >= 80) {
+		numSpots = pRange.max || 26
+	}
+	numSpots = Math.max(1, Math.round(numSpots * density))
+
+	const cellSeed = ((col * 73856093) ^ (row * 19349663) ^ (mapSeed * 83492791) ^ 0x9e3779b9) >>> 0
+	const animSpeed = (noiseCfg.speed ?? 0.85) * (WATER_CONFIG.speed || 1.0)
+	const basePx = noiseCfg.pixelSize || 1.0
+	const px = Math.max(1, Math.round(basePx * Math.min(1.5, Math.max(0.7, pCenter.scale))))
+
+	const hlBatch = batches.hl || (isOcean ? batches.oceanHL : batches.coastHL)
+	const midBatch = batches.mid || (isOcean ? batches.oceanMid : batches.coastMid)
+	const shadowBatch = batches.shadow || (isOcean ? batches.oceanShadow : batches.coastShadow)
+
+	for (let s = 0; s < numSpots; s++) {
+		const spotSeed = (cellSeed ^ (s * 1013904223)) >>> 0
+
+		// Deterministic stationary world coordinates inside the cell
+		const rNorm = Math.sqrt(getHashFloat(spotSeed, 1)) * 0.90 * radius
+		const angle = getHashFloat(spotSeed, 2) * 6.2831853
+		const worldX = cx + Math.cos(angle) * rNorm
+		const worldY = cy + Math.sin(angle) * rNorm
+
+		// Twinkle lifecycle: independent cycle duration (1.8s - 3.2s) and phase
+		const cycleDuration = 1.8 + getHashFloat(spotSeed, 3) * 1.4
+		const spotPhase = getHashFloat(spotSeed, 4) * cycleDuration
+		const t = ((animTime * animSpeed + spotPhase) % cycleDuration) / cycleDuration
+
+		// Active visibility window: visible for 38% of the cycle
+		if (t > 0.38) continue
+
+		// Bell curve intensity (0 -> 1 -> 0)
+		const u = t / 0.38
+		const intensity = Math.sin(u * Math.PI)
+		if (intensity < 0.22) continue
+
+		// Project stationary world point to screen coordinates
+		const p = camera.project(worldX, worldY, 0)
+		if (!p.visible) continue
+
+		const scrX = Math.round(p.x)
+		const scrY = Math.round(p.y)
+
+		// 3-way distribution: 35% highlight (soft sky-blue), 35% midtone (azure), 30% shadow (deep navy)
+		const toneRoll = getHashFloat(spotSeed, 5)
+		if (toneRoll < 0.35) {
+			hlBatch.push(scrX, scrY, px, px)
+		} else if (toneRoll < 0.70) {
+			midBatch.push(scrX, scrY, px, px)
+		} else {
+			shadowBatch.push(scrX, scrY, px, px)
+		}
+	}
+}
 
 /**
  * Appends pixel art ripple rectangles for a single water hex cell to the batch buffers.
+ * Ripples are pseudo-randomly and organically scattered across the whole cell area
+ * (up to 0.95 * radius) with cell-specific randomized phases to completely eliminate
+ * hexagonal clumping and repeating honeycomb patterns.
  */
-function appendCellWaterRipples(camera, cx, cy, radius, animTime, isOcean, batches) {
-	if (!WATER_CONFIG.enabled || animTime <= 0) return
+function appendCellWaterRipples(camera, cx, cy, radius, animTime, isOcean, batches, col = 0, row = 0, mapSeed = 0, mapData = null) {
+	if (!WATER_CONFIG.enabled) return
+
+	const pCenter = camera.project(cx, cy, 0)
+	if (!pCenter.visible) return
+
+	const cellScale = pCenter.scale || camera.zoom || 1
+	const effectiveScreenRadius = radius * cellScale
+
+	// Scale active ripple crests with zoom level (fewer at distance, up to max at close zoom)
+	let maxSpots = WATER_CONFIG.ripplesPerHex || 5
+	let numSpots
+	if (effectiveScreenRadius < 45) {
+		numSpots = Math.max(1, Math.round(maxSpots * 0.4))
+	} else if (effectiveScreenRadius < 75) {
+		numSpots = Math.max(1, Math.round(maxSpots * 0.7))
+	} else {
+		numSpots = maxSpots
+	}
 
 	// Spatial hash for deterministic pseudo-random offsets per cell
-	const cellSeed = ((Math.round(cx) * 73856093) ^ (Math.round(cy) * 19349663)) >>> 0
-	const numSpots = Math.max(1, Math.min(WATER_RIPPLE_SPOTS.length, WATER_CONFIG.ripplesPerHex || 3))
-	const cycleDuration = isOcean ? 3.4 : 2.6
+	const cellSeed = ((col * 73856093) ^ (row * 19349663) ^ (mapSeed * 83492791)) >>> 0
+	const cycleDuration = 3.0
 	const animSpeed = WATER_CONFIG.speed || 1.0
-	const basePx = WATER_CONFIG.pixelSize || 2.0
+	const basePx = WATER_CONFIG.pixelSize || 1.0
 	const driftEnabled = WATER_CONFIG.drift ?? true
+	const waveCfg = WATER_CONFIG.waves || {}
+	const shoreDriftEnabled = waveCfg.shoreDrift ?? true
+	const driftDistance = waveCfg.driftDistance ?? 6.0
+	const crestLeaning = waveCfg.crestLeaning ?? 1.0
+	const openWaterAngle = waveCfg.openWaterAngle ?? 0.4
 
-	const hlBatch = isOcean ? batches.oceanHL : batches.coastHL
-	const midBatch = isOcean ? batches.oceanMid : batches.coastMid
-	const shadowBatch = isOcean ? batches.oceanShadow : batches.coastShadow
+	// Retrieve vector pointing to nearest shore (or open water swell vector)
+	const shoreVec = shoreDriftEnabled
+		? getCellShoreVector(col, row, mapData, radius, openWaterAngle)
+		: { dx: Math.cos(openWaterAngle), dy: Math.sin(openWaterAngle), hasShore: false }
+
+	const hlBatch = batches.hl || (isOcean ? batches.oceanHL : batches.coastHL)
+	const midBatch = batches.mid || (isOcean ? batches.oceanMid : batches.coastMid)
+	const shadowBatch = batches.shadow || (isOcean ? batches.oceanShadow : batches.coastShadow)
 
 	for (let s = 0; s < numSpots; s++) {
-		const spot = WATER_RIPPLE_SPOTS[s]
 		const spotSeed = (cellSeed ^ (s * 1013904223)) >>> 0
 
-		// Local cell offset with subtle deterministic jitter
-		const jitterX = (getHashFloat(spotSeed, 1) - 0.5) * 0.12 * radius
-		const jitterY = (getHashFloat(spotSeed, 2) - 0.5) * 0.10 * radius
-		const baseX = cx + spot.relX * radius + jitterX
-		const baseY = cy + spot.relY * radius + jitterY
+		// Organically scatter wave crests across the entire cell area (up to 0.90 * radius)
+		const rNorm = Math.sqrt(getHashFloat(spotSeed, 1)) * 0.90 * radius
+		const angle = getHashFloat(spotSeed, 2) * 6.2831853
+		const baseX = cx + Math.cos(angle) * rNorm
+		const baseY = cy + Math.sin(angle) * rNorm
 
-		// Periodic life cycle (active 62% of period, calm 38%)
-		const spotPhase = (spot.phaseOffset + getHashFloat(spotSeed, 3) * 0.28) * cycleDuration
+		// Independent life cycle per ripple spot
+		const spotPhase = getHashFloat(spotSeed, 3) * cycleDuration
 		const t = ((animTime * animSpeed + spotPhase) % cycleDuration) / cycleDuration
 		if (t > 0.62) continue
 
@@ -1195,56 +1456,81 @@ function appendCellWaterRipples(camera, cx, cy, radius, animTime, isOcean, batch
 		const intensity = Math.sin(u * Math.PI)
 		if (intensity < 0.10) continue
 
-		// Wind drift and gentle vertical bob on water surface
-		const drift = driftEnabled ? (u - 0.5) * (isOcean ? 6.0 : 4.0) : 0
-		const bob = Math.sin(animTime * 2.6 + getHashFloat(spotSeed, 4) * 6.28) * (0.9 * camera.cosT)
-
-		const worldX = baseX + drift
-		const worldY = baseY + bob
+		// Wave movement: drifts along shoreVec towards the shore during its life cycle (u goes 0 -> 1)
+		// Centered around the base position so waves don't drift out of the cell
+		const driftTravel = driftEnabled ? (u - 0.5) * driftDistance : 0
+		const worldX = baseX + shoreVec.dx * driftTravel
+		const worldY = baseY + shoreVec.dy * driftTravel
 
 		const p = camera.project(worldX, worldY, 0)
 		if (!p.visible) continue
 
 		// Compute pixel block size scaled with camera perspective distance
-		const px = Math.max(1, Math.round(basePx * Math.min(1.4, Math.max(0.65, p.scale))))
+		const px = Math.max(1, Math.round(basePx * Math.min(1.5, Math.max(0.7, p.scale))))
 		const scrX = Math.round(p.x)
 		const scrY = Math.round(p.y)
+
+		// Calculate 2D screen direction of wave movement for crest leaning
+		let scrDirX = 0
+		let scrDirY = 0
+		if (crestLeaning > 0) {
+			const pAhead = camera.project(worldX + shoreVec.dx * 10, worldY + shoreVec.dy * 10, 0)
+			const dxScr = pAhead.x - p.x
+			const dyScr = pAhead.y - p.y
+			const distScr = Math.hypot(dxScr, dyScr)
+			if (distScr > 0.001) {
+				scrDirX = dxScr / distScr
+				scrDirY = dyScr / distScr
+			}
+		}
+
+		// Relative offsets: body shifts forward slightly, crest leans even further forward
+		// Scaled by intensity so leaning peaks at maximum swell height
+		const midOffsetX = Math.round(scrDirX * crestLeaning * intensity * px * 0.75)
+		const midOffsetY = Math.round(scrDirY * crestLeaning * intensity * px * 0.75)
+		const hlOffsetX = Math.round(scrDirX * crestLeaning * intensity * px * 1.5)
+		const hlOffsetY = Math.round(scrDirY * crestLeaning * intensity * px * 1.5)
 
 		if (intensity < 0.32) {
 			// Early birth / late fade: subtle 2-3 pixel glint
 			const glintW = (2 + Math.round(intensity * 3)) * px
-			const glintX = scrX - Math.floor(glintW / 2)
-			midBatch.push(glintX, scrY, glintW, px)
+			const glintX = scrX - Math.floor(glintW / 2) + midOffsetX
+			const glintY = scrY + midOffsetY
+			midBatch.push(glintX, glintY, glintW, px)
 			const hlW = px
-			hlBatch.push(scrX - Math.floor(hlW / 2), scrY - px, hlW, px)
+			hlBatch.push(scrX - Math.floor(hlW / 2) + hlOffsetX, scrY - px + hlOffsetY, hlW, px)
 		} else {
 			// Full 3-tier stepped pixel wave crest with highlight, body, and shadow
 			const bodyW = (4 + Math.round(intensity * 4)) * px
-			const bodyX = scrX - Math.floor(bodyW / 2)
-			midBatch.push(bodyX, scrY, bodyW, px)
+			const bodyX = scrX - Math.floor(bodyW / 2) + midOffsetX
+			const bodyY = scrY + midOffsetY
+			midBatch.push(bodyX, bodyY, bodyW, px)
 
-			// Highlight crest on top (center-aligned)
+			// Highlight crest on top (leaning forward towards the shore)
 			const hlW = Math.max(px, (1 + Math.round(intensity * 2)) * px)
-			const hlX = scrX - Math.floor(hlW / 2)
-			hlBatch.push(hlX, scrY - px, hlW, px)
+			const hlX = scrX - Math.floor(hlW / 2) + hlOffsetX
+			const hlY = scrY - px + hlOffsetY
+			hlBatch.push(hlX, hlY, hlW, px)
 
-			// Shadow trough directly underneath
+			// Shadow trough directly underneath base
 			const shW = Math.max(px, (2 + Math.round(intensity * 3)) * px)
 			const shX = scrX - Math.floor(shW / 2)
-			shadowBatch.push(shX, scrY + px, shW, px)
+			const shY = scrY + px
+			shadowBatch.push(shX, shY, shW, px)
 
-			// Detached side sparkles at crest peak
+			// Detached side sparkles at crest peak (following body)
 			if (intensity > 0.68) {
 				const tipOffset = Math.floor(bodyW / 2) + px
-				midBatch.push(scrX - tipOffset - px, scrY, px, px)
-				midBatch.push(scrX + tipOffset, scrY, px, px)
+				midBatch.push(scrX - tipOffset - px + midOffsetX, bodyY, px, px)
+				midBatch.push(scrX + tipOffset + midOffsetX, bodyY, px, px)
 			}
 		}
 	}
 }
 
 /**
- * Flushes all queued pixel wave rectangles to the canvas using minimal state changes.
+ * Flushes all queued pixel wave and surface noise rectangles to the canvas using minimal state changes.
+ * Unified 3-tier rendering pass (shadows, midtones, highlights) across all water areas.
  */
 function flushWaterBatches(ctx) {
 	ctx.save()
@@ -1252,51 +1538,33 @@ function flushWaterBatches(ctx) {
 		ctx.imageSmoothingEnabled = false
 	}
 
-	// 1. Coast Shadows
-	if (_waterBatches.coastShadow.length > 0) {
-		ctx.fillStyle = WATER_CONFIG.coast.shadow
-		const arr = _waterBatches.coastShadow
-		for (let i = 0; i < arr.length; i += 4) {
-			ctx.fillRect(arr[i], arr[i + 1], arr[i + 2], arr[i + 3])
-		}
-	}
-	// 2. Coast Midtone Body
-	if (_waterBatches.coastMid.length > 0) {
-		ctx.fillStyle = WATER_CONFIG.coast.mid
-		const arr = _waterBatches.coastMid
-		for (let i = 0; i < arr.length; i += 4) {
-			ctx.fillRect(arr[i], arr[i + 1], arr[i + 2], arr[i + 3])
-		}
-	}
-	// 3. Coast Sunlight Highlights / Crest
-	if (_waterBatches.coastHL.length > 0) {
-		ctx.fillStyle = WATER_CONFIG.coast.highlight
-		const arr = _waterBatches.coastHL
+	// ── 1-Pixel Surface Particles & Wave Crests ──
+	// Unified color resolution across all water (coast, ocean, lakes)
+	const noiseColors = WATER_CONFIG.surfaceNoise?.colors || WATER_CONFIG.surfaceNoise?.coast || WATER_CONFIG.surfaceNoise || {}
+	const waveColors = WATER_CONFIG.colors || WATER_CONFIG.coast || {}
+
+	// 1. Deep Shadows (dark depth specks & wave troughs)
+	if (_waterBatches.shadow.length > 0) {
+		ctx.fillStyle = noiseColors.shadow || waveColors.shadow || 'rgba(3, 105, 161, 0.80)'
+		const arr = _waterBatches.shadow
 		for (let i = 0; i < arr.length; i += 4) {
 			ctx.fillRect(arr[i], arr[i + 1], arr[i + 2], arr[i + 3])
 		}
 	}
 
-	// 4. Ocean Deep Shadows
-	if (_waterBatches.oceanShadow.length > 0) {
-		ctx.fillStyle = WATER_CONFIG.ocean.shadow
-		const arr = _waterBatches.oceanShadow
+	// 2. Midtone Body & Midtone Particles (azure tone)
+	if (_waterBatches.mid.length > 0) {
+		ctx.fillStyle = noiseColors.mid || waveColors.mid || 'rgba(56, 189, 248, 0.75)'
+		const arr = _waterBatches.mid
 		for (let i = 0; i < arr.length; i += 4) {
 			ctx.fillRect(arr[i], arr[i + 1], arr[i + 2], arr[i + 3])
 		}
 	}
-	// 5. Ocean Wave Body
-	if (_waterBatches.oceanMid.length > 0) {
-		ctx.fillStyle = WATER_CONFIG.ocean.mid
-		const arr = _waterBatches.oceanMid
-		for (let i = 0; i < arr.length; i += 4) {
-			ctx.fillRect(arr[i], arr[i + 1], arr[i + 2], arr[i + 3])
-		}
-	}
-	// 6. Ocean Crest Highlights
-	if (_waterBatches.oceanHL.length > 0) {
-		ctx.fillStyle = WATER_CONFIG.ocean.highlight
-		const arr = _waterBatches.oceanHL
+
+	// 3. Sunlight Highlights (soft sky-blue 1-pixel sparkles & wave crests)
+	if (_waterBatches.hl.length > 0) {
+		ctx.fillStyle = noiseColors.highlight || waveColors.highlight || 'rgba(125, 211, 252, 0.85)'
+		const arr = _waterBatches.hl
 		for (let i = 0; i < arr.length; i += 4) {
 			ctx.fillRect(arr[i], arr[i + 1], arr[i + 2], arr[i + 3])
 		}
@@ -1306,25 +1574,160 @@ function flushWaterBatches(ctx) {
 }
 
 /**
- * Batched rendering of animated pixel-art ripples across all visible water cells.
+ * Traces a compound clipping path covering all visible water and ocean cells.
+ * Supports native Path2D caching across animation ticks when camera is stationary.
  */
-export function drawWaterShimmerBatch(ctx, camera, visibleWaterCells, radius, animTime) {
-	if (!WATER_CONFIG.enabled || animTime <= 0 || !visibleWaterCells || visibleWaterCells.length === 0) return
+function getWaterClippingPath(camera, visibleWaterCells, radius, useOrganic, seed = 0, riverMap = null) {
+	if (typeof Path2D === 'undefined') return null
+
+	const key = `${camera.cameraX},${camera.cameraY},${camera.zoom},${camera.pitch},${camera.viewportWidth},${camera.viewportHeight},${radius},${useOrganic ? 1 : 0},${seed},${visibleWaterCells.length}`
+	if (_cachedWaterPath2D && _cachedWaterPathKey === key) {
+		return _cachedWaterPath2D
+	}
+
+	const path = new Path2D()
+	if (!useOrganic) {
+		for (const cell of visibleWaterCells) {
+			const center = hexToWorldGroundCenter(cell.col, cell.row, radius)
+			const groundVerts = getHexGroundVertices(center.x, center.y, radius)
+			const p0 = camera.project(groundVerts[0].x, groundVerts[0].y, 0)
+			path.moveTo(p0.x, p0.y)
+			for (let i = 1; i < 6; i++) {
+				const p = camera.project(groundVerts[i].x, groundVerts[i].y, 0)
+				path.lineTo(p.x, p.y)
+			}
+			path.closePath()
+		}
+	} else {
+		for (const cell of visibleWaterCells) {
+			const perimeter = getOrganicCellPerimeter(cell.col, cell.row, radius, seed, riverMap)
+			const pStart = camera.project(perimeter[0].from.x, perimeter[0].from.y, 0)
+			path.moveTo(pStart.x, pStart.y)
+			for (const pe of perimeter) {
+				const m1 = pe.mid1 || pe.mid
+				const m2 = pe.mid2 || pe.to
+				const cp1C = pe.cp1C || pe.cp2B
+				const cp2C = pe.cp2C || pe.to
+
+				const pCP1A = camera.project(pe.cp1A.x, pe.cp1A.y, 0)
+				const pCP2A = camera.project(pe.cp2A.x, pe.cp2A.y, 0)
+				const pMid1 = camera.project(m1.x, m1.y, 0)
+				const pCP1B = camera.project(pe.cp1B.x, pe.cp1B.y, 0)
+				const pCP2B = camera.project(pe.cp2B.x, pe.cp2B.y, 0)
+				const pMid2 = camera.project(m2.x, m2.y, 0)
+				const pCP1C = camera.project(cp1C.x, cp1C.y, 0)
+				const pCP2C = camera.project(cp2C.x, cp2C.y, 0)
+				const pTo = camera.project(pe.to.x, pe.to.y, 0)
+
+				path.bezierCurveTo(pCP1A.x, pCP1A.y, pCP2A.x, pCP2A.y, pMid1.x, pMid1.y)
+				path.bezierCurveTo(pCP1B.x, pCP1B.y, pCP2B.x, pCP2B.y, pMid2.x, pMid2.y)
+				path.bezierCurveTo(pCP1C.x, pCP1C.y, pCP2C.x, pCP2C.y, pTo.x, pTo.y)
+			}
+			path.closePath()
+		}
+	}
+
+	_cachedWaterPath2D = path
+	_cachedWaterPathKey = key
+	return path
+}
+
+function traceWaterCellsDirect(ctx, camera, visibleWaterCells, radius, useOrganic, seed = 0, riverMap = null) {
+	ctx.beginPath()
+	if (!useOrganic) {
+		for (const cell of visibleWaterCells) {
+			const center = hexToWorldGroundCenter(cell.col, cell.row, radius)
+			const groundVerts = getHexGroundVertices(center.x, center.y, radius)
+			const p0 = camera.project(groundVerts[0].x, groundVerts[0].y, 0)
+			ctx.moveTo(p0.x, p0.y)
+			for (let i = 1; i < 6; i++) {
+				const p = camera.project(groundVerts[i].x, groundVerts[i].y, 0)
+				ctx.lineTo(p.x, p.y)
+			}
+			ctx.closePath()
+		}
+	} else {
+		for (const cell of visibleWaterCells) {
+			const perimeter = getOrganicCellPerimeter(cell.col, cell.row, radius, seed, riverMap)
+			const pStart = camera.project(perimeter[0].from.x, perimeter[0].from.y, 0)
+			ctx.moveTo(pStart.x, pStart.y)
+			for (const pe of perimeter) {
+				const m1 = pe.mid1 || pe.mid
+				const m2 = pe.mid2 || pe.to
+				const cp1C = pe.cp1C || pe.cp2B
+				const cp2C = pe.cp2C || pe.to
+
+				const pCP1A = camera.project(pe.cp1A.x, pe.cp1A.y, 0)
+				const pCP2A = camera.project(pe.cp2A.x, pe.cp2A.y, 0)
+				const pMid1 = camera.project(m1.x, m1.y, 0)
+				const pCP1B = camera.project(pe.cp1B.x, pe.cp1B.y, 0)
+				const pCP2B = camera.project(pe.cp2B.x, pe.cp2B.y, 0)
+				const pMid2 = camera.project(m2.x, m2.y, 0)
+				const pCP1C = camera.project(cp1C.x, cp1C.y, 0)
+				const pCP2C = camera.project(cp2C.x, cp2C.y, 0)
+				const pTo = camera.project(pe.to.x, pe.to.y, 0)
+
+				ctx.bezierCurveTo(pCP1A.x, pCP1A.y, pCP2A.x, pCP2A.y, pMid1.x, pMid1.y)
+				ctx.bezierCurveTo(pCP1B.x, pCP1B.y, pCP2B.x, pCP2B.y, pMid2.x, pMid2.y)
+				ctx.bezierCurveTo(pCP1C.x, pCP1C.y, pCP2C.x, pCP2C.y, pTo.x, pTo.y)
+			}
+			ctx.closePath()
+		}
+	}
+}
+
+/**
+ * Batched rendering of animated pixel-art ripples and 1-pixel surface particles across all visible water cells.
+ * Clips tightly to the exact organic boundary so water particles fill all bays without bleeding onto land.
+ */
+export function drawWaterShimmerBatch(ctx, camera, visibleWaterCells, radius, animTime, lodLevel = 0, options = {}) {
+	if (!WATER_CONFIG.enabled || !visibleWaterCells || visibleWaterCells.length === 0) return
+
+	const useOrganic = options.useOrganic ?? false
+	const seed = options.seed || 0
+	const riverMap = options.riverMap || null
+	const mapData = options.mapData || null
+
+	// 1. Gather 1-pixel stationary particles and occasional wave crests
 	clearWaterBatches()
 	for (const cell of visibleWaterCells) {
 		const center = hexToWorldGroundCenter(cell.col, cell.row, radius)
-		appendCellWaterRipples(camera, center.x, center.y, radius, animTime, cell.terrain === 'ocean', _waterBatches)
+		const isOcean = cell.terrain === 'ocean'
+		// Stationary 1-pixel light and dark twinkling particles (appear & disappear in place)
+		appendCellWaterSurfaceNoise(camera, center.x, center.y, radius, animTime, isOcean, _waterBatches, cell.col, cell.row, seed)
+		// Wave crest ripples (appear & disappear in place, rolling towards nearest shore)
+		appendCellWaterRipples(camera, center.x, center.y, radius, animTime, isOcean, _waterBatches, cell.col, cell.row, seed, mapData)
 	}
+
+	ctx.save()
+
+	// 2. Set the clipping mask to the exact water boundary
+	const path2D = getWaterClippingPath(camera, visibleWaterCells, radius, useOrganic, seed, riverMap)
+	if (path2D) {
+		ctx.clip(path2D)
+	} else {
+		traceWaterCellsDirect(ctx, camera, visibleWaterCells, radius, useOrganic, seed, riverMap)
+		ctx.clip()
+	}
+
+	// 3. Render all batched 1-pixel particles and crests
 	flushWaterBatches(ctx)
+
+	ctx.restore()
 }
 
 /**
  * Single-cell pixel shimmer rendering (used when drawing individual hexes without batching).
  */
-export function drawWaterShimmer(ctx, camera, cx, cy, radius, animTime, isOcean) {
-	if (!WATER_CONFIG.enabled || animTime <= 0) return
+export function drawWaterShimmer(ctx, camera, cx, cy, radius, animTime, isOcean, lodLevel = 0, options = {}) {
+	if (!WATER_CONFIG.enabled) return
 	clearWaterBatches()
-	appendCellWaterRipples(camera, cx, cy, radius, animTime, isOcean, _waterBatches)
+	const col = options.col ?? 0
+	const row = options.row ?? 0
+	const seed = options.seed ?? 0
+	const mapData = options.mapData || null
+	appendCellWaterSurfaceNoise(camera, cx, cy, radius, animTime, isOcean, _waterBatches, col, row, seed)
+	appendCellWaterRipples(camera, cx, cy, radius, animTime, isOcean, _waterBatches, col, row, seed, mapData)
 	flushWaterBatches(ctx)
 }
 
@@ -1399,13 +1802,22 @@ export function drawPoliticalBorders(ctx, camera, mapData, radius, factionsMap =
 		}
 	}
 
-	// Group cells by faction
+	// Group cells by faction (ONLY states/nations may own borders; guilds, clans, settlements etc. are ignored)
 	// Map: factionId -> { visuals, borderColor, fillColor, cells: Array<cell> }
 	const factionGroups = new Map()
+	const stateCache = new Map()
+	const isState = (fId) => {
+		let v = stateCache.get(fId)
+		if (v === undefined) {
+			v = isStateFaction(fId, factionsMap)
+			stateCache.set(fId, v)
+		}
+		return v
+	}
 
 	for (const cell of candidateCells) {
 		const fId = cell.faction || cell.fraction
-		if (!fId) continue
+		if (!fId || !isState(fId)) continue
 
 		let group = factionGroups.get(fId)
 		if (!group) {
@@ -2348,7 +2760,7 @@ function renderRiverPixelFlow(ctx, preparedRivers, riverTurns, riverDeltas, anim
 	const flowCfg = RIVER_CONFIG.flow
 	if (!flowCfg.enabled) return
 
-	const basePx = Math.max(1.5, flowCfg.pixelSize || 2.5)
+	const basePx = flowCfg.pixelSize !== undefined ? flowCfg.pixelSize : (WATER_CONFIG.surfaceNoise?.pixelSize || 1.0)
 	const speed = flowCfg.speed || 18.0
 	const density = Math.max(0.2, flowCfg.density || 1.0)
 	const lightTone = flowCfg.lightTone || '#7dd3fc'
@@ -2370,7 +2782,7 @@ function renderRiverPixelFlow(ctx, preparedRivers, riverTurns, riverDeltas, anim
 		if (chordLen < 3) continue
 		const approxLen = chordLen * (isStraight ? 1.0 : 1.15)
 		const avgScale = r.avgScale || 1
-		const px = Math.max(1.5, basePx * Math.min(1.4, Math.max(0.65, avgScale)))
+		const px = Math.max(1, Math.round(basePx * Math.min(1.5, Math.max(0.7, avgScale))))
 
 		const stepDist = Math.max(6 * avgScale, (14 * avgScale) / density)
 		const numSteps = Math.max(2, Math.round(approxLen / stepDist))
@@ -2443,7 +2855,7 @@ function renderRiverPixelFlow(ctx, preparedRivers, riverTurns, riverDeltas, anim
 	// 2. Turns
 	for (const turn of riverTurns) {
 		const scale = turn.scale || 1
-		const px = Math.max(1.5, basePx * Math.min(1.4, Math.max(0.65, scale)))
+		const px = Math.max(1, Math.round(basePx * Math.min(1.5, Math.max(0.7, scale))))
 		const turnLen = Math.hypot(turn.A1.x - turn.A0.x, turn.A1.y - turn.A0.y)
 		if (turnLen < 3) continue
 
@@ -2471,7 +2883,7 @@ function renderRiverPixelFlow(ctx, preparedRivers, riverTurns, riverDeltas, anim
 	// 3. Deltas (fanning pixel cubes gently dissolving into the sea)
 	for (const delta of riverDeltas) {
 		const scale = delta.scale || 1
-		const px = Math.max(1.5, basePx * Math.min(1.4, Math.max(0.65, scale)))
+		const px = Math.max(1, Math.round(basePx * Math.min(1.5, Math.max(0.7, scale))))
 		const reachDist = Math.max(12 * scale, delta.reach || (20 * scale))
 		const stepDist = Math.max(7 * scale, (14 * scale) / density)
 		const numSteps = Math.max(2, Math.round(reachDist / stepDist))
@@ -2708,7 +3120,11 @@ function drawRivers(ctx, camera, mapData, radius, animTime, options = {}) {
 
 		// PASS 3: Pixel-Art Animated Flow (LOD 0 and LOD 1 only, skipped at LOD 2)
 		if (lodLevel < 2) {
-			renderRiverPixelFlow(ctx, preparedRivers, [], [], animTime, lodLevel, { isStraight: true })
+			renderRiverPixelFlow(ctx, preparedRivers, [], [], animTime, lodLevel, {
+				isStraight: true,
+				pixelScale: options.pixelScale,
+				isCameraMoving: options.isCameraMoving
+			})
 		}
 
 		ctx.restore()
@@ -2998,7 +3414,9 @@ function drawRivers(ctx, camera, mapData, radius, animTime, options = {}) {
 	}
 
 	// --- PASS 3: Pixel-Art Animated Flow (Square pixel cubes) ---
-	renderRiverPixelFlow(ctx, preparedRivers, riverTurns, riverDeltas, animTime, lodLevel)
+	if (lodLevel < 2) {
+		renderRiverPixelFlow(ctx, preparedRivers, riverTurns, riverDeltas, animTime, lodLevel, options)
+	}
 
 	ctx.restore()
 }
@@ -3044,10 +3462,13 @@ export function buildRoadRenderData(camera, mapData, radius, options = {}) {
 		if (maxX < -pad || minX > camera.viewportWidth + pad || maxY < -pad || minY > camera.viewportHeight + pad) {
 			continue
 		}
-		const casingWidth = (isStone ? 5 : 4) * avgScale
-		const coreWidth = (isStone ? 3 : 2.5) * avgScale
-		const casingColor = isStone ? '#475569' : '#451a03'
-		const coreColor = isStone ? '#94a3b8' : '#b45309'
+		const dirtW = ROAD_CONFIG.dirtWidth ?? 1.8
+		const stoneW = ROAD_CONFIG.stoneWidth ?? 3.0
+		const baseW = isStone ? stoneW : dirtW
+		const casingWidth = ROAD_CONFIG.hasBorder ? (isStone ? (stoneW + 1.6) : (dirtW + 1.2)) * avgScale : 0
+		const coreWidth = baseW * avgScale
+		const casingColor = isStone ? (ROAD_CONFIG.colors?.stoneDark || '#475569') : (ROAD_CONFIG.colors?.dirtDark || '#451a03')
+		const coreColor = isStone ? (ROAD_CONFIG.colors?.stone || '#94a3b8') : (ROAD_CONFIG.colors?.dirt || '#8d6e63')
 
 		// Direction into cell 1 road from p1 towards pQ1
 		const d1x = pQ1.x - p1.x
@@ -3081,7 +3502,8 @@ export function buildRoadRenderData(camera, mapData, radius, options = {}) {
 			coreWidth,
 			casingColor,
 			coreColor,
-			scale: p1.scale
+			scale: p1.scale,
+			canonKey
 		})
 
 		const key2 = `${road.to.col},${road.to.row}`
@@ -3102,7 +3524,8 @@ export function buildRoadRenderData(camera, mapData, radius, options = {}) {
 			coreWidth,
 			casingColor,
 			coreColor,
-			scale: p2.scale
+			scale: p2.scale,
+			canonKey
 		})
 	}
 
@@ -3126,7 +3549,8 @@ export function buildRoadRenderData(camera, mapData, radius, options = {}) {
 				coreWidth: b0.coreWidth,
 				casingColor: b0.casingColor,
 				coreColor: b0.coreColor,
-				scale: b0.scale
+				scale: b0.scale,
+				canonKey: b0.canonKey
 			})
 		} else if (k === 2) {
 			const b0 = cData.branches[0]
@@ -3144,7 +3568,8 @@ export function buildRoadRenderData(camera, mapData, radius, options = {}) {
 				coreWidth: b0.coreWidth,
 				casingColor: b0.casingColor,
 				coreColor: b0.coreColor,
-				scale: b0.scale
+				scale: b0.scale,
+				canonKey: b0.canonKey
 			})
 
 			roadTrunks.push({
@@ -3157,7 +3582,8 @@ export function buildRoadRenderData(camera, mapData, radius, options = {}) {
 				coreWidth: b1.coreWidth,
 				casingColor: b1.casingColor,
 				coreColor: b1.coreColor,
-				scale: b1.scale
+				scale: b1.scale,
+				canonKey: b1.canonKey
 			})
 
 			roadTurns.push({
@@ -3172,12 +3598,30 @@ export function buildRoadRenderData(camera, mapData, radius, options = {}) {
 		} else if (k >= 3) {
 			let maxCasing = 0
 			let maxCore = 0
+			let maxStoneCore = 0
+			let maxStoneCasing = 0
 			const hasStone = cData.branches.some(b => b.isStone)
+			const hasDirt = cData.branches.some(b => !b.isStone)
+			const isMixed = hasStone && hasDirt
 
 			for (const b of cData.branches) {
 				maxCasing = Math.max(maxCasing, b.casingWidth)
 				maxCore = Math.max(maxCore, b.coreWidth)
-				// Trunks must go all the way into cell center!
+				if (b.isStone) {
+					maxStoneCore = Math.max(maxStoneCore, b.coreWidth)
+					maxStoneCasing = Math.max(maxStoneCasing, b.casingWidth)
+				}
+			}
+
+			// In mixed crossroads, the stone road is dominant.
+			// The stone hub/corridor extends around the center, and subordinate dirt branches
+			// terminate at its outer perimeter (tucked cleanly beneath the stone pavement).
+			const stoneHubRadius = hasStone ? Math.max(maxStoneCore * 0.75, 4 * cData.pCenter.scale) : 0
+
+			for (const b of cData.branches) {
+				const isSubordinateDirt = isMixed && !b.isStone
+
+				// Trunks go all the way to cell center so roads NEVER interrupt!
 				roadTrunks.push({
 					cellKey,
 					pMid: b.pMid,
@@ -3188,8 +3632,36 @@ export function buildRoadRenderData(camera, mapData, radius, options = {}) {
 					coreWidth: b.coreWidth,
 					casingColor: b.casingColor,
 					coreColor: b.coreColor,
-					scale: b.scale
+					scale: b.scale,
+					canonKey: b.canonKey,
+					isCrossroad: true,
+					hasStoneCrossroad: hasStone,
+					isSubordinateDirt,
+					hubCenter: cData.pCenter,
+					stoneHubRadius
 				})
+			}
+
+			// Stone aprons: piece of the stone road that overlaps onto incoming subordinate dirt roads
+			const stoneAprons = []
+			if (isMixed) {
+				for (const b of cData.branches) {
+					if (!b.isStone) {
+						const apronLen = Math.min(10 * cData.pCenter.scale, b.dist * 0.40)
+						const pt = {
+							x: cData.pCenter.x + b.ux * apronLen,
+							y: cData.pCenter.y + b.uy * apronLen
+						}
+						stoneAprons.push({
+							center: cData.pCenter,
+							pt,
+							width: maxStoneCore,
+							endWidth: b.coreWidth * 1.1,
+							casingWidth: maxStoneCasing,
+							scale: cData.pCenter.scale
+						})
+					}
+				}
 			}
 
 			// Sort branches by angle around center to build inner corner fillets
@@ -3204,19 +3676,36 @@ export function buildRoadRenderData(camera, mapData, radius, options = {}) {
 				const next = (i + 1) % sorted.length
 				const bA = sorted[i]
 				const bB = sorted[next]
+
+				const angA = Math.atan2(bA.uy, bA.ux)
+				const angB = Math.atan2(bB.uy, bB.ux)
+				const diff = Math.abs(angB - angA)
+				const normDiff = Math.min(diff, Math.PI * 2 - diff)
+				// Skip nearly opposite branches (straight-through paths > ~145 deg)
+				if (normDiff > 2.5) continue
+
+				// Crossroad fillets:
+				// When hasStone is true, any corner touching stone is a STONE fillet:
+				// this creates the stone apron / bell-mouth overlapping onto the incoming gravel road!
+				const isFilletStone = hasStone ? (bA.isStone || bB.isStone) : false
+
 				const D = Math.min(10 * cData.pCenter.scale, bA.dist * 0.45, bB.dist * 0.45)
 				const PA = { x: cData.pCenter.x + bA.ux * D, y: cData.pCenter.y + bA.uy * D }
 				const PB = { x: cData.pCenter.x + bB.ux * D, y: cData.pCenter.y + bB.uy * D }
-				fillets.push({ PA, PB, bA, bB })
+				fillets.push({ PA, PB, bA, bB, isStone: isFilletStone })
 			}
 
 			roadCrossroads.push({
 				cellKey,
 				center: cData.pCenter,
 				fillets,
-				maxCasingWidth: maxCasing,
-				maxCoreWidth: maxCore,
+				stoneAprons,
+				maxCasingWidth: hasStone ? maxStoneCasing : maxCasing,
+				maxCoreWidth: hasStone ? maxStoneCore : maxCore,
 				hasStone,
+				isMixed,
+				stoneHubRadius,
+				branches: cData.branches,
 				scale: cData.pCenter.scale
 			})
 		}
@@ -3247,50 +3736,531 @@ export function renderRoads(ctx, roadData, filterFn = null) {
 	ctx.lineCap = 'round'
 	ctx.lineJoin = 'round'
 
-	// --- PASS 1: All Road Casings, Smooth Rounded Turns, and Crossroad Hubs ---
-	for (const t of trunks) {
-		ctx.beginPath()
-		ctx.moveTo(t.pMid.x, t.pMid.y)
-		ctx.quadraticCurveTo(t.pQ.x, t.pQ.y, t.endPt.x, t.endPt.y)
-		ctx.lineWidth = t.casingWidth
-		ctx.strokeStyle = t.casingColor
-		ctx.stroke()
-	}
+	// --- PASS 1: All Road Casings (skipped if ROAD_CONFIG.hasBorder is false) ---
+	if (ROAD_CONFIG.hasBorder) {
+		// 1. Dirt road casings first
+		for (const t of trunks) {
+			if (t.isStone || (t.casingWidth || 0) <= 0) continue
+			ctx.beginPath()
+			ctx.moveTo(t.pMid.x, t.pMid.y)
+			ctx.quadraticCurveTo(t.pQ.x, t.pQ.y, t.endPt.x, t.endPt.y)
+			ctx.lineWidth = t.casingWidth
+			ctx.strokeStyle = t.casingColor
+			ctx.stroke()
+		}
 
-	for (const turn of turns) {
-		strokeTaperedCurve(ctx, turn.A0, turn.center, turn.A1, turn.b0.casingWidth, turn.b1.casingWidth, turn.b0.casingColor, turn.b1.casingColor, 4)
-	}
+		for (const turn of turns) {
+			if (turn.b0.isStone && turn.b1.isStone) continue
+			if ((turn.b0.casingWidth || 0) <= 0 && (turn.b1.casingWidth || 0) <= 0) continue
+			strokeTaperedCurve(ctx, turn.A0, turn.center, turn.A1, turn.b0.casingWidth, turn.b1.casingWidth, turn.b0.casingColor, turn.b1.casingColor, 4)
+		}
 
-	for (const cr of crossroads) {
-		const casingColor = cr.hasStone ? '#475569' : '#451a03'
-		for (const f of cr.fillets) {
-			strokeTaperedCurve(ctx, f.PA, cr.center, f.PB, f.bA.casingWidth, f.bB.casingWidth, casingColor, casingColor, 3)
+		for (const cr of crossroads) {
+			if (cr.hasStone) continue
+			const casingColor = ROAD_CONFIG.colors?.dirtDark || '#451a03'
+			for (const f of cr.fillets) {
+				if ((f.bA.casingWidth || 0) <= 0 && (f.bB.casingWidth || 0) <= 0) continue
+				strokeTaperedCurve(ctx, f.PA, cr.center, f.PB, f.bA.casingWidth, f.bB.casingWidth, casingColor, casingColor, 3)
+			}
+		}
+
+		// 2. Stone road casings second (dominant layer on top)
+		for (const t of trunks) {
+			if (!t.isStone || (t.casingWidth || 0) <= 0) continue
+			ctx.beginPath()
+			ctx.moveTo(t.pMid.x, t.pMid.y)
+			ctx.quadraticCurveTo(t.pQ.x, t.pQ.y, t.endPt.x, t.endPt.y)
+			ctx.lineWidth = t.casingWidth
+			ctx.strokeStyle = t.casingColor
+			ctx.stroke()
+		}
+
+		for (const turn of turns) {
+			if (!turn.b0.isStone || !turn.b1.isStone) continue
+			if ((turn.b0.casingWidth || 0) <= 0 && (turn.b1.casingWidth || 0) <= 0) continue
+			strokeTaperedCurve(ctx, turn.A0, turn.center, turn.A1, turn.b0.casingWidth, turn.b1.casingWidth, turn.b0.casingColor, turn.b1.casingColor, 4)
+		}
+
+		for (const cr of crossroads) {
+			if (!cr.hasStone) continue
+			const casingColor = ROAD_CONFIG.colors?.stoneDark || '#475569'
+			if (cr.stoneAprons) {
+				for (const ap of cr.stoneAprons) {
+					strokeTaperedCurve(ctx, ap.center, ap.center, ap.pt, ap.casingWidth, ap.casingWidth, casingColor, casingColor, 2)
+				}
+			}
+			if (cr.maxCasingWidth > 0) {
+				ctx.beginPath()
+				ctx.arc(cr.center.x, cr.center.y, cr.maxCasingWidth * 0.55, 0, Math.PI * 2)
+				ctx.fillStyle = casingColor
+				ctx.fill()
+			}
+			for (const f of cr.fillets) {
+				if (!f.isStone) continue
+				if ((f.bA.casingWidth || 0) <= 0 && (f.bB.casingWidth || 0) <= 0) continue
+				strokeTaperedCurve(ctx, f.PA, cr.center, f.PB, f.bA.casingWidth, f.bB.casingWidth, casingColor, casingColor, 3)
+			}
 		}
 	}
 
 	// --- PASS 2: All Road Cores (Surfaces), Smooth Rounded Turns, and Crossroad Hubs ---
-	for (const t of trunks) {
-		ctx.beginPath()
-		ctx.moveTo(t.pMid.x, t.pMid.y)
-		ctx.quadraticCurveTo(t.pQ.x, t.pQ.y, t.endPt.x, t.endPt.y)
-		ctx.lineWidth = t.coreWidth
-		ctx.strokeStyle = t.coreColor
-		ctx.stroke()
-	}
+	const dirtLineColor = ROAD_CONFIG.colors?.dirtLine ?? ROAD_CONFIG.colors?.dirtBackground ?? ROAD_CONFIG.colors?.dirtUnderlay ?? ROAD_CONFIG.line?.dirtColor ?? ROAD_CONFIG.colors?.dirt ?? '#8d6e63'
+	const stoneLineColor = ROAD_CONFIG.colors?.stoneLine ?? ROAD_CONFIG.colors?.stoneBackground ?? ROAD_CONFIG.colors?.stoneUnderlay ?? ROAD_CONFIG.line?.stoneColor ?? ROAD_CONFIG.colors?.stone ?? '#9eaec4'
 
-	for (const turn of turns) {
-		strokeTaperedCurve(ctx, turn.A0, turn.center, turn.A1, turn.b0.coreWidth, turn.b1.coreWidth, turn.b0.coreColor, turn.b1.coreColor, 4)
-	}
+	const genericLineOpacity = Math.max(0, Math.min(1, Number(ROAD_CONFIG.lineOpacity ?? ROAD_CONFIG.line?.opacity ?? 1.0)))
+	const dirtLineOpacity = Math.max(0, Math.min(1, Number(ROAD_CONFIG.dirtLineOpacity ?? ROAD_CONFIG.line?.dirtOpacity ?? genericLineOpacity)))
+	const stoneLineOpacity = Math.max(0, Math.min(1, Number(ROAD_CONFIG.stoneLineOpacity ?? ROAD_CONFIG.line?.stoneOpacity ?? genericLineOpacity)))
 
-	for (const cr of crossroads) {
-		const coreColor = cr.hasStone ? '#94a3b8' : '#b45309'
-		for (const f of cr.fillets) {
-			strokeTaperedCurve(ctx, f.PA, cr.center, f.PB, f.bA.coreWidth, f.bB.coreWidth, coreColor, coreColor, 3)
+	const resolvedDirtLine = resolveColorWithAlpha(dirtLineColor, dirtLineOpacity)
+	const resolvedStoneLine = resolveColorWithAlpha(stoneLineColor, stoneLineOpacity)
+
+	// Layer 1: Subordinate Dirt roads
+	if (dirtLineOpacity > 0) {
+		for (const t of trunks) {
+			if (t.isStone) continue
+			ctx.beginPath()
+			ctx.moveTo(t.pMid.x, t.pMid.y)
+			ctx.quadraticCurveTo(t.pQ.x, t.pQ.y, t.endPt.x, t.endPt.y)
+			ctx.lineWidth = Math.max(1, t.coreWidth * 0.85)
+			ctx.strokeStyle = resolvedDirtLine
+			ctx.stroke()
 		}
+
+		for (const turn of turns) {
+			if (turn.b0.isStone && turn.b1.isStone) continue
+			// Transition turn or pure dirt turn
+			const w0 = turn.b0.isStone ? turn.b0.coreWidth : Math.max(1, turn.b0.coreWidth * 0.85)
+			const w1 = turn.b1.isStone ? turn.b1.coreWidth : Math.max(1, turn.b1.coreWidth * 0.85)
+			const c0 = turn.b0.isStone ? resolvedStoneLine : resolvedDirtLine
+			const c1 = turn.b1.isStone ? resolvedStoneLine : resolvedDirtLine
+			strokeTaperedCurve(ctx, turn.A0, turn.center, turn.A1, w0, w1, c0, c1, 4)
+		}
+
+		for (const cr of crossroads) {
+			if (cr.hasStone) continue
+			for (const f of cr.fillets) {
+				const w0 = Math.max(1, f.bA.coreWidth * 0.85)
+				const w1 = Math.max(1, f.bB.coreWidth * 0.85)
+				strokeTaperedCurve(ctx, f.PA, cr.center, f.PB, w0, w1, resolvedDirtLine, resolvedDirtLine, 3)
+			}
+		}
+	}
+
+	// Layer 2: Dominant Stone roads (ALWAYS ON TOP!)
+	if (stoneLineOpacity > 0) {
+		for (const t of trunks) {
+			if (!t.isStone) continue
+			ctx.beginPath()
+			ctx.moveTo(t.pMid.x, t.pMid.y)
+			ctx.quadraticCurveTo(t.pQ.x, t.pQ.y, t.endPt.x, t.endPt.y)
+			ctx.lineWidth = t.coreWidth
+			ctx.strokeStyle = resolvedStoneLine
+			ctx.stroke()
+		}
+
+		for (const turn of turns) {
+			if (!turn.b0.isStone || !turn.b1.isStone) continue
+			strokeTaperedCurve(ctx, turn.A0, turn.center, turn.A1, turn.b0.coreWidth, turn.b1.coreWidth, resolvedStoneLine, resolvedStoneLine, 4)
+		}
+
+		for (const cr of crossroads) {
+			if (!cr.hasStone) continue
+
+			// Stone aprons extending onto incoming dirt roads (stone overlaps onto dirt road!)
+			if (cr.stoneAprons) {
+				for (const ap of cr.stoneAprons) {
+					strokeTaperedCurve(ctx, ap.center, ap.center, ap.pt, ap.width, ap.endWidth, resolvedStoneLine, resolvedStoneLine, 2)
+				}
+			}
+
+			// Solid stone intersection hub
+			ctx.beginPath()
+			ctx.arc(cr.center.x, cr.center.y, cr.maxCoreWidth * 0.55, 0, Math.PI * 2)
+			ctx.fillStyle = resolvedStoneLine
+			ctx.fill()
+
+			for (const f of cr.fillets) {
+				if (!f.isStone) continue
+				const w0 = f.bA.isStone ? f.bA.coreWidth : f.bA.coreWidth * 0.9
+				const w1 = f.bB.isStone ? f.bB.coreWidth : f.bB.coreWidth * 0.9
+				strokeTaperedCurve(ctx, f.PA, cr.center, f.PB, w0, w1, resolvedStoneLine, resolvedStoneLine, 3)
+			}
+		}
+	}
+
+	// --- PASS 3: Baked Road Particles (Gravel Texture, Shoulder Scatter & Crossroad Blending) ---
+	if (ROAD_CONFIG.particles?.enabled) {
+		renderRoadParticles(ctx, trunks, turns, crossroads)
 	}
 
 	ctx.restore()
 }
+
+/**
+ * Resolves a CSS color string with a specified alpha channel (0.0 .. 1.0).
+ */
+function resolveColorWithAlpha(color, alpha = 1.0) {
+	if (!color) return 'transparent'
+	const a = Math.max(0, Math.min(1, Number(alpha) ?? 1.0))
+	if (a <= 0) return 'transparent'
+	if (a >= 1.0 && typeof color === 'string' && !color.startsWith('rgba')) return color
+	return hexToRgba(color, a)
+}
+
+/**
+ * Zero-lag baked particle rendering for roads (gravel, dust, cobblestone chips, and progressive shoulder falloff).
+ * 100% deterministic and anchored to map geometry (0 jitter when moving camera).
+ */
+function renderRoadParticles(ctx, trunks, turns, crossroads) {
+	const partCfg = ROAD_CONFIG.particles || {}
+	if (partCfg.enabled === false) return
+
+	const colors = ROAD_CONFIG.colors || {}
+	const cDirtDark = colors.dirtDark || '#6b4f46'
+	const cDirt = colors.dirt || '#8d6e63'
+	const cDirtLight = colors.dirtLight || '#bcaaa4'
+	const cDirtSand = colors.dirtSand || '#c59a8a'
+	const cStoneDark = colors.stoneDark || '#747f92'
+	const cStone = colors.stone || '#9eaec4'
+	const cStoneLight = colors.stoneLight || '#8194ac'
+
+	// Road line base colors (used when inner particles are disabled)
+	const dirtLineBaseColor = colors.dirtLine ?? colors.dirtBackground ?? colors.dirtUnderlay ?? ROAD_CONFIG.line?.dirtColor ?? cDirt
+	const stoneLineBaseColor = colors.stoneLine ?? colors.stoneBackground ?? colors.stoneUnderlay ?? ROAD_CONFIG.line?.stoneColor ?? cStone
+
+	// Base pixel block size (screen pixels at close-up / max zoom)
+	const basePixelSize = Math.max(1, Math.min(8, Math.round(Number(partCfg.pixelSize) || 3.0)))
+	const scaleWithZoom = partCfg.scaleWithZoom !== false
+
+	const rawDensity = Number(partCfg.innerDensity) || 1.0
+	const densityMul = Math.max(0.05, Math.min(3.0, rawDensity > 10 ? 2.0 : rawDensity))
+
+	// Global particle opacity
+	const globalOpacity = Math.max(0, Math.min(1, Number(partCfg.opacity ?? 1.0)))
+
+	// Inner particles enabled / disabled
+	const genericInnerEnabled = partCfg.innerEnabled ?? partCfg.inner?.enabled ?? true
+	const dirtInnerEnabled = Boolean(partCfg.dirtInnerEnabled ?? partCfg.dirt?.innerEnabled ?? genericInnerEnabled)
+	const stoneInnerEnabled = Boolean(partCfg.stoneInnerEnabled ?? partCfg.stone?.innerEnabled ?? genericInnerEnabled)
+
+	// Outer particles enabled / disabled
+	const genericOuterEnabled = partCfg.outerEnabled ?? partCfg.scatterEnabled ?? partCfg.outer?.enabled ?? true
+	const dirtOuterEnabled = Boolean(partCfg.dirtOuterEnabled ?? partCfg.dirtScatterEnabled ?? partCfg.dirt?.outerEnabled ?? partCfg.dirt?.scatterEnabled ?? genericOuterEnabled)
+	const stoneOuterEnabled = Boolean(partCfg.stoneOuterEnabled ?? partCfg.stoneScatterEnabled ?? partCfg.stone?.outerEnabled ?? partCfg.stone?.scatterEnabled ?? genericOuterEnabled)
+
+	// Inner / Outer opacities
+	const genericInnerOpacity = Math.max(0, Math.min(1, Number(partCfg.innerOpacity ?? partCfg.inner?.opacity ?? globalOpacity)))
+	const dirtInnerOpacity = Math.max(0, Math.min(1, Number(partCfg.dirtInnerOpacity ?? partCfg.dirt?.innerOpacity ?? genericInnerOpacity)))
+	const stoneInnerOpacity = Math.max(0, Math.min(1, Number(partCfg.stoneInnerOpacity ?? partCfg.stone?.innerOpacity ?? genericInnerOpacity)))
+
+	const genericOuterOpacity = Math.max(0, Math.min(1, Number(partCfg.outerOpacity ?? partCfg.scatterOpacity ?? partCfg.outer?.opacity ?? globalOpacity)))
+	const dirtOuterOpacity = Math.max(0, Math.min(1, Number(partCfg.dirtOuterOpacity ?? partCfg.dirtScatterOpacity ?? partCfg.dirt?.outerOpacity ?? genericOuterOpacity)))
+	const stoneOuterOpacity = Math.max(0, Math.min(1, Number(partCfg.stoneOuterOpacity ?? partCfg.stoneScatterOpacity ?? partCfg.stone?.outerOpacity ?? genericOuterOpacity)))
+
+	// Dirt road scatter parameters
+	const dirtScatterRatio = Math.max(1.0, Number(partCfg.dirt?.scatterWidthRatio ?? partCfg.scatterWidthRatio) || 2.0)
+	const rawDirtScatterDensity = Number(partCfg.dirt?.scatterDensity ?? partCfg.scatterDensity) || 1.0
+	const dirtScatterDensity = Math.max(0.05, Math.min(4.0, rawDirtScatterDensity > 10 ? 2.0 : rawDirtScatterDensity))
+
+	// Stone road scatter parameters
+	const stoneScatterRatio = Math.max(1.0, Number(partCfg.stone?.scatterWidthRatio ?? partCfg.stoneScatterWidthRatio) || 2.0)
+	const rawStoneScatterDensity = Number(partCfg.stone?.scatterDensity ?? partCfg.stoneScatterDensity) || 1.0
+	const stoneScatterDensity = Math.max(0.05, Math.min(4.0, rawStoneScatterDensity > 10 ? 2.0 : rawStoneScatterDensity))
+
+	// Two separate particle coordinate buckets to guarantee stone particles always render on top of dirt particles
+	const dirtBuckets = new Map()
+	const stoneBuckets = new Map()
+
+	function addPt(color, px, py, size, isStone = false) {
+		if (!color || color === 'transparent') return
+		const bucket = isStone ? stoneBuckets : dirtBuckets
+		let arr = bucket.get(color)
+		if (!arr) {
+			arr = []
+			bucket.set(color, arr)
+		}
+		const s = size || 1
+		arr.push(Math.round(px - s * 0.5), Math.round(py - s * 0.5), s, s)
+	}
+
+	function getDirtColor(s, laneOrRow, seed) {
+		// 2D spatial Bayer dither pattern across the road's intrinsic (s, lane) grid.
+		// Stable and invariant under camera pan!
+		const bayer = ((s & 1) << 1) | ((s & 1) ^ (laneOrRow & 1))
+		const macro = ((s >> 2) + (laneOrRow >> 2) + ((seed || 0) & 3)) & 3
+		const idx = (bayer + macro) & 3
+		switch (idx) {
+			case 0: return cDirt
+			case 1: return cDirtDark
+			case 2: return cDirtLight
+			default: return cDirtSand
+		}
+	}
+
+	function getStoneColor(s, laneOrRow, seed) {
+		// 3-way cobblestone alternation: body, shadow seam, and highlight chip.
+		// Stable and invariant under camera pan!
+		const macro = Math.abs(((s >> 2) * 2 + (laneOrRow >> 2) + ((seed || 0) % 3)))
+		const idx = (((s * 2 + laneOrRow + macro) % 3) + 3) % 3
+		switch (idx) {
+			case 0: return cStone
+			case 1: return cStoneDark
+			default: return cStoneLight
+		}
+	}
+
+	function sampleCurveParticles(p0, p1, p2, isStone, halfW, scale, seed, isFillet = false, isCrossroad = false, opts = {}) {
+		// Perspective zoom-scaled particle size:
+		// - Close-up / max zoom (scale >= 2.35): basePixelSize (e.g. 3px, user-preferred size)
+		// - Medium zoom (1.35 <= scale < 2.35): graceful step down to 2px
+		// - Distant zoom / overview (scale < 1.35): crisp 1px retro dots
+		const REF_ZOOM_SCALE = 2.8
+		const curPSize = scaleWithZoom
+			? Math.max(1, Math.min(basePixelSize, Math.round(basePixelSize * (scale / REF_ZOOM_SCALE))))
+			: basePixelSize
+
+		// Screen length of the Bezier segment (p0 -> p1 -> p2)
+		const chordLen = Math.hypot(p2.x - p0.x, p2.y - p0.y)
+		const ctrlLen = Math.hypot(p1.x - p0.x, p1.y - p0.y) + Math.hypot(p2.x - p1.x, p2.y - p1.y)
+		const segLen = Math.max(1.0, (chordLen + ctrlLen) * 0.5)
+
+		// Dynamic step distance along the road curve:
+		// Step distance is GUARANTEED to be at least curPSize.
+		// Consecutive particles along the road can NEVER overlap!
+		const innerEnabled = isStone ? stoneInnerEnabled : dirtInnerEnabled
+		const effectiveDensity = innerEnabled ? densityMul : 1.0
+		const stepDist = Math.max(curPSize, curPSize / Math.max(0.05, effectiveDensity))
+		const steps = Math.max(2, Math.round(segLen / stepDist))
+
+		const isSubordinateDirt = Boolean(opts.isSubordinateDirt)
+		const hubCenter = opts.hubCenter
+		const stoneHubRadius = Number(opts.stoneHubRadius) || 0
+		const isTransition = Boolean(opts.isTransitionTurn)
+		const startIsStone = Boolean(opts.startIsStone)
+		const halfW0 = opts.halfW0 ?? halfW
+		const halfW1 = opts.halfW1 ?? halfW
+
+		// Longitudinal steps along the quadratic Bezier curve
+		for (let s = 0; s <= steps; s++) {
+			const u = s / steps
+			const u1 = 1 - u
+			const cx = u1 * u1 * p0.x + 2 * u1 * u * p1.x + u * u * p2.x
+			const cy = u1 * u1 * p0.y + 2 * u1 * u * p1.y + u * u * p2.y
+
+			const tx = 2 * u1 * (p1.x - p0.x) + 2 * u * (p2.x - p1.x)
+			const ty = 2 * u1 * (p1.y - p0.y) + 2 * u * (p2.y - p1.y)
+			const tLen = Math.hypot(tx, ty) || 1
+			const nx = -ty / tLen
+			const ny = tx / tLen
+
+			// Determine whether this step is stone or dirt (supports straight transitions k=2)
+			const curIsStone = isTransition
+				? (startIsStone ? (u < 0.5) : (u >= 0.5))
+				: isStone
+
+			const curHalfW = isTransition
+				? (halfW0 * (1 - u) + halfW1 * u)
+				: halfW
+
+			if (curIsStone) {
+				// --- STONE ROAD ---
+				const coreWidth = curHalfW * 2
+				const stoneLanes = Math.max(1, Math.round((coreWidth / curPSize) * Math.min(1.0, densityMul)))
+
+				// 1. Inner particles (only if stoneInnerEnabled is true)
+				if (stoneInnerEnabled && stoneInnerOpacity > 0) {
+					for (let l = 0; l < stoneLanes; l++) {
+						const d = stoneLanes === 1 ? 0 : -curHalfW * 0.85 + (l / (stoneLanes - 1)) * (curHalfW * 1.7)
+						const px = cx + nx * d
+						const py = cy + ny * d
+						const rawColor = getStoneColor(s, l, seed)
+						const finalColor = resolveColorWithAlpha(rawColor, stoneInnerOpacity)
+						addPt(finalColor, px, py, curPSize, true)
+					}
+				}
+
+				// 2. Outer Shoulder Scatter (only if stoneOuterEnabled is true)
+				// If stone inner particles are disabled, outer particles take the color of the road line itself!
+				if (stoneOuterEnabled && stoneOuterOpacity > 0 && stoneScatterRatio > 1.0) {
+					// In crossroads hubs (near center), stop shoulder scatter to keep intersection clean
+					if (isCrossroad && u > 0.82) continue
+
+					const effectiveRatio = isFillet ? Math.min(1.8, stoneScatterRatio) : stoneScatterRatio
+					const maxReach = curHalfW * effectiveRatio
+					const scatterSpan = maxReach - curHalfW
+					const numRows = Math.min(32, Math.max(1, Math.round(scatterSpan / curPSize)))
+
+					for (let sideIdx = 0; sideIdx < 2; sideIdx++) {
+						const side = sideIdx === 0 ? -1 : 1
+						const sideSeed = side > 0 ? 0 : 1
+
+						for (let k = 1; k <= numRows; k++) {
+							const rowFrac = (k - 1) / Math.max(1, numRows - 1)
+							const baseGap = 2 + Math.floor(rowFrac * 8)
+							const gapPeriod = Math.max(2, Math.round(baseGap / Math.sqrt(stoneScatterDensity)))
+
+							const phase = (s + sideSeed * 3 + (k - 1) * 2) % gapPeriod
+							if (phase !== 0) continue // Empty gap
+
+							const d = side * (curHalfW * 0.85 + (k - 0.5) * curPSize)
+							const px = cx + nx * d
+							const py = cy + ny * d
+
+							// If inner particles are OFF, outer particles take the road line color!
+							const rawColor = !stoneInnerEnabled
+								? stoneLineBaseColor
+								: getStoneColor(s, stoneLanes + k, seed)
+							const finalColor = resolveColorWithAlpha(rawColor, stoneOuterOpacity)
+							addPt(finalColor, px, py, curPSize, true)
+						}
+					}
+				}
+			} else {
+				// --- DIRT ROAD ---
+				// If this dirt branch is subordinate to a stone crossroad:
+				// Inner dirt particles seamlessly run up to the stone apron
+				if (isSubordinateDirt && u > 0.85) continue
+
+				const coreWidth = curHalfW * 1.8
+				const dirtLanes = Math.max(1, Math.round((coreWidth / curPSize) * Math.min(1.0, densityMul)))
+
+				// 1. Inner particles (only if dirtInnerEnabled is true)
+				if (dirtInnerEnabled && dirtInnerOpacity > 0) {
+					for (let l = 0; l < dirtLanes; l++) {
+						const d = dirtLanes === 1 ? 0 : -curHalfW * 0.75 + (l / (dirtLanes - 1)) * (curHalfW * 1.5)
+						const px = cx + nx * d
+						const py = cy + ny * d
+
+						// Absolute safety check: never place dirt particles deep inside the stone crossroad hub
+						if (isSubordinateDirt && hubCenter && stoneHubRadius > 0) {
+							if (Math.hypot(px - hubCenter.x, py - hubCenter.y) < stoneHubRadius * 0.6) continue
+						}
+
+						const rawColor = getDirtColor(s, l, seed)
+						const finalColor = resolveColorWithAlpha(rawColor, dirtInnerOpacity)
+						addPt(finalColor, px, py, curPSize, false)
+					}
+				}
+
+				// 2. Outer Shoulder Scatter (only if dirtOuterEnabled is true)
+				// If dirt inner particles are disabled, outer particles take the road line color!
+				if (dirtOuterEnabled && dirtOuterOpacity > 0 && dirtScatterRatio > 1.0) {
+					// Stop dirt shoulder scatter when approaching the stone apron to keep intersection clean
+					if (isSubordinateDirt && u > 0.70) continue
+					if (isCrossroad && u > 0.82) continue
+
+					const effectiveRatio = isFillet ? Math.min(2.0, dirtScatterRatio) : dirtScatterRatio
+					const maxReach = curHalfW * effectiveRatio
+					const scatterSpan = maxReach - curHalfW
+					const numRows = Math.min(48, Math.max(1, Math.round(scatterSpan / curPSize)))
+
+					for (let sideIdx = 0; sideIdx < 2; sideIdx++) {
+						const side = sideIdx === 0 ? -1 : 1
+						const sideSeed = side > 0 ? 0 : 1
+
+						for (let k = 1; k <= numRows; k++) {
+							const rowFrac = (k - 1) / Math.max(1, numRows - 1)
+							const baseGap = 2 + Math.floor(rowFrac * 8)
+							const gapPeriod = Math.max(2, Math.round(baseGap / Math.sqrt(dirtScatterDensity)))
+
+							const phase = (s + sideSeed * 3 + (k - 1) * 2) % gapPeriod
+							if (phase !== 0) continue // Empty gap
+
+							const d = side * (curHalfW * 0.85 + (k - 0.5) * curPSize)
+							const px = cx + nx * d
+							const py = cy + ny * d
+
+							// Absolute safety check: never place dirt scatter deep inside the stone crossroad hub
+							if (isSubordinateDirt && hubCenter && stoneHubRadius > 0) {
+								if (Math.hypot(px - hubCenter.x, py - hubCenter.y) < stoneHubRadius * 0.8) continue
+							}
+
+							// If inner particles are OFF, outer particles take the road line color!
+							const rawColor = !dirtInnerEnabled
+								? dirtLineBaseColor
+								: getDirtColor(s, dirtLanes + k, seed)
+							const finalColor = resolveColorWithAlpha(rawColor, dirtOuterOpacity)
+							addPt(finalColor, px, py, curPSize, false)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// 1. Road Trunks (Straight segments & curves towards boundary midpoints)
+	for (const t of trunks) {
+		const seed = hashString(`trunk:${t.cellKey}:${t.canonKey || ''}`)
+		const halfW = Math.max(0.6, t.coreWidth * 0.5)
+		sampleCurveParticles(t.pMid, t.pQ, t.endPt, t.isStone, halfW, t.scale || 1.0, seed, false, Boolean(t.isCrossroad), {
+			isSubordinateDirt: Boolean(t.isSubordinateDirt),
+			hubCenter: t.hubCenter,
+			stoneHubRadius: t.stoneHubRadius
+		})
+	}
+
+	// 2. Rounded Turns at cell centers (2 connecting branches)
+	for (const turn of turns) {
+		const seed = hashString(`turn:${turn.cellKey}`)
+		const isPureStone = turn.b0.isStone && turn.b1.isStone
+		const isTransition = turn.b0.isStone !== turn.b1.isStone
+
+		const halfW0 = Math.max(0.6, turn.b0.coreWidth * 0.5)
+		const halfW1 = Math.max(0.6, turn.b1.coreWidth * 0.5)
+		const avgHalfW = (halfW0 + halfW1) * 0.5
+
+		if (isTransition) {
+			sampleCurveParticles(turn.A0, turn.center, turn.A1, false, avgHalfW, turn.scale || 1.0, seed, false, false, {
+				isTransitionTurn: true,
+				startIsStone: turn.b0.isStone,
+				halfW0,
+				halfW1
+			})
+		} else {
+			sampleCurveParticles(turn.A0, turn.center, turn.A1, isPureStone, avgHalfW, turn.scale || 1.0, seed, false, false)
+		}
+	}
+
+	// 3. Crossroads Fillets and Stone Aprons
+	for (const cr of crossroads) {
+		for (let fi = 0; fi < cr.fillets.length; fi++) {
+			const f = cr.fillets[fi]
+			const isStone = Boolean(f.isStone)
+			const avgCoreW = (f.bA.coreWidth + f.bB.coreWidth) * 0.5
+			const halfW = Math.max(0.6, avgCoreW * 0.5)
+			const seed = hashString(`cr:${cr.cellKey}:${fi}`)
+			sampleCurveParticles(f.PA, cr.center, f.PB, isStone, halfW, cr.scale || 1.0, seed, true, false)
+		}
+
+		// Stone aprons extending onto incoming dirt roads (stone overlaps onto dirt road!)
+		if (cr.stoneAprons) {
+			for (let ai = 0; ai < cr.stoneAprons.length; ai++) {
+				const ap = cr.stoneAprons[ai]
+				const seed = hashString(`apron:${cr.cellKey}:${ai}`)
+				const halfW = Math.max(0.6, ap.width * 0.5)
+				sampleCurveParticles(ap.center, ap.center, ap.pt, true, halfW, ap.scale || 1.0, seed, false, false)
+			}
+		}
+	}
+
+	// 4. Batch flush all buckets (Dirt first, Stone second on top)
+	for (const [color, coords] of dirtBuckets) {
+		if (coords.length === 0) continue
+		ctx.fillStyle = color
+		for (let i = 0; i < coords.length; i += 4) {
+			ctx.fillRect(coords[i], coords[i + 1], coords[i + 2], coords[i + 3])
+		}
+	}
+
+	for (const [color, coords] of stoneBuckets) {
+		if (coords.length === 0) continue
+		ctx.fillStyle = color
+		for (let i = 0; i < coords.length; i += 4) {
+			ctx.fillRect(coords[i], coords[i + 1], coords[i + 2], coords[i + 3])
+		}
+	}
+}
+
 
 /**
  * Draws roads connecting adjacent hex centers on the perspective terrain surface.

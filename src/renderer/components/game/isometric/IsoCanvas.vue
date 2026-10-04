@@ -4,7 +4,7 @@
 		class="iso-canvas-container"
 		:class="{
 			'__is-painting-brush': mode === 'editor' && ['tile', 'elevation', 'eraser'].includes(editorTool) && !isSpacePressed,
-			'__is-panning-active': camera.isDragging,
+			'__is-panning-active': isPanningActive,
 			'__is-space-pressed': isSpacePressed
 		}"
 		@mouseenter="updateContainerPosition"
@@ -59,12 +59,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
+import { ref, shallowRef, toRaw, onMounted, onUnmounted, watch, computed } from 'vue'
 import { FPS_LIMIT_INTERVAL_MS } from '@/utils/hexmap/hexConfig.js'
 import {
 	gridToScreen,
-	getTilePolygon,
-	getWallPolygon,
 	getObjectScreenPos,
 	DEFAULT_WALL_HEIGHT,
 	pickTileAtScreen,
@@ -85,6 +83,7 @@ import {
 	onSpriteLoaded
 } from '@/utils/isometric/isoSprites'
 import { drawIsometricFacingIndicator } from '@/utils/isometric/isoFacing'
+import { PixiIsoRenderer } from '@/utils/isometric/pixi/PixiIsoRenderer.js'
 
 const props = defineProps({
 	locationData: { type: Object, required: true },
@@ -105,8 +104,13 @@ const props = defineProps({
 	showCenterMarker: { type: Boolean, default: true },
 	selectedTile: { type: Object, default: null },
 	initialCenter: { type: String, default: 'zero' }, // 'zero' | 'player'
-	characterId: { type: String, default: 'mc' }
+	characterId: { type: String, default: 'mc' },
+	renderBackend: { type: String, default: 'webgl' } // 'webgl' | 'canvas2d'
 })
+
+// PixiJS WebGL Hardware Renderer
+let pixiRenderer = null
+const isWebGlActive = shallowRef(false)
 
 const DEFAULT_ZOOM = 1.5
 
@@ -142,8 +146,8 @@ const mapVersion = ref(0)
 let resizeObserver = null
 let unlistenSprites = null
 
-// Camera State
-const camera = ref({
+// Camera State (shallowRef prevents deep proxy overhead during high-frequency panning)
+const camera = shallowRef({
 	x: 0,
 	y: 0,
 	zoom: DEFAULT_ZOOM,
@@ -152,6 +156,7 @@ const camera = ref({
 	dragStartY: 0,
 	hasMovedSinceDown: false
 })
+const isPanningActive = ref(false)
 
 // Drag-Painting & Keyboard Pan State
 const isPainting = ref(false)
@@ -201,8 +206,8 @@ const plannedPathSet = computed(() => {
 	return set
 })
 
-// Floating particles for weeding action
-const particles = ref([])
+// Floating particles for weeding action (non-reactive to avoid GC and reactivity overhead)
+let particles = []
 
 // Computed brush coverage cells for hover preview and painting
 const activeBrushCells = computed(() => {
@@ -254,10 +259,59 @@ const tilePosSet = computed(() => {
 	return set
 })
 
+// Exit trigger coordinates for O(1) lookup in drawTile (was an O(exits) scan per tile per frame)
+const exitTileSet = computed(() => {
+	void mapVersion.value
+	const set = new Set()
+	const exits = props.locationData?.exits
+	if (Array.isArray(exits)) {
+		for (const e of exits) {
+			if (e.trigger) set.add(`${e.trigger.x},${e.trigger.y}`)
+		}
+	}
+	return set
+})
+
+// Min and Max elevation of the current map for diagonal clipping
+let mapMinZ = 0
+let mapMaxZ = 0
+
+// Binary search helpers for fast isometric diagonal range clipping (O(log N))
+function findFirstIndexGe(queue, targetDepthKey) {
+	let low = 0
+	let high = queue.length
+	while (low < high) {
+		const mid = (low + high) >>> 1
+		if (queue[mid].depthKey < targetDepthKey) {
+			low = mid + 1
+		} else {
+			high = mid
+		}
+	}
+	return low
+}
+
+function findFirstIndexGt(queue, targetDepthKey) {
+	let low = 0
+	let high = queue.length
+	while (low < high) {
+		const mid = (low + high) >>> 1
+		if (queue[mid].depthKey <= targetDepthKey) {
+			low = mid + 1
+		} else {
+			high = mid
+		}
+	}
+	return low
+}
+
 // Static render queue pre-sorted once whenever tiles/objects/bounds change
 const staticRenderQueue = computed(() => {
 	// Read mapVersion so in-place mutations trigger recomputation
 	void mapVersion.value
+
+	let minZ = 0
+	let maxZ = 0
 
 	const queue = []
 
@@ -278,12 +332,14 @@ const staticRenderQueue = computed(() => {
 				const posSet = tilePosSet.value
 				for (let gy = mapBounds.minY; gy <= mapBounds.maxY; gy++) {
 					for (let gx = mapBounds.minX; gx <= mapBounds.maxX; gx++) {
-						if (!posSet.has(`${gx},${gy}`)) {
+						const key = `${gx},${gy}`
+						if (!posSet.has(key)) {
 							queue.push({
 								type: 'void',
 								x: gx,
 								y: gy,
 								z: 0,
+								key,
 								depthKey: getDepthSortKey(gx, gy, 0, 0)
 							})
 						}
@@ -295,13 +351,20 @@ const staticRenderQueue = computed(() => {
 
 	// 1. Tiles & Edge Walls
 	for (const tile of tiles.value) {
+		const tz = tile.z || 0
+		if (tz < minZ) minZ = tz
+		if (tz > maxZ) maxZ = tz
+
 		queue.push({
 			type: 'tile',
 			x: tile.x,
 			y: tile.y,
-			z: tile.z || 0,
-			depthKey: getDepthSortKey(tile.x, tile.y, tile.z || 0, 0),
-			data: tile
+			z: tz,
+			key: `${tile.x},${tile.y}`,
+			depthKey: getDepthSortKey(tile.x, tile.y, tz, 0),
+			// Raw object: drawTile only reads it, and proxy get-traps per property per frame add up.
+			// In-place edits go through the proxy to the same target, so reads stay up to date.
+			data: toRaw(tile)
 		})
 
 		if (tile.walls) {
@@ -312,8 +375,8 @@ const staticRenderQueue = computed(() => {
 					edge: 'W',
 					tileX: tile.x,
 					tileY: tile.y,
-					tileZ: tile.z || 0,
-					depthKey: getDepthSortKey(tile.x, tile.y, tile.z || 0, 1),
+					tileZ: tz,
+					depthKey: getDepthSortKey(tile.x, tile.y, tz, 1),
 					data: wallW
 				})
 			}
@@ -324,8 +387,8 @@ const staticRenderQueue = computed(() => {
 					edge: 'N',
 					tileX: tile.x,
 					tileY: tile.y,
-					tileZ: tile.z || 0,
-					depthKey: getDepthSortKey(tile.x, tile.y, tile.z || 0, 1),
+					tileZ: tz,
+					depthKey: getDepthSortKey(tile.x, tile.y, tz, 1),
 					data: wallN
 				})
 			}
@@ -336,8 +399,8 @@ const staticRenderQueue = computed(() => {
 					edge: 'S',
 					tileX: tile.x,
 					tileY: tile.y,
-					tileZ: tile.z || 0,
-					depthKey: getDepthSortKey(tile.x, tile.y, tile.z || 0, 6),
+					tileZ: tz,
+					depthKey: getDepthSortKey(tile.x, tile.y, tz, 6),
 					data: wallS
 				})
 			}
@@ -348,8 +411,8 @@ const staticRenderQueue = computed(() => {
 					edge: 'E',
 					tileX: tile.x,
 					tileY: tile.y,
-					tileZ: tile.z || 0,
-					depthKey: getDepthSortKey(tile.x, tile.y, tile.z || 0, 6),
+					tileZ: tz,
+					depthKey: getDepthSortKey(tile.x, tile.y, tz, 6),
 					data: wallE
 				})
 			}
@@ -358,13 +421,17 @@ const staticRenderQueue = computed(() => {
 
 	// 2. Objects
 	for (const obj of objects.value) {
+		const oz = obj.z || 0
+		if (oz < minZ) minZ = oz
+		if (oz > maxZ) maxZ = oz
+
 		queue.push({
 			type: 'object',
 			x: obj.x,
 			y: obj.y,
-			z: obj.z || 0,
-			depthKey: getDepthSortKey(obj.x, obj.y, obj.z || 0, 4) + (obj.zIndex || 0) * 0.1,
-			data: obj
+			z: oz,
+			depthKey: getDepthSortKey(obj.x, obj.y, oz, 4) + (obj.zIndex || 0) * 0.1,
+			data: toRaw(obj)
 		})
 	}
 
@@ -374,16 +441,23 @@ const staticRenderQueue = computed(() => {
 			if (props.showPlayer && actor.id === (props.characterId || 'mc')) {
 				continue
 			}
+			const az = actor.z || 0
+			if (az < minZ) minZ = az
+			if (az > maxZ) maxZ = az
+
 			queue.push({
 				type: 'actor',
 				x: actor.x,
 				y: actor.y,
-				z: actor.z || 0,
-				depthKey: getDepthSortKey(actor.x, actor.y, actor.z || 0, 5),
+				z: az,
+				depthKey: getDepthSortKey(actor.x, actor.y, az, 5),
 				data: actor
 			})
 		}
 	}
+
+	mapMinZ = minZ
+	mapMaxZ = maxZ
 
 	// Pre-sort once!
 	queue.sort((a, b) => a.depthKey - b.depthKey)
@@ -511,12 +585,8 @@ watch(
 	}
 )
 
-watch(
-	() => [camera.value.x, camera.value.y, camera.value.zoom],
-	() => {
-		requestRender()
-	}
-)
+// Note: camera coordinates call clampCamera() & requestRender() directly on mutations.
+// Redundant deep camera watcher removed to prevent array allocations and reactive churn during panning.
 
 watch(
 	() => hoveredTile.value,
@@ -528,6 +598,12 @@ watch(
 watch(
 	() => staticRenderQueue.value,
 	() => {
+		if (pixiRenderer && isWebGlActive.value && props.locationData) {
+			pixiRenderer.buildStaticScene(props.locationData, tiles.value, objects.value, {
+				showGrid: props.showGrid,
+				showHeights: props.showHeights
+			})
+		}
 		requestRender()
 	}
 )
@@ -589,6 +665,10 @@ function resizeCanvas() {
 	if (w > 0 && h > 0) {
 		const targetW = Math.round(w * dpr)
 		const targetH = Math.round(h * dpr)
+		if (pixiRenderer && isWebGlActive.value) {
+			pixiRenderer.resize(w, h)
+			return
+		}
 		if (canvas.width !== targetW || canvas.height !== targetH) {
 			canvas.width = targetW
 			canvas.height = targetH
@@ -618,7 +698,7 @@ function renderLoop() {
 	render()
 
 	// If particles exist or player is moving, continue the loop
-	if (particles.value.length > 0 || player.value.isMoving) {
+	if (particles.length > 0 || player.value.isMoving) {
 		requestRender()
 	}
 }
@@ -846,6 +926,7 @@ function onMouseDown(e) {
 	// Pan via Middle Mouse Button (1) or Space + LMB (0):
 	if (e.button === 1 || (e.button === 0 && isSpacePressed.value)) {
 		camera.value.isDragging = true
+		isPanningActive.value = true
 		camera.value.dragStartX = e.clientX - camera.value.x
 		camera.value.dragStartY = e.clientY - camera.value.y
 		camera.value.hasMovedSinceDown = false
@@ -865,6 +946,7 @@ function onMouseDown(e) {
 
 		// 'select' or point tools (object, wall, spawn): initiate potential pan/click
 		camera.value.isDragging = true
+		isPanningActive.value = true
 		camera.value.dragStartX = e.clientX - camera.value.x
 		camera.value.dragStartY = e.clientY - camera.value.y
 		camera.value.hasMovedSinceDown = false
@@ -874,6 +956,7 @@ function onMouseDown(e) {
 	// Play mode:
 	if (e.button === 0) {
 		camera.value.isDragging = true
+		isPanningActive.value = true
 		camera.value.dragStartX = e.clientX - camera.value.x
 		camera.value.dragStartY = e.clientY - camera.value.y
 		camera.value.hasMovedSinceDown = false
@@ -895,6 +978,9 @@ function onMouseMove(e) {
 		camera.value.x = newX
 		camera.value.y = newY
 		clampCamera()
+		if (pixiRenderer && isWebGlActive.value) {
+			pixiRenderer.setCamera(camera.value.x, camera.value.y, camera.value.zoom)
+		}
 		requestRender()
 		return
 	}
@@ -1084,6 +1170,7 @@ function onMouseUp(e) {
 
 	if (camera.value.isDragging) {
 		camera.value.isDragging = false
+		isPanningActive.value = false
 		requestRender()
 		if (camera.value.hasMovedSinceDown) {
 			return
@@ -1314,6 +1401,7 @@ function onMouseLeave() {
 		lastPaintedCoord.value = null
 	}
 	camera.value.isDragging = false
+	isPanningActive.value = false
 	hoveredTile.value = null
 	hoveredInteractiveObject.value = null
 	hoveredDoorWall.value = null
@@ -1344,6 +1432,9 @@ function onWheel(e) {
 	camera.value.y = mouseY - (mouseY - camera.value.y) * (newZoom / camera.value.zoom)
 	camera.value.zoom = newZoom
 	clampCamera()
+	if (pixiRenderer && isWebGlActive.value) {
+		pixiRenderer.setCamera(camera.value.x, camera.value.y, camera.value.zoom)
+	}
 	requestRender()
 }
 
@@ -1399,7 +1490,7 @@ function spawnWeedParticles(gx, gy, gz) {
 	const s = gridToScreen(gx, gy, gz, 0, 0, tileW, tileH, heightStep)
 
 	for (let i = 0; i < 16; i++) {
-		particles.value.push({
+		particles.push({
 			x: s.x + (Math.random() - 0.5) * 30,
 			y: s.y + (Math.random() - 0.5) * 20,
 			vx: (Math.random() - 0.5) * 3,
@@ -1466,8 +1557,33 @@ function movePlayerAlongPath(path, onComplete = null) {
 	step()
 }
 
+// Cached background gradient
+let cachedBgGrad = null
+let lastBgGradH = 0
+
 // Main Rendering Loop
 function render() {
+	if (particles.length > 0) {
+		updateParticles()
+	}
+
+	if (pixiRenderer && isWebGlActive.value) {
+		pixiRenderer.setCamera(camera.value.x, camera.value.y, camera.value.zoom)
+		pixiRenderer.updateDynamics({
+			player: player.value,
+			hoveredTile: hoveredTile.value,
+			reachableTiles: reachableTiles.value,
+			plannedPath: plannedPath.value,
+			particles,
+			showGrid: props.showGrid
+		})
+		return
+	}
+	renderCanvas2D()
+}
+
+// Fallback Canvas 2D Rendering Loop
+function renderCanvas2D() {
 	const canvas = canvasRef.value
 	if (!canvas || !containerRef.value) return
 	const ctx = canvas.getContext('2d')
@@ -1480,11 +1596,14 @@ function render() {
 	ctx.scale(dpr, dpr)
 	ctx.clearRect(0, 0, viewW, viewH)
 
-	// Background gradient
-	const bgGrad = ctx.createLinearGradient(0, 0, 0, viewH)
-	bgGrad.addColorStop(0, '#12161f')
-	bgGrad.addColorStop(1, '#1b2230')
-	ctx.fillStyle = bgGrad
+	// Background gradient (cached to avoid heap allocation per frame)
+	if (!cachedBgGrad || lastBgGradH !== viewH) {
+		cachedBgGrad = ctx.createLinearGradient(0, 0, 0, viewH)
+		cachedBgGrad.addColorStop(0, '#12161f')
+		cachedBgGrad.addColorStop(1, '#1b2230')
+		lastBgGradH = viewH
+	}
+	ctx.fillStyle = cachedBgGrad
 	ctx.fillRect(0, 0, viewW, viewH)
 
 	// Apply Camera Transform
@@ -1525,7 +1644,39 @@ function render() {
 	}
 
 	const queue = staticRenderQueue.value
-	for (let i = 0; i < queue.length; i++) {
+	const halfTileWZoom = (tileW / 2) * z
+	const halfTileHZoom = (tileH / 2) * z
+	const heightStepZoom = heightStep * z
+	const cullMarginX = tileW * 2 * z
+	const cullMarginY = (tileH * 4 + 64) * z
+	const minScreenX = -cullMarginX
+	const maxScreenX = viewW + cullMarginX
+	const minScreenY = -cullMarginY
+	const maxScreenY = viewH + cullMarginY
+
+	// Spatial range clipping for isometric depth sorting (Task В.3)
+	// In isometric projection: screenCenterY = (itemX + itemY) * halfTileHZoom - itemZ * heightStepZoom + camY
+	// For any item with itemZ in [mapMinZ, mapMaxZ]:
+	//   screenCenterY is maximized when itemZ is minZ: screenCenterY <= (itemX + itemY) * halfTileHZoom - mapMinZ * heightStepZoom + camY
+	//   screenCenterY is minimized when itemZ is maxZ: screenCenterY >= (itemX + itemY) * halfTileHZoom - mapMaxZ * heightStepZoom + camY
+	// Items with (itemX + itemY) < minDiag are strictly above minScreenY.
+	// Items with (itemX + itemY) > maxDiag are strictly below maxScreenY.
+	const minDiag = Math.floor((minScreenY - camY + (mapMinZ - 1) * heightStepZoom) / halfTileHZoom) - 2
+	const maxDiag = Math.ceil((maxScreenY - camY + (mapMaxZ + 2) * heightStepZoom) / halfTileHZoom) + 2
+
+	const minSearchDepthKey = (minDiag + 10000) * 1000
+	const maxSearchDepthKey = (maxDiag + 10000) * 1000 + 999
+
+	const startIndex = findFirstIndexGe(queue, minSearchDepthKey)
+	const endIndex = findFirstIndexGt(queue, maxSearchDepthKey)
+
+	// Draw player if positioned before the first rendered item
+	if (!playerDrawn && startIndex < queue.length && playerDepthKey <= queue[startIndex].depthKey) {
+		drawPlayer(ctx, player.value, tileW, tileH, heightStep)
+		playerDrawn = true
+	}
+
+	for (let i = startIndex; i < endIndex; i++) {
 		const item = queue[i]
 
 		// Draw player at the correct depth order
@@ -1539,24 +1690,22 @@ function render() {
 		const itemY = item.type === 'wall' ? item.tileY : item.y
 		const itemZ = item.type === 'wall' ? item.tileZ : (item.z || 0)
 
-		const screenCenterX = (itemX - itemY) * (tileW / 2) * z + camX
-		const screenCenterY = ((itemX + itemY) * (tileH / 2) - itemZ * heightStep) * z + camY
-		const cullMarginX = tileW * 2 * z
-		const cullMarginY = (tileH * 4 + 64) * z
+		const screenCenterX = (itemX - itemY) * halfTileWZoom + camX
+		const screenCenterY = (itemX + itemY) * halfTileHZoom - itemZ * heightStepZoom + camY
 
 		if (
-			screenCenterX < -cullMarginX ||
-			screenCenterX > viewW + cullMarginX ||
-			screenCenterY < -cullMarginY ||
-			screenCenterY > viewH + cullMarginY
+			screenCenterX < minScreenX ||
+			screenCenterX > maxScreenX ||
+			screenCenterY < minScreenY ||
+			screenCenterY > maxScreenY
 		) {
 			continue
 		}
 
 		if (item.type === 'void') {
-			drawVoidCell(ctx, item.x, item.y, tileW, tileH, heightStep)
+			drawVoidCell(ctx, item.x, item.y, tileW, tileH, heightStep, item.key)
 		} else if (item.type === 'tile') {
-			drawTile(ctx, item.data, tileW, tileH, heightStep)
+			drawTile(ctx, item.data, tileW, tileH, heightStep, item.key)
 		} else if (item.type === 'wall') {
 			drawWall(ctx, item.data, item.edge, item.tileX, item.tileY, item.tileZ, tileW, tileH, heightStep)
 		} else if (item.type === 'object') {
@@ -1583,30 +1732,26 @@ function render() {
 	ctx.restore()
 }
 
-// Draw connecting trail line and destination marker for 2-click movement
+// Draw connecting trail line and destination marker for 2-click movement (Zero allocation)
 function drawPlannedPath(ctx, tileW, tileH, heightStep) {
 	const path = plannedPath.value
 	if (!path || path.length === 0) return
 
+	const halfW = tileW / 2
+	const halfH = tileH / 2
+	const startX = (player.value.x - player.value.y) * halfW
+	const startY = (player.value.x + player.value.y) * halfH - (player.value.z || 0) * heightStep
+
 	ctx.save()
 
 	// 1. Draw connecting dotted path line from player to each step
-	const pStart = gridToScreen(
-		player.value.x,
-		player.value.y,
-		player.value.z || 0,
-		0,
-		0,
-		tileW,
-		tileH,
-		heightStep
-	)
-
 	ctx.beginPath()
-	ctx.moveTo(pStart.x, pStart.y)
+	ctx.moveTo(startX, startY)
 	for (let i = 0; i < path.length; i++) {
-		const pt = gridToScreen(path[i].x, path[i].y, path[i].z || 0, 0, 0, tileW, tileH, heightStep)
-		ctx.lineTo(pt.x, pt.y)
+		const step = path[i]
+		const sx = (step.x - step.y) * halfW
+		const sy = (step.x + step.y) * halfH - (step.z || 0) * heightStep
+		ctx.lineTo(sx, sy)
 	}
 	ctx.strokeStyle = '#38bdf8'
 	ctx.lineWidth = 2
@@ -1619,26 +1764,22 @@ function drawPlannedPath(ctx, tileW, tileH, heightStep) {
 
 	// 2. Intermediate step dots
 	for (let i = 0; i < path.length - 1; i++) {
-		const pt = gridToScreen(path[i].x, path[i].y, path[i].z || 0, 0, 0, tileW, tileH, heightStep)
+		const step = path[i]
+		const sx = (step.x - step.y) * halfW
+		const sy = (step.x + step.y) * halfH - (step.z || 0) * heightStep
 		ctx.beginPath()
-		ctx.arc(pt.x, pt.y, 2.5, 0, Math.PI * 2)
+		ctx.arc(sx, sy, 2.5, 0, Math.PI * 2)
 		ctx.fillStyle = '#ffffff'
 		ctx.fill()
 	}
 
 	// 3. Destination target ring
-	const destPt = gridToScreen(
-		path[path.length - 1].x,
-		path[path.length - 1].y,
-		path[path.length - 1].z || 0,
-		0,
-		0,
-		tileW,
-		tileH,
-		heightStep
-	)
+	const lastStep = path[path.length - 1]
+	const destX = (lastStep.x - lastStep.y) * halfW
+	const destY = (lastStep.x + lastStep.y) * halfH - (lastStep.z || 0) * heightStep
+
 	ctx.beginPath()
-	ctx.arc(destPt.x, destPt.y, 6, 0, Math.PI * 2)
+	ctx.arc(destX, destY, 6, 0, Math.PI * 2)
 	ctx.fillStyle = 'rgba(56, 189, 248, 0.4)'
 	ctx.fill()
 	ctx.strokeStyle = '#ffffff'
@@ -1646,7 +1787,7 @@ function drawPlannedPath(ctx, tileW, tileH, heightStep) {
 	ctx.stroke()
 
 	ctx.beginPath()
-	ctx.arc(destPt.x, destPt.y, 2.5, 0, Math.PI * 2)
+	ctx.arc(destX, destY, 2.5, 0, Math.PI * 2)
 	ctx.fillStyle = '#ffffff'
 	ctx.fill()
 
@@ -1675,16 +1816,25 @@ function drawLargeMapVisibleVoidCells(ctx, mapBounds, viewW, viewH, camX, camY, 
 	}
 }
 
-// Void Cell Drawing — for grid positions within bounds that have no tile in JSON
-function drawVoidCell(ctx, x, y, tileW, tileH, heightStep) {
-	const poly = getTilePolygon(x, y, 0, 0, 0, tileW, tileH, heightStep)
-	ctx.save()
+// Zero-allocation helper to trace a tile's top rhombus face path
+function traceTileRhombus(ctx, cx, cy, halfW, halfH) {
 	ctx.beginPath()
-	ctx.moveTo(poly[0].x, poly[0].y)
-	ctx.lineTo(poly[1].x, poly[1].y)
-	ctx.lineTo(poly[2].x, poly[2].y)
-	ctx.lineTo(poly[3].x, poly[3].y)
+	ctx.moveTo(cx, cy - halfH)
+	ctx.lineTo(cx + halfW, cy)
+	ctx.lineTo(cx, cy + halfH)
+	ctx.lineTo(cx - halfW, cy)
 	ctx.closePath()
+}
+
+// Void Cell Drawing — for grid positions within bounds that have no tile in JSON (Zero allocation)
+function drawVoidCell(ctx, x, y, tileW, tileH, heightStep, key = null) {
+	const halfW = tileW / 2
+	const halfH = tileH / 2
+	const cx = (x - y) * halfW
+	const cy = (x + y) * halfH
+
+	ctx.save()
+	traceTileRhombus(ctx, cx, cy, halfW, halfH)
 	ctx.fillStyle = 'rgba(8, 10, 18, 0.62)'
 	ctx.fill()
 	ctx.setLineDash([4, 3])
@@ -1695,16 +1845,12 @@ function drawVoidCell(ctx, x, y, tileW, tileH, heightStep) {
 
 	// Hover & Brush Outline in editor mode
 	if (props.mode === 'editor') {
-		const inBrush = activeBrushCellSet.value.has(`${x},${y}`)
+		const cellKey = key || `${x},${y}`
+		const inBrush = activeBrushCellSet.value.has(cellKey)
 		const isCenter = hoveredTile.value && hoveredTile.value.x === x && hoveredTile.value.y === y
 		if (inBrush) {
 			ctx.fillStyle = isCenter ? 'rgba(56, 189, 248, 0.22)' : 'rgba(56, 189, 248, 0.1)'
-			ctx.beginPath()
-			ctx.moveTo(poly[0].x, poly[0].y)
-			ctx.lineTo(poly[1].x, poly[1].y)
-			ctx.lineTo(poly[2].x, poly[2].y)
-			ctx.lineTo(poly[3].x, poly[3].y)
-			ctx.closePath()
+			traceTileRhombus(ctx, cx, cy, halfW, halfH)
 			ctx.fill()
 
 			ctx.strokeStyle = isCenter ? '#ffffff' : 'rgba(56, 189, 248, 0.75)'
@@ -1716,12 +1862,7 @@ function drawVoidCell(ctx, x, y, tileW, tileH, heightStep) {
 	// Selected Tile Highlight (Editor Inspector Selection - Cyan glow)
 	if (props.selectedTile && props.selectedTile.x === x && props.selectedTile.y === y) {
 		ctx.fillStyle = 'rgba(56, 189, 248, 0.22)'
-		ctx.beginPath()
-		ctx.moveTo(poly[0].x, poly[0].y)
-		ctx.lineTo(poly[1].x, poly[1].y)
-		ctx.lineTo(poly[2].x, poly[2].y)
-		ctx.lineTo(poly[3].x, poly[3].y)
-		ctx.closePath()
+		traceTileRhombus(ctx, cx, cy, halfW, halfH)
 		ctx.fill()
 
 		ctx.strokeStyle = '#38bdf8'
@@ -1731,22 +1872,24 @@ function drawVoidCell(ctx, x, y, tileW, tileH, heightStep) {
 
 	// Show Coordinates on void cell if showCoords is enabled
 	if (props.showCoords) {
-		const center = gridToScreen(x, y, 0, 0, 0, tileW, tileH, heightStep)
 		ctx.font = '9px sans-serif'
 		ctx.fillStyle = 'rgba(148, 163, 184, 0.45)'
 		ctx.textAlign = 'center'
 		ctx.textBaseline = 'middle'
-		ctx.fillText(`${x},${y}`, center.x, center.y)
+		ctx.fillText(`${x},${y}`, cx, cy)
 	}
 
 	ctx.restore()
 }
 
-// Tile Drawing
-function drawTile(ctx, tile, tileW, tileH, heightStep) {
-	const poly = getTilePolygon(tile.x, tile.y, tile.z || 0, 0, 0, tileW, tileH, heightStep)
+// Tile Drawing (Zero allocation)
+function drawTile(ctx, tile, tileW, tileH, heightStep, tileKey = null) {
 	const z = tile.z || 0
-	const center = gridToScreen(tile.x, tile.y, z, 0, 0, tileW, tileH, heightStep)
+	const halfW = tileW / 2
+	const halfH = tileH / 2
+	const cx = (tile.x - tile.y) * halfW
+	const cy = (tile.x + tile.y) * halfH - z * heightStep
+	const key = tileKey || `${tile.x},${tile.y}`
 
 	// Draw side drop faces if elevated
 	if (z > 0) {
@@ -1754,10 +1897,10 @@ function drawTile(ctx, tile, tileW, tileH, heightStep) {
 		// Left drop face (shadowed)
 		ctx.fillStyle = '#222834'
 		ctx.beginPath()
-		ctx.moveTo(poly[3].x, poly[3].y)
-		ctx.lineTo(poly[2].x, poly[2].y)
-		ctx.lineTo(poly[2].x, poly[2].y + dropPx)
-		ctx.lineTo(poly[3].x, poly[3].y + dropPx)
+		ctx.moveTo(cx - halfW, cy)
+		ctx.lineTo(cx, cy + halfH)
+		ctx.lineTo(cx, cy + halfH + dropPx)
+		ctx.lineTo(cx - halfW, cy + dropPx)
 		ctx.closePath()
 		ctx.fill()
 		ctx.strokeStyle = '#1a1f29'
@@ -1767,10 +1910,10 @@ function drawTile(ctx, tile, tileW, tileH, heightStep) {
 		// Right drop face (lit side)
 		ctx.fillStyle = '#313b4d'
 		ctx.beginPath()
-		ctx.moveTo(poly[2].x, poly[2].y)
-		ctx.lineTo(poly[1].x, poly[1].y)
-		ctx.lineTo(poly[1].x, poly[1].y + dropPx)
-		ctx.lineTo(poly[2].x, poly[2].y + dropPx)
+		ctx.moveTo(cx, cy + halfH)
+		ctx.lineTo(cx + halfW, cy)
+		ctx.lineTo(cx + halfW, cy + dropPx)
+		ctx.lineTo(cx, cy + halfH + dropPx)
 		ctx.closePath()
 		ctx.fill()
 		ctx.strokeStyle = '#222834'
@@ -1782,7 +1925,7 @@ function drawTile(ctx, tile, tileW, tileH, heightStep) {
 	const tileSprite = resolveTileSprite(tile)
 	let drewSprite = false
 	if (tileSprite && tileSprite.complete && tileSprite.naturalWidth > 0) {
-		ctx.drawImage(tileSprite, center.x - tileW / 2, center.y - tileH / 2, tileW, 64)
+		ctx.drawImage(tileSprite, cx - halfW, cy - halfH, tileW, 64)
 		drewSprite = true
 	}
 
@@ -1825,37 +1968,22 @@ function drawTile(ctx, tile, tileW, tileH, heightStep) {
 		}
 
 		ctx.fillStyle = fillColor
-		ctx.beginPath()
-		ctx.moveTo(poly[0].x, poly[0].y)
-		ctx.lineTo(poly[1].x, poly[1].y)
-		ctx.lineTo(poly[2].x, poly[2].y)
-		ctx.lineTo(poly[3].x, poly[3].y)
-		ctx.closePath()
+		traceTileRhombus(ctx, cx, cy, halfW, halfH)
 		ctx.fill()
 	}
 
 	if (props.showGrid) {
 		ctx.strokeStyle = drewSprite ? 'rgba(255, 255, 255, 0.14)' : (tile.type === 'soil' ? '#422c22' : '#2d4530')
 		ctx.lineWidth = 1
-		ctx.beginPath()
-		ctx.moveTo(poly[0].x, poly[0].y)
-		ctx.lineTo(poly[1].x, poly[1].y)
-		ctx.lineTo(poly[2].x, poly[2].y)
-		ctx.lineTo(poly[3].x, poly[3].y)
-		ctx.closePath()
+		traceTileRhombus(ctx, cx, cy, halfW, halfH)
 		ctx.stroke()
 	}
 
 	// Reachable Highlight (Sword of Convallaria style gold diamond glow)
-	const isReachable = !player.value.isMoving && reachableTileSet.value.has(`${tile.x},${tile.y}`)
+	const isReachable = !player.value.isMoving && reachableTileSet.value.has(key)
 	if (isReachable) {
 		ctx.fillStyle = 'rgba(246, 196, 69, 0.22)'
-		ctx.beginPath()
-		ctx.moveTo(poly[0].x, poly[0].y)
-		ctx.lineTo(poly[1].x, poly[1].y)
-		ctx.lineTo(poly[2].x, poly[2].y)
-		ctx.lineTo(poly[3].x, poly[3].y)
-		ctx.closePath()
+		traceTileRhombus(ctx, cx, cy, halfW, halfH)
 		ctx.fill()
 
 		ctx.strokeStyle = '#f6c445'
@@ -1863,18 +1991,11 @@ function drawTile(ctx, tile, tileW, tileH, heightStep) {
 		ctx.stroke()
 	}
 
-	// Exit Marker on Tile (if tile is an exit trigger)
-	const isExitTile = (props.locationData?.exits || []).some(
-		(e) => e.trigger && e.trigger.x === tile.x && e.trigger.y === tile.y
-	)
+	// Exit Marker on Tile (if tile is an exit trigger - O(1) set lookup)
+	const isExitTile = exitTileSet.value.has(key)
 	if (isExitTile) {
 		ctx.fillStyle = 'rgba(234, 179, 8, 0.22)'
-		ctx.beginPath()
-		ctx.moveTo(poly[0].x, poly[0].y)
-		ctx.lineTo(poly[1].x, poly[1].y)
-		ctx.lineTo(poly[2].x, poly[2].y)
-		ctx.lineTo(poly[3].x, poly[3].y)
-		ctx.closePath()
+		traceTileRhombus(ctx, cx, cy, halfW, halfH)
 		ctx.fill()
 
 		ctx.strokeStyle = '#eab308'
@@ -1884,11 +2005,11 @@ function drawTile(ctx, tile, tileW, tileH, heightStep) {
 		ctx.font = '13px sans-serif'
 		ctx.textAlign = 'center'
 		ctx.textBaseline = 'middle'
-		ctx.fillText('🚪', center.x, center.y - 2)
+		ctx.fillText('🚪', cx, cy - 2)
 	}
 
 	// Planned Path Highlight (2-click movement preview)
-	const isPlannedStep = !player.value.isMoving && plannedPathSet.value.has(`${tile.x},${tile.y}`)
+	const isPlannedStep = !player.value.isMoving && plannedPathSet.value.has(key)
 	if (isPlannedStep) {
 		const isDestination =
 			selectedDestinationTile.value &&
@@ -1896,12 +2017,7 @@ function drawTile(ctx, tile, tileW, tileH, heightStep) {
 			selectedDestinationTile.value.y === tile.y
 
 		ctx.fillStyle = isDestination ? 'rgba(56, 189, 248, 0.35)' : 'rgba(56, 189, 248, 0.2)'
-		ctx.beginPath()
-		ctx.moveTo(poly[0].x, poly[0].y)
-		ctx.lineTo(poly[1].x, poly[1].y)
-		ctx.lineTo(poly[2].x, poly[2].y)
-		ctx.lineTo(poly[3].x, poly[3].y)
-		ctx.closePath()
+		traceTileRhombus(ctx, cx, cy, halfW, halfH)
 		ctx.fill()
 
 		ctx.strokeStyle = isDestination ? '#ffffff' : '#38bdf8'
@@ -1910,16 +2026,11 @@ function drawTile(ctx, tile, tileW, tileH, heightStep) {
 	}
 
 	// Hover & Brush Highlight
-	const inBrush = activeBrushCellSet.value.has(`${tile.x},${tile.y}`)
+	const inBrush = activeBrushCellSet.value.has(key)
 	const isCenter = hoveredTile.value && hoveredTile.value.x === tile.x && hoveredTile.value.y === tile.y
 	if (inBrush) {
 		ctx.fillStyle = isCenter ? 'rgba(255, 255, 255, 0.28)' : 'rgba(56, 189, 248, 0.18)'
-		ctx.beginPath()
-		ctx.moveTo(poly[0].x, poly[0].y)
-		ctx.lineTo(poly[1].x, poly[1].y)
-		ctx.lineTo(poly[2].x, poly[2].y)
-		ctx.lineTo(poly[3].x, poly[3].y)
-		ctx.closePath()
+		traceTileRhombus(ctx, cx, cy, halfW, halfH)
 		ctx.fill()
 
 		ctx.strokeStyle = isCenter ? '#ffffff' : 'rgba(56, 189, 248, 0.75)'
@@ -1930,12 +2041,7 @@ function drawTile(ctx, tile, tileW, tileH, heightStep) {
 	// Selected Tile Highlight (Editor Inspector Selection - Cyan glow)
 	if (props.selectedTile && props.selectedTile.x === tile.x && props.selectedTile.y === tile.y) {
 		ctx.fillStyle = 'rgba(56, 189, 248, 0.28)'
-		ctx.beginPath()
-		ctx.moveTo(poly[0].x, poly[0].y)
-		ctx.lineTo(poly[1].x, poly[1].y)
-		ctx.lineTo(poly[2].x, poly[2].y)
-		ctx.lineTo(poly[3].x, poly[3].y)
-		ctx.closePath()
+		traceTileRhombus(ctx, cx, cy, halfW, halfH)
 		ctx.fill()
 
 		ctx.strokeStyle = '#38bdf8'
@@ -1949,14 +2055,14 @@ function drawTile(ctx, tile, tileW, tileH, heightStep) {
 		ctx.fillStyle = 'rgba(255, 255, 255, 0.7)'
 		ctx.textAlign = 'center'
 		ctx.textBaseline = 'middle'
-		ctx.fillText(`${tile.x},${tile.y},${z}`, center.x, center.y)
+		ctx.fillText(`${tile.x},${tile.y},${z}`, cx, cy)
 	}
 
 	// Origin Center Marker (0, 0)
 	if (tile.x === 0 && tile.y === 0 && props.showCenterMarker) {
 		ctx.save()
 		ctx.beginPath()
-		ctx.arc(center.x, center.y, 3.5, 0, Math.PI * 2)
+		ctx.arc(cx, cy, 3.5, 0, Math.PI * 2)
 		ctx.fillStyle = '#f6c445'
 		ctx.shadowColor = '#f6c445'
 		ctx.shadowBlur = 5
@@ -1965,28 +2071,69 @@ function drawTile(ctx, tile, tileW, tileH, heightStep) {
 	}
 }
 
-// Wall Drawing
+// Wall Drawing (Zero allocation)
 function drawWall(ctx, wall, edge, tileX, tileY, tileZ, tileW, tileH, heightStep) {
+	const halfW = tileW / 2
+	const halfH = tileH / 2
+	const cx = (tileX - tileY) * halfW
+	const cy = (tileX + tileY) * halfH - tileZ * heightStep
+
 	// Try sprite wall first
 	const wallSprite = resolveWallSprite(edge, wall)
 	if (wallSprite && wallSprite.complete && wallSprite.naturalWidth > 0) {
-		const center = gridToScreen(tileX, tileY, tileZ, 0, 0, tileW, tileH, heightStep)
-		ctx.drawImage(wallSprite, center.x - tileW / 2, center.y - 112, 64, 128)
+		ctx.drawImage(wallSprite, cx - halfW, cy - 112, 64, 128)
 		return
 	}
 
-	const poly = getWallPolygon(
-		tileX,
-		tileY,
-		tileZ,
-		edge,
-		wall.height || DEFAULT_WALL_HEIGHT,
-		0,
-		0,
-		tileW,
-		tileH,
-		heightStep
-	)
+	const wallHeight = wall.height || DEFAULT_WALL_HEIGHT
+	const wallH = wallHeight * heightStep
+
+	// Rhombus top vertices: Top (cx, cy - halfH), Right (cx + halfW, cy), Bottom (cx, cy + halfH), Left (cx - halfW, cy)
+	let baseAx = cx - halfW
+	let baseAy = cy
+	let baseBx = cx
+	let baseBy = cy - halfH
+
+	switch (edge) {
+		case 'W':
+		case 'NW':
+			baseAx = cx - halfW
+			baseAy = cy
+			baseBx = cx
+			baseBy = cy - halfH
+			break
+		case 'N':
+		case 'NE':
+			baseAx = cx
+			baseAy = cy - halfH
+			baseBx = cx + halfW
+			baseBy = cy
+			break
+		case 'S':
+		case 'SW':
+			baseAx = cx - halfW
+			baseAy = cy
+			baseBx = cx
+			baseBy = cy + halfH
+			break
+		case 'E':
+		case 'SE':
+		default:
+			baseAx = cx
+			baseAy = cy + halfH
+			baseBx = cx + halfW
+			baseBy = cy
+			break
+	}
+
+	const t0x = baseAx
+	const t0y = baseAy - wallH
+	const t1x = baseBx
+	const t1y = baseBy - wallH
+	const b1x = baseBx
+	const b1y = baseBy
+	const b0x = baseAx
+	const b0y = baseAy
 
 	const isLit = edge === 'N' || edge === 'NE' || edge === 'E' || edge === 'SE'
 	let fillColor = isLit ? '#64748b' : '#475569'
@@ -2002,10 +2149,10 @@ function drawWall(ctx, wall, edge, tileX, tileY, tileZ, tileW, tileH, heightStep
 
 	// Quad body
 	ctx.beginPath()
-	ctx.moveTo(poly[0].x, poly[0].y)
-	ctx.lineTo(poly[1].x, poly[1].y)
-	ctx.lineTo(poly[2].x, poly[2].y)
-	ctx.lineTo(poly[3].x, poly[3].y)
+	ctx.moveTo(t0x, t0y)
+	ctx.lineTo(t1x, t1y)
+	ctx.lineTo(b1x, b1y)
+	ctx.lineTo(b0x, b0y)
 	ctx.closePath()
 	ctx.fillStyle = fillColor
 	ctx.fill()
@@ -2017,53 +2164,38 @@ function drawWall(ctx, wall, edge, tileX, tileY, tileZ, tileW, tileH, heightStep
 	ctx.save()
 	ctx.strokeStyle = 'rgba(0, 0, 0, 0.18)'
 	ctx.lineWidth = 1
-	const mid0 = { x: (poly[0].x + poly[3].x) / 2, y: (poly[0].y + poly[3].y) / 2 }
-	const mid1 = { x: (poly[1].x + poly[2].x) / 2, y: (poly[1].y + poly[2].y) / 2 }
 	ctx.beginPath()
-	ctx.moveTo(mid0.x, mid0.y)
-	ctx.lineTo(mid1.x, mid1.y)
+	ctx.moveTo(baseAx, baseAy - wallH * 0.5)
+	ctx.lineTo(baseBx, baseBy - wallH * 0.5)
 	ctx.stroke()
 	ctx.restore()
 
 	// Door rendering if edge has door property
 	if (wall.door) {
-		drawDoor(ctx, poly, wall, isLit)
+		drawDoor(ctx, t0x, t0y, t1x, t1y, b1x, b1y, b0x, b0y, wall, isLit)
 	}
 }
 
-function drawDoor(ctx, poly, wall, isLit) {
-	const t0 = poly[0]
-	const t1 = poly[1]
-	const b1 = poly[2]
-	const b0 = poly[3]
-
+function drawDoor(ctx, t0x, t0y, t1x, t1y, b1x, b1y, b0x, b0y, wall, isLit) {
 	// Interpolate door frame (middle 50% width, 80% height)
-	const leftTop = {
-		x: t0.x * 0.75 + t1.x * 0.25,
-		y: (t0.y * 0.75 + t1.y * 0.25) * 0.8 + (b0.y * 0.75 + b1.y * 0.25) * 0.2
-	}
-	const rightTop = {
-		x: t0.x * 0.25 + t1.x * 0.75,
-		y: (t0.y * 0.25 + t1.y * 0.75) * 0.8 + (b0.y * 0.25 + b1.y * 0.75) * 0.2
-	}
-	const rightBottom = {
-		x: b0.x * 0.25 + b1.x * 0.75,
-		y: b0.y * 0.25 + b1.y * 0.75
-	}
-	const leftBottom = {
-		x: b0.x * 0.75 + b1.x * 0.25,
-		y: b0.y * 0.75 + b1.y * 0.25
-	}
+	const leftTopX = t0x * 0.75 + t1x * 0.25
+	const leftTopY = (t0y * 0.75 + t1y * 0.25) * 0.8 + (b0y * 0.75 + b1y * 0.25) * 0.2
+	const rightTopX = t0x * 0.25 + t1x * 0.75
+	const rightTopY = (t0y * 0.25 + t1y * 0.75) * 0.8 + (b0y * 0.25 + b1y * 0.75) * 0.2
+	const rightBottomX = b0x * 0.25 + b1x * 0.75
+	const rightBottomY = b0y * 0.25 + b1y * 0.75
+	const leftBottomX = b0x * 0.75 + b1x * 0.25
+	const leftBottomY = b0y * 0.75 + b1y * 0.25
 
 	ctx.save()
 	if (wall.open) {
 		// Open doorway: dark interior opening
 		ctx.fillStyle = '#11141c'
 		ctx.beginPath()
-		ctx.moveTo(leftTop.x, leftTop.y)
-		ctx.lineTo(rightTop.x, rightTop.y)
-		ctx.lineTo(rightBottom.x, rightBottom.y)
-		ctx.lineTo(leftBottom.x, leftBottom.y)
+		ctx.moveTo(leftTopX, leftTopY)
+		ctx.lineTo(rightTopX, rightTopY)
+		ctx.lineTo(rightBottomX, rightBottomY)
+		ctx.lineTo(leftBottomX, leftBottomY)
 		ctx.closePath()
 		ctx.fill()
 		ctx.strokeStyle = '#2d3748'
@@ -2073,10 +2205,10 @@ function drawDoor(ctx, poly, wall, isLit) {
 		// Closed wooden door
 		ctx.fillStyle = isLit ? '#a16207' : '#854d0e'
 		ctx.beginPath()
-		ctx.moveTo(leftTop.x, leftTop.y)
-		ctx.lineTo(rightTop.x, rightTop.y)
-		ctx.lineTo(rightBottom.x, rightBottom.y)
-		ctx.lineTo(leftBottom.x, leftBottom.y)
+		ctx.moveTo(leftTopX, leftTopY)
+		ctx.lineTo(rightTopX, rightTopY)
+		ctx.lineTo(rightBottomX, rightBottomY)
+		ctx.lineTo(leftBottomX, leftBottomY)
 		ctx.closePath()
 		ctx.fill()
 		ctx.strokeStyle = '#451a03'
@@ -2084,8 +2216,8 @@ function drawDoor(ctx, poly, wall, isLit) {
 		ctx.stroke()
 
 		// Door handle
-		const handleX = leftBottom.x * 0.35 + rightBottom.x * 0.65
-		const handleY = (leftTop.y + leftBottom.y) / 2
+		const handleX = leftBottomX * 0.35 + rightBottomX * 0.65
+		const handleY = (leftTopY + leftBottomY) / 2
 		ctx.fillStyle = '#f6c445'
 		ctx.beginPath()
 		ctx.arc(handleX, handleY, 2, 0, Math.PI * 2)
@@ -2094,36 +2226,35 @@ function drawDoor(ctx, poly, wall, isLit) {
 	ctx.restore()
 }
 
-// Recursive Object & Attachment Drawing
+// Recursive Object & Attachment Drawing (Zero allocation)
 function drawObject(ctx, rootObj, tileW, tileH, heightStep) {
-	const tileBaseScreen = gridToScreen(rootObj.x, rootObj.y, rootObj.z || 0, 0, 0, tileW, tileH, heightStep)
-	drawObjectNode(ctx, rootObj, tileBaseScreen, tileW, tileH, heightStep)
+	const halfW = tileW / 2
+	const halfH = tileH / 2
+	const baseX = (rootObj.x - rootObj.y) * halfW
+	const baseY = (rootObj.x + rootObj.y) * halfH - (rootObj.z || 0) * heightStep
+	drawObjectNode(ctx, rootObj, baseX, baseY, tileW, tileH, heightStep)
 }
 
-function drawObjectNode(ctx, obj, parentScreen, tileW, tileH, heightStep) {
-	const currentScreen = getObjectScreenPos(
-		parentScreen,
-		obj.offsetX || 0,
-		obj.offsetY || 0,
-		obj.offsetZ || 0,
-		tileW,
-		tileH,
-		heightStep
-	)
+function drawObjectNode(ctx, obj, parentScreenX, parentScreenY, tileW, tileH, heightStep) {
+	const offX = obj.offsetX || 0
+	const offY = obj.offsetY || 0
+	const offZ = obj.offsetZ || 0
+	const curX = parentScreenX + (offX - offY) * (tileW / 64)
+	const curY = parentScreenY + (offX + offY) * (tileH / 64) - offZ * (heightStep / 16)
 
-	renderObjectGraphic(ctx, obj, currentScreen, tileW, tileH, heightStep)
+	renderObjectGraphic(ctx, obj, curX, curY, tileW, tileH, heightStep)
 
 	if (Array.isArray(obj.children) && obj.children.length > 0) {
 		const sorted = [...obj.children].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
 		for (const child of sorted) {
-			drawObjectNode(ctx, child, currentScreen, tileW, tileH, heightStep)
+			drawObjectNode(ctx, child, curX, curY, tileW, tileH, heightStep)
 		}
 	}
 }
 
-function renderObjectGraphic(ctx, obj, pos, tileW, tileH, heightStep) {
+function renderObjectGraphic(ctx, obj, posX, posY, tileW, tileH, heightStep) {
 	ctx.save()
-	ctx.translate(pos.x, pos.y)
+	ctx.translate(posX, posY)
 
 	// Horizontal flip for W / NW / S / SW orientations
 	const isFlipped = obj.facing === 'W' || obj.facing === 'NW' || obj.facing === 'S' || obj.facing === 'SW'
@@ -2232,10 +2363,11 @@ function renderObjectGraphic(ctx, obj, pos, tileW, tileH, heightStep) {
 
 // Actor (NPC) Drawing
 function drawActor(ctx, actor, tileW, tileH, heightStep) {
-	const center = gridToScreen(actor.x, actor.y, actor.z || 0, 0, 0, tileW, tileH, heightStep)
+	const cx = (actor.x - actor.y) * (tileW / 2)
+	const cy = (actor.x + actor.y) * (tileH / 2) - (actor.z || 0) * heightStep
 
 	ctx.save()
-	ctx.translate(center.x, center.y)
+	ctx.translate(cx, cy)
 
 	// Drop shadow
 	ctx.fillStyle = 'rgba(0, 0, 0, 0.45)'
@@ -2302,10 +2434,11 @@ function drawActor(ctx, actor, tileW, tileH, heightStep) {
 
 // Player Drawing
 function drawPlayer(ctx, p, tileW, tileH, heightStep) {
-	const center = gridToScreen(p.x, p.y, p.z, 0, 0, tileW, tileH, heightStep)
+	const cx = (p.x - p.y) * (tileW / 2)
+	const cy = (p.x + p.y) * (tileH / 2) - p.z * heightStep
 
 	ctx.save()
-	ctx.translate(center.x, center.y)
+	ctx.translate(cx, cy)
 
 	// Drop shadow
 	ctx.fillStyle = 'rgba(0, 0, 0, 0.45)'
@@ -2374,28 +2507,34 @@ function drawPlayer(ctx, p, tileW, tileH, heightStep) {
 	ctx.restore()
 }
 
-// Particle System
-function drawParticles(ctx) {
-	for (let i = particles.value.length - 1; i >= 0; i--) {
-		const p = particles.value[i]
+// Particle System Physics Update (Shared between WebGL and Canvas2D)
+function updateParticles() {
+	for (let i = particles.length - 1; i >= 0; i--) {
+		const p = particles[i]
 		p.x += p.vx
 		p.y += p.vy
 		p.vy += 0.15 // gravity
 		p.life -= 0.03
 
 		if (p.life <= 0) {
-			particles.value.splice(i, 1)
-			continue
+			particles.splice(i, 1)
 		}
+	}
+}
 
-		ctx.save()
+// Particle System 2D Fallback Rendering (Zero save/restore thrashing)
+function drawParticles(ctx) {
+	if (particles.length === 0) return
+	ctx.save()
+	for (let i = 0; i < particles.length; i++) {
+		const p = particles[i]
 		ctx.globalAlpha = p.life
 		ctx.fillStyle = p.color
 		ctx.beginPath()
 		ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
 		ctx.fill()
-		ctx.restore()
 	}
+	ctx.restore()
 }
 
 function handleResize() {
@@ -2433,6 +2572,7 @@ function onKeyUp(e) {
 		isSpacePressed.value = false
 		if (camera.value.isDragging && props.mode === 'editor') {
 			camera.value.isDragging = false
+			isPanningActive.value = false
 			requestRender()
 		}
 	}
@@ -2455,15 +2595,46 @@ onMounted(() => {
 	window.addEventListener('resize', handleResize)
 	window.addEventListener('keydown', onKeyDown)
 	window.addEventListener('keyup', onKeyUp)
+
+	// Initialize PixiJS WebGL hardware renderer
+	if (props.renderBackend !== 'canvas2d' && canvasRef.value) {
+		const pr = new PixiIsoRenderer()
+		const w = containerRect.value.width || containerRef.value?.clientWidth || 800
+		const h = containerRect.value.height || containerRef.value?.clientHeight || 600
+		pr.init(canvasRef.value, w, h).then(() => {
+			pixiRenderer = pr
+			isWebGlActive.value = true
+			if (props.locationData) {
+				pixiRenderer.buildStaticScene(props.locationData, tiles.value, objects.value, {
+					showGrid: props.showGrid,
+					showHeights: props.showHeights
+				})
+			}
+			requestRender()
+		}).catch((err) => {
+			console.warn('[IsoCanvas] WebGL init fallback to Canvas 2D:', err)
+			pixiRenderer = null
+			isWebGlActive.value = false
+			requestRender()
+		})
+	}
 })
 
 onUnmounted(() => {
+	if (pixiRenderer) {
+		pixiRenderer.destroy()
+		pixiRenderer = null
+	}
+	isWebGlActive.value = false
 	if (animationFrameId) cancelAnimationFrame(animationFrameId)
 	if (resizeObserver) resizeObserver.disconnect()
 	if (unlistenSprites) unlistenSprites()
 	window.removeEventListener('resize', handleResize)
 	window.removeEventListener('keydown', onKeyDown)
 	window.removeEventListener('keyup', onKeyUp)
+	particles = []
+	reachableTiles.value = []
+	plannedPath.value = []
 })
 </script>
 

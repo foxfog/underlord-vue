@@ -40,7 +40,8 @@ export function initSettingsStore(settings) {
 				...(settings?.video ?? {}),
 				fullscreen: settings?.video?.fullscreen ?? false,
 				resolution: settings?.video?.resolution ?? '1920x1080',
-				fpsLimit: settings?.video?.fpsLimit ?? 0
+				fpsLimit: settings?.video?.fpsLimit ?? 0,
+				showFpsOverlay: settings?.video?.showFpsOverlay ?? false
 			},
 			currentMap: settings?.game?.currentMap ?? 'default'
 		}),
@@ -107,6 +108,14 @@ export function initSettingsStore(settings) {
 
 			setFpsLimit(fps) {
 				this.video.fpsLimit = Number(fps) || 0
+			},
+
+			toggleFpsOverlay() {
+				this.video.showFpsOverlay = !this.video.showFpsOverlay
+			},
+
+			setShowFpsOverlay(val) {
+				this.video.showFpsOverlay = !!val
 			},
 
 			setCurrentMap(mapName) {

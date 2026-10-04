@@ -251,8 +251,47 @@ export function isPointInPolygon(px, py, vertices) {
 }
 
 /**
+ * Zero-allocation test to check whether a 2D screen point lies inside
+ * the top rhombus face of a tile at (tileX, tileY, tileZ).
+ *
+ * @param {number} screenX - Screen X
+ * @param {number} screenY - Screen Y
+ * @param {number} tileX - Grid X
+ * @param {number} tileY - Grid Y
+ * @param {number} [tileZ=0] - Grid Z elevation
+ * @param {number} [originX=0]
+ * @param {number} [originY=0]
+ * @param {number} [tileWidth=DEFAULT_TILE_WIDTH]
+ * @param {number} [tileHeight=DEFAULT_TILE_HEIGHT]
+ * @param {number} [heightStep=DEFAULT_HEIGHT_STEP]
+ * @returns {boolean}
+ */
+export function isPointInTileRhombus(
+	screenX,
+	screenY,
+	tileX,
+	tileY,
+	tileZ = 0,
+	originX = 0,
+	originY = 0,
+	tileWidth = DEFAULT_TILE_WIDTH,
+	tileHeight = DEFAULT_TILE_HEIGHT,
+	heightStep = DEFAULT_HEIGHT_STEP
+) {
+	const halfW = tileWidth / 2
+	const halfH = tileHeight / 2
+	const cx = originX + (tileX - tileY) * halfW
+	const cy = originY + (tileX + tileY) * halfH - tileZ * heightStep
+	const dy = Math.abs(screenY - cy)
+	if (dy > halfH) return false
+	const dx = Math.abs(screenX - cx)
+	if (dx > halfW) return false
+	return (dx / halfW + dy / halfH) <= 1.0
+}
+
+/**
  * Picks the front-most tile clicked by mouse on the screen, taking multi-level elevation into account.
- * Tiles are tested from highest elevation and closest depth down to lowest.
+ * Tiles are tested with zero heap allocations, early bounding-box culling, and tracking maximum depth.
  */
 export function pickTileAtScreen(
 	screenX,
@@ -266,30 +305,34 @@ export function pickTileAtScreen(
 ) {
 	if (!tiles || tiles.length === 0) return null
 
-	// Sort tiles: higher z first, then closer depth (x + y descending)
-	const sorted = [...tiles].sort((a, b) => {
-		const depthA = a.x + a.y + (a.z || 0) * 2
-		const depthB = b.x + b.y + (b.z || 0) * 2
-		return depthB - depthA
-	})
+	const halfW = tileWidth / 2
+	const halfH = tileHeight / 2
 
-	for (const tile of sorted) {
-		const poly = getTilePolygon(
-			tile.x,
-			tile.y,
-			tile.z || 0,
-			originX,
-			originY,
-			tileWidth,
-			tileHeight,
-			heightStep
-		)
-		if (isPointInPolygon(screenX, screenY, poly)) {
-			return tile
+	let bestTile = null
+	let bestDepth = -Infinity
+
+	for (let i = 0; i < tiles.length; i++) {
+		const tile = tiles[i]
+		const tz = tile.z || 0
+		const cx = originX + (tile.x - tile.y) * halfW
+		const cy = originY + (tile.x + tile.y) * halfH - tz * heightStep
+
+		const dy = Math.abs(screenY - cy)
+		if (dy > halfH) continue
+
+		const dx = Math.abs(screenX - cx)
+		if (dx > halfW) continue
+
+		if ((dx / halfW + dy / halfH) <= 1.0) {
+			const depth = tile.x + tile.y + tz * 2
+			if (depth > bestDepth) {
+				bestDepth = depth
+				bestTile = tile
+			}
 		}
 	}
 
-	return null
+	return bestTile
 }
 
 /**
@@ -372,17 +415,16 @@ export function pickGridCellAtScreen(
 		}
 	}
 
-	const poly = getTilePolygon(
-		grid.x,
-		grid.y,
-		0,
-		originX,
-		originY,
-		tileWidth,
-		tileHeight,
-		heightStep
-	)
-	if (isPointInPolygon(screenX, screenY, poly)) {
+	const halfW = tileWidth / 2
+	const halfH = tileHeight / 2
+	const cx = originX + (grid.x - grid.y) * halfW
+	const cy = originY + (grid.x + grid.y) * halfH
+	const dy = Math.abs(screenY - cy)
+	if (dy > halfH) return null
+	const dx = Math.abs(screenX - cx)
+	if (dx > halfW) return null
+
+	if ((dx / halfW + dy / halfH) <= 1.0) {
 		return { x: grid.x, y: grid.y, z: 0 }
 	}
 

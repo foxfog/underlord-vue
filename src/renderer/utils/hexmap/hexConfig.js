@@ -16,7 +16,7 @@
  *      каждый логический пиксель превращается в четкий блок 2×2 на мониторе).
  * - 3 и выше: Более крупная ретро-пикселизация (3×3, 4×4 блока).
  */
-export let DEFAULT_PIXEL_SCALE = 2
+export let DEFAULT_PIXEL_SCALE = 1
 
 export function setDefaultPixelScale(val) {
 	DEFAULT_PIXEL_SCALE = Math.max(1, Number(val) || 1)
@@ -232,8 +232,16 @@ export const RIVER_CONFIG = {
 	flow: {
 		/** Включить анимацию течения */
 		enabled: true,
-		/** Базовый размер одного кубика течения в пикселях (px × px) */
-		pixelSize: 2.5,
+		/** Базовый размер одного кубика течения в пикселях (по умолчанию динамически совпадает с размером пикселей воды) */
+		get pixelSize() {
+			if (this._pixelSize !== undefined && this._pixelSize !== null) {
+				return this._pixelSize
+			}
+			return WATER_CONFIG.surfaceNoise?.pixelSize ?? WATER_CONFIG.pixelSize ?? 1.0
+		},
+		set pixelSize(val) {
+			this._pixelSize = val !== null && val !== undefined ? Number(val) : undefined
+		},
 		/** Скорость перемещения кубиков по течению (px/сек) */
 		speed: 18.0,
 		/** Плотность / детализация кубиков вдоль русла реки */
@@ -242,12 +250,36 @@ export const RIVER_CONFIG = {
 		lanes: 3,
 		/** Использовать исключительно квадратные кубики (не вытянутые полоски) */
 		cubeOnly: true,
-		/** Светлый тон кубиков (яркие блики на воде) */
-		lightTone: '#7dd3fc',
-		/** Промежуточный тон кубиков (лазурные переливы) */
-		midTone: '#38bdf8',
-		/** Темный тон кубиков (тени глубины, завихрения) */
-		darkTone: '#0369a1',
+		/** Светлый тон кубиков (по умолчанию наследует единый цвет блика воды WATER_CONFIG.colors.highlight) */
+		get lightTone() {
+			if (this._lightTone !== undefined && this._lightTone !== null) {
+				return this._lightTone
+			}
+			return WATER_CONFIG.colors?.highlight || '#7dd3fc'
+		},
+		set lightTone(val) {
+			this._lightTone = val !== null && val !== undefined ? String(val) : undefined
+		},
+		/** Промежуточный тон кубиков (по умолчанию наследует средний лазурный тон воды WATER_CONFIG.colors.mid) */
+		get midTone() {
+			if (this._midTone !== undefined && this._midTone !== null) {
+				return this._midTone
+			}
+			return WATER_CONFIG.colors?.mid || '#38bdf8'
+		},
+		set midTone(val) {
+			this._midTone = val !== null && val !== undefined ? String(val) : undefined
+		},
+		/** Темный тон кубиков (по умолчанию наследует тень глубины воды WATER_CONFIG.colors.shadow) */
+		get darkTone() {
+			if (this._darkTone !== undefined && this._darkTone !== null) {
+				return this._darkTone
+			}
+			return WATER_CONFIG.colors?.shadow || '#0369a1'
+		},
+		set darkTone(val) {
+			this._darkTone = val !== null && val !== undefined ? String(val) : undefined
+		},
 		/** Акцентные пенные кубики */
 		foamTone: '#ffffff'
 	}
@@ -281,31 +313,123 @@ export function setRiverConfig(options = {}) {
 export const WATER_CONFIG = {
 	/** Включить пиксельную анимацию воды */
 	enabled: true,
-	/** Базовый размер пикселя волны в экранных px (масштабируется перспективой) */
+	/** Базовый размер пикселя волны в экранных px (масштабируется перспективой, по умолчанию 1.0) */
 	pixelSize: 2.0,
 	/** Общий множитель скорости анимации ряби */
 	speed: 1.0,
 	/** Число независимых точек ряби на один водный гексагон (1..5) */
-	ripplesPerHex: 3,
+	ripplesPerHex: 5,
 	/** Плавный дрейф волн с течением/ветром */
 	drift: true,
-	/** Цветовая палитра для мелководья и побережья (water) */
-	coast: {
-		/** Яркий солнечный блик/пена на гребне волны */
-		highlight: '#ffffff',
-		/** Основное светлое тело волны (лазурный) */
-		mid: '#7dd3fc',
-		/** Подчеркивающая нижняя тень впадины волны (глубокий бирюзовый) */
-		shadow: '#0369a1'
+	/** Параметры динамики волн (накат к суше, наклон гребня, дистанция) */
+	waves: {
+		/** Включить накат волн по направлению к ближайшей суше (true = к берегу, false = свободный дрейф) */
+		shoreDrift: true,
+		/** Дистанция наката волны за жизненный цикл (в мировых px) */
+		driftDistance: 6.0,
+		/**
+		 * Степень смещения/наклона гребня и тела волны вперед от основания (эффект наката волны):
+		 * - 0.0: строго вертикально (без наклона)
+		 * - 1.0: естественный накат (гребень смещается вперед на 1..2 px в сторону движения)
+		 * - 1.5..2.0: выраженный серф / крутая накатывающаяся волна
+		 */
+		crestLeaning: 1.0,
+		/** Направление движения волн в открытом море при отсутствии берега рядом (угол в радианах) */
+		openWaterAngle: 0.4
 	},
-	/** Цветовая палитра для глубокого океана (ocean) */
-	ocean: {
-		/** Мягкий ледяной блик на океанской волне */
-		highlight: '#93c5fd',
-		/** Основное тело океанской волны (королевский синий) */
-		mid: '#3b82f6',
-		/** Глубокая темная впадина/бездна */
-		shadow: '#172554'
+	/** Удобные геттеры/сеттеры верхнего уровня */
+	get shoreDrift() {
+		return this.waves.shoreDrift
+	},
+	set shoreDrift(v) {
+		this.waves.shoreDrift = Boolean(v)
+	},
+	get driftDistance() {
+		return this.waves.driftDistance
+	},
+	set driftDistance(v) {
+		this.waves.driftDistance = Math.max(0, Number(v) || 0)
+	},
+	get crestLeaning() {
+		return this.waves.crestLeaning
+	},
+	set crestLeaning(v) {
+		this.waves.crestLeaning = Math.max(0, Number(v) || 0)
+	},
+	get openWaterAngle() {
+		return this.waves.openWaterAngle
+	},
+	set openWaterAngle(v) {
+		this.waves.openWaterAngle = Number(v) || 0.4
+	},
+	/** Единая цветовая палитра для всей воды (волны, рябь, частицы и реки): 3 градации */
+	colors: {
+		/** Мягкий небесно-голубой солнечный блик (не слепяще-белый) */
+		highlight: 'rgba(78, 166, 207, 0.85)',
+		/** Средний лазурный тон водной поверхности */
+		mid: 'rgba(42, 149, 196, 0.75)',
+		/** Глубокий бирюзово-синий пиксель тени */
+		shadow: 'rgba(3, 105, 161, 0.80)'
+	},
+	/** Алиасы для обратной совместимости со старыми вызовами coast/ocean */
+	get coast() {
+		return this.colors
+	},
+	set coast(val) {
+		if (val) Object.assign(this.colors, val)
+	},
+	get ocean() {
+		return this.colors
+	},
+	set ocean(val) {
+		if (val) Object.assign(this.colors, val)
+	},
+	/** Настройки 1-пиксельных частичек мерцания поверхности воды (Water Surface Particles / Noise) */
+	surfaceNoise: {
+		/** Включить частички поверхности воды */
+		enabled: true,
+		/** Скорость мерцания частиц */
+		speed: 0.2,
+		/** Базовый размер частицы в пикселях (по умолчанию динамически совпадает с WATER_CONFIG.pixelSize) */
+		get pixelSize() {
+			if (this._pixelSize !== undefined && this._pixelSize !== null) {
+				return this._pixelSize
+			}
+			return WATER_CONFIG.pixelSize ?? 1.0
+		},
+		set pixelSize(val) {
+			this._pixelSize = val !== null && val !== undefined ? Number(val) : undefined
+		},
+		/** Общий множитель плотности/количества частиц на гекс (1.0 = норма, 0.5 = реже, 2.0 = гуще) */
+		density: 1.0,
+		/** Число точек частиц на гекс в зависимости от дистанции камеры */
+		particlesPerHex: {
+			min: 20,
+			normal: 24,
+			max: 32
+		},
+		/** Прозрачность/интенсивность шума */
+		opacity: 0.85,
+		/** Единые цвета частиц (наследуют единую палитру WATER_CONFIG.colors) */
+		get colors() {
+			return WATER_CONFIG.colors
+		},
+		set colors(val) {
+			if (val) Object.assign(WATER_CONFIG.colors, val)
+		},
+		/** Алиасы для обратной совместимости со старыми вызовами coast/ocean */
+		get coast() {
+			return this.colors
+		},
+		set coast(val) {
+			if (val) Object.assign(this.colors, val)
+		},
+		get ocean() {
+			return this.colors
+		},
+		set ocean(val) {
+			if (val) Object.assign(this.colors, val)
+		}
 	}
 }
 
@@ -313,13 +437,179 @@ export function setWaterConfig(cfg) {
 	if (!cfg || typeof cfg !== 'object') return
 	if (cfg.enabled !== undefined) WATER_CONFIG.enabled = Boolean(cfg.enabled)
 	if (cfg.pixelSize !== undefined)
-		WATER_CONFIG.pixelSize = Math.max(1, Number(cfg.pixelSize) || 2.0)
+		WATER_CONFIG.pixelSize = Math.max(0.5, Number(cfg.pixelSize) || 1.0)
 	if (cfg.speed !== undefined) WATER_CONFIG.speed = Math.max(0, Number(cfg.speed) || 1.0)
 	if (cfg.ripplesPerHex !== undefined)
 		WATER_CONFIG.ripplesPerHex = Math.max(1, Math.min(6, Math.round(cfg.ripplesPerHex)))
 	if (cfg.drift !== undefined) WATER_CONFIG.drift = Boolean(cfg.drift)
-	if (cfg.coast) Object.assign(WATER_CONFIG.coast, cfg.coast)
-	if (cfg.ocean) Object.assign(WATER_CONFIG.ocean, cfg.ocean)
+	if (cfg.waves) Object.assign(WATER_CONFIG.waves, cfg.waves)
+	if (cfg.shoreDrift !== undefined) WATER_CONFIG.shoreDrift = Boolean(cfg.shoreDrift)
+	if (cfg.driftDistance !== undefined)
+		WATER_CONFIG.driftDistance = Math.max(0, Number(cfg.driftDistance) || 0)
+	if (cfg.crestLeaning !== undefined)
+		WATER_CONFIG.crestLeaning = Math.max(0, Number(cfg.crestLeaning) || 0)
+	if (cfg.openWaterAngle !== undefined)
+		WATER_CONFIG.openWaterAngle = Number(cfg.openWaterAngle) || 0.4
+	if (cfg.colors) Object.assign(WATER_CONFIG.colors, cfg.colors)
+	if (cfg.coast) Object.assign(WATER_CONFIG.colors, cfg.coast)
+	if (cfg.ocean) Object.assign(WATER_CONFIG.colors, cfg.ocean)
+	if (cfg.surfaceNoise) {
+		const sn = cfg.surfaceNoise
+		if (sn.enabled !== undefined) WATER_CONFIG.surfaceNoise.enabled = Boolean(sn.enabled)
+		if (sn.speed !== undefined) WATER_CONFIG.surfaceNoise.speed = Number(sn.speed) || 0.85
+		if (sn.pixelSize !== undefined) WATER_CONFIG.surfaceNoise.pixelSize = Math.max(0.5, Number(sn.pixelSize) || 1.0)
+		if (sn.density !== undefined) WATER_CONFIG.surfaceNoise.density = Math.max(0.1, Number(sn.density) || 1.0)
+		if (sn.particlesPerHex) Object.assign(WATER_CONFIG.surfaceNoise.particlesPerHex, sn.particlesPerHex)
+		if (sn.colors) Object.assign(WATER_CONFIG.surfaceNoise.colors, sn.colors)
+		if (sn.coast) Object.assign(WATER_CONFIG.surfaceNoise.colors, sn.coast)
+		if (sn.ocean) Object.assign(WATER_CONFIG.surfaceNoise.colors, sn.ocean)
+	}
+}
+
+// ==============================================================================
+// 4.3. ДОРОГИ И ЗАПЕКАЕМАЯ СИСТЕМА ЧАСТИЦ (ROAD CONFIG & GRAVEL PARTICLES)
+// ==============================================================================
+
+/**
+ * Конфигурация дорог и запекаемой системы частиц гравия / мягких обочин:
+ * 1) Отсутствие жестких темных бордеров (чистое естественное полотно)
+ * 2) Суженная гравийная проселочная дорога (1.8px вместо 2.5px)
+ * 3) Запекаемая в статический оффскрин-холст система частиц (zero-lag):
+ *    - Внутренние частицы гравия и камня вдоль полотна
+ *    - Прогрессивное рассеивание с боков от частого к редкому (мягкие органические края)
+ *    - Плавное смешивание и разброс частиц на перекрёстках и развилках
+ */
+export const ROAD_CONFIG = {
+	/** Наличие темных обводок/бордеров у дорог (false = чистые дороги без жестких контуров) */
+	hasBorder: false,
+	/** Базовая ширина гравийной просёлочной дороги */
+	dirtWidth: 1.5,
+	/** Базовая ширина каменной дороги */
+	stoneWidth: 3.0,
+	/** Прозрачность базовой фоновой векторной линии дороги (0.0 .. 1.0, 0 = линия скрыта, видны только частицы) */
+	lineOpacity: 1,
+	/** Прозрачность линии гравийной дороги (по умолчанию равна lineOpacity) */
+	dirtLineOpacity: 1,
+	/** Прозрачность линии каменной дороги (по умолчанию равна lineOpacity) */
+	stoneLineOpacity: 1.0,
+	/** Цветовая гамма дорог */
+	colors: {
+		/** Основное полотно гравийной дороги */
+		dirt: '#8d6e63',
+		/** Цвет фона векторной линии гравийной дороги (подложки) */
+		dirtLine: '#8d6e63',
+		/** Светлые песчинки и камешки */
+		dirtLight: '#bcaaa4',
+		/** Темные вкрапления гравия и земли */
+		dirtDark: '#6b4f46',
+		/** Светлые песчинки и кварцевые блики */
+		dirtSand: '#c59a8a',
+		/** Основное полотно каменной дороги */
+		stone: '#9eaec4',
+		/** Цвет фона векторной линии каменной дороги (подложки) */
+		stoneLine: '#9eaec4',
+		/** Светлые сколы брусчатки */
+		stoneLight: '#8194ac',
+		/** Темные зазоры и швы между камнями */
+		stoneDark: '#747f92'
+	},
+	/** Настройки запекаемой системы частиц (Gravel & Shoulder Particles) */
+	particles: {
+		/** Включить систему частиц для дорог */
+		enabled: true,
+		/** Базовый размер частицы в пикселях */
+		pixelSize: 3.0,
+		/** Масштабировать размер частиц при отдалении камеры (3px при макс. зуме -> 2px на среднем -> 1px на общем плане) */
+		scaleWithZoom: true,
+		/** Общая прозрачность частиц дороги (0.0 .. 1.0) */
+		opacity: 1.0,
+		/** Прозрачность внутренних частиц полотна дороги (0.0 .. 1.0) */
+		innerOpacity: 1.0,
+		/** Прозрачность внешних частиц обочины/рассеивания (0.0 .. 1.0) */
+		outerOpacity: 0.8,
+
+		/** Включение частиц внутри полотна дороги (false = внутренние частицы отключены) */
+		innerEnabled: false,
+		/** Включение частиц снаружи полотна (обочина/рассеивание) */
+		outerEnabled: false,
+
+		/** Раздельное включение внутренних/внешних частиц для гравийной дороги */
+		dirtInnerEnabled: false,
+		dirtOuterEnabled: true,
+
+		/** Раздельное включение внутренних/внешних частиц для каменной дороги */
+		stoneInnerEnabled: false,
+		stoneScatterEnabled: true,
+		stoneOuterEnabled: true,
+
+		/** Плотность частиц внутри полотна дороги */
+		innerDensity: 0.1,
+		/** Плотность рассеивания гравия по бокам полотна (мягкие обочины) */
+		scatterDensity: 0.1,
+		/**
+		 * Максимальная ширина разброса частиц в стороны от кромки полотна (в долях от ширины дороги):
+		 * создает плавный переход с частого расположения у края к редкому на удалении
+		 */
+		scatterWidthRatio: 3,
+		/** Число ступеней прогрессивного спада частоты частиц от края вглубь биома */
+		scatterTiers: 3,
+
+		/** Плотность внешнего рассеивания каменных осколков/брусчатки по бокам полотна */
+		stoneScatterDensity: 1,
+		/**
+		 * Максимальная ширина разброса каменных осколков от кромки полотна (в долях от ширины дороги):
+		 * создает переход от ровной каменной кладки к выбитым булыжникам в траве
+		 */
+		stoneScatterWidthRatio: 1.8,
+		/** Число ступеней прогрессивного спада для каменной дороги */
+		stoneScatterTiers: 2,
+		/** Дополнительное рассеивание частиц на перекрёстках и пересечениях дорог для бесшовного слияния */
+		crossroadScatter: true
+	}
+}
+
+/**
+ * Динамическое изменение настроек дорог из внешнего кода.
+ */
+export function setRoadConfig(options = {}) {
+	if (!options || typeof options !== 'object') return
+	if (options.hasBorder !== undefined) ROAD_CONFIG.hasBorder = Boolean(options.hasBorder)
+	if (options.dirtWidth !== undefined)
+		ROAD_CONFIG.dirtWidth = Math.max(0.5, Number(options.dirtWidth) || 1.8)
+	if (options.stoneWidth !== undefined)
+		ROAD_CONFIG.stoneWidth = Math.max(0.5, Number(options.stoneWidth) || 3.0)
+	if (options.lineOpacity !== undefined)
+		ROAD_CONFIG.lineOpacity = Math.max(0, Math.min(1, Number(options.lineOpacity) || 0))
+	if (options.dirtLineOpacity !== undefined)
+		ROAD_CONFIG.dirtLineOpacity = Math.max(0, Math.min(1, Number(options.dirtLineOpacity) || 0))
+	if (options.stoneLineOpacity !== undefined)
+		ROAD_CONFIG.stoneLineOpacity = Math.max(0, Math.min(1, Number(options.stoneLineOpacity) || 0))
+	if (options.line) {
+		if (options.line.opacity !== undefined)
+			ROAD_CONFIG.lineOpacity = Math.max(0, Math.min(1, Number(options.line.opacity) || 0))
+		if (options.line.dirtOpacity !== undefined)
+			ROAD_CONFIG.dirtLineOpacity = Math.max(0, Math.min(1, Number(options.line.dirtOpacity) || 0))
+		if (options.line.stoneOpacity !== undefined)
+			ROAD_CONFIG.stoneLineOpacity = Math.max(0, Math.min(1, Number(options.line.stoneOpacity) || 0))
+		if (options.line.dirtColor) ROAD_CONFIG.colors.dirtLine = options.line.dirtColor
+		if (options.line.stoneColor) ROAD_CONFIG.colors.stoneLine = options.line.stoneColor
+	}
+	if (options.colors) Object.assign(ROAD_CONFIG.colors, options.colors)
+	if (options.particles) {
+		Object.assign(ROAD_CONFIG.particles, options.particles)
+		if (options.particles.dirt) {
+			ROAD_CONFIG.particles.dirt = Object.assign(ROAD_CONFIG.particles.dirt || {}, options.particles.dirt)
+		}
+		if (options.particles.stone) {
+			ROAD_CONFIG.particles.stone = Object.assign(ROAD_CONFIG.particles.stone || {}, options.particles.stone)
+		}
+		if (options.particles.inner) {
+			ROAD_CONFIG.particles.inner = Object.assign(ROAD_CONFIG.particles.inner || {}, options.particles.inner)
+		}
+		if (options.particles.outer) {
+			ROAD_CONFIG.particles.outer = Object.assign(ROAD_CONFIG.particles.outer || {}, options.particles.outer)
+		}
+	}
 }
 
 // ==============================================================================
@@ -379,11 +669,22 @@ export const BADGE_COLLISION_DISTANCE_Y = 26
 // ==============================================================================
 
 /**
- * Интервал обновления водной анимации в миллисекундах (~30 FPS = 33мс).
- * Статичная карта перерисовывается ТОЛЬКО по dirty-флагу (при зуме/пане/ховере),
- * а непрерывные волны воды тикают с частотой 30 кадров/сек, не сжигая GPU на 60-120 FPS.
+ * Целевая частота обновления анимаций поверхности гексагональной карты (вода, реки, будущие спецэффекты).
+ * Даже если в настройках видео общий FPS задан 60, 120 или 144 FPS, симуляция поверхности квантуется
+ * этим значением (по умолчанию 30 FPS), существенно снижая нагрузку на CPU/GPU.
  */
-export const ANIM_FRAME_INTERVAL_MS = 33
+export let HEX_SURFACE_ANIMATION_FPS = 30
+
+export function setHexSurfaceAnimationFps(fps) {
+	const n = Math.max(1, Math.min(120, Number(fps) || 30))
+	HEX_SURFACE_ANIMATION_FPS = n
+	ANIM_FRAME_INTERVAL_MS = Math.round(1000 / n)
+}
+
+/**
+ * Интервал обновления водной и речной анимации в миллисекундах (~30 FPS = 33.3мс).
+ */
+export let ANIM_FRAME_INTERVAL_MS = Math.round(1000 / HEX_SURFACE_ANIMATION_FPS)
 
 /**
  * Бюджет времени одного кадра рендера (в миллисекундах, 14мс ≈ 85% от 16.6мс при 60Гц).
@@ -478,6 +779,24 @@ export function setFactionFillAlpha(alpha) {
 	FACTION_FILL_ALPHA = Math.max(0, Math.min(1, Number(alpha) ?? 0.16))
 }
 
+/**
+ * Показывать ли государственные границы по умолчанию (до нажатия кнопки-переключателя на карте).
+ * false = границы скрыты, включаются только кнопкой.
+ */
+export const DEFAULT_SHOW_STATE_BORDERS = false
+
+/**
+ * Типы записей из `fractions.json`, которые считаются государствами и могут иметь границы.
+ * Прочие фракции (гильдии, кланы, религиозные ордена, поселения, внутренние фракции) границ не имеют.
+ * Явный флаг `isState: true/false` в записи фракции имеет приоритет над типом и тегами.
+ */
+export const BORDER_STATE_TYPES = Object.freeze(['nation', 'state'])
+
+/**
+ * Теги, при наличии которых фракция считается государством (если тип не из BORDER_STATE_TYPES).
+ */
+export const BORDER_STATE_TAGS = Object.freeze(['nation', 'state'])
+
 // ==============================================================================
 // СВОДНЫЙ ОБЪЕКТ КОНФИГУРАЦИИ (HEX_CONFIG)
 // ==============================================================================
@@ -529,7 +848,15 @@ export const HEX_CONFIG = Object.freeze({
 			setAnimDisableZoomFraction(v)
 		},
 		calculateThreshold: calculateAnimZoomThreshold,
-		frameIntervalMs: ANIM_FRAME_INTERVAL_MS,
+		get surfaceAnimationFps() {
+			return HEX_SURFACE_ANIMATION_FPS
+		},
+		set surfaceAnimationFps(v) {
+			setHexSurfaceAnimationFps(v)
+		},
+		get frameIntervalMs() {
+			return ANIM_FRAME_INTERVAL_MS
+		},
 		frameBudgetMs: FRAME_BUDGET_MS,
 		get fpsLimitIntervalMs() {
 			return FPS_LIMIT_INTERVAL_MS
@@ -612,7 +939,8 @@ export const HEX_CONFIG = Object.freeze({
 		offsetRatio: BORDER_OFFSET_RATIO
 	},
 	rivers: RIVER_CONFIG,
-	water: WATER_CONFIG
+	water: WATER_CONFIG,
+	roads: ROAD_CONFIG
 })
 
 export default HEX_CONFIG

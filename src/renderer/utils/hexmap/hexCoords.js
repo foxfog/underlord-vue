@@ -400,11 +400,15 @@ export function getVisibleHexGridBounds(camera, radius = DEFAULT_HEX_RADIUS, map
 	].filter(Boolean)
 
 	if (pts.length === 0) {
+		const cols = mapBounds?.cols || 20
+		const rows = mapBounds?.rows || 15
+		const halfW = Math.floor(cols / 2)
+		const halfH = Math.floor(rows / 2)
 		return {
-			minCol: mapBounds?.minCol ?? 0,
-			maxCol: mapBounds?.maxCol ?? (mapBounds?.cols || 20) - 1,
-			minRow: mapBounds?.minRow ?? 0,
-			maxRow: mapBounds?.maxRow ?? (mapBounds?.rows || 15) - 1
+			minCol: mapBounds?.minCol ?? -halfW,
+			maxCol: mapBounds?.maxCol ?? (cols - 1 - halfW),
+			minRow: mapBounds?.minRow ?? -halfH,
+			maxRow: mapBounds?.maxRow ?? (rows - 1 - halfH)
 		}
 	}
 

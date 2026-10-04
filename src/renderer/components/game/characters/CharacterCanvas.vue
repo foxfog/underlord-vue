@@ -142,7 +142,7 @@ const emit = defineEmits([
 const containerRef = ref(null)
 const canvasRef = ref(null)
 const hoveredPartName = ref(null)
-const currentRenderScale = ref(1)
+let currentRenderScale = 1
 
 const renderer = new CharacterRigRenderer()
 
@@ -265,7 +265,7 @@ function updateCanvasSize() {
 	const maxScale = Math.max(1, Math.min(maxScaleX, maxScaleY))
 	const renderScale = Math.min(Math.max(1, targetRenderScale), maxScale)
 
-	currentRenderScale.value = renderScale
+	currentRenderScale = renderScale
 
 	const targetCanvasW = Math.round(width * renderScale)
 	const targetCanvasH = Math.round(height * renderScale)
@@ -289,7 +289,7 @@ function renderScene() {
 
 	const width = canvasLayoutWidth.value || 1000
 	const height = canvasLayoutHeight.value || 800
-	const renderScale = currentRenderScale.value || 1
+	const renderScale = currentRenderScale || 1
 
 	// Compute Scene Graph in CSS layout pixels
 	renderer.computeSceneGraph({
@@ -440,6 +440,7 @@ onUnmounted(() => {
 		cancelAnimationFrame(renderRafId)
 		renderRafId = null
 	}
+	renderer.destroy()
 })
 
 // Expose public API

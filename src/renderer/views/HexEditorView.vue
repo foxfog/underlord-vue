@@ -1109,8 +1109,10 @@ import {
 	hexToRgba,
 	loadHexMap,
 	loadFactionsData,
-	FACTION_PRESETS
+	FACTION_PRESETS,
+	isStateFaction
 } from '@/utils/hexmap/hexLoader.js'
+import { DEFAULT_SHOW_STATE_BORDERS } from '@/utils/hexmap/hexConfig.js'
 import {
 	HEX_EDGES,
 	getHexesInRadius,
@@ -1177,13 +1179,16 @@ watch(mapPitch, (newP) => {
 const fractionsRaw = ref(Object.values(FACTION_PRESETS))
 const factionsList = computed(() => {
 	const raw = Array.isArray(fractionsRaw.value) ? fractionsRaw.value : Object.values(fractionsRaw.value || {})
-	return raw.map(f => {
+	// Only states (nations) may own territory & borders
+	return raw.filter(f => f && isStateFaction(f.id, raw)).map(f => {
 		const visuals = getFactionVisuals(f.id, raw)
 		return {
 			id: f.id,
 			name: f.name || visuals?.name || f.id,
 			icon: f.icon || visuals?.icon || '🏳️',
 			type: f.type || 'faction',
+			tags: f.tags || [],
+			isState: true,
 			borderColor: visuals?.borderColor || '#38bdf8',
 			fillColor: visuals?.fillColor || 'rgba(56, 189, 248, 0.16)'
 		}
@@ -1192,7 +1197,7 @@ const factionsList = computed(() => {
 
 const selectedFactionId = ref('re-estize')
 const factionBrushRadius = ref(1)
-const showBordersFilter = ref(true)
+const showBordersFilter = ref(DEFAULT_SHOW_STATE_BORDERS)
 
 // Active Tools
 const activeTool = ref('select') // 'select' | 'biome' | 'faction' | 'mountain' | 'hills' | 'river' | 'road' | 'settlement' | 'eraser'
@@ -1228,10 +1233,14 @@ const resizeForm = ref({
 
 const currentMapBounds = computed(() => {
 	const b = mapData.value?.bounds
-	const minCol = b?.minCol !== undefined ? b.minCol : 0
-	const maxCol = b?.maxCol !== undefined ? b.maxCol : ((mapData.value?.cols || 20) - 1)
-	const minRow = b?.minRow !== undefined ? b.minRow : 0
-	const maxRow = b?.maxRow !== undefined ? b.maxRow : ((mapData.value?.rows || 15) - 1)
+	const cols = mapData.value?.cols || 20
+	const rows = mapData.value?.rows || 15
+	const halfW = Math.floor(cols / 2)
+	const halfH = Math.floor(rows / 2)
+	const minCol = b?.minCol !== undefined ? b.minCol : -halfW
+	const maxCol = b?.maxCol !== undefined ? b.maxCol : (cols - 1 - halfW)
+	const minRow = b?.minRow !== undefined ? b.minRow : -halfH
+	const maxRow = b?.maxRow !== undefined ? b.maxRow : (rows - 1 - halfH)
 	return {
 		minCol,
 		maxCol,
@@ -1517,6 +1526,8 @@ function returnToTests() {
 
 function setTool(toolId) {
 	activeTool.value = toolId
+	// Territory painting is invisible without borders — auto-enable them for the faction brush
+	if (toolId === 'faction') showBordersFilter.value = true
 }
 
 function getOrCreateCell(col, row, defaultTerrain = 'grass') {

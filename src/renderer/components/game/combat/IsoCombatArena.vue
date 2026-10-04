@@ -3,7 +3,7 @@
 		ref="containerRef"
 		class="iso-combat-arena"
 		:class="{
-			'__is-panning': camera.isDragging,
+			'__is-panning': isPanningActive,
 			'__action-mode': Boolean(selectedAction)
 		}"
 		@mouseenter="updateContainerBounds"
@@ -84,11 +84,8 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, shallowRef, toRaw, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import {
-	gridToScreen,
-	getTilePolygon,
-	getWallPolygon,
 	pickTileAtScreen,
 	getDepthSortKey
 } from '@/utils/isometric/isoCoords'
@@ -130,7 +127,7 @@ const containerRef = ref(null)
 const canvasRef = ref(null)
 
 const DEFAULT_ZOOM = 1.35
-const camera = ref({
+const camera = shallowRef({
 	x: 0,
 	y: 0,
 	zoom: DEFAULT_ZOOM,
@@ -139,6 +136,7 @@ const camera = ref({
 	dragStartY: 0,
 	hasMovedSinceDown: false
 })
+const isPanningActive = ref(false)
 
 const mapData = ref(null)
 const tiles = ref([])
@@ -475,6 +473,72 @@ function requestRender() {
 	})
 }
 
+// Zero-allocation helper to trace tile top rhombus face path
+function traceTileRhombus(ctx, cx, cy, halfW, halfH) {
+	ctx.beginPath()
+	ctx.moveTo(cx, cy - halfH)
+	ctx.lineTo(cx + halfW, cy)
+	ctx.lineTo(cx, cy + halfH)
+	ctx.lineTo(cx - halfW, cy)
+	ctx.closePath()
+}
+
+// Pre-sorted static render queue for arena tiles, walls, and objects (O(1) read during render)
+const staticRenderQueue = computed(() => {
+	const queue = []
+
+	// 1. Tiles & Walls
+	for (const t of tiles.value) {
+		const tz = t.z || 0
+		queue.push({
+			type: 'tile',
+			x: t.x,
+			y: t.y,
+			z: tz,
+			depth: getDepthSortKey(t.x, t.y, tz, 1),
+			item: toRaw(t)
+		})
+
+		if (t.walls) {
+			for (const edge of ['NW', 'NE', 'SW', 'SE']) {
+				if (t.walls[edge]) {
+					queue.push({
+						type: 'wall',
+						edge,
+						tileX: t.x,
+						tileY: t.y,
+						tileZ: tz,
+						depth: getDepthSortKey(t.x, t.y, tz, 2),
+						item: toRaw(t.walls[edge])
+					})
+				}
+			}
+		}
+	}
+
+	// 2. Objects / Props
+	for (const obj of objects.value) {
+		const ox = obj.x ?? (obj.pos ? obj.pos[0] : 0)
+		const oy = obj.y ?? (obj.pos ? obj.pos[1] : 0)
+		const oz = obj.z ?? (obj.pos && obj.pos.length > 2 ? obj.pos[2] : 0)
+		queue.push({
+			type: 'object',
+			ox,
+			oy,
+			oz,
+			depth: getDepthSortKey(ox, oy, oz, 3),
+			item: toRaw(obj)
+		})
+	}
+
+	queue.sort((a, b) => a.depth - b.depth)
+	return queue
+})
+
+// Atmospheric Background Gradient (cached)
+let cachedCombatBg = null
+let lastCombatBgH = 0
+
 // Main Render Method
 function render() {
 	const canvas = canvasRef.value
@@ -506,11 +570,14 @@ function render() {
 	ctx.clearRect(0, 0, viewW, viewH)
 
 	// Atmospheric Background Gradient
-	const bg = ctx.createLinearGradient(0, 0, 0, viewH)
-	bg.addColorStop(0, '#090d16')
-	bg.addColorStop(0.6, '#111827')
-	bg.addColorStop(1, '#0b0f1a')
-	ctx.fillStyle = bg
+	if (!cachedCombatBg || lastCombatBgH !== viewH) {
+		cachedCombatBg = ctx.createLinearGradient(0, 0, 0, viewH)
+		cachedCombatBg.addColorStop(0, '#090d16')
+		cachedCombatBg.addColorStop(0.6, '#111827')
+		cachedCombatBg.addColorStop(1, '#0b0f1a')
+		lastCombatBgH = viewH
+	}
+	ctx.fillStyle = cachedCombatBg
 	ctx.fillRect(0, 0, viewW, viewH)
 
 	// Camera Transform
@@ -522,64 +589,74 @@ function render() {
 	const tileH = mapData.value?.tileHeight || 32
 	const heightStep = mapData.value?.heightStep || 16
 
-	// Build Render Queue sorted by isometric depth
-	const renderQueue = []
+	// Culling invariants
+	const z = camera.value.zoom
+	const camX = camera.value.x
+	const camY = camera.value.y
+	const halfTileWZoom = (tileW / 2) * z
+	const halfTileHZoom = (tileH / 2) * z
+	const heightStepZoom = heightStep * z
+	const cullMarginX = tileW * 2 * z
+	const cullMarginY = (tileH * 4 + 64) * z
+	const minScreenX = -cullMarginX
+	const maxScreenX = viewW + cullMarginX
+	const minScreenY = -cullMarginY
+	const maxScreenY = viewH + cullMarginY
 
-	// 1. Tiles
-	for (const t of tiles.value) {
-		const depth = getDepthSortKey(t.x, t.y, t.z || 0, 1)
-		renderQueue.push({ type: 'tile', item: t, depth })
-
-		// Walls
-		if (t.walls) {
-			for (const edge of ['NW', 'NE', 'SW', 'SE']) {
-				if (t.walls[edge]) {
-					const wallDepth = getDepthSortKey(t.x, t.y, t.z || 0, 2)
-					renderQueue.push({
-						type: 'wall',
-						item: t.walls[edge],
-						edge,
-						tileX: t.x,
-						tileY: t.y,
-						tileZ: t.z || 0,
-						depth: wallDepth
-					})
-				}
-			}
-		}
-	}
-
-	// 2. Objects / Props
-	for (const obj of objects.value) {
-		const ox = obj.x ?? (obj.pos ? obj.pos[0] : 0)
-		const oy = obj.y ?? (obj.pos ? obj.pos[1] : 0)
-		const oz = obj.z ?? (obj.pos && obj.pos.length > 2 ? obj.pos[2] : 0)
-		const depth = getDepthSortKey(ox, oy, oz, 3)
-		renderQueue.push({ type: 'object', item: obj, ox, oy, oz, depth })
-	}
-
-	// 3. Units (sorted by visual 3D position during smooth movement)
-	for (const u of props.units) {
+	// Collect living/visible units and sort by depth
+	const activeUnits = []
+	for (let i = 0; i < props.units.length; i++) {
+		const u = props.units[i]
 		if (u.x === undefined || u.y === undefined) continue
 		const vis = getUnitVisualPos(u)
 		const depth = getDepthSortKey(vis.x, vis.y, vis.z || 0, 4)
-		renderQueue.push({ type: 'unit', item: u, depth })
+		activeUnits.push({ unit: u, vis, depth })
 	}
+	activeUnits.sort((a, b) => a.depth - b.depth)
+	let unitIdx = 0
 
-	// Sort back-to-front
-	renderQueue.sort((a, b) => a.depth - b.depth)
+	const queue = staticRenderQueue.value
+	for (let i = 0; i < queue.length; i++) {
+		const entry = queue[i]
 
-	// Draw Queue
-	for (const entry of renderQueue) {
+		// Draw units positioned behind or at this item's depth
+		while (unitIdx < activeUnits.length && activeUnits[unitIdx].depth <= entry.depth) {
+			const uEntry = activeUnits[unitIdx]
+			drawUnit(ctx, uEntry.unit, uEntry.vis, tileW, tileH, heightStep)
+			unitIdx++
+		}
+
+		// Frustum Culling
+		const itemX = entry.type === 'wall' ? entry.tileX : (entry.type === 'object' ? entry.ox : entry.x)
+		const itemY = entry.type === 'wall' ? entry.tileY : (entry.type === 'object' ? entry.oy : entry.y)
+		const itemZ = entry.type === 'wall' ? entry.tileZ : (entry.type === 'object' ? entry.oz : entry.z)
+
+		const screenCenterX = (itemX - itemY) * halfTileWZoom + camX
+		const screenCenterY = (itemX + itemY) * halfTileHZoom - itemZ * heightStepZoom + camY
+
+		if (
+			screenCenterX < minScreenX ||
+			screenCenterX > maxScreenX ||
+			screenCenterY < minScreenY ||
+			screenCenterY > maxScreenY
+		) {
+			continue
+		}
+
 		if (entry.type === 'tile') {
 			drawTile(ctx, entry.item, tileW, tileH, heightStep)
 		} else if (entry.type === 'wall') {
 			drawWall(ctx, entry.item, entry.edge, entry.tileX, entry.tileY, entry.tileZ, tileW, tileH, heightStep)
 		} else if (entry.type === 'object') {
 			drawObject(ctx, entry.item, entry.ox, entry.oy, entry.oz, tileW, tileH, heightStep)
-		} else if (entry.type === 'unit') {
-			drawUnit(ctx, entry.item, tileW, tileH, heightStep)
 		}
+	}
+
+	// Draw any remaining units on top
+	while (unitIdx < activeUnits.length) {
+		const uEntry = activeUnits[unitIdx]
+		drawUnit(ctx, uEntry.unit, uEntry.vis, tileW, tileH, heightStep)
+		unitIdx++
 	}
 
 	// 4. Planned Movement Trail (2-click movement preview)
@@ -607,22 +684,19 @@ function render() {
 	}
 }
 
-// Tile Drawing
+// Tile Drawing (Zero allocation)
 function drawTile(ctx, tile, tileW, tileH, heightStep) {
-	const poly = getTilePolygon(tile.x, tile.y, tile.z || 0, 0, 0, tileW, tileH, heightStep)
-	const center = gridToScreen(tile.x, tile.y, tile.z || 0, 0, 0, tileW, tileH, heightStep)
+	const halfW = tileW / 2
+	const halfH = tileH / 2
+	const cx = (tile.x - tile.y) * halfW
+	const cy = (tile.x + tile.y) * halfH - (tile.z || 0) * heightStep
 
 	// Base tile
 	const sprite = resolveTileSprite(tile.id || tile.type)
 	if (sprite && sprite.complete && sprite.naturalWidth > 0) {
-		ctx.drawImage(sprite, center.x - tileW / 2, center.y - tileH / 2, tileW, tileH)
+		ctx.drawImage(sprite, cx - halfW, cy - halfH, tileW, tileH)
 	} else {
-		ctx.beginPath()
-		ctx.moveTo(poly[0].x, poly[0].y)
-		ctx.lineTo(poly[1].x, poly[1].y)
-		ctx.lineTo(poly[2].x, poly[2].y)
-		ctx.lineTo(poly[3].x, poly[3].y)
-		ctx.closePath()
+		traceTileRhombus(ctx, cx, cy, halfW, halfH)
 
 		const isLava = tile.type === 'lava' || tile.id?.includes('lava') || tile.type === 'fire'
 		const isWater = tile.type === 'water' || tile.id?.includes('water')
@@ -632,7 +706,7 @@ function drawTile(ctx, tile, tileW, tileH, heightStep) {
 			// Warm glowing lava tile
 			const now = performance.now()
 			const pulse = Math.sin(now * 0.003 + (tile.x + tile.y) * 1.5) * 0.15 + 0.85
-			const grad = ctx.createRadialGradient(center.x, center.y, 2, center.x, center.y, tileW * 0.6)
+			const grad = ctx.createRadialGradient(cx, cy, 2, cx, cy, tileW * 0.6)
 			grad.addColorStop(0, `rgba(251, 146, 60, ${0.9 * pulse})`)
 			grad.addColorStop(0.5, `rgba(234, 88, 12, ${0.95 * pulse})`)
 			grad.addColorStop(1, 'rgba(153, 27, 27, 0.95)')
@@ -649,13 +723,13 @@ function drawTile(ctx, tile, tileW, tileH, heightStep) {
 			ctx.textAlign = 'center'
 			ctx.textBaseline = 'middle'
 			ctx.globalAlpha = 0.65 * pulse
-			ctx.fillText('🔥', center.x, center.y)
+			ctx.fillText('🔥', cx, cy)
 			ctx.restore()
 		} else if (isWater) {
 			// Translucent azure water tile with wave shimmer
 			const now = performance.now()
 			const shimmer = Math.sin(now * 0.002 + (tile.x * 2 - tile.y)) * 0.1 + 0.9
-			const grad = ctx.createLinearGradient(poly[0].x, poly[0].y, poly[2].x, poly[2].y)
+			const grad = ctx.createLinearGradient(cx, cy - halfH, cx, cy + halfH)
 			grad.addColorStop(0, `rgba(56, 189, 248, ${0.75 * shimmer})`)
 			grad.addColorStop(1, `rgba(2, 132, 199, ${0.85 * shimmer})`)
 			ctx.fillStyle = grad
@@ -671,13 +745,13 @@ function drawTile(ctx, tile, tileW, tileH, heightStep) {
 			ctx.textAlign = 'center'
 			ctx.textBaseline = 'middle'
 			ctx.globalAlpha = 0.55 * shimmer
-			ctx.fillText('🌊', center.x, center.y)
+			ctx.fillText('🌊', cx, cy)
 			ctx.restore()
 		} else if (isIce) {
 			// Frosted crystalline ice tile with glossy sheen & facets
 			const now = performance.now()
 			const glint = Math.sin(now * 0.0015 + (tile.x + tile.y)) * 0.08 + 0.92
-			const grad = ctx.createLinearGradient(poly[0].x, poly[0].y, poly[2].x, poly[2].y)
+			const grad = ctx.createLinearGradient(cx, cy - halfH, cx, cy + halfH)
 			grad.addColorStop(0, `rgba(224, 242, 254, ${0.9 * glint})`)
 			grad.addColorStop(0.5, `rgba(186, 230, 253, ${0.85 * glint})`)
 			grad.addColorStop(1, `rgba(147, 197, 253, ${0.92 * glint})`)
@@ -686,8 +760,8 @@ function drawTile(ctx, tile, tileW, tileH, heightStep) {
 
 			// Ice surface specular highlights & facets
 			ctx.beginPath()
-			ctx.moveTo(poly[0].x, poly[0].y)
-			ctx.lineTo(center.x, center.y)
+			ctx.moveTo(cx, cy - halfH)
+			ctx.lineTo(cx, cy)
 			ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)'
 			ctx.lineWidth = 1
 			ctx.stroke()
@@ -702,7 +776,7 @@ function drawTile(ctx, tile, tileW, tileH, heightStep) {
 			ctx.textAlign = 'center'
 			ctx.textBaseline = 'middle'
 			ctx.globalAlpha = 0.7 * glint
-			ctx.fillText('🧊', center.x, center.y)
+			ctx.fillText('🧊', cx, cy)
 			ctx.restore()
 		} else {
 			// Shading based on elevation
@@ -718,12 +792,7 @@ function drawTile(ctx, tile, tileW, tileH, heightStep) {
 
 	// 0. Hovered Tile Highlight (Soft gold cursor border)
 	if (hoveredTile.value && hoveredTile.value.x === tile.x && hoveredTile.value.y === tile.y) {
-		ctx.beginPath()
-		ctx.moveTo(poly[0].x, poly[0].y)
-		ctx.lineTo(poly[1].x, poly[1].y)
-		ctx.lineTo(poly[2].x, poly[2].y)
-		ctx.lineTo(poly[3].x, poly[3].y)
-		ctx.closePath()
+		traceTileRhombus(ctx, cx, cy, halfW, halfH)
 		ctx.fillStyle = 'rgba(246, 196, 69, 0.15)'
 		ctx.fill()
 		ctx.strokeStyle = '#f6c445'
@@ -742,12 +811,7 @@ function drawTile(ctx, tile, tileW, tileH, heightStep) {
 			selectedDestinationTile.value.y === tile.y
 		const isPlannedStep = !isAnimatingMove.value && plannedPathSet.value.has(key)
 
-		ctx.beginPath()
-		ctx.moveTo(poly[0].x, poly[0].y)
-		ctx.lineTo(poly[1].x, poly[1].y)
-		ctx.lineTo(poly[2].x, poly[2].y)
-		ctx.lineTo(poly[3].x, poly[3].y)
-		ctx.closePath()
+		traceTileRhombus(ctx, cx, cy, halfW, halfH)
 
 		if (isPlannedStep) {
 			ctx.fillStyle = isDestination ? 'rgba(56, 189, 248, 0.55)' : 'rgba(56, 189, 248, 0.38)'
@@ -768,12 +832,7 @@ function drawTile(ctx, tile, tileW, tileH, heightStep) {
 		const isHeal = targetEntry.type === 'ally'
 		const isSelf = targetEntry.type === 'self'
 
-		ctx.beginPath()
-		ctx.moveTo(poly[0].x, poly[0].y)
-		ctx.lineTo(poly[1].x, poly[1].y)
-		ctx.lineTo(poly[2].x, poly[2].y)
-		ctx.lineTo(poly[3].x, poly[3].y)
-		ctx.closePath()
+		traceTileRhombus(ctx, cx, cy, halfW, halfH)
 
 		if (isSelf) {
 			ctx.fillStyle = 'rgba(234, 179, 8, 0.3)'
@@ -792,13 +851,7 @@ function drawTile(ctx, tile, tileW, tileH, heightStep) {
 
 	// 2.5 AoE Splash / Cleave Preview (Bright Amber/Orange pulse on area affected)
 	if (aoePreviewMap.value.has(key)) {
-		ctx.beginPath()
-		ctx.moveTo(poly[0].x, poly[0].y)
-		ctx.lineTo(poly[1].x, poly[1].y)
-		ctx.lineTo(poly[2].x, poly[2].y)
-		ctx.lineTo(poly[3].x, poly[3].y)
-		ctx.closePath()
-
+		traceTileRhombus(ctx, cx, cy, halfW, halfH)
 		ctx.fillStyle = 'rgba(249, 115, 22, 0.45)'
 		ctx.strokeStyle = '#f97316'
 		ctx.lineWidth = 2
@@ -808,13 +861,7 @@ function drawTile(ctx, tile, tileW, tileH, heightStep) {
 
 	// 3. Hovered Tile Cursor
 	if (hoveredTile.value && hoveredTile.value.x === tile.x && hoveredTile.value.y === tile.y) {
-		ctx.beginPath()
-		ctx.moveTo(poly[0].x, poly[0].y)
-		ctx.lineTo(poly[1].x, poly[1].y)
-		ctx.lineTo(poly[2].x, poly[2].y)
-		ctx.lineTo(poly[3].x, poly[3].y)
-		ctx.closePath()
-
+		traceTileRhombus(ctx, cx, cy, halfW, halfH)
 		ctx.fillStyle = 'rgba(255, 255, 255, 0.18)'
 		ctx.fill()
 		ctx.strokeStyle = '#ffffff'
@@ -823,21 +870,62 @@ function drawTile(ctx, tile, tileW, tileH, heightStep) {
 	}
 }
 
-// Wall Drawing
+// Wall Drawing (Zero allocation)
 function drawWall(ctx, wall, edge, tileX, tileY, tileZ, tileW, tileH, heightStep) {
+	const halfW = tileW / 2
+	const halfH = tileH / 2
+	const cx = (tileX - tileY) * halfW
+	const cy = (tileX + tileY) * halfH - tileZ * heightStep
+
 	const sprite = resolveWallSprite(edge, wall)
 	if (sprite && sprite.complete && sprite.naturalWidth > 0) {
-		const center = gridToScreen(tileX, tileY, tileZ, 0, 0, tileW, tileH, heightStep)
-		ctx.drawImage(sprite, center.x - tileW / 2, center.y - 112, 64, 128)
+		ctx.drawImage(sprite, cx - halfW, cy - 112, 64, 128)
 		return
 	}
 
-	const poly = getWallPolygon(tileX, tileY, tileZ, edge, 1.5, 0, 0, tileW, tileH, heightStep)
+	const wallH = 1.5 * heightStep
+	let baseAx = cx - halfW
+	let baseAy = cy
+	let baseBx = cx
+	let baseBy = cy - halfH
+
+	switch (edge) {
+		case 'W':
+		case 'NW':
+			baseAx = cx - halfW
+			baseAy = cy
+			baseBx = cx
+			baseBy = cy - halfH
+			break
+		case 'N':
+		case 'NE':
+			baseAx = cx
+			baseAy = cy - halfH
+			baseBx = cx + halfW
+			baseBy = cy
+			break
+		case 'S':
+		case 'SW':
+			baseAx = cx - halfW
+			baseAy = cy
+			baseBx = cx
+			baseBy = cy + halfH
+			break
+		case 'E':
+		case 'SE':
+		default:
+			baseAx = cx
+			baseAy = cy + halfH
+			baseBx = cx + halfW
+			baseBy = cy
+			break
+	}
+
 	ctx.beginPath()
-	ctx.moveTo(poly[0].x, poly[0].y)
-	ctx.lineTo(poly[1].x, poly[1].y)
-	ctx.lineTo(poly[2].x, poly[2].y)
-	ctx.lineTo(poly[3].x, poly[3].y)
+	ctx.moveTo(baseAx, baseAy - wallH)
+	ctx.lineTo(baseBx, baseBy - wallH)
+	ctx.lineTo(baseBx, baseBy)
+	ctx.lineTo(baseAx, baseAy)
 	ctx.closePath()
 
 	const isLit = edge === 'NE' || edge === 'SE'
@@ -848,11 +936,12 @@ function drawWall(ctx, wall, edge, tileX, tileY, tileZ, tileW, tileH, heightStep
 	ctx.stroke()
 }
 
-// Object / Prop Drawing
+// Object / Prop Drawing (Zero allocation)
 function drawObject(ctx, obj, ox, oy, oz, tileW, tileH, heightStep) {
-	const center = gridToScreen(ox, oy, oz, 0, 0, tileW, tileH, heightStep)
+	const cx = (ox - oy) * (tileW / 2)
+	const cy = (ox + oy) * (tileH / 2) - oz * heightStep
 	ctx.save()
-	ctx.translate(center.x, center.y)
+	ctx.translate(cx, cy)
 
 	// Prop shadow
 	ctx.fillStyle = 'rgba(0, 0, 0, 0.45)'
@@ -867,10 +956,10 @@ function drawObject(ctx, obj, ox, oy, oz, tileW, tileH, heightStep) {
 	ctx.restore()
 }
 
-// Unit Drawing (Allies & Enemies with Sword of Convallaria Overhead Bars)
-function drawUnit(ctx, unit, tileW, tileH, heightStep) {
-	const vis = getUnitVisualPos(unit)
-	const center = gridToScreen(vis.x, vis.y, vis.z || 0, 0, 0, tileW, tileH, heightStep)
+// Unit Drawing (Allies & Enemies with Sword of Convallaria Overhead Bars - Zero allocation)
+function drawUnit(ctx, unit, vis, tileW, tileH, heightStep) {
+	const cx = (vis.x - vis.y) * (tileW / 2)
+	const cy = (vis.x + vis.y) * (tileH / 2) - (vis.z || 0) * heightStep
 	const isDead = unit.hp <= 0
 	const isActive = props.activeUnitId === unit.id
 	const isAlly = unit.team === 'ally'
@@ -880,7 +969,7 @@ function drawUnit(ctx, unit, tileW, tileH, heightStep) {
 	if (vis.alpha !== undefined) {
 		ctx.globalAlpha = Math.max(0, Math.min(1, vis.alpha))
 	}
-	ctx.translate(center.x + flinch.offsetX, center.y + flinch.offsetY + (vis.bob || 0) + (vis.fallY || 0))
+	ctx.translate(cx + flinch.offsetX, cy + flinch.offsetY + (vis.bob || 0) + (vis.fallY || 0))
 
 	if (isDead) {
 		// Tombstone / Fallen marker
@@ -1050,16 +1139,19 @@ function drawUnit(ctx, unit, tileW, tileH, heightStep) {
 	ctx.restore()
 }
 
-// Floating Combat Texts (FCT)
+// Floating Combat Texts (FCT) (Zero allocation)
 function drawFloatingTexts(ctx, tileW, tileH, heightStep) {
 	if (!props.floatingTexts || props.floatingTexts.length === 0) return
 
+	const halfW = tileW / 2
+	const halfH = tileH / 2
 	const now = Date.now()
 	for (const ft of props.floatingTexts) {
 		const targetUnit = props.units.find((u) => u.id === ft.unitId)
 		if (!targetUnit || targetUnit.x === undefined) continue
 
-		const center = gridToScreen(targetUnit.x, targetUnit.y, targetUnit.z || 0, 0, 0, tileW, tileH, heightStep)
+		const cx = (targetUnit.x - targetUnit.y) * halfW
+		const cy = (targetUnit.x + targetUnit.y) * halfH - (targetUnit.z || 0) * heightStep
 		const elapsed = now - (ft.timestamp || now)
 		const progress = Math.min(1, elapsed / 1300)
 
@@ -1067,7 +1159,7 @@ function drawFloatingTexts(ctx, tileW, tileH, heightStep) {
 		const alpha = 1 - Math.pow(progress, 2)
 
 		ctx.save()
-		ctx.translate(center.x, center.y + floatY)
+		ctx.translate(cx, cy + floatY)
 		ctx.globalAlpha = Math.max(0, alpha)
 
 		ctx.font = 'bold 16px sans-serif'
@@ -1128,6 +1220,7 @@ function onMouseDown(e) {
 	if (e.button === 1 || e.button === 2) {
 		// Middle or Right click: Pan
 		camera.value.isDragging = true
+		isPanningActive.value = true
 		camera.value.dragStartX = e.clientX - camera.value.x
 		camera.value.dragStartY = e.clientY - camera.value.y
 		camera.value.hasMovedSinceDown = false
@@ -1152,6 +1245,7 @@ function onMouseMove(e) {
 		const dy = Math.abs(e.clientY - camera.value.dragStartY)
 		if (dx > 5 || dy > 5) {
 			camera.value.isDragging = true
+			isPanningActive.value = true
 			camera.value.dragStartX = e.clientX - camera.value.x
 			camera.value.dragStartY = e.clientY - camera.value.y
 			camera.value.hasMovedSinceDown = true
@@ -1165,6 +1259,7 @@ function onMouseMove(e) {
 function onMouseUp(e) {
 	if (camera.value.isDragging) {
 		camera.value.isDragging = false
+		isPanningActive.value = false
 		return
 	}
 
@@ -1175,6 +1270,7 @@ function onMouseUp(e) {
 
 function onMouseLeave() {
 	camera.value.isDragging = false
+	isPanningActive.value = false
 	hoveredTile.value = null
 	hoveredUnitTooltip.value = null
 	requestRender()
@@ -1183,6 +1279,7 @@ function onMouseLeave() {
 function onContextMenu(e) {
 	// Right click cancels planned movement path or selected action
 	camera.value.isDragging = false
+	isPanningActive.value = false
 	if (plannedPath.value.length > 0) {
 		selectedDestinationTile.value = null
 		plannedPath.value = []
@@ -1197,31 +1294,27 @@ function onWheel(e) {
 	requestRender()
 }
 
-// Draw connecting trail line and destination marker for 2-click movement
+// Draw connecting trail line and destination marker for 2-click movement (Zero allocation)
 function drawPlannedPath(ctx, tileW, tileH, heightStep) {
 	const path = plannedPath.value
 	const actor = activeUnit.value
 	if (!path || path.length === 0 || !actor) return
 
+	const halfW = tileW / 2
+	const halfH = tileH / 2
+	const startX = (actor.x - actor.y) * halfW
+	const startY = (actor.x + actor.y) * halfH - (actor.z || 0) * heightStep
+
 	ctx.save()
 
 	// 1. Connecting dotted path line from actor to each step
-	const pStart = gridToScreen(
-		actor.x,
-		actor.y,
-		actor.z || 0,
-		0,
-		0,
-		tileW,
-		tileH,
-		heightStep
-	)
-
 	ctx.beginPath()
-	ctx.moveTo(pStart.x, pStart.y)
+	ctx.moveTo(startX, startY)
 	for (let i = 0; i < path.length; i++) {
-		const pt = gridToScreen(path[i].x, path[i].y, path[i].z || 0, 0, 0, tileW, tileH, heightStep)
-		ctx.lineTo(pt.x, pt.y)
+		const step = path[i]
+		const sx = (step.x - step.y) * halfW
+		const sy = (step.x + step.y) * halfH - (step.z || 0) * heightStep
+		ctx.lineTo(sx, sy)
 	}
 	ctx.strokeStyle = '#38bdf8'
 	ctx.lineWidth = 2
@@ -1234,26 +1327,21 @@ function drawPlannedPath(ctx, tileW, tileH, heightStep) {
 
 	// 2. Intermediate step dots
 	for (let i = 0; i < path.length - 1; i++) {
-		const pt = gridToScreen(path[i].x, path[i].y, path[i].z || 0, 0, 0, tileW, tileH, heightStep)
+		const step = path[i]
+		const sx = (step.x - step.y) * halfW
+		const sy = (step.x + step.y) * halfH - (step.z || 0) * heightStep
 		ctx.beginPath()
-		ctx.arc(pt.x, pt.y, 2.5, 0, Math.PI * 2)
+		ctx.arc(sx, sy, 2.5, 0, Math.PI * 2)
 		ctx.fillStyle = '#ffffff'
 		ctx.fill()
 	}
 
 	// 3. Destination target ring
-	const destPt = gridToScreen(
-		path[path.length - 1].x,
-		path[path.length - 1].y,
-		path[path.length - 1].z || 0,
-		0,
-		0,
-		tileW,
-		tileH,
-		heightStep
-	)
+	const lastStep = path[path.length - 1]
+	const destX = (lastStep.x - lastStep.y) * halfW
+	const destY = (lastStep.x + lastStep.y) * halfH - (lastStep.z || 0) * heightStep
 	ctx.beginPath()
-	ctx.arc(destPt.x, destPt.y, 6, 0, Math.PI * 2)
+	ctx.arc(destX, destY, 6, 0, Math.PI * 2)
 	ctx.fillStyle = 'rgba(56, 189, 248, 0.4)'
 	ctx.fill()
 	ctx.strokeStyle = '#ffffff'
@@ -1261,7 +1349,7 @@ function drawPlannedPath(ctx, tileW, tileH, heightStep) {
 	ctx.stroke()
 
 	ctx.beginPath()
-	ctx.arc(destPt.x, destPt.y, 2.5, 0, Math.PI * 2)
+	ctx.arc(destX, destY, 2.5, 0, Math.PI * 2)
 	ctx.fillStyle = '#ffffff'
 	ctx.fill()
 
@@ -1528,9 +1616,17 @@ function playActionVfx({ casterId, targetId, targetCoords, ability }) {
 		const tileW = mapData.value?.tileWidth || 64
 		const tileH = mapData.value?.tileHeight || 32
 		const heightStep = mapData.value?.heightStep || 16
+		const halfW = tileW / 2
+		const halfH = tileH / 2
 
-		const pCaster = gridToScreen(caster.x, caster.y, caster.z || 0, 0, 0, tileW, tileH, heightStep)
-		const pTarget = gridToScreen(targetPoint.x, targetPoint.y, targetPoint.z || 0, 0, 0, tileW, tileH, heightStep)
+		const pCaster = {
+			x: (caster.x - caster.y) * halfW,
+			y: (caster.x + caster.y) * halfH - (caster.z || 0) * heightStep
+		}
+		const pTarget = {
+			x: (targetPoint.x - targetPoint.y) * halfW,
+			y: (targetPoint.x + targetPoint.y) * halfH - (targetPoint.z || 0) * heightStep
+		}
 
 		const dist = Math.abs(targetPoint.x - caster.x) + Math.abs(targetPoint.y - caster.y)
 
@@ -1738,6 +1834,12 @@ onUnmounted(() => {
 	if (unlistenSprites) unlistenSprites()
 	if (resizeObserver) resizeObserver.disconnect()
 	if (animFrameId) cancelAnimationFrame(animFrameId)
+	cachedCombatBg = null
+	lastCombatBgH = 0
+	if (canvasRef.value) {
+		canvasRef.value.width = 0
+		canvasRef.value.height = 0
+	}
 })
 </script>
 

@@ -48,6 +48,21 @@
 				/>
 			</div>
 		</div>
+		<div class="settings-item">
+			<div class="left">
+				<div class="settings-item-label">Оверлей FPS / Инфо (F3):</div>
+			</div>
+			<div class="right">
+				<UiSelect
+					v-model="store.video.showFpsOverlay"
+					:options="fpsOverlayOptions"
+					valueKey="value"
+					labelKey="label"
+					placeholder="Выберите режим..."
+					class="settings-select"
+				/>
+			</div>
+		</div>
 	</div>
 </template>
 
@@ -86,6 +101,12 @@ const fpsLimitOptions = [
 	{ value: 60,  label: '60 FPS' },
 	{ value: 120, label: '120 FPS' },
 	{ value: 144, label: '144 FPS' }
+]
+
+// Performance / FPS overlay options
+const fpsOverlayOptions = [
+	{ value: false, label: 'Скрыт' },
+	{ value: true,  label: 'Включен (F3)' }
 ]
 
 const fullscreenMode = computed({

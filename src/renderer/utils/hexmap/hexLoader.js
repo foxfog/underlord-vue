@@ -10,6 +10,7 @@ import {
 	DEFAULT_HEX_TILT,
 	hashString
 } from './hexCoords.js'
+import { BORDER_STATE_TYPES, BORDER_STATE_TAGS } from './hexConfig.js'
 
 export const BIOMES = Object.freeze({
 	grass: { id: 'grass', name: 'Трава', color: '#3d8b40', edgeColor: '#2b692e', icon: '🌿' },
@@ -29,8 +30,8 @@ export const SETTLEMENT_TYPES = Object.freeze({
 })
 
 export const ROAD_TYPES = Object.freeze({
-	dirt: { id: 'dirt', name: 'Гравийная дорога', color: '#8d6e63', width: 2.5, dash: [4, 2] },
-	stone: { id: 'stone', name: 'Каменная дорога', color: '#cbd5e1', width: 3.5, border: '#475569' }
+	dirt: { id: 'dirt', name: 'Гравийная дорога', color: '#8d6e63', width: 1.8, dash: [4, 2] },
+	stone: { id: 'stone', name: 'Каменная дорога', color: '#94a3b8', width: 3.0 }
 })
 
 /**
@@ -39,6 +40,7 @@ export const ROAD_TYPES = Object.freeze({
 export const FACTION_PRESETS = Object.freeze({
 	're-estize': {
 		id: 're-estize',
+		isState: true,
 		name: 'Королевство Ре-Эстиз',
 		icon: '👑',
 		borderColor: '#2563eb', // Royal Blue
@@ -46,6 +48,7 @@ export const FACTION_PRESETS = Object.freeze({
 	},
 	'baharuth': {
 		id: 'baharuth',
+		isState: true,
 		name: 'Империя Бахарут',
 		icon: '🦅',
 		borderColor: '#dc2626', // Imperial Crimson
@@ -53,6 +56,7 @@ export const FACTION_PRESETS = Object.freeze({
 	},
 	'slane-theocracy': {
 		id: 'slane-theocracy',
+		isState: true,
 		name: 'Слейновская Теократия',
 		icon: '☀️',
 		borderColor: '#eab308', // Solar Gold
@@ -60,6 +64,7 @@ export const FACTION_PRESETS = Object.freeze({
 	},
 	'roble': {
 		id: 'roble',
+		isState: true,
 		name: 'Святое Королевство Робл',
 		icon: '🕊️',
 		borderColor: '#94a3b8', // Holy White/Silver
@@ -67,6 +72,7 @@ export const FACTION_PRESETS = Object.freeze({
 	},
 	'sorcerer-kingdom': {
 		id: 'sorcerer-kingdom',
+		isState: true,
 		name: 'Колдовское Королевство',
 		icon: '👑',
 		borderColor: '#a855f7', // Sorcerer Purple
@@ -74,6 +80,7 @@ export const FACTION_PRESETS = Object.freeze({
 	},
 	'nazarick': {
 		id: 'nazarick',
+		isState: false,
 		name: 'Великая Гробница Назарик',
 		icon: '🏰',
 		borderColor: '#6366f1', // Indigo Dark
@@ -81,6 +88,7 @@ export const FACTION_PRESETS = Object.freeze({
 	},
 	'ainz-ooal-gown': {
 		id: 'ainz-ooal-gown',
+		isState: false,
 		name: 'Аинз Оал Гоун',
 		icon: '⚔️',
 		borderColor: '#6366f1',
@@ -88,6 +96,7 @@ export const FACTION_PRESETS = Object.freeze({
 	},
 	'agrand-council': {
 		id: 'agrand-council',
+		isState: true,
 		name: 'Союз Агранд',
 		icon: '🐉',
 		borderColor: '#06b6d4', // Dragon Azure
@@ -95,6 +104,7 @@ export const FACTION_PRESETS = Object.freeze({
 	},
 	'dragon-kingdom': {
 		id: 'dragon-kingdom',
+		isState: true,
 		name: 'Драконье Королевство',
 		icon: '🐲',
 		borderColor: '#10b981', // Emerald
@@ -102,6 +112,7 @@ export const FACTION_PRESETS = Object.freeze({
 	},
 	'dwarven-kingdom': {
 		id: 'dwarven-kingdom',
+		isState: true,
 		name: 'Королевство гномов',
 		icon: '⚒️',
 		borderColor: '#d97706', // Dwarven Bronze
@@ -109,6 +120,7 @@ export const FACTION_PRESETS = Object.freeze({
 	},
 	'great-tribe': {
 		id: 'great-tribe',
+		isState: false,
 		name: 'Большое племя',
 		icon: '🦎',
 		borderColor: '#14b8a6', // Teal
@@ -116,6 +128,7 @@ export const FACTION_PRESETS = Object.freeze({
 	},
 	'demi-human-alliance': {
 		id: 'demi-human-alliance',
+		isState: false,
 		name: 'Альянс полулюдей',
 		icon: '🐺',
 		borderColor: '#f97316', // Ochre Orange
@@ -123,6 +136,7 @@ export const FACTION_PRESETS = Object.freeze({
 	},
 	'carne-village': {
 		id: 'carne-village',
+		isState: false,
 		name: 'Деревня Карн',
 		icon: '🏡',
 		borderColor: '#84cc16', // Lime green
@@ -141,6 +155,7 @@ export function hexToRgba(hexStr, alpha = 0.16) {
 	if (hexStr.startsWith('rgb(')) return hexStr.replace('rgb(', 'rgba(').replace(')', `, ${alpha})`)
 	let c = hexStr.replace('#', '')
 	if (c.length === 3) c = c[0] + c[0] + c[1] + c[1] + c[2] + c[2]
+	if (c.length === 8) c = c.slice(0, 6)
 	const num = parseInt(c, 16)
 	if (isNaN(num)) return `rgba(56, 189, 248, ${alpha})`
 	const r = (num >> 16) & 255
@@ -191,6 +206,27 @@ export function getFactionVisuals(factionId, customFactions = null) {
 }
 
 /**
+ * Determines whether a faction ID refers to a state (nation) that may own political borders.
+ * Priority: explicit `isState` boolean in data → `type` in BORDER_STATE_TYPES → tag in BORDER_STATE_TAGS → preset `isState`.
+ * Guilds, clans, religious orders, settlements and internal factions never get borders.
+ */
+export function isStateFaction(factionId, customFactions = null) {
+	if (!factionId) return false
+	let record = null
+	if (customFactions) {
+		record = Array.isArray(customFactions)
+			? customFactions.find(x => x && x.id === factionId)
+			: customFactions[factionId]
+	}
+	if (record) {
+		if (typeof record.isState === 'boolean') return record.isState
+		if (record.type && BORDER_STATE_TYPES.includes(record.type)) return true
+		if (Array.isArray(record.tags) && record.tags.some(t => BORDER_STATE_TAGS.includes(t))) return true
+	}
+	return FACTION_PRESETS[factionId]?.isState === true
+}
+
+/**
  * Normalizes hex map data ensuring robust arrays/objects for cells, rivers, and roads.
  */
 export function normalizeHexMapData(raw) {
@@ -200,10 +236,32 @@ export function normalizeHexMapData(raw) {
 	const rawCols = Number(data.cols) || 20
 	const rawRows = Number(data.rows) || 15
 
-	const minCol = data.bounds?.minCol !== undefined ? Number(data.bounds.minCol) : 0
-	const maxCol = data.bounds?.maxCol !== undefined ? Number(data.bounds.maxCol) : (rawCols - 1)
-	const minRow = data.bounds?.minRow !== undefined ? Number(data.bounds.minRow) : 0
-	const maxRow = data.bounds?.maxRow !== undefined ? Number(data.bounds.maxRow) : (rawRows - 1)
+	let minCol = data.bounds?.minCol !== undefined ? Number(data.bounds.minCol) : undefined
+	let maxCol = data.bounds?.maxCol !== undefined ? Number(data.bounds.maxCol) : undefined
+	let minRow = data.bounds?.minRow !== undefined ? Number(data.bounds.minRow) : undefined
+	let maxRow = data.bounds?.maxRow !== undefined ? Number(data.bounds.maxRow) : undefined
+
+	// If bounds not explicitly provided, infer from cell coordinates to support negative centered coordinates
+	if (minCol === undefined || maxCol === undefined || minRow === undefined || maxRow === undefined) {
+		if (data.cells && typeof data.cells === 'object') {
+			for (const key of Object.keys(data.cells)) {
+				const [c, r] = key.split(',').map(Number)
+				if (!isNaN(c) && !isNaN(r)) {
+					if (minCol === undefined || c < minCol) minCol = c
+					if (maxCol === undefined || c > maxCol) maxCol = c
+					if (minRow === undefined || r < minRow) minRow = r
+					if (maxRow === undefined || r > maxRow) maxRow = r
+				}
+			}
+		}
+	}
+
+	const halfW = Math.floor(rawCols / 2)
+	const halfH = Math.floor(rawRows / 2)
+	minCol = minCol !== undefined ? minCol : -halfW
+	maxCol = maxCol !== undefined ? maxCol : (rawCols - 1 - halfW)
+	minRow = minRow !== undefined ? minRow : -halfH
+	maxRow = maxRow !== undefined ? maxRow : (rawRows - 1 - halfH)
 
 	const bounds = {
 		minCol: Math.min(minCol, maxCol),
@@ -514,11 +572,13 @@ export function checkBridgeBetweenHexes(mapData, c1, r1, c2, r2, sharedEdge) {
  * Creates an empty default hex map.
  */
 export function createDefaultHexMap(cols = 20, rows = 15, baseTerrain = 'grass', bounds = null) {
+	const halfW = Math.floor(cols / 2)
+	const halfH = Math.floor(rows / 2)
 	const b = bounds || {
-		minCol: 0,
-		maxCol: cols - 1,
-		minRow: 0,
-		maxRow: rows - 1
+		minCol: -halfW,
+		maxCol: cols - 1 - halfW,
+		minRow: -halfH,
+		maxRow: rows - 1 - halfH
 	}
 	const cells = {}
 	for (let c = b.minCol; c <= b.maxCol; c++) {
