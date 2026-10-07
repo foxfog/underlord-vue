@@ -12,6 +12,7 @@ import { Application, Container, Graphics, Sprite } from 'pixi.js'
 import { PixiIsoTextureManager } from './PixiIsoTextureManager.js'
 import { PixiVfxLayer } from './PixiVfxLayer.js'
 import { getDepthSortKey } from '../isoCoords.js'
+import { WaterRippleFilter, LightingFilter, FogOfWarFilter } from '../../pixi/filters/index.js'
 
 export class PixiIsoRenderer {
 	constructor() {
@@ -22,6 +23,7 @@ export class PixiIsoRenderer {
 		// Scene Graph
 		this.worldContainer = new Container()
 		this.groundLayer = new Container()
+		this.waterLayer = new Container()
 		this.wallsLayer = new Container()
 		this.objectsLayer = new Container()
 		this.actorsLayer = new Container()
@@ -29,7 +31,16 @@ export class PixiIsoRenderer {
 		this.overlayLayer = new Container()
 
 		this.groundLayer.sortableChildren = true
+		this.waterLayer.sortableChildren = true
 		this.actorsLayer.sortableChildren = true
+
+		// Hardware GLSL Filters
+		this.waterFilter = new WaterRippleFilter({ speed: 1.2, frequency: 24.0, amplitude: 0.004 })
+		this.lightingFilter = new LightingFilter()
+		this.fogFilter = new FogOfWarFilter()
+
+		this.waterLayer.filters = [this.waterFilter]
+		this.worldContainer.filters = [this.lightingFilter, this.fogFilter]
 
 		// Dynamic actor sprites
 		this.playerSprite = null
@@ -65,6 +76,7 @@ export class PixiIsoRenderer {
 
 		// Assemble scene graph
 		this.worldContainer.addChild(this.groundLayer)
+		this.worldContainer.addChild(this.waterLayer)
 		this.worldContainer.addChild(this.wallsLayer)
 		this.worldContainer.addChild(this.objectsLayer)
 		this.worldContainer.addChild(this.actorsLayer)
@@ -104,6 +116,7 @@ export class PixiIsoRenderer {
 		if (!this.isInitialized) return
 
 		this.groundLayer.removeChildren()
+		this.waterLayer.removeChildren()
 		this.wallsLayer.removeChildren()
 		this.objectsLayer.removeChildren()
 		this.actorsLayer.removeChildren()
@@ -198,7 +211,11 @@ export class PixiIsoRenderer {
 				tileContainer.addChild(rhombusGfx)
 			}
 
-			this.groundLayer.addChild(tileContainer)
+			if (tile.type === 'water') {
+				this.waterLayer.addChild(tileContainer)
+			} else {
+				this.groundLayer.addChild(tileContainer)
+			}
 
 			// 2. Edge Walls
 			if (tile.walls) {
@@ -379,9 +396,17 @@ export class PixiIsoRenderer {
 		reachableTiles = [],
 		plannedPath = [],
 		particles = [],
-		showGrid = true
+		showGrid = true,
+		timeOfDay = 'day'
 	}) {
 		if (!this.isInitialized) return
+
+		// Update GLSL shader uniforms
+		this.waterFilter.time += 0.016
+		this.lightingFilter.time += 0.016
+		if (timeOfDay) {
+			this.lightingFilter.setTimeOfDay(timeOfDay)
+		}
 
 		const halfW = this.tileWidth / 2
 		const halfH = this.tileHeight / 2
@@ -393,6 +418,18 @@ export class PixiIsoRenderer {
 			const pz = player.z || 0
 			const cx = (px - py) * halfW
 			const cy = (px + py) * halfH - pz * this.heightStep
+
+			// Update light and fog vision positions to follow player
+			if (this.app?.renderer) {
+				const w = this.app.renderer.width || 800
+				const h = this.app.renderer.height || 600
+				const screenX = this.worldContainer.position.x + cx * this.worldContainer.scale.x
+				const screenY = this.worldContainer.position.y + cy * this.worldContainer.scale.y
+				const nx = Math.max(0, Math.min(1, screenX / w))
+				const ny = Math.max(0, Math.min(1, screenY / h))
+				this.lightingFilter.setLight(nx, ny, 0.28, 1.35)
+				this.fogFilter.setPlayerVision(nx, ny, 0.24, 0.42)
+			}
 
 			if (!this.playerSprite) {
 				const charTex = this.textureManager.getCharacterTexture('mc')

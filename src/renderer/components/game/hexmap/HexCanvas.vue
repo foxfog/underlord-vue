@@ -129,6 +129,7 @@ import {
 	invalidateHexStaticCache,
 	clearHexStaticCache
 } from '@/utils/hexmap/hexRenderer.js'
+import { PixiHexRenderer } from '@/utils/hexmap/pixi/PixiHexRenderer.js'
 
 const props = defineProps({
 	mapData: {
@@ -190,8 +191,16 @@ const props = defineProps({
 	pixelScale: {
 		type: Number,
 		default: DEFAULT_PIXEL_SCALE
+	},
+	renderBackend: {
+		type: String,
+		default: 'webgl' // 'webgl' | 'canvas2d'
 	}
 })
+
+// PixiJS WebGL Hardware Renderer
+let pixiHexRenderer = null
+const isWebGlActive = shallowRef(false)
 
 const emit = defineEmits([
 	'hex-click',
@@ -209,6 +218,36 @@ const containerRef = ref(null)
 const canvasRef = ref(null)
 const canvasWidth = ref(960)
 const canvasHeight = ref(540)
+
+async function initPixiBackend() {
+	if (props.renderBackend !== 'webgl' || !canvasRef.value) {
+		if (pixiHexRenderer) {
+			pixiHexRenderer.destroy()
+			pixiHexRenderer = null
+			isWebGlActive.value = false
+		}
+		return
+	}
+	try {
+		const phr = new PixiHexRenderer()
+		await phr.init(canvasRef.value, canvasRef.value.width, canvasRef.value.height)
+		pixiHexRenderer = phr
+		isWebGlActive.value = true
+		markDirty()
+	} catch (err) {
+		console.warn('[HexCanvas] PixiJS WebGL initialization fallback to 2D:', err)
+		pixiHexRenderer = null
+		isWebGlActive.value = false
+	}
+}
+
+watch(
+	() => props.renderBackend,
+	() => {
+		initPixiBackend()
+		markDirty()
+	}
+)
 
 watch(
 	() => props.pixelScale,
@@ -1075,6 +1114,11 @@ function resizeCanvas() {
 
 		canvasWidth.value = internalW
 		canvasHeight.value = internalH
+
+		if (pixiHexRenderer && isWebGlActive.value) {
+			pixiHexRenderer.resize(targetW, targetH)
+		}
+
 		markDirty()
 	}
 }
@@ -1112,11 +1156,6 @@ function renderLoop(currentTime) {
 		animationFrameId = requestAnimationFrame(renderLoop)
 		return
 	}
-	const mainCtx = canvasRef.value.getContext('2d')
-	if (!mainCtx) {
-		animationFrameId = requestAnimationFrame(renderLoop)
-		return
-	}
 
 	// Consume dirty flag and update animation timestamp
 	const frameWasDirty = renderDirty
@@ -1137,13 +1176,47 @@ function renderLoop(currentTime) {
 	}
 	const animTime = accumulatedAnimTime
 
+	const _t0 = performance.now()
+
+	// Hardware-accelerated PixiJS WebGL Render Branch
+	if (pixiHexRenderer && isWebGlActive.value) {
+		pixiHexRenderer.renderFrame(props.mapData, {
+			cameraX: cameraX.value,
+			cameraY: cameraY.value,
+			zoom: zoom.value,
+			pitch: pitch.value,
+			hoveredHex: hoveredHex.value,
+			selectedHex: props.selectedHex,
+			hoveredEdge: hoveredEdge.value,
+			activeTool: props.activeTool,
+			showBorders: localShowBorders.value,
+			factionsMap: props.factionsMap,
+			animTime,
+			timeOfDay: props.mapData?.timeOfDay || 'day',
+			discoveredLocations: discoveredSet.value
+		})
+
+		if (frameWasDirty) {
+			updateVisibleSettlementBadges()
+		}
+
+		lastRenderDurationMs = performance.now() - _t0
+		lastFpsLimitTime = currentTime
+		animationFrameId = requestAnimationFrame(renderLoop)
+		return
+	}
+
+	const mainCtx = canvasRef.value.getContext('2d')
+	if (!mainCtx) {
+		animationFrameId = requestAnimationFrame(renderLoop)
+		return
+	}
+
 	ensureOffscreen(canvasWidth.value, canvasHeight.value)
 	if (!offscreenCtx) {
 		animationFrameId = requestAnimationFrame(renderLoop)
 		return
 	}
-
-	const _t0 = performance.now()
 
 	// 1. Clear offscreen buffer
 	offscreenCtx.clearRect(0, 0, offscreenCanvas.width, offscreenCanvas.height)
@@ -1205,8 +1278,9 @@ function renderLoop(currentTime) {
 
 let resizeObserver = null
 
-onMounted(() => {
+onMounted(async () => {
 	resizeCanvas()
+	await initPixiBackend()
 	if (typeof ResizeObserver !== 'undefined' && containerRef.value) {
 		resizeObserver = new ResizeObserver(() => {
 			resizeCanvas()
@@ -1224,6 +1298,11 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+	if (pixiHexRenderer) {
+		pixiHexRenderer.destroy()
+		pixiHexRenderer = null
+		isWebGlActive.value = false
+	}
 	if (resizeObserver) {
 		resizeObserver.disconnect()
 		resizeObserver = null

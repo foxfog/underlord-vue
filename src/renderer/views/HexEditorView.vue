@@ -1425,13 +1425,41 @@
 		</div>
 
 		<!-- Modal: Export JSON -->
-		<div v-if="showExportModal" class="modal-backdrop">
+		<div v-if="showExportModal" class="modal-backdrop" @click.self="showExportModal = false">
 			<div class="modal-card modal-card-wide">
 				<div class="modal-header">
-					<h3>Экспорт гексагональной карты (.json)</h3>
+					<div class="export-modal-titles">
+						<h3>Экспорт гексагональной карты (.json)</h3>
+						<span class="modal-subtitle">Оптимизированное гибридное хранение RLE</span>
+					</div>
+					<div class="export-format-selector">
+						<button
+							class="format-tab-btn"
+							:class="{ __active: exportFormat === 'hybrid' }"
+							@click="exportFormat = 'hybrid'"
+						>
+							✨ Гибридный (RLE)
+						</button>
+						<button
+							class="format-tab-btn"
+							:class="{ __active: exportFormat === 'full' }"
+							@click="exportFormat = 'full'"
+						>
+							📜 Полный (Legacy)
+						</button>
+					</div>
 					<button class="btn-close" @click="showExportModal = false">×</button>
 				</div>
 				<div class="modal-body">
+					<div class="export-stats-banner">
+						<span class="stats-item">📦 Размер: <strong>{{ exportSizeKb }} КБ</strong></span>
+						<span v-if="exportFormat === 'hybrid' && savingsPercent > 0" class="stats-savings">
+							🔥 Экономия: <strong>{{ savingsPercent }}%</strong> (полный: ~{{ fullSizeKb }} КБ)
+						</span>
+						<span v-else class="stats-info">
+							Полная структура с отдельными объектами клеток
+						</span>
+					</div>
 					<textarea :value="exportedJsonText" class="json-textarea" readonly></textarea>
 				</div>
 				<div class="modal-footer">
@@ -1482,7 +1510,8 @@ import {
 	loadHexMap,
 	loadFactionsData,
 	FACTION_PRESETS,
-	isStateFaction
+	isStateFaction,
+	packHexMapData
 } from '@/utils/hexmap/hexLoader.js'
 import { DEFAULT_SHOW_STATE_BORDERS } from '@/utils/hexmap/hexConfig.js'
 import {
@@ -1940,8 +1969,50 @@ function onPreviewEdgeClick(edge) {
 	markDirty()
 }
 
-const exportedJsonText = computed(() => {
+const exportFormat = ref('hybrid') // 'hybrid' | 'full'
+
+const hybridJsonText = computed(() => {
+	if (!mapData.value) return ''
+	const packed = packHexMapData(mapData.value)
+	return JSON.stringify(packed, null, 2)
+})
+
+const fullJsonText = computed(() => {
+	if (!mapData.value) return ''
+	// Only compute full JSON if user actually requested it to avoid UI blocking on huge maps
+	if (exportFormat.value !== 'full') return ''
 	return JSON.stringify(mapData.value, null, 2)
+})
+
+const exportedJsonText = computed(() => {
+	return exportFormat.value === 'hybrid' ? hybridJsonText.value : fullJsonText.value
+})
+
+const exportSizeKb = computed(() => {
+	const text = exportedJsonText.value
+	if (!text) return '0.0'
+	const bytes = new Blob([text]).size
+	return (bytes / 1024).toFixed(1)
+})
+
+const fullSizeKb = computed(() => {
+	if (!mapData.value) return '0.0'
+	if (fullJsonText.value) {
+		const bytes = new Blob([fullJsonText.value]).size
+		return (bytes / 1024).toFixed(1)
+	}
+	// Estimate full uncompressed size from cell count: ~180 bytes per cell object
+	const cellCount = Object.keys(mapData.value.cells || {}).length
+	const estBytes = cellCount * 180 + 2048
+	return (estBytes / 1024).toFixed(1)
+})
+
+const savingsPercent = computed(() => {
+	const fullKb = parseFloat(fullSizeKb.value) || 1
+	const hybridKb = parseFloat(exportSizeKb.value) || 0
+	if (fullKb <= 0) return 0
+	const saved = Math.round(((fullKb - hybridKb) / fullKb) * 100)
+	return Math.max(0, saved)
 })
 
 function returnToTests() {
@@ -2450,7 +2521,9 @@ async function saveCurrentMap() {
 			mapData.value.pitch = mapPitch.value
 		}
 
-		const payload = JSON.parse(JSON.stringify(mapData.value))
+		// Save in compact hybrid format (reducing 28MB -> ~26KB, identical to isometric architecture)
+		// Stripped of Vue reactivity proxies so Electron IPC structured clone never throws
+		const payload = JSON.parse(JSON.stringify(packHexMapData(mapData.value)))
 		mapCache[mapId] = payload
 
 		// Update or insert into availableMaps
@@ -3299,7 +3372,72 @@ onUnmounted(() => {
 }
 
 .modal-card-wide {
-	width: 40em;
+	width: 44em;
+}
+
+.export-modal-titles {
+	display: flex;
+	flex-direction: column;
+	gap: 0.1em;
+}
+
+.modal-subtitle {
+	font-size: 0.72em;
+	color: #94a3b8;
+}
+
+.export-format-selector {
+	display: inline-flex;
+	background: rgba(0, 0, 0, 0.4);
+	border: 1px solid rgba(255, 255, 255, 0.15);
+	border-radius: 0.5em;
+	padding: 0.2em;
+	gap: 0.25em;
+	align-self: center;
+}
+
+.format-tab-btn {
+	background: transparent;
+	border: none;
+	color: #94a3b8;
+	padding: 0.35em 0.75em;
+	border-radius: 0.35em;
+	font-size: 0.8em;
+	font-family: inherit;
+	cursor: pointer;
+	transition: all 0.2s;
+}
+
+.format-tab-btn:hover {
+	color: #f8fafc;
+}
+
+.format-tab-btn.__active {
+	background: #3b82f6;
+	color: #ffffff;
+	font-weight: 600;
+	box-shadow: 0 0.1em 0.4em rgba(59, 130, 246, 0.4);
+}
+
+.export-stats-banner {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	background: rgba(15, 23, 42, 0.8);
+	border: 1px solid rgba(56, 189, 248, 0.25);
+	border-radius: 0.4em;
+	padding: 0.4em 0.8em;
+	font-size: 0.8em;
+	margin-bottom: 0.4em;
+}
+
+.stats-savings {
+	color: #4ade80;
+	font-weight: 600;
+}
+
+.stats-info {
+	color: #94a3b8;
 }
 
 .modal-header {

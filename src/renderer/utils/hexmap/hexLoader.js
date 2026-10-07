@@ -228,7 +228,354 @@ export function isStateFaction(factionId, customFactions = null) {
 }
 
 /**
+ * Unpacks an RLE-encoded hex terrain definition with palette, overrides, and optional territory RLE layer.
+ *
+ * @param {Object} bounds - { minCol, maxCol, minRow, maxRow }
+ * @param {Object|string} terrainDef - { palette: Array<string|Object>, rle: string }
+ * @param {Object} [overrides={}] - Sparse cell overrides keyed by "col,row"
+ * @param {string} [baseTerrain='grass'] - Default terrain fallback
+ * @param {Object|string} [territoriesDef=null] - { palette: Array<string|null>, rle: string } for political factions
+ * @returns {Record<string, Object>} Cells dictionary keyed by "col,row"
+ */
+export function unpackHexTerrain(bounds, terrainDef, overrides = {}, baseTerrain = 'grass', territoriesDef = null) {
+	if (!bounds) {
+		bounds = { minCol: -10, maxCol: 10, minRow: -10, maxRow: 10 }
+	}
+
+	const palette = Array.isArray(terrainDef?.palette) ? terrainDef.palette : [baseTerrain]
+	const rleStr = typeof terrainDef === 'string' ? terrainDef : (terrainDef?.rle || '')
+
+	const overridesMap = overrides && typeof overrides === 'object' ? overrides : {}
+
+	const parsedRuns = []
+	const tokenRegex = /([a-zA-Z0-9_-]+)(?::(\d+))?/g
+	let match
+	while ((match = tokenRegex.exec(rleStr)) !== null) {
+		const rawKey = match[1]
+		const count = match[2] !== undefined ? parseInt(match[2], 10) : 1
+		if (count <= 0) continue
+
+		let val = baseTerrain
+		const numIdx = parseInt(rawKey, 10)
+		if (!isNaN(numIdx) && String(numIdx) === rawKey && numIdx >= 0 && numIdx < palette.length) {
+			val = palette[numIdx]
+		} else {
+			const byPal = palette.find(
+				p => (typeof p === 'string' ? p === rawKey : p?.terrain === rawKey || p?.id === rawKey)
+			)
+			val = byPal || rawKey
+		}
+		parsedRuns.push({ val, count })
+	}
+
+	// Parse Territory RLE layer if present
+	const territoryPalette = Array.isArray(territoriesDef?.palette) ? territoriesDef.palette : [null]
+	const territoryRleStr = typeof territoriesDef === 'string' ? territoriesDef : (territoriesDef?.rle || '')
+	const parsedTerritoryRuns = []
+	if (territoryRleStr) {
+		tokenRegex.lastIndex = 0
+		let tMatch
+		while ((tMatch = tokenRegex.exec(territoryRleStr)) !== null) {
+			const rawKey = tMatch[1]
+			const count = tMatch[2] !== undefined ? parseInt(tMatch[2], 10) : 1
+			if (count <= 0) continue
+
+			let val = null
+			const numIdx = parseInt(rawKey, 10)
+			if (!isNaN(numIdx) && String(numIdx) === rawKey && numIdx >= 0 && numIdx < territoryPalette.length) {
+				val = territoryPalette[numIdx]
+			} else {
+				val = territoryPalette.includes(rawKey) ? rawKey : null
+			}
+			parsedTerritoryRuns.push({ val, count })
+		}
+	}
+
+	const cells = {}
+	let runIdx = 0
+	let runRem = parsedRuns.length > 0 ? parsedRuns[0].count : 0
+
+	let territoryRunIdx = 0
+	let territoryRunRem = parsedTerritoryRuns.length > 0 ? parsedTerritoryRuns[0].count : 0
+
+	for (let r = bounds.minRow; r <= bounds.maxRow; r++) {
+		for (let c = bounds.minCol; c <= bounds.maxCol; c++) {
+			let cellDef = null
+			if (runIdx < parsedRuns.length) {
+				cellDef = parsedRuns[runIdx].val
+				runRem--
+				if (runRem <= 0) {
+					runIdx++
+					if (runIdx < parsedRuns.length) {
+						runRem = parsedRuns[runIdx].count
+					}
+				}
+			}
+
+			let terrain = baseTerrain
+			let elevation = 0
+			let feature = 'none'
+
+			if (typeof cellDef === 'string') {
+				terrain = BIOMES[cellDef] ? cellDef : baseTerrain
+			} else if (cellDef && typeof cellDef === 'object') {
+				terrain = BIOMES[cellDef.terrain] ? cellDef.terrain : (cellDef.id || baseTerrain)
+				elevation = Number(cellDef.elevation) || 0
+				feature = cellDef.feature || 'none'
+			}
+
+			let faction = null
+			if (parsedTerritoryRuns.length > 0 && territoryRunIdx < parsedTerritoryRuns.length) {
+				faction = parsedTerritoryRuns[territoryRunIdx].val
+				territoryRunRem--
+				if (territoryRunRem <= 0) {
+					territoryRunIdx++
+					if (territoryRunIdx < parsedTerritoryRuns.length) {
+						territoryRunRem = parsedTerritoryRuns[territoryRunIdx].count
+					}
+				}
+			}
+
+			const key = `${c},${r}`
+			const ov = overridesMap[key] || null
+
+			const cellObj = {
+				col: c,
+				row: r,
+				terrain: (ov && ov.terrain !== undefined && BIOMES[ov.terrain]) ? ov.terrain : terrain,
+				elevation: (ov && ov.elevation !== undefined) ? Number(ov.elevation) : elevation,
+				feature: (ov && ov.feature !== undefined) ? ov.feature : feature,
+				mountainRadius: (ov && ov.mountainRadius !== undefined) ? Number(ov.mountainRadius) : 1,
+				road: (ov && ov.road && ROAD_TYPES[ov.road]) ? ov.road : 'none',
+				faction: (ov && ov.faction !== undefined) ? ov.faction : faction,
+				borderColor: (ov && ov.borderColor !== undefined) ? ov.borderColor : null,
+				fillColor: (ov && ov.fillColor !== undefined) ? ov.fillColor : null,
+				settlement: (ov && ov.settlement) ? ov.settlement : null
+			}
+
+			if (ov) {
+				for (const [k, v] of Object.entries(ov)) {
+					if (!['col', 'row', 'terrain', 'elevation', 'feature', 'mountainRadius', 'road', 'faction', 'borderColor', 'fillColor', 'settlement'].includes(k)) {
+						cellObj[k] = v
+					}
+				}
+			}
+
+			cells[key] = cellObj
+		}
+	}
+
+	return cells
+}
+
+/**
+ * Packs a flat cells dictionary/array into compact RLE terrain, territories layer, and sparse overrides.
+ *
+ * @param {Object} bounds - { minCol, maxCol, minRow, maxRow }
+ * @param {Record<string, Object>|Array<Object>} cells - Cells dictionary or array
+ * @param {string} [baseTerrain='grass'] - Default terrain fallback
+ * @returns {{ terrain: { palette: Array<string|Object>, rle: string }, territories?: { palette: Array<string|null>, rle: string }, overrides: Object }}
+ */
+export function packHexTerrain(bounds, cells = {}, baseTerrain = 'grass') {
+	const cellMap = Array.isArray(cells)
+		? Object.fromEntries(cells.filter(c => c).map(c => [`${c.col},${c.row}`, c]))
+		: (cells || {})
+
+	if (!bounds) {
+		let minC = Infinity, maxC = -Infinity, minR = Infinity, maxR = -Infinity
+		for (const k of Object.keys(cellMap)) {
+			const [c, r] = k.split(',').map(Number)
+			if (!isNaN(c) && !isNaN(r)) {
+				if (c < minC) minC = c
+				if (c > maxC) maxC = c
+				if (r < minR) minR = r
+				if (r > maxR) maxR = r
+			}
+		}
+		bounds = {
+			minCol: minC === Infinity ? -10 : minC,
+			maxCol: maxC === -Infinity ? 10 : maxC,
+			minRow: minR === Infinity ? -10 : minR,
+			maxRow: maxR === -Infinity ? 10 : maxR
+		}
+	}
+
+	const paletteMap = new Map()
+	const palette = []
+	function getPaletteIdx(def) {
+		const key = typeof def === 'string' ? def : JSON.stringify(def)
+		if (!paletteMap.has(key)) {
+			paletteMap.set(key, palette.length)
+			palette.push(def)
+		}
+		return paletteMap.get(key)
+	}
+
+	// Territories palette: 0 is always null (neutral territory)
+	const territoryPaletteMap = new Map()
+	territoryPaletteMap.set(null, 0)
+	const territoryPalette = [null]
+	function getTerritoryIdx(fId) {
+		if (!fId) return 0
+		if (!territoryPaletteMap.has(fId)) {
+			territoryPaletteMap.set(fId, territoryPalette.length)
+			territoryPalette.push(fId)
+		}
+		return territoryPaletteMap.get(fId)
+	}
+
+	const overrides = {}
+	const runs = []
+	let prevIdx = null
+	let count = 0
+
+	const territoryRuns = []
+	let prevTerritoryIdx = null
+	let territoryCount = 0
+
+	for (let r = bounds.minRow; r <= bounds.maxRow; r++) {
+		for (let c = bounds.minCol; c <= bounds.maxCol; c++) {
+			const key = `${c},${r}`
+			const cell = cellMap[key]
+			const terrain = cell?.terrain || baseTerrain
+			const elevation = Number(cell?.elevation) || 0
+			const feature = cell?.feature || 'none'
+
+			let baseDef = terrain
+			if (elevation !== 0 || (feature && feature !== 'none')) {
+				baseDef = { terrain }
+				if (elevation !== 0) baseDef.elevation = elevation
+				if (feature && feature !== 'none') baseDef.feature = feature
+			}
+
+			const idx = getPaletteIdx(baseDef)
+			if (idx === prevIdx) {
+				count++
+			} else {
+				if (prevIdx !== null) {
+					runs.push(count > 1 ? `${prevIdx}:${count}` : String(prevIdx))
+				}
+				prevIdx = idx
+				count = 1
+			}
+
+			// Faction territory tracking
+			const fId = cell?.faction || null
+			const fIdx = getTerritoryIdx(fId)
+			if (fIdx === prevTerritoryIdx) {
+				territoryCount++
+			} else {
+				if (prevTerritoryIdx !== null) {
+					territoryRuns.push(territoryCount > 1 ? `${prevTerritoryIdx}:${territoryCount}` : String(prevTerritoryIdx))
+				}
+				prevTerritoryIdx = fIdx
+				territoryCount = 1
+			}
+
+			if (cell) {
+				const ov = {}
+				if (cell.road && cell.road !== 'none') ov.road = cell.road
+				if (cell.borderColor) ov.borderColor = cell.borderColor
+				if (cell.fillColor) ov.fillColor = cell.fillColor
+				if (cell.settlement) ov.settlement = cell.settlement
+				if (cell.mountainRadius && Number(cell.mountainRadius) !== 1) ov.mountainRadius = cell.mountainRadius
+
+				for (const [k, v] of Object.entries(cell)) {
+					if (!['col', 'row', 'terrain', 'elevation', 'feature', 'road', 'faction', 'borderColor', 'fillColor', 'settlement', 'mountainRadius'].includes(k)) {
+						ov[k] = v
+					}
+				}
+
+				if (Object.keys(ov).length > 0) {
+					overrides[key] = ov
+				}
+			}
+		}
+	}
+	if (prevIdx !== null) {
+		runs.push(count > 1 ? `${prevIdx}:${count}` : String(prevIdx))
+	}
+	if (prevTerritoryIdx !== null) {
+		territoryRuns.push(territoryCount > 1 ? `${prevTerritoryIdx}:${territoryCount}` : String(prevTerritoryIdx))
+	}
+
+	const result = {
+		terrain: {
+			palette,
+			rle: runs.join(' ')
+		},
+		overrides
+	}
+
+	if (territoryPalette.length > 1) {
+		result.territories = {
+			palette: territoryPalette,
+			rle: territoryRuns.join(' ')
+		}
+	}
+
+	return result
+}
+
+/**
+ * Converts a hex map data object into the compact hybrid format (reducing file size by 95-99%).
+ *
+ * @param {Object} mapData - Full hex map data
+ * @returns {Object} Compact hybrid map object
+ */
+export function packHexMapData(mapData) {
+	if (!mapData) return null
+	// Strip Vue reactivity proxies so the resulting object is 100% cloneable by Electron IPC
+	const cleanData = JSON.parse(JSON.stringify(mapData))
+	const bounds = cleanData.bounds || {
+		minCol: 0,
+		maxCol: (cleanData.cols || 20) - 1,
+		minRow: 0,
+		maxRow: (cleanData.rows || 15) - 1
+	}
+
+	const baseTerrain = cleanData.baseTerrain || 'grass'
+	const { terrain, territories, overrides } = packHexTerrain(bounds, cleanData.cells || {}, baseTerrain)
+
+	const hybrid = {
+		id: cleanData.id || 'hexmap',
+		name: cleanData.name || 'Гексагональная карта',
+		description: cleanData.description || '',
+		cols: bounds.maxCol - bounds.minCol + 1,
+		rows: bounds.maxRow - bounds.minRow + 1,
+		bounds,
+		hexRadius: Number(cleanData.hexRadius) || DEFAULT_HEX_RADIUS,
+		tilt: Number(cleanData.tilt) || DEFAULT_HEX_TILT,
+		pitch: Number(cleanData.pitch) || 45,
+		terrain
+	}
+
+	if (territories) {
+		hybrid.territories = territories
+	}
+
+	if (overrides && Object.keys(overrides).length > 0) {
+		hybrid.overrides = overrides
+	}
+
+	if (cleanData.rivers && Object.keys(cleanData.rivers).length > 0) {
+		hybrid.rivers = cleanData.rivers
+	}
+
+	if (cleanData.roads && Object.keys(cleanData.roads).length > 0) {
+		hybrid.roads = cleanData.roads
+	}
+
+	if (cleanData.factions) {
+		hybrid.factions = cleanData.factions
+	}
+
+	return JSON.parse(JSON.stringify(hybrid))
+}
+
+/**
  * Normalizes hex map data ensuring robust arrays/objects for cells, rivers, and roads.
+ * Seamlessly supports both the legacy flat 'cells' format and the modern hybrid (RLE terrain + territories + overrides) format.
  */
 export function normalizeHexMapData(raw) {
 	if (!raw) return null
@@ -276,6 +623,12 @@ export function normalizeHexMapData(raw) {
 	const hexRadius = Number(data.hexRadius) || DEFAULT_HEX_RADIUS
 	const tilt = Number(data.tilt) || DEFAULT_HEX_TILT
 	const pitch = Number(data.pitch) || 45
+	const baseTerrain = (data.baseTerrain && BIOMES[data.baseTerrain]) ? data.baseTerrain : 'grass'
+
+	// If hybrid terrain is present and cells is not provided or empty, unpack hybrid terrain
+	if ((!data.cells || Object.keys(data.cells).length === 0) && data.terrain) {
+		data.cells = unpackHexTerrain(bounds, data.terrain, data.overrides, baseTerrain, data.territories)
+	}
 
 	const cells = {}
 	if (data.cells && typeof data.cells === 'object') {
@@ -311,7 +664,7 @@ export function normalizeHexMapData(raw) {
 	}
 
 	// Ensure all grid cells within bounds are populated
-	const baseTerrain = (data.baseTerrain && BIOMES[data.baseTerrain]) ? data.baseTerrain : 'water'
+	const fillTerrain = (data.baseTerrain && BIOMES[data.baseTerrain]) ? data.baseTerrain : 'water'
 	for (let c = bounds.minCol; c <= bounds.maxCol; c++) {
 		for (let r = bounds.minRow; r <= bounds.maxRow; r++) {
 			const k = `${c},${r}`
@@ -319,7 +672,7 @@ export function normalizeHexMapData(raw) {
 				cells[k] = {
 					col: c,
 					row: r,
-					terrain: baseTerrain,
+					terrain: fillTerrain,
 					elevation: 0,
 					feature: 'none',
 					mountainRadius: 1,

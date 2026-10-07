@@ -98,3 +98,24 @@ npm run lint:styles
   1. `step.floorOffset` / `step.position.floorOffset` (в сценарии `intro.json`).
   2. `scene.floorOffset` / `scene.floorLevel` (в базе сцен `scenes.json`).
   3. Глобальный `DEFAULT_SCENE_FLOOR_OFFSET_EM` из `sceneConfig.js`.
+
+---
+
+## 8. Оркестратор игровых фаз и FSM (`useGameOrchestrator.js` & `gamePhases.js`)
+
+Главный компонент `Game.vue` декомпозирован из «God Component» (1420 строк) в лаконичный декларативный шаблон (~320 строк). Вся координация режимов, сценариев и переходов передана конечному автомату (FSM) в [`useGameOrchestrator.js`](file:///c:/Users/DarkiFox/projects/underlord-vue/src/renderer/composables/useGameOrchestrator.js):
+
+### 1. Фазы жизненного цикла (`src/renderer/constants/gamePhases.js`)
+* `STORY_VN` — основной режим визуальной новеллы (диалоги, выборы, хотспоты).
+* `OVERWORLD_HEX` — режим глобальной тактической 2.5D карты.
+* `ISOMETRIC_EXPLORATION` — исследование изометрических локаций в реальном времени.
+* `TURN_COMBAT` — тактические пошаговые битвы.
+* `VR_HUB`, `VR_INTRO`, `VR_AUTH`, `VR_CHAR_CREATE`, `VR_SHUTDOWN` — пролог и виртуальная реальность.
+
+### 2. Обязанности оркестратора:
+* **FSM-переходы**: `transitionTo(nextPhase, payload)` с логированием и проверками.
+* **Изометрия и боёвка**: управление оверлеями, передача исхода боя в ветвления новеллы (`${encounterId}_win`/`${encounterId}_lose`) и победа над мобами на изометрических картах.
+* **VR & YGGDRASIL Flow**: управление нейрошлемом, запуск MMO, авторизация, создание персонажа, отключение серверов и переход в Новый Мир.
+* **Сохранения и снимки**: вызовы `saveWithHiddenOverlays`, быстрые сохранения/загрузки, диалоги подтверждения.
+* **Ren'Py Skip & UI Hide**: сокрытие интерфейса по `H` / клику, перемотка по `Ctrl`, приоритет `Escape` стека модальных окон.
+

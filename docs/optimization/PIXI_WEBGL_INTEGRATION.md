@@ -49,60 +49,48 @@
 
 ---
 
-## 4. 🧩 Архитектурный шаблон адаптера PixiJS (Без слома архитектуры Vue)
+---
 
-Если в будущем потребуется подключить PixiJS, делать это следует **строго изолированно внутри компонента холста**, сохраняя всю логику Vue/Pinia нетронутой:
+## 4. 🧩 Реализованный адаптер PixiJS (Без слома архитектуры Vue)
+
+Аппаратный рендерер PixiJS v8 (WebGL 2) интегрирован **строго изолированно внутри компонентов холстов** (`HexCanvas.vue` и `IsoCanvas.vue`). Весь интерфейс (HUD, диалоги, плашки городов, инвентарь) остаётся на 100% в реактивном слое Vue 3:
 
 ```
-┌────────────────────────────────────────────────────────┐
-│                   Vue 3 / Pinia Слой                   │
-│   (useQuests, useCombat, useInventory, Dialogues, UI)  │
-└───────────────────────────┬────────────────────────────┘
-                            │ props / events
-┌───────────────────────────▼────────────────────────────┐
-│                  Компонент IsoCanvas.vue                │
-│             (Управляет камерой, мышью, UI)             │
-└───────────────────────────┬────────────────────────────┘
-                            │
-              ┌─────────────┴─────────────┐
-              │                           │
-  [Текущий режим]                [Опциональный WebGL режим]
-┌─────────────▼──────────┐      ┌─────────▼──────────────┐
-│ Canvas2DRenderer       │      │ PixiIsoRenderer        │
-│ - traceTileRhombus     │      │ - PIXI.ParticleContainer│
-│ - drawImage sprites    │      │ - Batched Sprite Mesh  │
-│ - CPU Viewport Culling │      │ - GPU Frustum Culling  │
-└────────────────────────┘      └────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────┐
+│                          Vue 3 / Pinia Слой                            │
+│  (useQuests, useCombat, useInventory, Dialogues, UI, Settlement Badges)│
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │ props / events
+            ┌───────────────────────┴───────────────────────┐
+            │                                               │
+┌───────────▼───────────────┐                   ┌───────────▼───────────────┐
+│        HexCanvas.vue      │                   │        IsoCanvas.vue      │
+│  (3D perspective, camera) │                   │ (Raycasting, interaction) │
+└───────────┬───────────────┘                   └───────────┬───────────────┘
+            │                                               │
+   [Режим WebGL / Canvas2D]                        [Режим WebGL / Canvas2D]
+┌───────────▼────────────────────────┐          ┌───────────▼────────────────────────┐
+│ PixiHexRenderer.js                 │          │ PixiIsoRenderer.js                 │
+│ - WaterRippleFilter (GLSL)         │          │ - WaterRippleFilter (GLSL)         │
+│ - LightingFilter (Day/Night, Torch)│          │ - LightingFilter (Day/Night, Torch)│
+│ - FogOfWarFilter (Exploration mask)│          │ - FogOfWarFilter (Exploration mask)│
+│ - Sprite Batching (1000s mountains)│          │ - TextureManager & Sprite Batching │
+│ - Fallback -> Canvas 2D            │          │ - Fallback -> Canvas 2D            │
+└────────────────────────────────────┘          └────────────────────────────────────┘
 ```
 
-### Пример реализации изолированного адаптера:
-```javascript
-// src/renderer/utils/isometric/pixiIsoAdapter.js
-import * as PIXI from 'pixi.js'
-
-export class PixiIsoAdapter {
-  constructor(canvasElement) {
-    this.app = new PIXI.Application({
-      view: canvasElement,
-      backgroundAlpha: 0,
-      autoDensity: true,
-      resolution: window.devicePixelRatio || 1
-    })
-    this.tileContainer = new PIXI.Container()
-    this.app.stage.addChild(this.tileContainer)
-  }
-
-  updateScene(visibleTiles, camera) {
-    this.tileContainer.position.set(camera.x, camera.y)
-    this.tileContainer.scale.set(camera.zoom, camera.zoom)
-    // Обновление позиций спрайтов из пула
-  }
-
-  destroy() {
-    this.app.destroy(true, { children: true, texture: false })
-  }
-}
-```
+### Реализованные аппаратные GLSL-шейдеры:
+1. **`WaterRippleFilter.js` (`src/renderer/utils/pixi/filters/WaterRippleFilter.js`):**
+   - Двухволновая интерференция и процедурное синусоидальное искажение текстурных координат.
+   - Динамические блики каустики и гребней волн на поверхности рек и океанов в реальном времени на GPU.
+2. **`LightingFilter.js` (`src/renderer/utils/pixi/filters/LightingFilter.js`):**
+   - Цветокоррекция времени суток (`morning`, `day`, `evening`, `night`).
+   - Динамическое точечное освещение факела персонажа с реалистичным мерцанием пламени и квадратичным затуханием (smoothstep).
+3. **`FogOfWarFilter.js` (`src/renderer/utils/pixi/filters/FogOfWarFilter.js`):**
+   - Аппаратная маска видимости для тумана войны с мягким спадом на границах исследованной территории.
+4. **GPU Sprite Batching (`PixiHexTextureManager.js`):**
+   - Процедурный кэш текстур для горных вершин (радиусы 1, 2, 3), холмов, лесных массивов и поселений.
+   - Отрисовка тысяч горных пиков и деревьев за **1 draw call** без нагрузки на CPU.
 
 ---
 
@@ -111,3 +99,4 @@ export class PixiIsoAdapter {
 - **Горячая клавиша `F3`:** открывает/скрывает встроенный оверлей производительности в реальном времени.
 - **Настройки игры (`Настройки` -> `Видео` -> `Оверлей FPS`):** сохраняет состояние отображения в хранилище.
 - **Команда `npm run bench`:** запускает автоматизированный стресс-тест алгоритмов геометрии, рейкастинга и матриц.
+

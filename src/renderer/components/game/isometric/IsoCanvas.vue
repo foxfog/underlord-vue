@@ -1575,7 +1575,8 @@ function render() {
 			reachableTiles: reachableTiles.value,
 			plannedPath: plannedPath.value,
 			particles,
-			showGrid: props.showGrid
+			showGrid: props.showGrid,
+			timeOfDay: props.locationData?.timeOfDay || 'day'
 		})
 		return
 	}
