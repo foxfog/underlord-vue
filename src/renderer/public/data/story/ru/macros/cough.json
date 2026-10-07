@@ -5,7 +5,11 @@
 			"type": "voice",
 			"file": "audio/voice/man_cough.mp3"
 		},
-
+		{
+			"type": "camera",
+			"effect": "cough",
+			"duration": 0.6
+		},
 		{
 			"type": "part-animate",
 			"character": "mc",

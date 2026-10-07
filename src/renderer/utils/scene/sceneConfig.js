@@ -108,6 +108,38 @@ export const DEFAULT_STUDIO_BLEED_EM = {
 }
 
 // ==============================================================================
+// 3.1. КАМЕРА И ОВЕРСКАН СЦЕНЫ (SCENE CAMERA & OVERSCAN)
+// ==============================================================================
+
+/**
+ * Дефолтный коэффициент оверскана (overscan bleed scale) для сцен визуальной новеллы.
+ *
+ * При значении 1.05 сцены рендерятся на 5% шире и выше экрана (по ~48px слева/справа
+ * и ~27px сверху/снизу при каноническом разрешении 1920×1080).
+ *
+ * Это дополнительное поле (overscan bleed) позволяет камере выполнять кинематографические
+ * движения (кивание согласия, покачивание отказа, кашель/чих, тряску при уроне)
+ * без оголения краев холста и появления черных полос по бокам экрана.
+ */
+export let DEFAULT_SCENE_CAMERA_OVERSCAN = 1.05
+
+/**
+ * Устанавливает дефолтный коэффициент оверскана камеры сцены.
+ * @param {number|string} val
+ */
+export function setSceneCameraOverscan(val) {
+	DEFAULT_SCENE_CAMERA_OVERSCAN = Math.max(1.0, Number(val) || 1.0)
+}
+
+/**
+ * Возвращает текущий коэффициент оверскана камеры сцены.
+ * @returns {number}
+ */
+export function getSceneCameraOverscan() {
+	return DEFAULT_SCENE_CAMERA_OVERSCAN
+}
+
+// ==============================================================================
 // 4. МАСШТАБИРОВАНИЕ РОСТА И ШКАЛА (CHARACTER HEIGHT & RULER SCALING)
 // ==============================================================================
 
@@ -278,6 +310,9 @@ export function getSceneConfigSnapshot() {
 		bleed: {
 			sceneDefault: { ...DEFAULT_SCENE_BLEED_EM },
 			studioDefault: { ...DEFAULT_STUDIO_BLEED_EM }
+		},
+		camera: {
+			defaultOverscan: DEFAULT_SCENE_CAMERA_OVERSCAN
 		}
 	}
 }

@@ -1,0 +1,11 @@
+{
+	"id": "camera_nod",
+	"steps": [
+		{
+			"type": "camera",
+			"effect": "nod",
+			"duration": 0.6
+		},
+		{ "type": "continue" }
+	]
+}

@@ -700,6 +700,10 @@ export function useStorylineEditor() {
 			case 'scene':
 				newStep = { type: 'scene', id: 'city_street' }
 				break
+			case 'camera':
+			case 'camera-animate':
+				newStep = { type: 'camera', effect: 'nod', duration: 0.6 }
+				break
 			case 'show':
 				newStep = {
 					type: 'show',
@@ -1434,6 +1438,21 @@ export function useStorylineEditor() {
 			}
 			case 'scene':
 				return `🌄 Сцена: ${step.id || step.scene || '?'}${step.mods?.length ? ` (${step.mods.join(', ')})` : ''}`
+			case 'camera':
+			case 'camera-animate':
+			case 'camera-shake': {
+				const effectLabels = {
+					nod: 'Кивание (согласие)',
+					shake: 'Покачивание (отказ)',
+					cough: 'Кашель / чих',
+					damage: 'Урон (тряска + вспышка)',
+					rumble: 'Грохот / вибрация',
+					reset: 'Сброс камеры'
+				}
+				const eff = step.effect || step.action || step.animation || 'nod'
+				const label = effectLabels[eff] || eff
+				return `🎥 Камера: ${label} (${step.duration || 0.6}с)`
+			}
 			case 'show':
 				return `👤 Показать: ${step.character || '?'}`
 			case 'hide':
@@ -1487,6 +1506,9 @@ export function useStorylineEditor() {
 		const icons = {
 			dialogue: '💬',
 			scene: '🌄',
+			camera: '🎥',
+			'camera-animate': '🎥',
+			'camera-shake': '🎥',
 			show: '👤',
 			hide: '👻',
 			'hide-all': '👥',

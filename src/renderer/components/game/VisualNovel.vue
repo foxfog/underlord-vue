@@ -1,14 +1,34 @@
 <template>
 	<StoryAudio :audio-streams="audioStreams" @stream-ended="onStreamEnded" />
 
-	<Background
-		:scene="currentScene"
-		:global-data="globalData"
-		:is-in-dialogue-mode="isDialogueActive || isUiHidden"
-		@goto="goto"
-		@hotspot-click="onHotspotClick"
-	/>
-	<CharacterList :characters="visibleCharacters" :scene="currentScene" @character-click="$emit('character-click', $event)" />
+	<!-- Camera Viewport with Bleed Overscan & Cinematic Camera Animations -->
+	<div class="vn-camera-viewport">
+		<div
+			class="vn-camera-stage"
+			:class="cameraEffectClass"
+			:style="cameraStageStyle"
+		>
+			<Background
+				:scene="currentScene"
+				:global-data="globalData"
+				:is-in-dialogue-mode="isDialogueActive || isUiHidden"
+				@goto="goto"
+				@hotspot-click="onHotspotClick"
+			/>
+			<CharacterList
+				:characters="visibleCharacters"
+				:scene="currentScene"
+				@character-click="$emit('character-click', $event)"
+			/>
+		</div>
+
+		<!-- Красная вспышка / виньетка при уроне -->
+		<div
+			v-if="isDamageOverlayActive"
+			class="vn-camera-damage-overlay"
+			:style="cameraDamageStyle"
+		/>
+	</div>
 
 	<TitleBlock
 		v-if="!isUiHidden"
@@ -131,7 +151,17 @@ const {
 	unhideUi,
 	isSkipping,
 	startFastForward,
-	stopFastForward
+	stopFastForward,
+	// Camera effects & stage bleed
+	activeCameraEffect,
+	cameraEffectDuration,
+	isDamageOverlayActive,
+	cameraOverscan,
+	cameraEffectClass,
+	cameraStageStyle,
+	cameraDamageStyle,
+	playCameraEffect,
+	resetCamera
 } = vn
 
 provide('currentScene', currentScene)
@@ -192,7 +222,9 @@ defineExpose({
 	unhideUi,
 	isSkipping,
 	startFastForward,
-	stopFastForward
+	stopFastForward,
+	playCameraEffect,
+	resetCamera
 })
 </script>
 

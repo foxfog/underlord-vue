@@ -10,6 +10,7 @@ import { useStoryAudio } from './story/useStoryAudio'
 import { useSceneHotspots } from './story/useSceneHotspots'
 import { useStoryCharacters } from './story/useStoryCharacters'
 import { useStoryTransitions } from './story/useStoryTransitions'
+import { useStoryCamera } from './story/useStoryCamera'
 import { useStoryVariables } from './story/useStoryVariables'
 import { SOUND_ALIASES } from '../constants/sounds'
 import { DIALOGUE_HIDE_UI_CONFIG } from '../constants/dialogue'
@@ -123,6 +124,21 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			advanceStoryOverride = null
 		}
 	})
+
+	// Camera & Stage Animations
+	const {
+		activeCameraEffect,
+		cameraEffectDuration,
+		isDamageOverlayActive,
+		cameraOverscan,
+		cameraEffectClass,
+		cameraStageStyle,
+		cameraDamageStyle,
+		playCameraEffect,
+		resetCamera,
+		handleCameraStep
+	} = useStoryCamera({ isRestoringGameState })
+
 	const callStack = ref([])
 	let currentStoryPath = 'start' // tracks the file path used to load the current story
 	let restoreSessionId = 0
@@ -864,6 +880,24 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 					stepIndex.value++
 					processStep()
 					break
+				case 'camera':
+				case 'camera-animate':
+				case 'camera-shake':
+					if (!isRestoringGameState.value) {
+						if (step.wait === true) {
+							playCameraEffect(step)
+							const dur = (Number(step.duration) || 0.6) * 1000
+							setTimeout(() => {
+								stepIndex.value++
+								processStep()
+							}, dur)
+							break
+						}
+						playCameraEffect(step)
+					}
+					stepIndex.value++
+					processStep()
+					break
 				case 'inventory-remove':
 					handleInventoryRemoveStep(step)
 					stepIndex.value++
@@ -1059,6 +1093,11 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 			case 'stop-stream':
 			case 'stop-all-streams':
 				handleAudioStep(act)
+				break
+			case 'camera':
+			case 'camera-animate':
+			case 'camera-shake':
+				playCameraEffect(act)
 				break
 			case 'inventory-remove':
 				handleInventoryRemoveStep(act)
@@ -2030,6 +2069,7 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		pausedStreams.value = {}
 		clearFadeTimeouts()
 		clearPendingAudio()
+		resetCamera()
 		fadeOverlay.value = {
 			visible: false,
 			opacity: 0,
@@ -2212,6 +2252,16 @@ export function useVisualNovel({ src, emit, notificationComponent } = {}) {
 		resolveSpeakerTitle,
 		// history helpers
 		getHistory,
-		clearHistory
+		clearHistory,
+		// camera & stage effects
+		activeCameraEffect,
+		cameraEffectDuration,
+		isDamageOverlayActive,
+		cameraOverscan,
+		cameraEffectClass,
+		cameraStageStyle,
+		cameraDamageStyle,
+		playCameraEffect,
+		resetCamera
 	}
 }

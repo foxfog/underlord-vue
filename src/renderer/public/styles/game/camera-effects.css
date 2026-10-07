@@ -1,0 +1,201 @@
+/* Camera Effects & Stage Bleed for Visual Novel Scenes */
+
+.vn-camera-viewport {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+	pointer-events: auto;
+}
+
+.vn-camera-stage {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	transform-origin: center center;
+	transform: scale(var(--vn-camera-scale, 1.05));
+	will-change: transform;
+	pointer-events: auto;
+}
+
+/* 1. Кивание согласия (Nod / Agree) */
+.vn-camera-stage.camera-nod {
+	animation: vnCameraNod var(--vn-camera-duration, 0.6s) cubic-bezier(0.25, 1, 0.5, 1) both;
+}
+
+@keyframes vnCameraNod {
+	0% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translateY(0);
+	}
+	28% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translateY(1.3em);
+	}
+	50% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translateY(-0.25em);
+	}
+	72% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translateY(0.55em);
+	}
+	100% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translateY(0);
+	}
+}
+
+/* 2. Отказ / покачивание головой (Refuse / Head Shake) */
+.vn-camera-stage.camera-shake {
+	animation: vnCameraShake var(--vn-camera-duration, 0.55s) ease-in-out both;
+}
+
+@keyframes vnCameraShake {
+	0% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translateX(0) rotate(0deg);
+	}
+	18% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translateX(-1.1em) rotate(-0.6deg);
+	}
+	36% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translateX(1.1em) rotate(0.6deg);
+	}
+	54% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translateX(-0.65em) rotate(-0.35deg);
+	}
+	72% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translateX(0.45em) rotate(0.2deg);
+	}
+	100% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translateX(0) rotate(0deg);
+	}
+}
+
+/* 3. Кашель / чих (Cough / Sneeze) */
+.vn-camera-stage.camera-cough {
+	animation: vnCameraCough var(--vn-camera-duration, 0.6s) ease-out both;
+}
+
+@keyframes vnCameraCough {
+	0% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translateY(0) rotate(0deg);
+	}
+	16% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translateY(1.6em) rotate(0.5deg);
+	}
+	34% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translateY(-0.4em) rotate(-0.25deg);
+	}
+	52% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translateY(0.95em) rotate(0.3deg);
+	}
+	70% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translateY(-0.15em);
+	}
+	88% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translateY(0.25em);
+	}
+	100% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translateY(0) rotate(0deg);
+	}
+}
+
+/* 4. Урон с тряской (Damage Hit Shake) */
+.vn-camera-stage.camera-damage {
+	animation: vnCameraDamage var(--vn-camera-duration, 0.65s) cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes vnCameraDamage {
+	0% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translate(0, 0) rotate(0deg);
+	}
+	12% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translate(-1.4em, 0.9em) rotate(-1.2deg);
+	}
+	24% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translate(1.3em, -0.85em) rotate(1.1deg);
+	}
+	38% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translate(-1.1em, 0.6em) rotate(-0.8deg);
+	}
+	52% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translate(0.85em, -0.45em) rotate(0.6deg);
+	}
+	68% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translate(-0.5em, 0.3em) rotate(-0.35deg);
+	}
+	84% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translate(0.25em, -0.15em) rotate(0.15deg);
+	}
+	100% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translate(0, 0) rotate(0deg);
+	}
+}
+
+/* 5. Тяжелая вибрация / землетрясение (Rumble) */
+.vn-camera-stage.camera-rumble {
+	animation: vnCameraRumble var(--vn-camera-duration, 0.8s) ease-in-out both;
+}
+
+@keyframes vnCameraRumble {
+	0%,
+	100% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translate(0, 0);
+	}
+	10% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translate(-0.6em, 0.4em);
+	}
+	20% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translate(0.6em, -0.4em);
+	}
+	30% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translate(-0.5em, -0.3em);
+	}
+	40% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translate(0.5em, 0.3em);
+	}
+	50% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translate(-0.4em, 0.25em);
+	}
+	60% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translate(0.4em, -0.25em);
+	}
+	70% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translate(-0.25em, 0.15em);
+	}
+	80% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translate(0.2em, -0.1em);
+	}
+	90% {
+		transform: scale(var(--vn-camera-scale, 1.05)) translate(-0.1em, 0.05em);
+	}
+}
+
+/* Красный оверлей урона (Damage Red Flash & Vignette) */
+.vn-camera-damage-overlay {
+	position: absolute;
+	inset: 0;
+	z-index: 50;
+	pointer-events: none;
+	background: radial-gradient(
+		ellipse at center,
+		rgba(255, 30, 30, 0.32) 0%,
+		rgba(200, 10, 10, 0.65) 60%,
+		rgba(150, 0, 0, 0.85) 100%
+	);
+	box-shadow: inset 0 0 4em rgba(255, 0, 0, 0.8);
+	animation: vnCameraDamageFlash var(--vn-camera-duration, 0.65s) ease-out both;
+}
+
+@keyframes vnCameraDamageFlash {
+	0% {
+		opacity: 0;
+	}
+	15% {
+		opacity: 1;
+	}
+	45% {
+		opacity: 0.8;
+	}
+	100% {
+		opacity: 0;
+	}
+}

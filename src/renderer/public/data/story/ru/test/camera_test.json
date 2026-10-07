@@ -1,0 +1,82 @@
+{
+	"id": "camera_test",
+	"steps": [
+		{ "type": "scene", "id": "city_street" },
+		{
+			"type": "show",
+			"character": "mc",
+			"orientation": "right",
+			"position": { "l": 40 }
+		},
+		{
+			"type": "dialogue",
+			"character": "mc",
+			"text": "Тестирование кинематографических анимаций камеры в новелле!"
+		},
+		{
+			"type": "choice",
+			"options": [
+				{
+					"text": "1. 👤 Кивание (согласие)",
+					"actions": [
+						{ "type": "camera", "effect": "nod", "duration": 0.6 },
+						{
+							"type": "dialogue",
+							"character": "mc",
+							"text": "Камера кивает в знак согласия (наклон вниз и пружинящий возврат)."
+						},
+						{ "type": "goto", "target": "camera_test" }
+					]
+				},
+				{
+					"text": "2. 👤 Покачивание (отказ)",
+					"actions": [
+						{ "type": "camera", "effect": "shake", "duration": 0.55 },
+						{
+							"type": "dialogue",
+							"character": "mc",
+							"text": "Камера качает головой из стороны в сторону (отрицание)."
+						},
+						{ "type": "goto", "target": "camera_test" }
+					]
+				},
+				{
+					"text": "3. 🤧 Кашель / чих",
+					"actions": [
+						{ "type": "camera", "effect": "cough", "duration": 0.6 },
+						{
+							"type": "dialogue",
+							"character": "mc",
+							"text": "<p>[кашель]</p><p>«Кх-кх!» Камера содрогается от спазма с глубоким наклоном и отдачей.</p>"
+						},
+						{ "type": "goto", "target": "camera_test" }
+					]
+				},
+				{
+					"text": "4. 💥 Урон с тряской и покраснением экрана",
+					"actions": [
+						{ "type": "camera", "effect": "damage", "duration": 0.65 },
+						{
+							"type": "dialogue",
+							"character": "mc",
+							"text": "Получен урон! Экран содрогается, вспыхивает красная виньетка."
+						},
+						{ "type": "goto", "target": "camera_test" }
+					]
+				},
+				{
+					"text": "5. 🌋 Грохот / вибрация (землетрясение)",
+					"actions": [
+						{ "type": "camera", "effect": "rumble", "duration": 0.8 },
+						{
+							"type": "dialogue",
+							"character": "mc",
+							"text": "Земля дрожит от глубокой вибрации или взрывов."
+						},
+						{ "type": "goto", "target": "camera_test" }
+					]
+				}
+			]
+		}
+	]
+}

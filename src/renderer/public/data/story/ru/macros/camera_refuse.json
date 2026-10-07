@@ -1,0 +1,11 @@
+{
+	"id": "camera_refuse",
+	"steps": [
+		{
+			"type": "camera",
+			"effect": "shake",
+			"duration": 0.55
+		},
+		{ "type": "continue" }
+	]
+}

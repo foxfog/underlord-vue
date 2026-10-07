@@ -23,6 +23,7 @@
 					>
 						<option value="dialogue">💬 Диалог (dialogue)</option>
 						<option value="scene">🌄 Сцена (scene)</option>
+						<option value="camera">🎥 Камера (camera)</option>
 						<option value="music">🎵 Музыка (music)</option>
 						<option value="sound">🔊 Звуковой эффект (sound)</option>
 						<option value="voice">🗣️ Озвучка (voice)</option>
@@ -122,6 +123,11 @@
 						:scenes="scenes"
 						@update="onStepUpdate"
 					/>
+					<StepCameraForm
+						v-else-if="currentStepType === 'camera'"
+						:step="step"
+						@update="onStepUpdate"
+					/>
 					<StepAudioForm
 						v-else-if="['music', 'sound', 'voice', 'stop-stream'].includes(currentStepType)"
 						:step="step"
@@ -170,6 +176,7 @@
 import { ref, computed, watch } from 'vue'
 import StepDialogueForm from './forms/StepDialogueForm.vue'
 import StepSceneForm from './forms/StepSceneForm.vue'
+import StepCameraForm from './forms/StepCameraForm.vue'
 import StepAudioForm from './forms/StepAudioForm.vue'
 import StepChoiceForm from './forms/StepChoiceForm.vue'
 import StepShowHideForm from './forms/StepShowHideForm.vue'

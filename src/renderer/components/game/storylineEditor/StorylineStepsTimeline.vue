@@ -48,6 +48,14 @@
 			<button
 				type="button"
 				class="quick-add-btn"
+				title="Добавить анимацию камеры (кивание, кашель, тряска, урон)"
+				@click="emit('add-step', 'camera')"
+			>
+				+ 🎥 Камера
+			</button>
+			<button
+				type="button"
+				class="quick-add-btn"
 				title="Добавить музыку / звук"
 				@click="emit('add-step', 'music')"
 			>
@@ -84,6 +92,9 @@
 					</button>
 					<button type="button" class="more-menu-item" @click="addFromMore('hide')">
 						👻 Скрыть персонажа
+					</button>
+					<button type="button" class="more-menu-item" @click="addFromMore('camera')">
+						🎥 Анимация камеры
 					</button>
 					<button type="button" class="more-menu-item" @click="addFromMore('titles')">
 						🏷️ Титры / Вступление
