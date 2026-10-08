@@ -47,5 +47,12 @@
 	"empty": "Empty",
 	"slot_empty": "This slot is empty",
 	"overwrite_confirm": "Slot {slot} is occupied (\"{mcName}\" — {timestamp}). Overwrite?",
-	"load_confirm_loss": "All unsaved progress will be lost. Load this save?"
+	"load_confirm_loss": "All unsaved progress will be lost. Load this save?",
+	"profile": "Character",
+	"all_profiles": "All characters",
+	"auto_save": "Auto",
+	"auto_save_full": "Autosave",
+	"quick_save": "Quick save",
+	"delete_profile": "Delete profile",
+	"delete_profile_confirm": "Delete profile \"{name}\" and all its saves?"
 }

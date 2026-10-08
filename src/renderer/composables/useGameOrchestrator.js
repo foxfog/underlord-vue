@@ -164,21 +164,33 @@ export function useGameOrchestrator({ visualNovelRef, dynamicContentAreaRef }) {
 		transitionTo(GAME_PHASES.VR_CHAR_CREATE)
 	}
 
-	function onCharCreationConfirmed({ nickname }) {
+	async function onCharCreationConfirmed({ nickname }) {
 		console.log('👤 [Char Created] Nickname:', nickname)
 		stopYggBgm()
 		if (mcCharacter.value) {
 			mcCharacter.value.nickname = nickname
 			mcCharacter.value.title = nickname
+			mcCharacter.value.name = nickname
 		}
 		if (gameState.character?.mc) {
 			gameState.character.mc.nickname = nickname
 			gameState.character.mc.title = nickname
+			gameState.character.mc.name = nickname
 		}
 		if (visualNovelRef.value?.characterData?.mc) {
 			visualNovelRef.value.characterData.mc.nickname = nickname
 			visualNovelRef.value.characterData.mc.title = nickname
+			visualNovelRef.value.characterData.mc.name = nickname
 		}
+
+		// Создаём номерную подпапку в сейвах для профиля персонажа (Skyrim style)
+		try {
+			const profRes = await savesStore.createProfile(nickname)
+			console.log('📁 [Save Profile Created]:', profRes)
+		} catch (err) {
+			console.error('Failed to create character profile save folder:', err)
+		}
+
 		transitionTo(GAME_PHASES.VR_SHUTDOWN)
 	}
 
@@ -253,6 +265,32 @@ export function useGameOrchestrator({ visualNovelRef, dynamicContentAreaRef }) {
 			console.error('Error transitioning to intro_carne_arrival:', err)
 		} finally {
 			transitionTo(GAME_PHASES.STORY_VN)
+		}
+
+		// Первый автосейв созданного профиля персонажа (Skyrim style)
+		try {
+			await nextTick()
+			setTimeout(async () => {
+				try {
+					if (!visualNovelRef.value?.getGameState) return
+					const state = visualNovelRef.value.getGameState()
+					if (state) {
+						const currentNick =
+							state.characterData?.mc?.nickname ||
+							state.characterData?.mc?.name ||
+							mcCharacter.value?.nickname ||
+							mcCharacter.value?.name ||
+							'Player'
+						const clipRect = getGameAreaClipRect()
+						const autoRes = await savesStore.saveAuto(state, currentNick, clipRect)
+						console.log('💾 [Initial Profile Autosave created]:', autoRes)
+					}
+				} catch (autoErr) {
+					console.error('Error creating initial autosave for profile:', autoErr)
+				}
+			}, 350)
+		} catch (err) {
+			console.error('Error scheduling initial profile autosave:', err)
 		}
 	}
 
@@ -714,6 +752,14 @@ export function useGameOrchestrator({ visualNovelRef, dynamicContentAreaRef }) {
 					settingsStore.isMusicPlaying = false
 					await new Promise((r) => setTimeout(r, 60))
 					try {
+						if (saveData.profileFolder) {
+							const matched = savesStore.profiles.find((p) => p.folder === saveData.profileFolder)
+							savesStore.currentProfile = matched || {
+								folder: saveData.profileFolder,
+								name: saveData.mcName || 'Player'
+							}
+							savesStore.selectedProfileFolder = saveData.profileFolder
+						}
 						await visualNovelRef.value.restoreGameState(saveData.gameState)
 						if (visualNovelRef.value.globalData?.value) {
 							gameStore.setGlobalData(visualNovelRef.value.globalData.value)
@@ -1073,8 +1119,11 @@ export function useGameOrchestrator({ visualNovelRef, dynamicContentAreaRef }) {
 			}
 		}, 3000)
 
-		if (route.meta?.newGame && visualNovelRef.value) {
-			visualNovelRef.value.resetGameState?.()
+		if (route.meta?.newGame) {
+			savesStore.currentProfile = null
+			if (visualNovelRef.value) {
+				visualNovelRef.value.resetGameState?.()
+			}
 		}
 
 		// Restore pending load if navigated from main menu
@@ -1095,6 +1144,14 @@ export function useGameOrchestrator({ visualNovelRef, dynamicContentAreaRef }) {
 					if (!pending || !visualNovelRef.value) {
 						isGameLoading.value = false
 						return
+					}
+					if (pending.profileFolder) {
+						const matched = savesStore.profiles.find((p) => p.folder === pending.profileFolder)
+						savesStore.currentProfile = matched || {
+							folder: pending.profileFolder,
+							name: pending.mcName || 'Player'
+						}
+						savesStore.selectedProfileFolder = pending.profileFolder
 					}
 					await visualNovelRef.value.restoreGameState(pending.gameState)
 					if (visualNovelRef.value.globalData?.value) {

@@ -71,17 +71,21 @@ watch(
 	}
 )
 
-async function onLoadGame(slot) {
-	console.log('Load game from slot:', slot)
+async function onLoadGame(slot, profileFolder) {
+	console.log('Load game from slot:', slot, 'profile:', profileFolder)
 
 	try {
 		// Load the full save data from store
-		const result = await savesStore.loadGame(slot)
+		const result = await savesStore.loadGame(slot, profileFolder)
 
 		if (result.success) {
-			console.log('✔ Game loaded from slot', slot)
+			console.log('✔ Game loaded from slot', slot, 'profile:', profileFolder)
 			// Emit the full save data with gameState
-			emit('load-request', { slot, gameState: result.data.gameState })
+			emit('load-request', {
+				slot,
+				profileFolder: result.data.profileFolder || profileFolder,
+				gameState: result.data.gameState
+			})
 		} else {
 			console.error('Failed to load:', result.error)
 			alert(`Failed to load: ${result.error}`)

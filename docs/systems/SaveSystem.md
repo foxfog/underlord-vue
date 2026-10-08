@@ -1,29 +1,71 @@
 # Система сохранений (Save/Load System)
 
-В приложении реализована система сохранений в стиле визуальных новелл (Ren'Py).
+В игре реализована профильная система сохранений в стиле классических RPG (Skyrim / Fallout). Каждое прохождение и персонаж имеют собственный изолированный профиль, хранящийся в номерной подпапке.
 
 ## Хранение данных
-- **Папка сохранений**: `%APPDATA%/underlord-vue/saves/` (Windows)
-- **Формат файла**: JSON
-- **Имя файла**: `{slotNumber}_{mcName}_{timestamp}.json` (например, `0_John_2026-01-30_143022.json`)
-- **Количество слотов**: 20 слотов (от 0 до 19)
+- **Корневая папка сохранений**: `%APPDATA%/underlord/saves/` (Windows)
+- **Номерные подпапки профилей**: `{profileNumber}_{sanitizedName}/` (например, `1_Momonga/`, `2_Ainz/`)
+- **Метаданные профиля**: `profile.json` внутри папки профиля:
+  ```json
+  {
+    "id": 1,
+    "folder": "1_Momonga",
+    "name": "Momonga",
+    "createdAt": 1740000000000,
+    "updatedAt": 1740000000000
+  }
+  ```
+- **Формат файла сохранений**: JSON
+- **Имя файла**: `{slotNumber}_{mcName}_{timestamp}.json` (например, `0_Momonga_2026-10-08_143022.json`)
+- **Количество слотов на профиль**:
+  - **Слот 0**: Автосохранение (Autosave). Создаётся автоматически после подтверждения имени персонажа и входа в мир.
+  - **Слоты 1..8**: Быстрые сохранения (Quick saves). Ротируются при быстром сохранении, не затирая автосохранение.
+  - **Слоты 9..98**: 90 слотов для ручных сохранений (1..90 на страницах 1..10).
 
 ## Архитектура системы
 
 Система разделена на несколько уровней:
 
 1. **Main Process (Electron)** (`src/main/index.js`)
-   - IPC обработчики: `save-game`, `load-game`, `list-saves`, `delete-save`. Выполняют операции чтения/записи файлов на диске.
+   - IPC обработчики профилей:
+     - `list-profiles` — сканирует папки профилей, собирает количество сохранений, последнее время активности и скриншот;
+     - `create-profile` — определяет следующий номер `maxNum + 1`, создаёт подпапку `{id}_{safeName}` и файл `profile.json`;
+     - `delete-profile` — удаляет подпапку профиля и все его сохранения.
+   - IPC обработчики сохранений:
+     - `save-game` (слот, saveFile, clipRect, profileFolder) — сохраняет JSON и скриншот в подпапку профиля;
+     - `load-game` (слот, profileFolder) — загружает сохранение из подпапки профиля (с fallback поиском);
+     - `list-saves` (profileFolder) — возвращает сохранения для профиля или всех профилей;
+     - `delete-save` (слот, profileFolder) — удаляет файл сохранения.
 
-2. **Pinia Store** (`src/renderer/stores/saves.js`)
-   - Управляет метаданными сохранений, состоянием и связью с Main процессом через IPC.
-   - Сериализует и десериализует стейт игры.
+2. **Preload Bridge** (`src/preload/index.js`)
+   - Проксирует IPC вызовы в renderer: `window.api.listProfiles`, `createProfile`, `deleteProfile`, `saveGame`, `loadGame`, `listSaves`, `deleteSave`.
 
-3. **Компоненты Vue**
-   - Все компоненты для работы с сохранениями лежат в `src/renderer/components/saves/`.
-   - `SavesContent.vue` — Главный интерфейс со вкладками Load/Save.
-   - `SavesGrid.vue` — Сетка слотов сохранений с пагинацией.
-   - `VisualNovel.vue` содержит методы `getGameState()` и `restoreGameState(saveData)`.
+3. **Service Layer** (`src/renderer/services/saveService.js`)
+   - Чистые функции сериализации `serializeGameState`, `createSaveFile` (с полями `saveType`, `profileFolder`, `profileId`).
+   - Межпроцессные вызовы `saveService.*` с защитой от запуска вне Electron (browser fallback).
+
+4. **Pinia Store** (`src/renderer/stores/saves.js`)
+   - Реактивное состояние:
+     - `profiles` — список доступных профилей;
+     - `currentProfile` — активный профиль текущей игровой сессии;
+     - `selectedProfileFolder` — выбранный профиль в UI ('all' или имя папки);
+     - `saves` — мапа сохранений;
+     - `quickSaves`, `autoSave`, `allSaves`, `allSavesList`.
+   - Методы `createProfile`, `deleteProfile`, `selectProfile`, `saveAuto`, `saveQuick`, `saveGame`, `loadGame`, `deleteSave`.
+
+5. **Компоненты Vue** (`src/renderer/components/saves/`)
+   - `SavesGrid.vue`:
+     - Шапка выбора персонажа / профиля (Skyrim style): переключение между персонажами или просмотр всех сохранений.
+     - Кнопка удаления профиля со всеми сохранениями.
+     - Вкладка «Б»: Слот 0 с бейджем `⚡ АВТО` и слоты 1..8 `Б1..Б8`.
+     - Вкладки 1..10 для ручных слотов 1..90.
+   - `SavesContent.vue` — Вкладки Сохранить / Загрузить.
+
+6. **Оркестратор игры** (`src/renderer/composables/useGameOrchestrator.js`)
+   - `onCharCreationConfirmed({ nickname })` — после подтверждения никнейма в Yggdrasil вызывает `savesStore.createProfile(nickname)`.
+   - `onShutdownSequenceComplete()` — после перехода в Деревню Карн (`intro_carne_arrival`) автоматически делает первый автосейв созданного профиля: `savesStore.saveAuto(...)`.
+   - При старте новой игры сбрасывает `savesStore.currentProfile = null`.
+   - При загрузке сохранения восстанавливает `savesStore.currentProfile` из метаданных сейва.
 
 ## Что сохраняется
 
@@ -34,71 +76,12 @@
   storyData: {},           // Текущий JSON истории
   stepIndex: 0,            // Индекс текущего шага
   callStack: [],           // Стек вызовов для вложенных историй
-  globalData: {},          // Глобальные переменные (например, инвентарь, флаги)
-  characterData: {},       // Данные всех персонажей (статы, экипировка)
-  visibleCharacters: [],   // Массив ID отображаемых персонажей
-  currentScene: null       // ID текущей сцены (фона)
+  globalData: {},          // Глобальные переменные (календарь, квесты, энциклопедии)
+  characterDataDelta: {},  // Дельта данных персонажей относительно дефолтов
+  visibleCharacters: [],   // Отображаемые персонажи
+  currentScene: null,      // ID текущей сцены
+  currentSceneMods: [],    // Модификаторы сцены
+  audioStreams: {},        // Активные зацикленные аудиопотоки
+  uiVisibility: {}         // Видимость элементов интерфейса
 }
 ```
-
-## Для разработчиков
-
-### Использование Store
-```javascript
-import { useSavesStore } from '@/stores/saves'
-const savesStore = useSavesStore()
-
-// Сохранение
-const gameState = visualNovel.value.getGameState()
-await savesStore.saveGame(slotNumber, gameState, "ИмяИгрока")
-
-// Загрузка
-const result = await savesStore.loadGame(slotNumber)
-if (result.success) {
-  await visualNovel.value.restoreGameState(result.data.gameState)
-}
-
-// Список
-const list = await savesStore.listSaves()
-```
-
-### Service Layer API
-
-Сохранение реализовано слоистой архитектурой для тестируемости и переиспользования:
-
-**`saveService`** (`src/renderer/services/saveService.js`) — низкоуровневый модуль для работы с файлами и IPC:
-
-#### Экспортируемые функции:
-- **`createSaveFile(slotNumber, gameState, mcName, characterDefaults)`**  
-  Формирует объект `saveFile`, минимизируя данные (вычисляет дельту `characterData`).
-  
-- **`saveService.saveGame(slotNumber, saveFile)`**  
-  Вызывает `window.api.saveGame`, возвращает `{ success, data?, error? }`
-  
-- **`saveService.loadGame(slotNumber)`**  
-  Загружает сохранение по номеру слота.
-  
-- **`saveService.deleteSave(slotNumber)`**  
-  Удаляет сохранение.
-  
-- **`saveService.listSaves()`**  
-  Возвращает список всех сохранений.
-
-#### Пример использования в сторе:
-```javascript
-import { saveService, createSaveFile } from '@/services/saveService'
-
-const saveGame = async (slot, gameState, mcName, characterDefaults) => {
-  const saveFile = createSaveFile(slot, gameState, mcName, characterDefaults)
-  const result = await saveService.saveGame(slot, saveFile)
-  if (result.success) {
-    // обновляем локальное состояние стора
-  }
-}
-```
-
-**Примечание**: `saveService` не знает о Pinia; он возвращает чистые результаты IPC. Store отвечает за управление состоянием приложения.
-
-#### Тестирование:
-- `createSaveFile` и `findNonSerializable` легко тестируемы и должны иметь unit-тесты для проверки сериализации, корректной дельты `characterData` и обработки несериализуемых полей.
-

@@ -1,7 +1,7 @@
 // src/main/index.js
 
 import { app, shell, BrowserWindow, ipcMain, protocol, session } from 'electron'
-import { join } from 'path'
+import { join, normalize } from 'path'
 import fs from 'fs/promises'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer'
@@ -114,7 +114,7 @@ ipcMain.on('set-resolution', (event, resolution) => {
 	}
 })
 
-// IPC для сохранения/загрузки игры
+// IPC для сохранения/загрузки игры с поддержкой профилей персонажей (Skyrim style)
 async function getSavesDirectory() {
 	const userDir = app.getPath('userData')
 	const savesDir = join(userDir, 'saves')
@@ -126,9 +126,202 @@ async function getSavesDirectory() {
 	return savesDir
 }
 
-ipcMain.handle('save-game', async (event, slotNumber, saveFile, clipRect) => {
+function sanitizeFolderName(name) {
+	if (!name || typeof name !== 'string') return 'Player'
+	let clean = name.replace(/[\\/:*?"<>|\x00-\x1F]/g, '_').trim()
+	clean = clean.replace(/^[.\s]+|[.\s]+$/g, '')
+	return clean.slice(0, 32) || 'Player'
+}
+
+async function getNextProfileNumber(savesDir) {
+	try {
+		const entries = await fs.readdir(savesDir, { withFileTypes: true })
+		let maxNum = 0
+		for (const entry of entries) {
+			if (entry.isDirectory()) {
+				const m = entry.name.match(/^(\d+)(?:_.*)?$/)
+				if (m) {
+					const num = parseInt(m[1], 10)
+					if (!isNaN(num) && num > maxNum) {
+						maxNum = num
+					}
+				}
+			}
+		}
+		return maxNum + 1
+	} catch (err) {
+		console.warn('getNextProfileNumber error:', err)
+		return 1
+	}
+}
+
+// ── Профили сохранений ────────────────────────────────────────────────────────
+ipcMain.handle('list-profiles', async (_event) => {
 	try {
 		const savesDir = await getSavesDirectory()
+		const entries = await fs.readdir(savesDir, { withFileTypes: true })
+		const profiles = []
+
+		for (const entry of entries) {
+			if (entry.isDirectory()) {
+				const folderName = entry.name
+				const profileDirPath = join(savesDir, folderName)
+				const numMatch = folderName.match(/^(\d+)(?:_(.*))?$/)
+
+				let profileData = null
+				const profileJsonPath = join(profileDirPath, 'profile.json')
+				try {
+					const content = await fs.readFile(profileJsonPath, 'utf-8')
+					profileData = JSON.parse(content)
+				} catch {
+					profileData = {
+						id: numMatch ? parseInt(numMatch[1], 10) : profiles.length + 1,
+						folder: folderName,
+						name: numMatch && numMatch[2] ? numMatch[2] : folderName,
+						createdAt: Date.now(),
+						updatedAt: Date.now()
+					}
+				}
+
+				let saveCount = 0
+				let latestTimestamp = profileData.updatedAt || 0
+				let latestScreenshot = null
+				let latestSlot = null
+
+				try {
+					const files = await fs.readdir(profileDirPath, { withFileTypes: true })
+					for (const file of files) {
+						if (file.isFile() && file.name.endsWith('.json') && file.name !== 'profile.json') {
+							saveCount++
+							try {
+								const savePath = join(profileDirPath, file.name)
+								const sContent = await fs.readFile(savePath, 'utf-8')
+								const sData = JSON.parse(sContent)
+								if (sData.timestamp && sData.timestamp > latestTimestamp) {
+									latestTimestamp = sData.timestamp
+									latestScreenshot = sData.screenshot || null
+									latestSlot = sData.slot
+								}
+							} catch (e) {
+								console.warn(`Ошибка чтения метаданных сейва ${file.name}:`, e)
+							}
+						}
+					}
+				} catch (e) {
+					console.warn(`Ошибка чтения папки профиля ${folderName}:`, e)
+				}
+
+				profiles.push({
+					id: profileData.id ?? (numMatch ? parseInt(numMatch[1], 10) : 1),
+					folder: folderName,
+					name: profileData.name || (numMatch && numMatch[2]) || folderName,
+					createdAt: profileData.createdAt || latestTimestamp || Date.now(),
+					updatedAt: latestTimestamp || profileData.updatedAt || Date.now(),
+					saveCount,
+					latestScreenshot,
+					latestSlot
+				})
+			}
+		}
+
+		// Поддержка существующих файлов сейвов в корневой папке (legacy)
+		const rootSaves = entries.filter((e) => e.isFile() && e.name.endsWith('.json'))
+		if (rootSaves.length > 0) {
+			let latestTimestamp = 0
+			let latestScreenshot = null
+			for (const f of rootSaves) {
+				try {
+					const sPath = join(savesDir, f.name)
+					const sContent = await fs.readFile(sPath, 'utf-8')
+					const sData = JSON.parse(sContent)
+					if (sData.timestamp && sData.timestamp > latestTimestamp) {
+						latestTimestamp = sData.timestamp
+						latestScreenshot = sData.screenshot || null
+					}
+				} catch {}
+			}
+			profiles.push({
+				id: 0,
+				folder: '',
+				name: 'Общий (Legacy)',
+				createdAt: 0,
+				updatedAt: latestTimestamp || Date.now(),
+				saveCount: rootSaves.length,
+				latestScreenshot,
+				isLegacy: true
+			})
+		}
+
+		// Сортировка: самые свежие профили сверху
+		profiles.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
+		return { success: true, data: profiles }
+	} catch (error) {
+		console.error('⛔ Ошибка при получении списка профилей:', error)
+		return { success: false, error: error.message }
+	}
+})
+
+ipcMain.handle('create-profile', async (_event, characterName) => {
+	try {
+		const savesDir = await getSavesDirectory()
+		const nextNum = await getNextProfileNumber(savesDir)
+		const safeName = sanitizeFolderName(characterName)
+		const folderName = `${nextNum}_${safeName}`
+		const profileDirPath = join(savesDir, folderName)
+
+		await fs.mkdir(profileDirPath, { recursive: true })
+
+		const profileData = {
+			id: nextNum,
+			folder: folderName,
+			name: characterName ? characterName.trim() : safeName,
+			createdAt: Date.now(),
+			updatedAt: Date.now()
+		}
+
+		const profileJsonPath = join(profileDirPath, 'profile.json')
+		await fs.writeFile(profileJsonPath, JSON.stringify(profileData, null, 2), 'utf-8')
+
+		console.log(`✔ Номерной профиль создан: ${folderName}`)
+		return { success: true, data: profileData }
+	} catch (error) {
+		console.error('⛔ Ошибка при создании профиля:', error)
+		return { success: false, error: error.message }
+	}
+})
+
+ipcMain.handle('delete-profile', async (_event, profileFolder) => {
+	try {
+		if (!profileFolder) {
+			return { success: false, error: 'Не указана папка профиля' }
+		}
+		const savesDir = await getSavesDirectory()
+		const profileDirPath = join(savesDir, profileFolder)
+
+		const normalizedSaves = normalize(savesDir)
+		const normalizedTarget = normalize(profileDirPath)
+		if (!normalizedTarget.startsWith(normalizedSaves) || normalizedTarget === normalizedSaves) {
+			return { success: false, error: 'Недопустимый путь к профилю' }
+		}
+
+		await fs.rm(profileDirPath, { recursive: true, force: true })
+		console.log(`✔ Профиль удалён: ${profileFolder}`)
+		return { success: true }
+	} catch (error) {
+		console.error('⛔ Ошибка при удалении профиля:', error)
+		return { success: false, error: error.message }
+	}
+})
+
+// ── Сохранение / Загрузка игр ────────────────────────────────────────────────
+ipcMain.handle('save-game', async (event, slotNumber, saveFile, clipRect, profileFolder) => {
+	try {
+		const savesDir = await getSavesDirectory()
+		const targetFolder = profileFolder || saveFile.profileFolder || ''
+		const targetDir = targetFolder ? join(savesDir, targetFolder) : savesDir
+
+		await fs.mkdir(targetDir, { recursive: true })
+
 		const { mcName } = saveFile
 
 		// Capture window screenshot for save slot thumbnail
@@ -149,14 +342,18 @@ ipcMain.handle('save-game', async (event, slotNumber, saveFile, clipRect) => {
 			}
 		}
 
-		// Remove any existing files for this slot to avoid duplicates
+		if (targetFolder) {
+			saveFile.profileFolder = targetFolder
+		}
+
+		// Remove any existing files for this slot in targetDir to avoid duplicates
 		try {
-			const existing = await fs.readdir(savesDir, { withFileTypes: true })
+			const existing = await fs.readdir(targetDir, { withFileTypes: true })
 			for (const entry of existing) {
-				if (entry.isFile()) {
+				if (entry.isFile() && entry.name !== 'profile.json') {
 					const m = entry.name.match(/^(\d+)_/)
-					if (m && parseInt(m[1]) === slotNumber) {
-						const oldPath = join(savesDir, entry.name)
+					if (m && parseInt(m[1], 10) === slotNumber) {
+						const oldPath = join(targetDir, entry.name)
 						try {
 							await fs.unlink(oldPath)
 							console.log(`✔ Удалено старое сохранение: ${entry.name}`)
@@ -170,11 +367,26 @@ ipcMain.handle('save-game', async (event, slotNumber, saveFile, clipRect) => {
 			console.warn('Ошибка при проверке/удалении старых сохранений:', err)
 		}
 
-		const fileName = `${slotNumber}_${mcName}_${saveFile.timestampFormatted}.json`
-		const filePath = join(savesDir, fileName)
+		const safeMcName = sanitizeFolderName(mcName)
+		const fileName = `${slotNumber}_${safeMcName}_${saveFile.timestampFormatted}.json`
+		const filePath = join(targetDir, fileName)
 
 		await fs.writeFile(filePath, JSON.stringify(saveFile, null, 2), 'utf-8')
-		console.log(`✔ Сохранение создано: ${fileName}`)
+		console.log(`✔ Сохранение создано: ${fileName} в ${targetDir}`)
+
+		// Обновляем время профиля
+		if (targetFolder) {
+			try {
+				const pJsonPath = join(targetDir, 'profile.json')
+				let pData = {}
+				try {
+					pData = JSON.parse(await fs.readFile(pJsonPath, 'utf-8'))
+				} catch {}
+				pData.updatedAt = Date.now()
+				await fs.writeFile(pJsonPath, JSON.stringify(pData, null, 2), 'utf-8')
+			} catch {}
+		}
+
 		return { success: true, data: saveFile }
 	} catch (error) {
 		console.error('⛔ Ошибка при сохранении:', error)
@@ -182,71 +394,129 @@ ipcMain.handle('save-game', async (event, slotNumber, saveFile, clipRect) => {
 	}
 })
 
-ipcMain.handle('load-game', async (_event, slotNumber) => {
+ipcMain.handle('load-game', async (_event, slotNumber, profileFolder) => {
 	try {
 		const savesDir = await getSavesDirectory()
-		const entries = await fs.readdir(savesDir, { withFileTypes: true })
 
-		// Найти файл сохранения с нужным номером слота
-		const saveFile = entries.find((entry) => {
-			const nameMatch = entry.name.match(/^(\d+)_/)
-			return entry.isFile() && nameMatch && parseInt(nameMatch[1]) === slotNumber
-		})
-
-		if (!saveFile) {
-			return { success: false, error: 'Сохранение не найдено' }
+		// Если указана папка профиля, ищем сначала в ней
+		if (profileFolder) {
+			const targetDir = join(savesDir, profileFolder)
+			try {
+				const entries = await fs.readdir(targetDir, { withFileTypes: true })
+				const saveFile = entries.find((entry) => {
+					const nameMatch = entry.name.match(/^(\d+)_/)
+					return entry.isFile() && nameMatch && parseInt(nameMatch[1], 10) === slotNumber
+				})
+				if (saveFile) {
+					const filePath = join(targetDir, saveFile.name)
+					const data = await fs.readFile(filePath, 'utf-8')
+					const saveData = JSON.parse(data)
+					saveData.profileFolder = profileFolder
+					console.log(`✔ Сохранение загружено из ${profileFolder}: ${saveFile.name}`)
+					return { success: true, data: saveData }
+				}
+			} catch (e) {
+				console.warn(`Поиск в ${profileFolder} завершился с ошибкой:`, e)
+			}
 		}
 
-		const filePath = join(savesDir, saveFile.name)
-		const data = await fs.readFile(filePath, 'utf-8')
-		const saveData = JSON.parse(data)
+		// Fallback: ищем в корневой папке
+		const rootEntries = await fs.readdir(savesDir, { withFileTypes: true })
+		const rootSave = rootEntries.find((entry) => {
+			const nameMatch = entry.name.match(/^(\d+)_/)
+			return entry.isFile() && nameMatch && parseInt(nameMatch[1], 10) === slotNumber
+		})
+		if (rootSave) {
+			const filePath = join(savesDir, rootSave.name)
+			const data = await fs.readFile(filePath, 'utf-8')
+			const saveData = JSON.parse(data)
+			saveData.profileFolder = ''
+			console.log(`✔ Сохранение загружено из корня: ${rootSave.name}`)
+			return { success: true, data: saveData }
+		}
 
-		console.log(`✔ Сохранение загружено: ${saveFile.name}`)
-		return { success: true, data: saveData }
+		// Fallback: ищем во всех подпапках профилей
+		for (const entry of rootEntries) {
+			if (entry.isDirectory()) {
+				const subDir = join(savesDir, entry.name)
+				try {
+					const subEntries = await fs.readdir(subDir, { withFileTypes: true })
+					const subSave = subEntries.find((e) => {
+						const nameMatch = e.name.match(/^(\d+)_/)
+						return e.isFile() && nameMatch && parseInt(nameMatch[1], 10) === slotNumber
+					})
+					if (subSave) {
+						const filePath = join(subDir, subSave.name)
+						const data = await fs.readFile(filePath, 'utf-8')
+						const saveData = JSON.parse(data)
+						saveData.profileFolder = entry.name
+						console.log(`✔ Сохранение найдено в ${entry.name}: ${subSave.name}`)
+						return { success: true, data: saveData }
+					}
+				} catch {}
+			}
+		}
+
+		return { success: false, error: 'Сохранение не найдено' }
 	} catch (error) {
 		console.error('⛔ Ошибка при загрузке:', error)
 		return { success: false, error: error.message }
 	}
 })
 
-ipcMain.handle('list-saves', async (_event) => {
+ipcMain.handle('list-saves', async (_event, profileFolder) => {
 	try {
 		const savesDir = await getSavesDirectory()
-		const entries = await fs.readdir(savesDir, { withFileTypes: true })
-		const savesMap = new Map() // Map to track latest save per slot
+		const savesMap = new Map()
 
-		for (const entry of entries) {
-			if (entry.isFile() && entry.name.endsWith('.json')) {
-				try {
-					// Extract slot number from filename (format: {slot}_{mcName}_{timestamp}.json)
-					const nameMatch = entry.name.match(/^(\d+)_/)
-					if (!nameMatch) {
-						console.warn(`File doesn't match save pattern: ${entry.name}`)
-						continue
+		async function readSavesFromDir(dirPath, folderName) {
+			try {
+				const entries = await fs.readdir(dirPath, { withFileTypes: true })
+				for (const entry of entries) {
+					if (entry.isFile() && entry.name.endsWith('.json') && entry.name !== 'profile.json') {
+						const nameMatch = entry.name.match(/^(\d+)_/)
+						if (!nameMatch) continue
+
+						const slot = parseInt(nameMatch[1], 10)
+						const filePath = join(dirPath, entry.name)
+						try {
+							const data = await fs.readFile(filePath, 'utf-8')
+							const saveData = JSON.parse(data)
+							saveData.slot = slot
+							saveData.profileFolder = folderName || ''
+
+							const key = folderName ? `${folderName}_${slot}` : `${slot}`
+							if (!savesMap.has(key) || saveData.timestamp > savesMap.get(key).timestamp) {
+								savesMap.set(key, saveData)
+							}
+						} catch (err) {
+							console.warn(`Ошибка при чтении ${entry.name}:`, err)
+						}
 					}
+				}
+			} catch (err) {
+				console.warn(`Ошибка чтения директории ${dirPath}:`, err)
+			}
+		}
 
-					const slot = parseInt(nameMatch[1])
-					const filePath = join(savesDir, entry.name)
-					const data = await fs.readFile(filePath, 'utf-8')
-					const saveData = JSON.parse(data)
-
-					// Ensure slot number in data matches filename
-					saveData.slot = slot
-
-					// Keep only the latest save for each slot (compare timestamps)
-					if (!savesMap.has(slot) || saveData.timestamp > savesMap.get(slot).timestamp) {
-						savesMap.set(slot, saveData)
-						console.log(`✔ Loaded save from disk - slot: ${slot}, file: ${entry.name}`)
-					}
-				} catch (err) {
-					console.warn(`Ошибка при чтении ${entry.name}:`, err)
+		if (profileFolder && profileFolder !== 'all') {
+			await readSavesFromDir(join(savesDir, profileFolder), profileFolder)
+		} else {
+			// Читаем корневые и все подпапки
+			await readSavesFromDir(savesDir, '')
+			const entries = await fs.readdir(savesDir, { withFileTypes: true })
+			for (const entry of entries) {
+				if (entry.isDirectory()) {
+					await readSavesFromDir(join(savesDir, entry.name), entry.name)
 				}
 			}
 		}
 
-		// Convert map to array
-		const saves = Array.from(savesMap.values()).sort((a, b) => a.slot - b.slot)
-		console.log(`✔ Найдено ${saves.length} сохранений`)
+		const saves = Array.from(savesMap.values()).sort((a, b) => {
+			if (a.slot !== b.slot) return a.slot - b.slot
+			return b.timestamp - a.timestamp
+		})
+		console.log(`✔ Найдено ${saves.length} сохранений (фильтр: ${profileFolder || 'все'})`)
 		return { success: true, data: saves }
 	} catch (error) {
 		console.error('⛔ Ошибка при получении списка сохранений:', error)
@@ -254,25 +524,25 @@ ipcMain.handle('list-saves', async (_event) => {
 	}
 })
 
-ipcMain.handle('delete-save', async (_event, slotNumber) => {
+ipcMain.handle('delete-save', async (_event, slotNumber, profileFolder) => {
 	try {
 		const savesDir = await getSavesDirectory()
-		const entries = await fs.readdir(savesDir, { withFileTypes: true })
+		const targetDir = profileFolder ? join(savesDir, profileFolder) : savesDir
+		const entries = await fs.readdir(targetDir, { withFileTypes: true })
 
-		// Найти файл сохранения с нужным номером слота
 		const saveFile = entries.find((entry) => {
 			const nameMatch = entry.name.match(/^(\d+)_/)
-			return entry.isFile() && nameMatch && parseInt(nameMatch[1]) === slotNumber
+			return entry.isFile() && nameMatch && parseInt(nameMatch[1], 10) === slotNumber
 		})
 
 		if (!saveFile) {
 			return { success: false, error: 'Сохранение не найдено' }
 		}
 
-		const filePath = join(savesDir, saveFile.name)
+		const filePath = join(targetDir, saveFile.name)
 		await fs.unlink(filePath)
 
-		console.log(`✔ Сохранение удалено: ${saveFile.name}`)
+		console.log(`✔ Сохранение удалено: ${saveFile.name} из ${targetDir}`)
 		return { success: true }
 	} catch (error) {
 		console.error('⛔ Ошибка при удалении:', error)

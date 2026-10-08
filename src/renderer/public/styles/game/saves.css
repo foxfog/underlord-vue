@@ -32,6 +32,97 @@
 	gap: 1.2em;
 	padding-bottom: 1.5em;
 
+	.profile-selector-bar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.8em;
+		padding: 0.5em 0.8em;
+		background: rgba(22, 22, 28, 0.7);
+		border: 1px solid var(--card-border);
+		border-radius: 0.45em;
+		backdrop-filter: blur(0.5em);
+		margin-bottom: 0.2em;
+		flex-shrink: 0;
+
+		.profile-selector-left {
+			display: flex;
+			align-items: center;
+			gap: 0.6em;
+			flex-wrap: wrap;
+
+			.profile-label {
+				color: var(--color-primary-light);
+				font-family: Overlord, Kurale, sans-serif;
+				font-size: 0.95em;
+				font-weight: 500;
+				letter-spacing: 0.02em;
+			}
+
+			.profile-select {
+				background: rgba(14, 14, 18, 0.9);
+				border: 1px solid var(--card-border);
+				color: #eee;
+				font-family: Kurale, sans-serif;
+				font-size: 0.9em;
+				padding: 0.3em 1.2em 0.3em 0.7em;
+				border-radius: 0.3em;
+				cursor: pointer;
+				outline: none;
+				transition: border-color 0.2s, box-shadow 0.2s;
+
+				&:hover,
+				&:focus {
+					border-color: var(--color-primary);
+					box-shadow: 0 0 0.5em var(--color-primary-alpha);
+				}
+
+				option {
+					background: #18181c;
+					color: #eee;
+				}
+			}
+
+			.current-profile-badge {
+				background: rgba(212, 175, 55, 0.15);
+				border: 1px solid var(--color-primary);
+				color: var(--color-primary-light);
+				padding: 0.25em 0.65em;
+				border-radius: 0.3em;
+				font-family: Kurale, sans-serif;
+				font-size: 0.9em;
+				font-weight: 500;
+			}
+		}
+
+		.profile-actions {
+			display: flex;
+			align-items: center;
+			gap: 0.5em;
+
+			.delete-profile-btn {
+				background: transparent;
+				border: 1px solid rgba(194, 24, 58, 0.4);
+				color: #ff6b81;
+				font-family: Kurale, sans-serif;
+				font-size: 0.85em;
+				padding: 0.3em 0.65em;
+				border-radius: 0.3em;
+				cursor: pointer;
+				display: inline-flex;
+				align-items: center;
+				gap: 0.35em;
+				transition: all 0.2s ease;
+
+				&:hover {
+					background: rgba(194, 24, 58, 0.2);
+					border-color: rgba(194, 24, 58, 0.8);
+					box-shadow: 0 0 0.5em rgba(194, 24, 58, 0.3);
+				}
+			}
+		}
+	}
+
 	.pagination-header {
 		display: flex;
 		gap: 0.5em;
@@ -149,6 +240,31 @@
 				color: #fff;
 				font-size: 1.05em;
 				letter-spacing: 0.02em;
+				display: flex;
+				align-items: center;
+				gap: 0.4em;
+
+				.save-type-badge {
+					display: inline-block;
+					padding: 0.15em 0.45em;
+					border-radius: 0.25em;
+					font-size: 0.75em;
+					font-weight: 600;
+					text-transform: uppercase;
+					letter-spacing: 0.04em;
+
+					&.__auto {
+						background: rgba(56, 189, 248, 0.2);
+						color: #38bdf8;
+						border: 1px solid rgba(56, 189, 248, 0.5);
+					}
+
+					&.__quick {
+						background: rgba(234, 179, 8, 0.2);
+						color: #facc15;
+						border: 1px solid rgba(234, 179, 8, 0.5);
+					}
+				}
 			}
 
 			.seves-slot-meta {
@@ -159,9 +275,28 @@
 				font-size: 0.9em;
 				color: #999;
 
+				.meta-left {
+					display: flex;
+					align-items: center;
+					gap: 0.4em;
+					overflow: hidden;
+				}
+
 				.mc-name-text {
 					color: var(--color-primary-light);
 					font-weight: 500;
+					white-space: nowrap;
+					overflow: hidden;
+					text-overflow: ellipsis;
+				}
+
+				.profile-tag {
+					font-size: 0.8em;
+					color: #aaa;
+					background: rgba(255, 255, 255, 0.08);
+					padding: 0.1em 0.35em;
+					border-radius: 0.2em;
+					white-space: nowrap;
 				}
 			}
 		}

@@ -104,21 +104,32 @@ export function serializeGameState(gameState, characterDefaults = {}) {
 	return serialized
 }
 
-export function createSaveFile(slotNumber, gameState, mcName, characterDefaults = {}) {
+export function createSaveFile(
+	slotNumber,
+	gameState,
+	mcName,
+	characterDefaults = {},
+	saveType = 'manual',
+	profileFolder = null,
+	profileId = null
+) {
 	const now = new Date()
 
 	return {
 		slot: slotNumber,
+		saveType, // 'auto' | 'quick' | 'manual'
 		timestamp: now.getTime(),
 		timestampFormatted: formatTimestamp(now),
 		mcName: mcName || 'Unknown',
+		profileFolder: profileFolder || undefined,
+		profileId: profileId || undefined,
 		gameState: serializeGameState(gameState, characterDefaults)
 	}
 }
 
 // IPC wrappers and helpers. Keep these tiny so they are easy to mock in tests.
 export const saveService = {
-	async saveGame(slotNumber, saveFile, clipRect) {
+	async saveGame(slotNumber, saveFile, clipRect, profileFolder) {
 		// Ensure serializable
 		const nonSerial = findNonSerializable(saveFile)
 		if (nonSerial) {
@@ -130,7 +141,16 @@ export const saveService = {
 				'💾 saveService.saveGame - audioStreams in saveFile:',
 				Object.keys(saveFile.gameState.audioStreams || {})
 			)
-			const result = await window.api.saveGame(slotNumber, saveFile, clipRect)
+			if (!window.api?.saveGame) {
+				console.warn('window.api.saveGame not available (browser context)')
+				return { success: true, data: saveFile }
+			}
+			const result = await window.api.saveGame(
+				slotNumber,
+				saveFile,
+				clipRect,
+				profileFolder || saveFile.profileFolder
+			)
 			return result
 		} catch (err) {
 			console.error('saveService.saveGame IPC failed:', err)
@@ -138,9 +158,13 @@ export const saveService = {
 		}
 	},
 
-	async loadGame(slotNumber) {
+	async loadGame(slotNumber, profileFolder) {
 		try {
-			const result = await window.api.loadGame(slotNumber)
+			if (!window.api?.loadGame) {
+				console.warn('window.api.loadGame not available (browser context)')
+				return { success: false, error: 'API not available' }
+			}
+			const result = await window.api.loadGame(slotNumber, profileFolder)
 			return result
 		} catch (err) {
 			console.error('saveService.loadGame IPC failed:', err)
@@ -148,9 +172,13 @@ export const saveService = {
 		}
 	},
 
-	async deleteSave(slotNumber) {
+	async deleteSave(slotNumber, profileFolder) {
 		try {
-			const result = await window.api.deleteSave(slotNumber)
+			if (!window.api?.deleteSave) {
+				console.warn('window.api.deleteSave not available (browser context)')
+				return { success: true }
+			}
+			const result = await window.api.deleteSave(slotNumber, profileFolder)
 			return result
 		} catch (err) {
 			console.error('saveService.deleteSave IPC failed:', err)
@@ -158,12 +186,67 @@ export const saveService = {
 		}
 	},
 
-	async listSaves() {
+	async listSaves(profileFolder) {
 		try {
-			const result = await window.api.listSaves()
+			if (!window.api?.listSaves) {
+				console.warn('window.api.listSaves not available (browser context)')
+				return { success: true, data: [] }
+			}
+			const result = await window.api.listSaves(profileFolder)
 			return result
 		} catch (err) {
 			console.error('saveService.listSaves IPC failed:', err)
+			return { success: false, error: err.message }
+		}
+	},
+
+	async listProfiles() {
+		try {
+			if (!window.api?.listProfiles) {
+				console.warn('window.api.listProfiles not available (browser context)')
+				return { success: true, data: [] }
+			}
+			const result = await window.api.listProfiles()
+			return result
+		} catch (err) {
+			console.error('saveService.listProfiles IPC failed:', err)
+			return { success: false, error: err.message }
+		}
+	},
+
+	async createProfile(characterName) {
+		try {
+			if (!window.api?.createProfile) {
+				console.warn('window.api.createProfile not available (browser context)')
+				return {
+					success: true,
+					data: {
+						id: 1,
+						folder: `1_${characterName || 'Player'}`,
+						name: characterName || 'Player',
+						createdAt: Date.now(),
+						updatedAt: Date.now()
+					}
+				}
+			}
+			const result = await window.api.createProfile(characterName)
+			return result
+		} catch (err) {
+			console.error('saveService.createProfile IPC failed:', err)
+			return { success: false, error: err.message }
+		}
+	},
+
+	async deleteProfile(profileFolder) {
+		try {
+			if (!window.api?.deleteProfile) {
+				console.warn('window.api.deleteProfile not available (browser context)')
+				return { success: true }
+			}
+			const result = await window.api.deleteProfile(profileFolder)
+			return result
+		} catch (err) {
+			console.error('saveService.deleteProfile IPC failed:', err)
 			return { success: false, error: err.message }
 		}
 	}

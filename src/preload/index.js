@@ -11,12 +11,19 @@ const api = {
 	saveSettings: (data) => ipcRenderer.send('save-settings', data),
 	listFiles: (folderPath) => ipcRenderer.invoke('list-files', folderPath),
 	setResolution: (res) => ipcRenderer.send('set-resolution', res),
-	// Save/Load game
-	saveGame: (slotNumber, saveFile, clipRect) =>
-		ipcRenderer.invoke('save-game', slotNumber, saveFile, clipRect),
-	loadGame: (slotNumber) => ipcRenderer.invoke('load-game', slotNumber),
-	listSaves: () => ipcRenderer.invoke('list-saves'),
-	deleteSave: (slotNumber) => ipcRenderer.invoke('delete-save', slotNumber),
+	// Save/Load game & Profiles
+	saveGame: (slotNumber, saveFile, clipRect, profileFolder) =>
+		ipcRenderer.invoke('save-game', slotNumber, saveFile, clipRect, profileFolder),
+	loadGame: (slotNumber, profileFolder) =>
+		ipcRenderer.invoke('load-game', slotNumber, profileFolder),
+	listSaves: (profileFolder) => ipcRenderer.invoke('list-saves', profileFolder),
+	deleteSave: (slotNumber, profileFolder) =>
+		ipcRenderer.invoke('delete-save', slotNumber, profileFolder),
+	listProfiles: () => ipcRenderer.invoke('list-profiles'),
+	createProfile: (characterName) =>
+		ipcRenderer.invoke('create-profile', characterName),
+	deleteProfile: (profileFolder) =>
+		ipcRenderer.invoke('delete-profile', profileFolder),
 	// Data Editor IPC
 	dataEditor: {
 		getInfo: () => ipcRenderer.invoke('data-editor-get-info'),
