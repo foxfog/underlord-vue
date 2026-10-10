@@ -2,7 +2,10 @@
 
 ## Обзор
 
-Система оборудования позволяет отображать различные предметы (одежду, оружие и т.д.) поверх спрайтов персонажа. Каждый предмет может состоять из нескольких частей, которые отображаются на разных частях тела персонажа.
+Система оборудования отвечает за логическое управление экипировкой персонажей (38 слотов, индексы `L/R/LR/U`, блокировки, хват оружия, кольца) и визуальное отображение предметов (одежды, оружия и т.д.) поверх спрайтов персонажа.
+
+> 📖 **Логика слотов, блокировок, Drag&Drop и пассивок детально описана в [Advanced Equipment Manager](./AdvancedEquipmentManager.md).**
+> В текущем документе описан визуальный рендеринг спрайтов экипировки и базовые требования предметов (`lvl`, `classes`, `races`, `genders`).
 
 ## Ключевая особенность: Иерархическое отображение
 
@@ -261,6 +264,12 @@ char-part (arm_right)
 - [CharacterCanvas.vue](../../src/renderer/components/game/characters/CharacterCanvas.vue) — аппаратный рендерер персонажа и надетых слоев экипировки
 - [characterRigRenderer.js](../../src/renderer/utils/character/characterRigRenderer.js) — движок вычисления аффинных матриц трансформаций и Scene Graph
 - [equipment.js](../../src/renderer/utils/equipment.js) — утилиты расчета слотов и валидатор `canCharacterEquipItem`
+- [equipmentSlots.js](../../src/renderer/constants/equipmentSlots.js) — каталог 38 слотов, групп, алиасов и зон
+- [equipmentManager.js](../../src/renderer/utils/equipmentManager.js) — ядро логики: `planEquip`, `getSlotStates`, хват, кольца, конфликты
+- [useCharacterEquipment.js](../../src/renderer/composables/useCharacterEquipment.js) — композиция управления экипировкой персонажа
+- [useEquipPrompt.js](../../src/renderer/composables/useEquipPrompt.js) — стейт промежуточного DnD-попапа опций экипировки
+- [useLearnedSkills.js](../../src/renderer/composables/useLearnedSkills.js) — реактивный источник выученных пассивок
+- [EquipOptionsPopup.vue](../../src/renderer/components/game/inventory/EquipOptionsPopup.vue) — всплывающее микро-окно с галочками (хват, LR, подтверждение снятия)
 - [InventoryContextMenu.vue](../../src/renderer/components/game/inventory/InventoryContextMenu.vue) — контекстное меню экипировки с проверкой требований
-- [InventoryItems.vue](../../src/renderer/components/game/inventory/InventoryItems.vue) — сетка инвентаря и DND экипировки
+- [InventoryItems.vue](../../src/renderer/components/game/inventory/InventoryItems.vue) — сетка инвентаря, paper-doll слоты и DND экипировки
 - [ItemInfoModal.vue](../../src/renderer/components/game/inventory/ItemInfoModal.vue) — модальное окно деталей предмета и его требований

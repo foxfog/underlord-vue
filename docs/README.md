@@ -22,6 +22,7 @@
 * [Система Сохранений (Save System)](./systems/SaveSystem.md)
 * [Инвентарь и Контекстное меню](./systems/Inventory.md)
 * [Система Экипировки (Equipment System)](./systems/EquipmentSystem.md)
+* [Продвинутый менеджер экипировки (Advanced Equipment Manager)](./systems/AdvancedEquipmentManager.md)
 * [Энциклопедия и Журнал персонажей (Encyclopedia & Characters)](./systems/EncyclopediaSystem.md)
 * [Система распорядка дня и присутствия NPC (NPC Schedule & Presence)](./systems/NPCScheduleSystem.md)
 * [Изометрические локации и тактическая система (Isometric 2.5D System)](./systems/IsometricSystem.md)

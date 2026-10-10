@@ -147,7 +147,7 @@
     ],
     "rarity": "common",
     "stackable": false,
-    "weight": 2.0,
+    "weight": 2,
     "stats": {
       "attack": 14
     },
@@ -198,5 +198,64 @@
       "stiletto_fire_burst"
     ],
     "description": "Кинжал-стилет, зачарованный главным придворным магом Империи Багарут Флюдером Парадайном по заказу Момона (Аинза)."
+  },
+  {
+    "id": "swimsuit_onepiece",
+    "name": "Сплошной купальник",
+    "equipSlot": "top_underwear",
+    "equipIndex": "U",
+    "blocksSlots": [
+      "bottom_underwear"
+    ],
+    "stackable": false,
+    "weight": 0.2
+  },
+  {
+    "id": "iron_ring",
+    "name": "Железное кольцо",
+    "equipSlot": "ring",
+    "equipIndex": "U",
+    "stackable": false,
+    "weight": 0.05,
+    "stats": {
+      "defense": 1
+    }
+  },
+  {
+    "id": "silver_ring",
+    "name": "Серебряное кольцо",
+    "equipSlot": "ring",
+    "equipIndex": "U",
+    "stackable": false,
+    "weight": 0.05,
+    "stats": {
+      "mp": 3
+    }
+  },
+  {
+    "id": "greatsword_iron",
+    "name": "Железный двуручный меч",
+    "equipSlot": "hand",
+    "equipIndex": "U",
+    "isTwoHanded": true,
+    "oneHandedDebuff": {
+      "p_atk_mult": -0.2
+    },
+    "stackable": false,
+    "weight": 6,
+    "stats": {
+      "attack": 12
+    }
+  },
+  {
+    "id": "work_gloves",
+    "name": "Рабочие перчатки",
+    "equipSlot": "glove",
+    "equipIndex": "LR",
+    "stackable": false,
+    "weight": 0.4,
+    "stats": {
+      "defense": 1
+    }
   }
 ]

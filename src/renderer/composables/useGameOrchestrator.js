@@ -39,6 +39,7 @@ import { useScreenshotMode } from '@/composables/useScreenshotMode'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import { useGameOverlay } from '@/composables/useGameOverlay'
 import { useCharacterEquipment } from '@/composables/useCharacterEquipment'
+import { useLearnedSkills } from '@/composables/useLearnedSkills'
 import {
 	useRegisterModal,
 	handleEscape,
@@ -672,18 +673,22 @@ export function useGameOrchestrator({ visualNovelRef, dynamicContentAreaRef }) {
 		}
 	}
 
+	const learnedSkills = useLearnedSkills(mcCharacter, 'mc')
+
 	const {
 		handleEquip,
 		handleUnequip,
 		handleSwap,
 		handleDrop,
-		rebuildEquipmentBySlot
+		rebuildEquipmentBySlot,
+		syncEquipmentState
 	} = useCharacterEquipment(
 		mcCharacter,
 		itemsData,
 		gameState,
 		playClothSound,
-		() => syncEquipmentToScene('mc')
+		() => syncEquipmentToScene('mc'),
+		() => learnedSkills.value
 	)
 
 	function onEquipItem(payload) {
@@ -695,6 +700,8 @@ export function useGameOrchestrator({ visualNovelRef, dynamicContentAreaRef }) {
 		() => mcCharacter.value?.equipment_slots,
 		(newSlots) => {
 			if (!newSlots) return
+			// Legacy slot names (stories/saves), missing slots, locked rings, lost grip skill...
+			syncEquipmentState()
 			const str = JSON.stringify(newSlots)
 			if (str === lastEquipmentSlotsStr) return
 			lastEquipmentSlotsStr = str
@@ -708,8 +715,19 @@ export function useGameOrchestrator({ visualNovelRef, dynamicContentAreaRef }) {
 				isSyncingEquipment = false
 			}
 		},
+		{ deep: true, immediate: true }
+	)
+
+	// Skill / talent / item-data changes can close ring slots, remove the one-handed grip
+	// or reveal blocked slots: the manager moves illegal gear back into the inventory.
+	watch(
+		[learnedSkills, itemsData],
+		() => {
+			syncEquipmentState()
+		},
 		{ deep: true }
 	)
+
 
 	function handleItemEquippedEvent(payload) {
 		const detail = payload?.detail || payload

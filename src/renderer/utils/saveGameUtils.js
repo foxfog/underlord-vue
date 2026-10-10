@@ -56,6 +56,16 @@ export function extractDelta(
 		return out
 	}
 
+	// Specific sanitizer for equipment_meta: { [primarySlot]: { spans, grip, debuffActive } }
+	function sanitizeEquipmentMeta(meta) {
+		if (!meta || typeof meta !== 'object') return undefined
+		try {
+			return JSON.parse(JSON.stringify(meta))
+		} catch (err) {
+			return undefined
+		}
+	}
+
 	// Specific sanitizer for inventory with items array
 	function sanitizeInventory(inventory) {
 		if (!inventory || typeof inventory !== 'object') return inventory
@@ -125,6 +135,11 @@ export function extractDelta(
 	// Также проверяем свойства, которые могли быть добавлены динамически в current, но отсутствуют в defaults
 	for (const key in current) {
 		if (excludeKeys.includes(key) || key in defaults || key in delta) {
+			continue
+		}
+		if (key === 'equipment_meta') {
+			const meta = sanitizeEquipmentMeta(current[key])
+			if (meta && Object.keys(meta).length > 0) delta[key] = meta
 			continue
 		}
 		delta[key] = sanitizeForSave(current[key])

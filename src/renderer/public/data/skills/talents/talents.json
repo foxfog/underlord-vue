@@ -29,5 +29,25 @@
     "data": {
       "reveal_magic_tier": true
     }
+  },
+  {
+    "id": "ring_bearer",
+    "name": "Носитель колец",
+    "icon": "💍",
+    "category": "passive",
+    "description": "Редкий талант: тело способно удерживать магический резонанс сразу десяти колец. Открывает дополнительные 8 слотов для колец (всего 10).",
+    "data": {
+      "ring_slots_bonus": 8
+    }
+  },
+  {
+    "id": "two_handed_one_grip",
+    "name": "Хват одной рукой",
+    "icon": "🤲",
+    "category": "passive",
+    "description": "Позволяет держать двуручное оружие одной рукой ценой штрафа к урону оружия (по умолчанию −20% физ. атаки).",
+    "data": {
+      "two_handed_one_grip": true
+    }
   }
 ]

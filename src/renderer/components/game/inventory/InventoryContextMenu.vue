@@ -37,6 +37,8 @@ import ConfirmModal from '@/components/ConfirmModal.vue'
 import DropQuantityModal from './DropQuantityModal.vue'
 import ItemInfoModal from './ItemInfoModal.vue'
 import { canCharacterEquipItem } from '@/utils/equipment'
+import { getSlotLabel } from '@/constants/equipmentSlots'
+import { resolveItemPlacement } from '@/utils/equipmentManager'
 
 const props = defineProps({
 	character: { type: Object, default: null },
@@ -85,6 +87,9 @@ const currentSlot = ref(null)
 const currentInventoryIndex = ref(null)
 
 function getSlotDisplayName(slot) {
+	if (!slot) return ''
+	const label = getSlotLabel(slot)
+	if (label) return label
 	return slotNames[slot] || slot.charAt(0).toUpperCase() + slot.slice(1)
 }
 
@@ -144,16 +149,48 @@ const currentActions = computed(() => {
 	}
 
 	// Опции одевания - только для предметов в инвентаре, которые можно экипировать
-	if (currentItemSource.value === 'inventory' && itemDef?.slot && canEquip) {
-		const slots = Array.isArray(itemDef.slot) ? itemDef.slot : [itemDef.slot]
+	if (currentItemSource.value === 'inventory' && canEquip) {
+		const placement = resolveItemPlacement(itemDef)
+		if (placement) {
+			if (placement.candidates.length === 1) {
+				const slot = placement.candidates[0]
+				result.push({
+					label: `Одеть на ${getSlotDisplayName(slot)}`,
+					action: 'equip',
+					slot
+				})
+			} else if (placement.pair) {
+				result.push({
+					label: 'Одеть (пара)',
+					action: 'equip',
+					slot: placement.candidates[0]
+				})
+			} else if (placement.group === 'ring') {
+				result.push({
+					label: 'Надеть кольцо',
+					action: 'equip',
+					slot: null
+				})
+			} else {
+				for (const slot of placement.candidates) {
+					result.push({
+						label: `Одеть на ${getSlotDisplayName(slot)}`,
+						action: 'equip',
+						slot
+					})
+				}
+			}
+		} else if (itemDef?.slot) {
+			const slots = Array.isArray(itemDef.slot) ? itemDef.slot : [itemDef.slot]
 
-		for (const slot of slots) {
-			const slotDisplayName = getSlotDisplayName(slot)
-			result.push({
-				label: `Одеть на ${slotDisplayName}`,
-				action: 'equip',
-				slot: slot
-			})
+			for (const slot of slots) {
+				const slotDisplayName = getSlotDisplayName(slot)
+				result.push({
+					label: `Одеть на ${slotDisplayName}`,
+					action: 'equip',
+					slot: slot
+				})
+			}
 		}
 	}
 

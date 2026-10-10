@@ -403,6 +403,67 @@ export function parseStatsModifier(source) {
 	return result
 }
 
+/** Debuff stat aliases used in item `oneHandedDebuff` (e.g. `p_atk_mult`). */
+const DEBUFF_STAT_ALIASES = {
+	p_atk: 'atk_phys',
+	p_def: 'def_phys',
+	m_atk: 'atk_mag',
+	m_def: 'def_mag'
+}
+
+/**
+ * Applies a temporary item debuff (`item.debuffActive === true`, set by the equipment manager when a
+ * two-handed weapon is held in one hand). Every `<stat>_mult` of `item.oneHandedDebuff`
+ * (default `{ p_atk_mult: -0.2 }`) multiplies the item's positive stats of that stat by `1 + mult`.
+ * Returns the original item when no debuff is active; never mutates the input.
+ *
+ * @param {Object} item - Equipment item (definition or instance)
+ * @returns {Object}
+ */
+export function applyEquipmentDebuffs(item) {
+	if (!item || typeof item !== 'object' || item.debuffActive !== true) return item
+
+	const debuff =
+		item.oneHandedDebuff && typeof item.oneHandedDebuff === 'object'
+			? item.oneHandedDebuff
+			: { p_atk_mult: -0.2 }
+	const multipliers = {}
+	for (const [key, raw] of Object.entries(debuff)) {
+		if (!key.endsWith('_mult')) continue
+		const base = key.slice(0, -5).toLowerCase()
+		const stat = DEBUFF_STAT_ALIASES[base] || normalizeStatName(base)
+		const delta = Number(raw)
+		if (!stat || !Number.isFinite(delta)) continue
+		multipliers[stat] = (multipliers[stat] ?? 1) * Math.max(0, 1 + delta)
+	}
+	if (!Object.keys(multipliers).length) return item
+
+	const scalePool = (pool) => {
+		if (!pool || typeof pool !== 'object') return pool
+		const out = { ...pool }
+		for (const [rawKey, rawVal] of Object.entries(pool)) {
+			const lower = rawKey.toLowerCase().replace(/-/g, '_')
+			const stat = normalizeStatName(lower.replace(/(_percent|_pct)$/, ''))
+			const mult = stat ? multipliers[stat] : undefined
+			if (mult === undefined) continue
+			if (typeof rawVal === 'string' && rawVal.includes('%')) {
+				const n = parseFloat(rawVal.replace('%', ''))
+				if (n > 0) out[rawKey] = `${Math.round(n * mult * 100) / 100}%`
+			} else {
+				const n = parseFloat(rawVal)
+				if (n > 0) out[rawKey] = Math.round(n * mult * 100) / 100
+			}
+		}
+		return out
+	}
+
+	const copy = { ...item }
+	if (item.stats) copy.stats = scalePool(item.stats)
+	if (item.data?.stats) copy.data = { ...item.data, stats: scalePool(item.data.stats) }
+	return copy
+}
+
+
 /**
  * Resolves starting base_stats and attribute_converters for a race.
  * Provides guaranteed fallback values for all 114 races without throwing errors.
@@ -625,7 +686,7 @@ export function calculateCharacterStats({
 
 	// Parse modifiers from all sources
 	const parsedPassives = (learnedSkills || []).map(parseStatsModifier)
-	const parsedEquip = (equipmentItems || []).map(parseStatsModifier)
+	const parsedEquip = (equipmentItems || []).map(applyEquipmentDebuffs).map(parseStatsModifier)
 	const parsedBuffs = (buffs || []).map(parseStatsModifier)
 
 	// Sum attributes by source

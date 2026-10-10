@@ -29,6 +29,7 @@
 						:items="effectiveCharacter?.inventory?.items || []"
 						:items-data="propsItemsData"
 						:equipment-slots="equipmentSlots"
+						:learned-skills="learnedSkills"
 						@equip="(e) => emit('equip', e)"
 						@unequip="(e) => emit('unequip', e)"
 						@swap="(e) => emit('swap', e)"
@@ -55,6 +56,7 @@ import { resolveEquippedSkills } from '@/utils/itemSkills.js'
 import itemSkillsData from '@data/skills/items/items.json'
 import { resolveCharacterTalents } from '@/utils/talents.js'
 import talentsData from '@data/skills/talents/talents.json'
+import { useLearnedSkills } from '@/composables/useLearnedSkills'
 
 const gameStore = useGameStore()
 
@@ -76,6 +78,8 @@ const props = defineProps({
 const effectiveCharacter = computed(() => {
 	return props.character || gameStore.characterData?.mc || {}
 })
+
+const learnedSkills = useLearnedSkills(effectiveCharacter, 'mc')
 
 const emit = defineEmits(['close', 'equip', 'unequip', 'swap', 'drop'])
 

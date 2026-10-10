@@ -1,5 +1,5 @@
 <template>
-	<div class="tab-content-item inventory-layout">
+	<div ref="layoutRef" class="tab-content-item inventory-layout">
 		<InventoryContextMenu
 			:character="character"
 			:items-data="itemsData"
@@ -10,47 +10,91 @@
 			@drop="handleContextMenuDrop"
 			ref="contextMenu"
 		/>
+		<EquipOptionsPopup :items-data="itemsData" />
 		<div class="left-panel">
 			<div class="char-preview">
 				<Character :character="characterPreview" />
 			</div>
-			<div class="equipment-grid">
-				<div
-					v-for="(value, slot) in allAvailableSlots"
-					:key="slot"
-					class="inventory-grid-item"
-				>
-					<div class="inventory-grid-slot" :data-slot="slot" data-panel="equipment">
-						<div
-							v-if="value"
-							class="inventory-item draggable-item"
-							:data-item-id="value"
-							:data-from="slot"
-							:data-type="'slot'"
-							touch-action="none"
-							@mouseenter="onItemHover(value)"
-							@mouseleave="onItemLeave"
-							@contextmenu.prevent="showEquipmentContextMenu($event, value, slot)"
-						>
-							<div class="inventory-item-content">
-								<div class="item-badges" v-if="!isItemIdDroppable(value) || !isItemIdEquippable(value)">
-									<span v-if="!isItemIdDroppable(value)" class="item-badge _undroppable" title="Нельзя выбросить">
-										🔒
-									</span>
-									<span v-if="!isItemIdEquippable(value)" class="item-badge _unequippable" title="Нельзя снять">
-										🚫
-									</span>
+			<div class="equipment-zones">
+				<div v-for="zone in slotZones" :key="zone.id" class="equipment-zone">
+					<div class="equipment-zone-title">{{ zone.label }}</div>
+					<div class="equipment-grid">
+						<div v-for="cell in zone.cells" :key="cell.slot" class="inventory-grid-item">
+							<div
+								class="inventory-grid-slot"
+								:class="cell.classes"
+								:data-slot="cell.slot"
+								:title="cell.title"
+								data-panel="equipment"
+							>
+								<div
+									v-if="cell.itemId && !cell.isMirror"
+									class="inventory-item draggable-item"
+									:data-item-id="cell.itemId"
+									:data-from="cell.slot"
+									:data-type="'slot'"
+									touch-action="none"
+									@mouseenter="onItemHover(cell.itemId)"
+									@mouseleave="onItemLeave"
+									@contextmenu.prevent="showEquipmentContextMenu($event, cell.itemId, cell.slot)"
+								>
+									<div class="inventory-item-content">
+										<div
+											class="item-badges"
+											v-if="!isItemIdDroppable(cell.itemId) || !isItemIdEquippable(cell.itemId)"
+										>
+											<span
+												v-if="!isItemIdDroppable(cell.itemId)"
+												class="item-badge _undroppable"
+												title="Нельзя выбросить"
+											>
+												🔒
+											</span>
+											<span
+												v-if="!isItemIdEquippable(cell.itemId)"
+												class="item-badge _unequippable"
+												title="Нельзя снять"
+											>
+												🚫
+											</span>
+										</div>
+										<div v-if="getItemSprite(cell.itemId)" class="item-icon">
+											<img :src="getItemSprite(cell.itemId)" :alt="getItemName(cell.itemId)" />
+										</div>
+										<div v-else class="item-icon">📦</div>
+										<div class="item-info">
+											<div class="item-name">{{ getItemName(cell.itemId) }}</div>
+										</div>
+									</div>
 								</div>
-								<div v-if="getItemSprite(value)" class="item-icon">
-									<img :src="getItemSprite(value)" :alt="getItemName(value)" />
+								<div
+									v-else-if="cell.itemId"
+									class="inventory-item _mirror"
+									@contextmenu.prevent="
+										showEquipmentContextMenu($event, cell.itemId, cell.primarySlot)
+									"
+								>
+									<div class="inventory-item-content">
+										<div v-if="getItemSprite(cell.itemId)" class="item-icon">
+											<img :src="getItemSprite(cell.itemId)" :alt="getItemName(cell.itemId)" />
+										</div>
+										<div v-else class="item-icon">📦</div>
+										<div class="item-info">
+											<div class="item-name">{{ getItemName(cell.itemId) }}</div>
+										</div>
+									</div>
+									<span class="slot-pair-badge" title="Парный слот">🔗</span>
 								</div>
-								<div v-else class="item-icon">📦</div>
-								<div class="item-info">
-									<div class="item-name">{{ getItemName(value) }}</div>
+								<div v-else class="inventory-slot-empty">{{ cell.label }}</div>
+
+								<div v-if="cell.status === 'locked'" class="slot-overlay _locked">
+									<span class="slot-overlay-icon">🔒</span>
+								</div>
+								<div v-else-if="cell.status === 'blocked'" class="slot-overlay _blocked">
+									<span class="slot-overlay-icon">⛔</span>
 								</div>
 							</div>
 						</div>
-						<div v-else class="inventory-slot-empty">{{ slot }}</div>
 					</div>
 				</div>
 			</div>
@@ -168,17 +212,29 @@
 import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
 import Character from '../characters/Character.vue'
 import InventoryContextMenu from './InventoryContextMenu.vue'
+import EquipOptionsPopup from './EquipOptionsPopup.vue'
 import interact from 'interactjs'
 import { canCharacterEquipItem } from '@/utils/equipment'
+import {
+	getItemSlotRefs,
+	getSlotStates,
+	planEquip,
+	resolveItemPlacement
+} from '@/utils/equipmentManager'
+import { SLOT_ZONES, getSlotLabel, getSlotShortLabel } from '@/constants/equipmentSlots'
 
 const props = defineProps({
 	character: { type: Object, default: null },
 	items: { type: Array, default: () => [] },
 	itemsData: { type: Object, default: () => ({}) },
-	equipmentSlots: { type: Object, default: () => ({}) }
+	equipmentSlots: { type: Object, default: () => ({}) },
+	learnedSkills: { type: Array, default: () => [] }
 })
 
 const emit = defineEmits(['drag-inventory-drop', 'equip', 'unequip', 'swap', 'drop'])
+
+const layoutRef = ref(null)
+let lastPointer = { x: 0, y: 0 }
 
 const contextMenu = ref(null)
 
@@ -233,10 +289,37 @@ function setFilter(value) {
 	currentPage.value = 1
 }
 
-const allAvailableSlots = computed(() => {
-	if (!props.character?.equipment_slots) return {}
-	return props.character.equipment_slots
-})
+const slotStates = computed(() =>
+	getSlotStates(props.character, props.itemsData, props.learnedSkills)
+)
+
+/** slot -> itemId (a mirrored pair slot reports the pair item as well). */
+const allAvailableSlots = computed(() =>
+	Object.fromEntries(Object.values(slotStates.value).map((s) => [s.slot, s.itemId]))
+)
+
+function buildSlotCell(slot) {
+	const st = slotStates.value[slot]
+	const isMirror = Boolean(st.mirrorOf)
+	let title = getSlotLabel(slot)
+	if (st.status === 'locked') title = `${title}: ${st.lockedReason}`
+	else if (st.status === 'blocked') title = `${title}: заблокировано «${getItemName(st.blockedBy)}»`
+	else if (st.itemId) title = `${getItemName(st.itemId)}${isMirror ? ' (парный слот)' : ''}`
+	return {
+		slot,
+		status: st.status,
+		itemId: st.itemId,
+		isMirror,
+		primarySlot: st.primarySlot,
+		label: getSlotShortLabel(slot),
+		title,
+		classes: [`slot-${st.status}`, { 'slot-mirror': isMirror, 'slot-conflict': st.conflict }]
+	}
+}
+
+const slotZones = computed(() =>
+	SLOT_ZONES.map((zone) => ({ ...zone, cells: zone.slots.map(buildSlotCell) }))
+)
 
 const characterPreview = computed(() => {
 	if (!props.character) return null
@@ -319,7 +402,7 @@ function getItemTags(id) {
 
 function isEquipmentItem(id) {
 	const def = props.itemsData[id]
-	return !!def?.slot
+	return getItemSlotRefs(def).length > 0
 }
 
 function matchesFilter(item) {
@@ -347,10 +430,20 @@ function getItemSlots(itemId) {
 		console.warn(`Item ${itemId} not found in itemsData!`)
 		return []
 	}
-	const slot = def.slot
-	if (Array.isArray(slot)) return slot
-	if (slot) return [slot]
-	return []
+	return resolveItemPlacement(def)?.candidates || []
+}
+
+/** Popup anchor in `em` relative to the inventory layout (last pointer position). */
+function getPopupAnchor() {
+	const layout = layoutRef.value
+	if (!layout) return null
+	const rect = layout.getBoundingClientRect()
+	const fontPx = parseFloat(getComputedStyle(layout).fontSize) || 16
+	const scale = layout.offsetWidth ? rect.width / layout.offsetWidth : 1
+	return {
+		x: (lastPointer.x - rect.left) / scale / fontPx,
+		y: (lastPointer.y - rect.top) / scale / fontPx
+	}
 }
 
 function showEquipmentContextMenu(event, itemId, slot) {
@@ -362,7 +455,7 @@ function showInventoryContextMenu(event, itemId, inventoryIndex) {
 }
 
 function handleContextMenuEquip({ itemId, slot, inventoryIndex }) {
-	emit('equip', { slot, itemId, inventoryIndex })
+	emit('equip', { slot, itemId, inventoryIndex, anchor: getPopupAnchor() })
 }
 
 function handleContextMenuUnequip({ slot, itemId, stackable }) {
@@ -397,7 +490,7 @@ function highlightCompatibleSlots(itemId) {
 
 	document.querySelectorAll('.left-panel .inventory-grid-slot').forEach((slot) => {
 		const slotName = slot.getAttribute('data-slot')
-		if (compatibleSlots.includes(slotName)) {
+		if (compatibleSlots.includes(slotName) && slotStates.value[slotName]?.status !== 'locked') {
 			slot.classList.add('compatible')
 			slot.classList.remove('incompatible')
 		} else {
@@ -444,6 +537,8 @@ function isDropAllowed(targetSlot, targetPanel) {
 	}
 
 	if (targetPanel === 'equipment') {
+		if (slotStates.value[targetSlot]?.status === 'locked') return false
+
 		const invItem = props.items.find(
 			(item) => item && item.itemId === draggedItemId.value
 		)
@@ -455,6 +550,17 @@ function isDropAllowed(targetSlot, targetPanel) {
 		const compatibleSlots = getItemSlots(draggedItemId.value)
 		if (!compatibleSlots.includes(targetSlot)) {
 			return false
+		}
+
+		if (draggedFromType.value === 'item') {
+			const plan = planEquip({
+				character: props.character,
+				itemsData: props.itemsData,
+				learnedSkills: props.learnedSkills,
+				itemId: draggedItemId.value,
+				slot: targetSlot
+			})
+			return plan.ok
 		}
 
 		if (draggedFromType.value === 'slot') {
@@ -667,7 +773,7 @@ function setupDragAndDrop() {
 					const inventoryIndex = props.items.findIndex(
 						(item) => item && item.itemId === draggedItemId.value
 					)
-					emit('equip', { slot, itemId: draggedItemId.value, inventoryIndex })
+					emit('equip', { slot, itemId: draggedItemId.value, inventoryIndex, anchor: getPopupAnchor() })
 				} else if (draggedFromType.value === 'slot' && targetPanel === 'equipment') {
 					const fromItemId = draggedItemId.value
 					const fromSlot = draggedFromSlot.value
@@ -729,18 +835,32 @@ function cleanupDragAndDrop() {
 	}
 }
 
+function trackPointer(event) {
+	lastPointer = { x: event.clientX, y: event.clientY }
+}
+
 onMounted(() => {
+	window.addEventListener('pointermove', trackPointer, true)
+	window.addEventListener('pointerdown', trackPointer, true)
 	setTimeout(() => {
 		setupDragAndDrop()
 	}, 100)
 })
 
 onBeforeUnmount(() => {
+	window.removeEventListener('pointermove', trackPointer, true)
+	window.removeEventListener('pointerdown', trackPointer, true)
 	cleanupDragAndDrop()
 })
 
 watch(
-	() => [props.items, props.equipmentSlots],
+	() => [
+		props.items,
+		props.equipmentSlots,
+		props.character?.equipment_slots,
+		props.character?.equipment_meta,
+		props.learnedSkills
+	],
 	() => {
 		cleanupDragAndDrop()
 		setTimeout(() => {
@@ -749,4 +869,5 @@ watch(
 	},
 	{ deep: true }
 )
+
 </script>
