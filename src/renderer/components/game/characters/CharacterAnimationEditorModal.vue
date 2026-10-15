@@ -368,6 +368,43 @@
 									</div>
 								</div>
 
+								<!-- Screen Angle Slider (-85 to 85) -->
+								<div class="cae-control-item">
+									<div class="cae-ci-label-row">
+										<label>Угол к экрану (Screen Angle / Depth):</label>
+										<span class="cae-ci-val">{{ Math.round(track.keyframes[activeKeyframeIndex].transform.screenAngle || 0) }}°</span>
+									</div>
+									<div class="cae-slider-input-row">
+										<input
+											v-model.number="track.keyframes[activeKeyframeIndex].transform.screenAngle"
+											type="range"
+											min="-85"
+											max="85"
+											step="1"
+											class="cae-range"
+											@input="triggerKeyframePreview(track)"
+										/>
+										<input
+											v-model.number="track.keyframes[activeKeyframeIndex].transform.screenAngle"
+											type="number"
+											min="-85"
+											max="85"
+											step="1"
+											class="cae-number-input"
+											@input="triggerKeyframePreview(track)"
+										/>
+										<button
+											type="button"
+											class="cae-micro-btn"
+											title="Сброс в 0°"
+											@click="track.keyframes[activeKeyframeIndex].transform.screenAngle = 0; triggerKeyframePreview(track)"
+										>
+											0°
+										</button>
+									</div>
+									<span class="cae-field-hint">💡 Задаёт наклон плоскости вращения к экрану (для кукол полубоком или вытягивания руки к зрителю)</span>
+								</div>
+
 								<!-- Translate X Slider (-500% to 500%) -->
 								<div class="cae-control-item">
 									<div class="cae-ci-label-row">
@@ -704,6 +741,9 @@
 								<button type="button" class="cae-mini-btn" @click="loadScriptTemplate('breathing')">
 									🫁 Дыхание
 								</button>
+								<button type="button" class="cae-mini-btn" @click="loadScriptTemplate('breathing_heavy')">
+									😮‍💨 Запыханное
+								</button>
 							</div>
 						</div>
 
@@ -954,14 +994,14 @@ function addTrack(partName) {
 		keyframes: [
 			{
 				time: 0,
-				transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1, rotateY: 0, rotateX: 0, opacity: 1 },
+				transform: { rotate: 0, screenAngle: 0, translateX: 0, translateY: 0, scale: 1, rotateY: 0, rotateX: 0, opacity: 1 },
 				sprite: null,
 				customCss: '',
 				easing: 'ease-in-out'
 			},
 			{
 				time: Number((localAnim.value.duration || 1.0).toFixed(2)),
-				transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1, rotateY: 0, rotateX: 0, opacity: 1 },
+				transform: { rotate: 0, screenAngle: 0, translateX: 0, translateY: 0, scale: 1, rotateY: 0, rotateX: 0, opacity: 1 },
 				sprite: null,
 				customCss: '',
 				easing: 'ease-in-out'
@@ -1008,7 +1048,7 @@ function addKeyframeAtCurrentTime(track) {
 
 	const newKf = {
 		time,
-		transform: { rotate: 0, translateX: 0, translateY: 0, scale: 1, rotateY: 0, rotateX: 0, opacity: 1 },
+		transform: { rotate: 0, screenAngle: 0, translateX: 0, translateY: 0, scale: 1, rotateY: 0, rotateX: 0, opacity: 1 },
 		sprite: null,
 		customCss: '',
 		easing: 'ease-in-out'
@@ -1080,8 +1120,11 @@ function loadScriptTemplate(name) {
 		localAnim.value.duration = 1.0
 		localAnim.value.script.code = `// Дрожь / тремор:\nconst jitter = (random() - 0.5) * 4;\nreturn {\n  body: { rot: jitter * 0.5, x: jitter * 0.5, y: jitter * 0.5 },\n  head: { rot: jitter }\n};`
 	} else if (name === 'breathing') {
-		localAnim.value.duration = 2.0
-		localAnim.value.script.code = `// Плавное ритмичное дыхание:\nconst breath = sin(progress * 2 * PI);\nreturn {\n  body: { rot: breath * 0.4, y: -0.6 * (breath + 1) },\n  head: { rot: -breath * 0.3 }\n};`
+		localAnim.value.duration = 3.2
+		localAnim.value.script.code = `// Плавное ритмичное спокойное дыхание:\nconst breath = sin(progress * 2 * PI);\nreturn {\n  body: { rot: breath * 0.4, y: -0.6 * (breath + 1) },\n  head: { rot: -breath * 0.3 }\n};`
+	} else if (name === 'breathing_heavy') {
+		localAnim.value.duration = 1.2
+		localAnim.value.script.code = `// Учащенное глубокое запыханное дыхание:\nconst breath = sin(progress * 2 * PI);\nreturn {\n  body: { rot: breath * 0.8, y: -1.8 * (breath + 1) },\n  head: { rot: -breath * 0.5, y: breath * 0.8 }\n};`
 	}
 	onScriptEdited()
 }

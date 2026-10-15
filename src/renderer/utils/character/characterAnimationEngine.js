@@ -52,6 +52,15 @@ export function parseTransformString(transformStr) {
 		result.rotate = val
 	}
 
+	// screenAngle(30deg) or depthAngle(30)
+	const saMatch = transformStr.match(/(?:screenAngle|depthAngle)\(\s*(-?[\d.]+)(deg|rad|turn)?\s*\)/i)
+	if (saMatch) {
+		let val = parseFloat(saMatch[1]) || 0
+		if (saMatch[2] === 'rad') val = (val * 180) / Math.PI
+		else if (saMatch[2] === 'turn') val = val * 360
+		result.screenAngle = val
+	}
+
 	// scale(1.05) or scale(1.05, 1.05)
 	const sMatch = transformStr.match(/scale\(\s*(-?[\d.]+)(?:\s*,\s*(-?[\d.]+))?\s*\)/i)
 	if (sMatch) {
@@ -163,6 +172,7 @@ export function interpolateTrackKeyframes(keyframes, localTime) {
 		const tr = kf.transform || kf
 		return {
 			rotate: tr.rotate ?? tr.rot ?? 0,
+			screenAngle: tr.screenAngle ?? tr.screen_angle ?? tr.depthAngle ?? 0,
 			translateX: tr.translateX ?? tr.x ?? 0,
 			translateY: tr.translateY ?? tr.y ?? 0,
 			scale: tr.scale ?? 1,
@@ -181,6 +191,7 @@ export function interpolateTrackKeyframes(keyframes, localTime) {
 		const tr = last.transform || last
 		return {
 			rotate: tr.rotate ?? tr.rot ?? 0,
+			screenAngle: tr.screenAngle ?? tr.screen_angle ?? tr.depthAngle ?? 0,
 			translateX: tr.translateX ?? tr.x ?? 0,
 			translateY: tr.translateY ?? tr.y ?? 0,
 			scale: tr.scale ?? 1,
@@ -213,6 +224,8 @@ export function interpolateTrackKeyframes(keyframes, localTime) {
 
 	const rotA = trA.rotate ?? trA.rot ?? 0
 	const rotB = trB.rotate ?? trB.rot ?? 0
+	const scrA = trA.screenAngle ?? trA.screen_angle ?? trA.depthAngle ?? 0
+	const scrB = trB.screenAngle ?? trB.screen_angle ?? trB.depthAngle ?? 0
 	const xA = trA.translateX ?? trA.x ?? 0
 	const xB = trB.translateX ?? trB.x ?? 0
 	const yA = trA.translateY ?? trA.y ?? 0
@@ -241,6 +254,7 @@ export function interpolateTrackKeyframes(keyframes, localTime) {
 
 	return {
 		rotate: Number(lerp(rotA, rotB, easedT).toFixed(2)),
+		screenAngle: Number(lerp(scrA, scrB, easedT).toFixed(2)),
 		translateX: Number(lerp(xA, xB, easedT).toFixed(2)),
 		translateY: Number(lerp(yA, yB, easedT).toFixed(2)),
 		scale: Number(lerp(sA, sB, easedT).toFixed(3)),
@@ -353,6 +367,8 @@ export function normalizeAnimationDefinition(def) {
 				const isDirectTransform =
 					'rotate' in frameData ||
 					'rot' in frameData ||
+					'screenAngle' in frameData ||
+					'depthAngle' in frameData ||
 					'x' in frameData ||
 					'y' in frameData ||
 					'translateX' in frameData ||
@@ -427,11 +443,12 @@ function parseTimeOffset(timeVal, duration) {
 }
 
 function normalizeTransformValues(tr) {
-	if (!tr || typeof tr !== 'object') return { rotate: 0, translateX: 0, translateY: 0, scale: 1, scaleX: 1, scaleY: 1, opacity: 1 }
+	if (!tr || typeof tr !== 'object') return { rotate: 0, screenAngle: 0, translateX: 0, translateY: 0, scale: 1, scaleX: 1, scaleY: 1, opacity: 1 }
 
 	const x = tr.translateX ?? tr.x ?? 0
 	const y = tr.translateY ?? tr.y ?? 0
 	const rot = tr.rotate ?? tr.rot ?? 0
+	const screenAngle = tr.screenAngle ?? tr.screen_angle ?? tr.depthAngle ?? 0
 	const scale = tr.scale ?? 1
 	const scaleX = tr.scaleX ?? scale
 	const scaleY = tr.scaleY ?? scale
@@ -441,6 +458,7 @@ function normalizeTransformValues(tr) {
 
 	return {
 		rotate: typeof rot === 'string' ? parseFloat(rot) || 0 : Number(rot),
+		screenAngle: typeof screenAngle === 'string' ? parseFloat(screenAngle) || 0 : Number(screenAngle),
 		translateX: typeof x === 'string' ? parseFloat(x) || 0 : Number(x),
 		translateY: typeof y === 'string' ? parseFloat(y) || 0 : Number(y),
 		scale: typeof scale === 'string' ? parseFloat(scale) || 1 : Number(scale),
@@ -600,34 +618,163 @@ export const BUILTIN_ANIMATIONS = [
 	},
 	{
 		id: 'breathing',
-		name: 'Дыхание (Idle)',
+		name: 'Дыхание (Обычное)',
 		icon: '🫁',
 		group: 'Базовые',
-		desc: 'Плавное ритмичное дыхание с покачиванием корпуса и головы',
-		duration: 3.14,
+		desc: 'Плавное ритмичное спокойное дыхание с покачиванием и расширением груди, корпуса и головы',
+		duration: 3.2,
 		repeat: 'loop',
 		timingMode: 'timeline',
 		tracks: [
 			{
-				target: 'body',
+				target: 'torso',
 				targetMode: 'single',
 				keyframes: [
-					{ time: 0,    transform: { rotate: 0,   translateX: 0, translateY: 0,  scale: 1 }, easing: 'ease-in-out' },
-					{ time: 0.78, transform: { rotate: 1.5, translateX: 0, translateY: -1, scale: 1 }, easing: 'ease-in-out' },
-					{ time: 1.57, transform: { rotate: 0,   translateX: 0, translateY: 0,  scale: 1 }, easing: 'ease-in-out' },
-					{ time: 2.35, transform: { rotate: 1.5, translateX: 0, translateY: -1, scale: 1 }, easing: 'ease-in-out' },
-					{ time: 3.14, transform: { rotate: 0,   translateX: 0, translateY: 0,  scale: 1 }, easing: 'ease-in-out' }
+					{ time: 0,   transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 },     easing: 'ease-in-out' },
+					{ time: 0.8, transform: { rotate: 0.15, translateX: 0, translateY: -0.5,  scale: 1.008 }, easing: 'ease-in-out' },
+					{ time: 1.6, transform: { rotate: 0.3,  translateX: 0, translateY: -1.0,  scale: 1.018 }, easing: 'ease-in-out' },
+					{ time: 2.4, transform: { rotate: 0.15, translateX: 0, translateY: -0.5,  scale: 1.008 }, easing: 'ease-in-out' },
+					{ time: 3.2, transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 },     easing: 'ease-in-out' }
+				]
+			},
+			{
+				target: 'beast',
+				targetMode: 'single',
+				keyframes: [
+					{ time: 0,   transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 },     easing: 'ease-in-out' },
+					{ time: 0.8, transform: { rotate: -0.1, translateX: 0, translateY: -0.4,  scale: 1.012 }, easing: 'ease-in-out' },
+					{ time: 1.6, transform: { rotate: -0.2, translateX: 0, translateY: -0.8,  scale: 1.025 }, easing: 'ease-in-out' },
+					{ time: 2.4, transform: { rotate: -0.1, translateX: 0, translateY: -0.4,  scale: 1.012 }, easing: 'ease-in-out' },
+					{ time: 3.2, transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 },     easing: 'ease-in-out' }
 				]
 			},
 			{
 				target: 'head',
 				targetMode: 'single',
 				keyframes: [
-					{ time: 0,    transform: { rotate: 0,    translateX: 0, translateY: 0,   scale: 1 }, easing: 'ease-in-out' },
-					{ time: 0.78, transform: { rotate: -0.9, translateX: 0, translateY: 0.3, scale: 1 }, easing: 'ease-in-out' },
-					{ time: 1.57, transform: { rotate: 0,    translateX: 0, translateY: 0,   scale: 1 }, easing: 'ease-in-out' },
-					{ time: 2.35, transform: { rotate: -0.9, translateX: 0, translateY: 0.3, scale: 1 }, easing: 'ease-in-out' },
-					{ time: 3.14, transform: { rotate: 0,    translateX: 0, translateY: 0,   scale: 1 }, easing: 'ease-in-out' }
+					{ time: 0,   transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-in-out' },
+					{ time: 0.8, transform: { rotate: -0.3, translateX: 0, translateY: 0.2,  scale: 1 }, easing: 'ease-in-out' },
+					{ time: 1.6, transform: { rotate: -0.5, translateX: 0, translateY: -0.3, scale: 1 }, easing: 'ease-in-out' },
+					{ time: 2.4, transform: { rotate: -0.3, translateX: 0, translateY: 0.2,  scale: 1 }, easing: 'ease-in-out' },
+					{ time: 3.2, transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-in-out' }
+				]
+			},
+			{
+				target: 'neck',
+				targetMode: 'single',
+				keyframes: [
+					{ time: 0,   transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-in-out' },
+					{ time: 1.6, transform: { rotate: -0.3, translateX: 0, translateY: -0.4, scale: 1 }, easing: 'ease-in-out' },
+					{ time: 3.2, transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-in-out' }
+				]
+			},
+			{
+				target: 'arm_left',
+				targetMode: 'single',
+				keyframes: [
+					{ time: 0,   transform: { rotate: 0,   translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-in-out' },
+					{ time: 1.6, transform: { rotate: 1.0, translateX: 0, translateY: -0.6, scale: 1 }, easing: 'ease-in-out' },
+					{ time: 3.2, transform: { rotate: 0,   translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-in-out' }
+				]
+			},
+			{
+				target: 'arm_right',
+				targetMode: 'single',
+				keyframes: [
+					{ time: 0,   transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-in-out' },
+					{ time: 1.6, transform: { rotate: -1.0, translateX: 0, translateY: -0.6, scale: 1 }, easing: 'ease-in-out' },
+					{ time: 3.2, transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-in-out' }
+				]
+			},
+			{
+				target: 'body',
+				targetMode: 'single',
+				keyframes: [
+					{ time: 0,   transform: { rotate: 0,   translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-in-out' },
+					{ time: 1.6, transform: { rotate: 0.5, translateX: 0, translateY: -0.5, scale: 1 }, easing: 'ease-in-out' },
+					{ time: 3.2, transform: { rotate: 0,   translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-in-out' }
+				]
+			}
+		]
+	},
+	{
+		id: 'breathing_heavy',
+		name: 'Дыхание (Запыханное)',
+		icon: '😮‍💨',
+		group: 'Базовые',
+		desc: 'Учащенное глубокое запыханное дыхание с выраженным подъёмом груди и плеч',
+		duration: 1.2,
+		repeat: 'loop',
+		timingMode: 'timeline',
+		tracks: [
+			{
+				target: 'torso',
+				targetMode: 'single',
+				keyframes: [
+					{ time: 0,    transform: { rotate: 0,   translateX: 0, translateY: 0,    scale: 1 },     easing: 'ease-out' },
+					{ time: 0.45, transform: { rotate: 0.8, translateX: 0, translateY: -2.2,  scale: 1.04 },  easing: 'ease-in' },
+					{ time: 0.75, transform: { rotate: 0.3, translateX: 0, translateY: -1.0,  scale: 1.018 }, easing: 'ease-in-out' },
+					{ time: 1.2,  transform: { rotate: 0,   translateX: 0, translateY: 0,    scale: 1 },     easing: 'ease-out' }
+				]
+			},
+			{
+				target: 'beast',
+				targetMode: 'single',
+				keyframes: [
+					{ time: 0,    transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 },    easing: 'ease-out' },
+					{ time: 0.45, transform: { rotate: -0.5, translateX: 0, translateY: -2.0,  scale: 1.06 }, easing: 'ease-in' },
+					{ time: 0.75, transform: { rotate: -0.2, translateX: 0, translateY: -0.9,  scale: 1.025 }, easing: 'ease-in-out' },
+					{ time: 1.2,  transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 },    easing: 'ease-out' }
+				]
+			},
+			{
+				target: 'neck',
+				targetMode: 'single',
+				keyframes: [
+					{ time: 0,    transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-out' },
+					{ time: 0.45, transform: { rotate: -1.2, translateX: 0, translateY: -0.8, scale: 1 }, easing: 'ease-in' },
+					{ time: 0.75, transform: { rotate: 0.8,  translateX: 0, translateY: 0.4,  scale: 1 }, easing: 'ease-in-out' },
+					{ time: 1.2,  transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-out' }
+				]
+			},
+			{
+				target: 'head',
+				targetMode: 'single',
+				keyframes: [
+					{ time: 0,    transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-out' },
+					{ time: 0.45, transform: { rotate: -1.8, translateX: 0, translateY: -0.6, scale: 1 }, easing: 'ease-in' },
+					{ time: 0.75, transform: { rotate: 1.4,  translateX: 0, translateY: 0.8,  scale: 1 }, easing: 'ease-in-out' },
+					{ time: 1.2,  transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-out' }
+				]
+			},
+			{
+				target: 'arm_left',
+				targetMode: 'single',
+				keyframes: [
+					{ time: 0,    transform: { rotate: 0,   translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-out' },
+					{ time: 0.45, transform: { rotate: 2.2, translateX: 0, translateY: -1.6, scale: 1 }, easing: 'ease-in' },
+					{ time: 0.75, transform: { rotate: 0.8, translateX: 0, translateY: -0.6, scale: 1 }, easing: 'ease-in-out' },
+					{ time: 1.2,  transform: { rotate: 0,   translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-out' }
+				]
+			},
+			{
+				target: 'arm_right',
+				targetMode: 'single',
+				keyframes: [
+					{ time: 0,    transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-out' },
+					{ time: 0.45, transform: { rotate: -2.2, translateX: 0, translateY: -1.6, scale: 1 }, easing: 'ease-in' },
+					{ time: 0.75, transform: { rotate: -0.8, translateX: 0, translateY: -0.6, scale: 1 }, easing: 'ease-in-out' },
+					{ time: 1.2,  transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-out' }
+				]
+			},
+			{
+				target: 'body',
+				targetMode: 'single',
+				keyframes: [
+					{ time: 0,    transform: { rotate: 0,   translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-out' },
+					{ time: 0.45, transform: { rotate: 0.8, translateX: 0, translateY: -1.4, scale: 1 }, easing: 'ease-in' },
+					{ time: 0.75, transform: { rotate: 0.3, translateX: 0, translateY: -0.5, scale: 1 }, easing: 'ease-in-out' },
+					{ time: 1.2,  transform: { rotate: 0,   translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-out' }
 				]
 			}
 		]
@@ -738,9 +885,10 @@ export const CHARACTER_ANIMATION_REGISTRY = reactive(new Map())
 for (const b of BUILTIN_ANIMATIONS) {
 	CHARACTER_ANIMATION_REGISTRY.set(b.id, normalizeAnimationDefinition(b))
 }
-// Aliases for CSS classes
+// Aliases for CSS classes and legacy IDs
 CHARACTER_ANIMATION_REGISTRY.set('cough-head', CHARACTER_ANIMATION_REGISTRY.get('cough'))
 CHARACTER_ANIMATION_REGISTRY.set('shake-head', CHARACTER_ANIMATION_REGISTRY.get('head_shake'))
+CHARACTER_ANIMATION_REGISTRY.set('breathing_idle', CHARACTER_ANIMATION_REGISTRY.get('breathing'))
 
 /**
  * Register a new animation in the registry.
@@ -768,6 +916,7 @@ export function unregisterCharacterAnimation(animId) {
  */
 export function getCharacterAnimation(animId) {
 	if (!animId) return null
+	if (animId === 'breathing_idle') return CHARACTER_ANIMATION_REGISTRY.get('breathing') || null
 	return CHARACTER_ANIMATION_REGISTRY.get(animId) || null
 }
 

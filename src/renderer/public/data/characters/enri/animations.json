@@ -1,0 +1,146 @@
+[
+  {
+    "id": "breathing",
+    "name": "Дыхание (Обычное)",
+    "icon": "🫁",
+    "group": "Базовые",
+    "desc": "Плавное ритмичное спокойное дыхание Энри с покачиванием и расширением груди, корпуса и плеч",
+    "duration": 3.2,
+    "repeat": "loop",
+    "timingMode": "timeline",
+    "tracks": [
+      {
+        "target": "torso",
+        "targetMode": "single",
+        "keyframes": [
+          { "time": 0,    "transform": { "rotate": 0,    "translateX": 0, "translateY": 0,    "scale": 1 },     "easing": "ease-in-out" },
+          { "time": 0.8,  "transform": { "rotate": 0.15, "translateX": 0, "translateY": -0.5,  "scale": 1.008 }, "easing": "ease-in-out" },
+          { "time": 1.6,  "transform": { "rotate": 0.3,  "translateX": 0, "translateY": -1.0,  "scale": 1.018 }, "easing": "ease-in-out" },
+          { "time": 2.4,  "transform": { "rotate": 0.15, "translateX": 0, "translateY": -0.5,  "scale": 1.008 }, "easing": "ease-in-out" },
+          { "time": 3.2,  "transform": { "rotate": 0,    "translateX": 0, "translateY": 0,    "scale": 1 },     "easing": "ease-in-out" }
+        ]
+      },
+      {
+        "target": "beast",
+        "targetMode": "single",
+        "keyframes": [
+          { "time": 0,    "transform": { "rotate": 0,    "translateX": 0, "translateY": 0,    "scale": 1 },     "easing": "ease-in-out" },
+          { "time": 0.8,  "transform": { "rotate": -0.1, "translateX": 0, "translateY": -0.4,  "scale": 1.012 }, "easing": "ease-in-out" },
+          { "time": 1.6,  "transform": { "rotate": -0.2, "translateX": 0, "translateY": -0.8,  "scale": 1.025 }, "easing": "ease-in-out" },
+          { "time": 2.4,  "transform": { "rotate": -0.1, "translateX": 0, "translateY": -0.4,  "scale": 1.012 }, "easing": "ease-in-out" },
+          { "time": 3.2,  "transform": { "rotate": 0,    "translateX": 0, "translateY": 0,    "scale": 1 },     "easing": "ease-in-out" }
+        ]
+      },
+      {
+        "target": "neck",
+        "targetMode": "single",
+        "keyframes": [
+          { "time": 0,   "transform": { "rotate": 0,    "translateX": 0, "translateY": 0,    "scale": 1 }, "easing": "ease-in-out" },
+          { "time": 1.6, "transform": { "rotate": -0.3, "translateX": 0, "translateY": -0.4,  "scale": 1 }, "easing": "ease-in-out" },
+          { "time": 3.2, "transform": { "rotate": 0,    "translateX": 0, "translateY": 0,    "scale": 1 }, "easing": "ease-in-out" }
+        ]
+      },
+      {
+        "target": "head",
+        "targetMode": "single",
+        "keyframes": [
+          { "time": 0,   "transform": { "rotate": 0,    "translateX": 0, "translateY": 0,    "scale": 1 }, "easing": "ease-in-out" },
+          { "time": 0.8, "transform": { "rotate": -0.3, "translateX": 0, "translateY": 0.2,   "scale": 1 }, "easing": "ease-in-out" },
+          { "time": 1.6, "transform": { "rotate": -0.5, "translateX": 0, "translateY": -0.3,  "scale": 1 }, "easing": "ease-in-out" },
+          { "time": 2.4, "transform": { "rotate": -0.3, "translateX": 0, "translateY": 0.2,   "scale": 1 }, "easing": "ease-in-out" },
+          { "time": 3.2, "transform": { "rotate": 0,    "translateX": 0, "translateY": 0,    "scale": 1 }, "easing": "ease-in-out" }
+        ]
+      },
+      {
+        "target": "arm_left",
+        "targetMode": "single",
+        "keyframes": [
+          { "time": 0,   "transform": { "rotate": 0,   "translateX": 0, "translateY": 0,    "scale": 1 }, "easing": "ease-in-out" },
+          { "time": 1.6, "transform": { "rotate": 1.0, "translateX": 0, "translateY": -0.6,  "scale": 1 }, "easing": "ease-in-out" },
+          { "time": 3.2, "transform": { "rotate": 0,   "translateX": 0, "translateY": 0,    "scale": 1 }, "easing": "ease-in-out" }
+        ]
+      },
+      {
+        "target": "arm_right",
+        "targetMode": "single",
+        "keyframes": [
+          { "time": 0,   "transform": { "rotate": 0,    "translateX": 0, "translateY": 0,    "scale": 1 }, "easing": "ease-in-out" },
+          { "time": 1.6, "transform": { "rotate": -1.0, "translateX": 0, "translateY": -0.6,  "scale": 1 }, "easing": "ease-in-out" },
+          { "time": 3.2, "transform": { "rotate": 0,    "translateX": 0, "translateY": 0,    "scale": 1 }, "easing": "ease-in-out" }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "breathing_heavy",
+    "name": "Дыхание (Запыханное)",
+    "icon": "😮‍💨",
+    "group": "Базовые",
+    "desc": "Учащенное глубокое запыханное дыхание Энри с выраженным подъёмом груди, плеч и покачиванием",
+    "duration": 1.2,
+    "repeat": "loop",
+    "timingMode": "timeline",
+    "tracks": [
+      {
+        "target": "torso",
+        "targetMode": "single",
+        "keyframes": [
+          { "time": 0,    "transform": { "rotate": 0,   "translateX": 0, "translateY": 0,    "scale": 1 },     "easing": "ease-out" },
+          { "time": 0.45, "transform": { "rotate": 0.8, "translateX": 0, "translateY": -2.2,  "scale": 1.04 },  "easing": "ease-in" },
+          { "time": 0.75, "transform": { "rotate": 0.3, "translateX": 0, "translateY": -1.0,  "scale": 1.018 }, "easing": "ease-in-out" },
+          { "time": 1.2,  "transform": { "rotate": 0,   "translateX": 0, "translateY": 0,    "scale": 1 },     "easing": "ease-out" }
+        ]
+      },
+      {
+        "target": "beast",
+        "targetMode": "single",
+        "keyframes": [
+          { "time": 0,    "transform": { "rotate": 0,    "translateX": 0, "translateY": 0,    "scale": 1 },    "easing": "ease-out" },
+          { "time": 0.45, "transform": { "rotate": -0.5, "translateX": 0, "translateY": -2.0,  "scale": 1.06 }, "easing": "ease-in" },
+          { "time": 0.75, "transform": { "rotate": -0.2, "translateX": 0, "translateY": -0.9,  "scale": 1.025 }, "easing": "ease-in-out" },
+          { "time": 1.2,  "transform": { "rotate": 0,    "translateX": 0, "translateY": 0,    "scale": 1 },    "easing": "ease-out" }
+        ]
+      },
+      {
+        "target": "neck",
+        "targetMode": "single",
+        "keyframes": [
+          { "time": 0,    "transform": { "rotate": 0,    "translateX": 0, "translateY": 0,    "scale": 1 }, "easing": "ease-out" },
+          { "time": 0.45, "transform": { "rotate": -1.2, "translateX": 0, "translateY": -0.8, "scale": 1 }, "easing": "ease-in" },
+          { "time": 0.75, "transform": { "rotate": 0.8,  "translateX": 0, "translateY": 0.4,  "scale": 1 }, "easing": "ease-in-out" },
+          { "time": 1.2,  "transform": { "rotate": 0,    "translateX": 0, "translateY": 0,    "scale": 1 }, "easing": "ease-out" }
+        ]
+      },
+      {
+        "target": "head",
+        "targetMode": "single",
+        "keyframes": [
+          { "time": 0,    "transform": { "rotate": 0,    "translateX": 0, "translateY": 0,    "scale": 1 }, "easing": "ease-out" },
+          { "time": 0.45, "transform": { "rotate": -1.8, "translateX": 0, "translateY": -0.6, "scale": 1 }, "easing": "ease-in" },
+          { "time": 0.75, "transform": { "rotate": 1.4,  "translateX": 0, "translateY": 0.8,  "scale": 1 }, "easing": "ease-in-out" },
+          { "time": 1.2,  "transform": { "rotate": 0,    "translateX": 0, "translateY": 0,    "scale": 1 }, "easing": "ease-out" }
+        ]
+      },
+      {
+        "target": "arm_left",
+        "targetMode": "single",
+        "keyframes": [
+          { "time": 0,    "transform": { "rotate": 0,   "translateX": 0, "translateY": 0,    "scale": 1 }, "easing": "ease-out" },
+          { "time": 0.45, "transform": { "rotate": 2.2, "translateX": 0, "translateY": -1.6, "scale": 1 }, "easing": "ease-in" },
+          { "time": 0.75, "transform": { "rotate": 0.8, "translateX": 0, "translateY": -0.6, "scale": 1 }, "easing": "ease-in-out" },
+          { "time": 1.2,  "transform": { "rotate": 0,   "translateX": 0, "translateY": 0,    "scale": 1 }, "easing": "ease-out" }
+        ]
+      },
+      {
+        "target": "arm_right",
+        "targetMode": "single",
+        "keyframes": [
+          { "time": 0,    "transform": { "rotate": 0,    "translateX": 0, "translateY": 0,    "scale": 1 }, "easing": "ease-out" },
+          { "time": 0.45, "transform": { "rotate": -2.2, "translateX": 0, "translateY": -1.6, "scale": 1 }, "easing": "ease-in" },
+          { "time": 0.75, "transform": { "rotate": -0.8, "translateX": 0, "translateY": -0.6, "scale": 1 }, "easing": "ease-in-out" },
+          { "time": 1.2,  "transform": { "rotate": 0,    "translateX": 0, "translateY": 0,    "scale": 1 }, "easing": "ease-out" }
+        ]
+      }
+    ]
+  }
+]

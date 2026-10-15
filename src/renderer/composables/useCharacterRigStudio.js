@@ -149,8 +149,15 @@ export function useCharacterRigStudio() {
 	const eyeLeftOffset = reactive({ x: 0, y: 0 })
 	const eyeRightOffset = reactive({ x: 0, y: 0 })
 
-	// Eye Perspective & Scale System (Pupil scale, Horizontal & Vertical turn)
+	// Eye Perspective & Scale System (Eye scale, Pupil scale, Horizontal & Vertical turn)
+	const eyeScale = ref(1.0)
+	const eyeLeftScale = ref(1.0)
+	const eyeRightScale = ref(1.0)
+
 	const eyePupilScale = ref(1.0)
+	const eyePupilLeftScale = ref(1.0)
+	const eyePupilRightScale = ref(1.0)
+
 	const eyeTurnH = ref(0) // Horizontal turn (yaw) in degrees (-85° to +85°)
 	const eyeTurnV = ref(0) // Vertical turn (pitch) in degrees (-85° to +85°)
 
@@ -169,6 +176,7 @@ export function useCharacterRigStudio() {
 
 	// Direct Rotation, Translation, Scaling & Styling
 	const partRotations = reactive({})
+	const partScreenAngles = reactive({})
 	const partTranslations = reactive({})
 	const partScales = reactive({})
 	const partOpacities = reactive({})
@@ -177,20 +185,80 @@ export function useCharacterRigStudio() {
 	const partPivots = reactive({})
 
 	function updateEyeTransforms() {
+		const isIndependent = eyeControlMode.value === 'independent'
+
 		for (const partName of Object.keys(bodyParts)) {
-			if (partName.includes('eyeball') || partName.includes('pupil')) {
+			const isPupil = partName.includes('eyeball') || partName.includes('pupil')
+			const isLeft = partName.includes('left') || partName.includes('_l') || partName.includes('-l')
+			const isRight = partName.includes('right') || partName.includes('_r') || partName.includes('-r')
+
+			if (isPupil) {
+				let pScale = Number(eyePupilScale.value) || 1
+				if (isIndependent) {
+					pScale = isLeft
+						? (Number(eyePupilLeftScale.value) || 1)
+						: isRight
+							? (Number(eyePupilRightScale.value) || 1)
+							: pScale
+				}
 				partScales[partName] = {
-					scale: Number(eyePupilScale.value) || 1,
+					scale: pScale,
 					rotateY: Number(eyeTurnH.value) || 0,
 					rotateX: Number(eyeTurnV.value) || 0
 				}
+			} else if (
+				partName === 'eyes' ||
+				partName === 'eyes-back' ||
+				partName === 'eyes_back' ||
+				partName === 'eye' ||
+				(partName.startsWith('eye') && !partName.includes('brow'))
+			) {
+				let eScale = Number(eyeScale.value) || 1
+				if (isIndependent) {
+					if (isLeft) {
+						eScale = Number(eyeLeftScale.value) || 1
+					} else if (isRight) {
+						eScale = Number(eyeRightScale.value) || 1
+					} else {
+						// For shared eyes sprite: average of left and right
+						eScale = ((Number(eyeLeftScale.value) || 1) + (Number(eyeRightScale.value) || 1)) / 2
+					}
+				}
+				partScales[partName] = eScale
 			}
 		}
 	}
 
-	watch([eyePupilScale, eyeTurnH, eyeTurnV], () => {
-		updateEyeTransforms()
+	watch(eyeScale, (val) => {
+		if (eyeControlMode.value === 'linked') {
+			eyeLeftScale.value = val
+			eyeRightScale.value = val
+		}
 	})
+
+	watch(eyePupilScale, (val) => {
+		if (eyeControlMode.value === 'linked') {
+			eyePupilLeftScale.value = val
+			eyePupilRightScale.value = val
+		}
+	})
+
+	watch(
+		[
+			eyeScale,
+			eyeLeftScale,
+			eyeRightScale,
+			eyePupilScale,
+			eyePupilLeftScale,
+			eyePupilRightScale,
+			eyeTurnH,
+			eyeTurnV,
+			eyeControlMode
+		],
+		() => {
+			updateEyeTransforms()
+		}
+	)
 
 	// Animation Sequencer & Custom Animations
 	const isPlaying = ref(false)
@@ -281,56 +349,163 @@ export function useCharacterRigStudio() {
 		},
 		{
 			id: 'breathing',
-			name: 'Дыхание (Idle)',
+			name: 'Дыхание (Обычное)',
 			icon: '🫁',
 			group: 'Базовые',
-			desc: 'Плавное покачивание и подъем корпуса',
-			duration: 3.14,
+			desc: 'Плавное ритмичное спокойное дыхание с покачиванием и расширением груди',
+			duration: 3.2,
 			repeat: 'loop',
 			timingMode: 'timeline',
 			tracks: [
 				{
-					target: 'body',
+					target: 'torso',
 					targetMode: 'single',
 					keyframes: [
-						{ time: 0,    transform: { rotate: 0,   translateX: 0, translateY: 0,  scale: 1 }, easing: 'ease-in-out' },
-						{ time: 0.78, transform: { rotate: 1.5, translateX: 0, translateY: -1, scale: 1 }, easing: 'ease-in-out' },
-						{ time: 1.57, transform: { rotate: 0,   translateX: 0, translateY: 0,  scale: 1 }, easing: 'ease-in-out' },
-						{ time: 2.35, transform: { rotate: 1.5, translateX: 0, translateY: -1, scale: 1 }, easing: 'ease-in-out' },
-						{ time: 3.14, transform: { rotate: 0,   translateX: 0, translateY: 0,  scale: 1 }, easing: 'ease-in-out' }
+						{ time: 0,   transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 },     easing: 'ease-in-out' },
+						{ time: 0.8, transform: { rotate: 0.15, translateX: 0, translateY: -0.5,  scale: 1.008 }, easing: 'ease-in-out' },
+						{ time: 1.6, transform: { rotate: 0.3,  translateX: 0, translateY: -1.0,  scale: 1.018 }, easing: 'ease-in-out' },
+						{ time: 2.4, transform: { rotate: 0.15, translateX: 0, translateY: -0.5,  scale: 1.008 }, easing: 'ease-in-out' },
+						{ time: 3.2, transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 },     easing: 'ease-in-out' }
+					]
+				},
+				{
+					target: 'beast',
+					targetMode: 'single',
+					keyframes: [
+						{ time: 0,   transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 },     easing: 'ease-in-out' },
+						{ time: 0.8, transform: { rotate: -0.1, translateX: 0, translateY: -0.4,  scale: 1.012 }, easing: 'ease-in-out' },
+						{ time: 1.6, transform: { rotate: -0.2, translateX: 0, translateY: -0.8,  scale: 1.025 }, easing: 'ease-in-out' },
+						{ time: 2.4, transform: { rotate: -0.1, translateX: 0, translateY: -0.4,  scale: 1.012 }, easing: 'ease-in-out' },
+						{ time: 3.2, transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 },     easing: 'ease-in-out' }
 					]
 				},
 				{
 					target: 'head',
 					targetMode: 'single',
 					keyframes: [
-						{ time: 0,    transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-in-out' },
-						{ time: 0.78, transform: { rotate: -0.9, translateX: 0, translateY: 0.3,  scale: 1 }, easing: 'ease-in-out' },
-						{ time: 1.57, transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-in-out' },
-						{ time: 2.35, transform: { rotate: -0.9, translateX: 0, translateY: 0.3,  scale: 1 }, easing: 'ease-in-out' },
-						{ time: 3.14, transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-in-out' }
+						{ time: 0,   transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-in-out' },
+						{ time: 0.8, transform: { rotate: -0.3, translateX: 0, translateY: 0.2,  scale: 1 }, easing: 'ease-in-out' },
+						{ time: 1.6, transform: { rotate: -0.5, translateX: 0, translateY: -0.3, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 2.4, transform: { rotate: -0.3, translateX: 0, translateY: 0.2,  scale: 1 }, easing: 'ease-in-out' },
+						{ time: 3.2, transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-in-out' }
+					]
+				},
+				{
+					target: 'neck',
+					targetMode: 'single',
+					keyframes: [
+						{ time: 0,   transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-in-out' },
+						{ time: 1.6, transform: { rotate: -0.3, translateX: 0, translateY: -0.4, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 3.2, transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-in-out' }
 					]
 				},
 				{
 					target: 'arm_left',
 					targetMode: 'single',
 					keyframes: [
-						{ time: 0,    transform: { rotate: 0,   translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
-						{ time: 0.78, transform: { rotate: 2.4, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
-						{ time: 1.57, transform: { rotate: 0,   translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
-						{ time: 2.35, transform: { rotate: 2.4, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
-						{ time: 3.14, transform: { rotate: 0,   translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' }
+						{ time: 0,   transform: { rotate: 0,   translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-in-out' },
+						{ time: 1.6, transform: { rotate: 1.0, translateX: 0, translateY: -0.6, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 3.2, transform: { rotate: 0,   translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-in-out' }
 					]
 				},
 				{
 					target: 'arm_right',
 					targetMode: 'single',
 					keyframes: [
-						{ time: 0,    transform: { rotate: 0,    translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
-						{ time: 0.78, transform: { rotate: -2.4, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
-						{ time: 1.57, transform: { rotate: 0,    translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
-						{ time: 2.35, transform: { rotate: -2.4, translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' },
-						{ time: 3.14, transform: { rotate: 0,    translateX: 0, translateY: 0, scale: 1 }, easing: 'ease-in-out' }
+						{ time: 0,   transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-in-out' },
+						{ time: 1.6, transform: { rotate: -1.0, translateX: 0, translateY: -0.6, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 3.2, transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-in-out' }
+					]
+				},
+				{
+					target: 'body',
+					targetMode: 'single',
+					keyframes: [
+						{ time: 0,   transform: { rotate: 0,   translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-in-out' },
+						{ time: 1.6, transform: { rotate: 0.5, translateX: 0, translateY: -0.5, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 3.2, transform: { rotate: 0,   translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-in-out' }
+					]
+				}
+			]
+		},
+		{
+			id: 'breathing_heavy',
+			name: 'Дыхание (Запыханное)',
+			icon: '😮‍💨',
+			group: 'Базовые',
+			desc: 'Учащенное глубокое запыханное дыхание с выраженным подъёмом груди и плеч',
+			duration: 1.2,
+			repeat: 'loop',
+			timingMode: 'timeline',
+			tracks: [
+				{
+					target: 'torso',
+					targetMode: 'single',
+					keyframes: [
+						{ time: 0,    transform: { rotate: 0,   translateX: 0, translateY: 0,    scale: 1 },     easing: 'ease-out' },
+						{ time: 0.45, transform: { rotate: 0.8, translateX: 0, translateY: -2.2,  scale: 1.04 },  easing: 'ease-in' },
+						{ time: 0.75, transform: { rotate: 0.3, translateX: 0, translateY: -1.0,  scale: 1.018 }, easing: 'ease-in-out' },
+						{ time: 1.2,  transform: { rotate: 0,   translateX: 0, translateY: 0,    scale: 1 },     easing: 'ease-out' }
+					]
+				},
+				{
+					target: 'beast',
+					targetMode: 'single',
+					keyframes: [
+						{ time: 0,    transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 },    easing: 'ease-out' },
+						{ time: 0.45, transform: { rotate: -0.5, translateX: 0, translateY: -2.0,  scale: 1.06 }, easing: 'ease-in' },
+						{ time: 0.75, transform: { rotate: -0.2, translateX: 0, translateY: -0.9,  scale: 1.025 }, easing: 'ease-in-out' },
+						{ time: 1.2,  transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 },    easing: 'ease-out' }
+					]
+				},
+				{
+					target: 'neck',
+					targetMode: 'single',
+					keyframes: [
+						{ time: 0,    transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-out' },
+						{ time: 0.45, transform: { rotate: -1.2, translateX: 0, translateY: -0.8, scale: 1 }, easing: 'ease-in' },
+						{ time: 0.75, transform: { rotate: 0.8,  translateX: 0, translateY: 0.4,  scale: 1 }, easing: 'ease-in-out' },
+						{ time: 1.2,  transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-out' }
+					]
+				},
+				{
+					target: 'head',
+					targetMode: 'single',
+					keyframes: [
+						{ time: 0,    transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-out' },
+						{ time: 0.45, transform: { rotate: -1.8, translateX: 0, translateY: -0.6, scale: 1 }, easing: 'ease-in' },
+						{ time: 0.75, transform: { rotate: 1.4,  translateX: 0, translateY: 0.8,  scale: 1 }, easing: 'ease-in-out' },
+						{ time: 1.2,  transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-out' }
+					]
+				},
+				{
+					target: 'arm_left',
+					targetMode: 'single',
+					keyframes: [
+						{ time: 0,    transform: { rotate: 0,   translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-out' },
+						{ time: 0.45, transform: { rotate: 2.2, translateX: 0, translateY: -1.6, scale: 1 }, easing: 'ease-in' },
+						{ time: 0.75, transform: { rotate: 0.8, translateX: 0, translateY: -0.6, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 1.2,  transform: { rotate: 0,   translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-out' }
+					]
+				},
+				{
+					target: 'arm_right',
+					targetMode: 'single',
+					keyframes: [
+						{ time: 0,    transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-out' },
+						{ time: 0.45, transform: { rotate: -2.2, translateX: 0, translateY: -1.6, scale: 1 }, easing: 'ease-in' },
+						{ time: 0.75, transform: { rotate: -0.8, translateX: 0, translateY: -0.6, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 1.2,  transform: { rotate: 0,    translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-out' }
+					]
+				},
+				{
+					target: 'body',
+					targetMode: 'single',
+					keyframes: [
+						{ time: 0,    transform: { rotate: 0,   translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-out' },
+						{ time: 0.45, transform: { rotate: 0.8, translateX: 0, translateY: -1.4, scale: 1 }, easing: 'ease-in' },
+						{ time: 0.75, transform: { rotate: 0.3, translateX: 0, translateY: -0.5, scale: 1 }, easing: 'ease-in-out' },
+						{ time: 1.2,  transform: { rotate: 0,   translateX: 0, translateY: 0,    scale: 1 }, easing: 'ease-out' }
 					]
 				}
 			]
@@ -578,10 +753,15 @@ export function useCharacterRigStudio() {
 	]
 
 	const allAnimations = computed(() => {
-		if (viewMode.value === 'isometric') {
-			return [...BUILTIN_ISO_ANIMATIONS, ...customAnimations.value]
+		const builtins = viewMode.value === 'isometric' ? BUILTIN_ISO_ANIMATIONS : BUILTIN_ANIMATIONS
+		const map = new Map()
+		for (const a of builtins) {
+			if (a && a.id) map.set(a.id, a)
 		}
-		return [...BUILTIN_ANIMATIONS, ...customAnimations.value]
+		for (const a of customAnimations.value) {
+			if (a && a.id) map.set(a.id, a)
+		}
+		return Array.from(map.values())
 	})
 
 	const animationGroups = computed(() => {
@@ -890,6 +1070,7 @@ export function useCharacterRigStudio() {
 			// 4. Populate active bodyParts based on current viewMode
 			Object.keys(bodyParts).forEach((k) => delete bodyParts[k])
 			Object.keys(partRotations).forEach((k) => delete partRotations[k])
+			Object.keys(partScreenAngles).forEach((k) => delete partScreenAngles[k])
 			Object.keys(partPivots).forEach((k) => delete partPivots[k])
 
 			const activeSource = viewMode.value === 'isometric' ? isoBodyParts : vnBodyParts
@@ -900,6 +1081,7 @@ export function useCharacterRigStudio() {
 					zindex: part.zindex ?? part['z-index'] ?? 0,
 					opacity: part.opacity !== undefined ? Number(part.opacity) : 1,
 					scale: part.scale !== undefined ? Number(part.scale) : 1,
+					screenAngle: part.screenAngle !== undefined ? Number(part.screenAngle) : (part.depthAngle !== undefined ? Number(part.depthAngle) : 0),
 					clipToParent: Boolean(part.clipToParent),
 					offset: {
 						x: part.offset?.x ?? 0,
@@ -907,6 +1089,7 @@ export function useCharacterRigStudio() {
 					}
 				}
 				partRotations[name] = 0
+				partScreenAngles[name] = 0
 				partPivots[name] = defaultPivotForPart(name)
 			}
 
@@ -955,6 +1138,7 @@ export function useCharacterRigStudio() {
 			offset: { x: 0, y: 0 }
 		}
 		partRotations[cleanName] = 0
+		partScreenAngles[cleanName] = 0
 		partPivots[cleanName] = defaultPivotForPart(cleanName)
 		selectedPartName.value = cleanName
 		setStatus(`Часть "${cleanName}" добавлена`)
@@ -975,6 +1159,7 @@ export function useCharacterRigStudio() {
 		}
 		delete bodyParts[name]
 		delete partRotations[name]
+		delete partScreenAngles[name]
 		delete partPivots[name]
 		if (selectedPartName.value === name) {
 			selectedPartName.value = Object.keys(bodyParts)[0] || 'body'
@@ -1115,7 +1300,12 @@ export function useCharacterRigStudio() {
 	}
 
 	function resetEyes() {
+		eyeScale.value = 1.0
+		eyeLeftScale.value = 1.0
+		eyeRightScale.value = 1.0
 		eyePupilScale.value = 1.0
+		eyePupilLeftScale.value = 1.0
+		eyePupilRightScale.value = 1.0
 		eyeTurnH.value = 0
 		eyeTurnV.value = 0
 		eyeLeftOffset.x = 0
@@ -1185,6 +1375,9 @@ export function useCharacterRigStudio() {
 		stopAnimation()
 		for (const k in partRotations) {
 			partRotations[k] = 0
+		}
+		for (const k in partScreenAngles) {
+			partScreenAngles[k] = 0
 		}
 		for (const k in partTranslations) {
 			partTranslations[k] = { x: 0, y: 0 }
@@ -1419,6 +1612,7 @@ export function useCharacterRigStudio() {
 			const kf = sorted[0]
 			return {
 				rotate: kf.transform?.rotate ?? kf.transform?.rot ?? 0,
+				screenAngle: kf.transform?.screenAngle ?? kf.transform?.screen_angle ?? kf.transform?.depthAngle ?? 0,
 				translateX: kf.transform?.translateX ?? kf.transform?.x ?? 0,
 				translateY: kf.transform?.translateY ?? kf.transform?.y ?? 0,
 				scale: kf.transform?.scale ?? 1,
@@ -1434,6 +1628,7 @@ export function useCharacterRigStudio() {
 		if (localTime >= last.time) {
 			return {
 				rotate: last.transform?.rotate ?? last.transform?.rot ?? 0,
+				screenAngle: last.transform?.screenAngle ?? last.transform?.screen_angle ?? last.transform?.depthAngle ?? 0,
 				translateX: last.transform?.translateX ?? last.transform?.x ?? 0,
 				translateY: last.transform?.translateY ?? last.transform?.y ?? 0,
 				scale: last.transform?.scale ?? 1,
@@ -1465,6 +1660,8 @@ export function useCharacterRigStudio() {
 
 		const rotA = kfA.transform?.rotate ?? kfA.transform?.rot ?? 0
 		const rotB = kfB.transform?.rotate ?? kfB.transform?.rot ?? 0
+		const scrA = kfA.transform?.screenAngle ?? kfA.transform?.screen_angle ?? kfA.transform?.depthAngle ?? 0
+		const scrB = kfB.transform?.screenAngle ?? kfB.transform?.screen_angle ?? kfB.transform?.depthAngle ?? 0
 		const xA = kfA.transform?.translateX ?? kfA.transform?.x ?? 0
 		const xB = kfB.transform?.translateX ?? kfB.transform?.x ?? 0
 		const yA = kfA.transform?.translateY ?? kfA.transform?.y ?? 0
@@ -1491,6 +1688,7 @@ export function useCharacterRigStudio() {
 
 		return {
 			rotate: Number(lerp(rotA, rotB, easedT).toFixed(2)),
+			screenAngle: Number(lerp(scrA, scrB, easedT).toFixed(2)),
 			translateX: Number(lerp(xA, xB, easedT).toFixed(2)),
 			translateY: Number(lerp(yA, yB, easedT).toFixed(2)),
 			scale: Number(lerp(sA, sB, easedT).toFixed(3)),
@@ -1575,6 +1773,8 @@ export function useCharacterRigStudio() {
 							if (!vals) continue
 							if (vals.rot !== undefined) partRotations[part] = Number(vals.rot)
 							if (vals.rotate !== undefined) partRotations[part] = Number(vals.rotate)
+							if (vals.screenAngle !== undefined) partScreenAngles[part] = Number(vals.screenAngle)
+							if (vals.depthAngle !== undefined) partScreenAngles[part] = Number(vals.depthAngle)
 							if (vals.x !== undefined || vals.y !== undefined) {
 								partTranslations[part] = {
 									x: Number(vals.x || 0),
@@ -1638,6 +1838,9 @@ export function useCharacterRigStudio() {
 			for (const part of targetParts) {
 				if (state.rotate !== undefined) {
 					partRotations[part] = state.rotate
+				}
+				if (state.screenAngle !== undefined) {
+					partScreenAngles[part] = state.screenAngle
 				}
 				if (state.translateX !== undefined || state.translateY !== undefined) {
 					partTranslations[part] = {
@@ -1797,12 +2000,49 @@ export function useCharacterRigStudio() {
 				break
 			}
 			case 'breathing': {
-				// Gentle rhythmic breathing
+				// Gentle rhythmic breathing with torso and bust expansion
 				const breath = Math.sin(time * 2) * 3
-				if (bodyParts['body']) partRotations['body'] = breath * 0.5
+				const breathLift = -Math.sin(time * 2) * 1.0
+				const breathScale = 1.0 + Math.sin(time * 2) * 0.018
+				if (bodyParts['torso']) {
+					partTranslations['torso'] = { x: 0, y: Number(breathLift.toFixed(2)) }
+					partScales['torso'] = Number(breathScale.toFixed(3))
+					partRotations['torso'] = Number((breath * 0.1).toFixed(2))
+				}
+				if (bodyParts['beast']) {
+					partTranslations['beast'] = { x: 0, y: Number((breathLift * 0.8).toFixed(2)) }
+					partScales['beast'] = Number((1.0 + Math.sin(time * 2) * 0.025).toFixed(3))
+				}
+				if (bodyParts['body'] && !bodyParts['torso']) partRotations['body'] = breath * 0.5
 				if (bodyParts['head']) partRotations['head'] = -breath * 0.3
 				if (bodyParts['arm_left']) partRotations['arm_left'] = breath * 0.8
 				if (bodyParts['arm_right']) partRotations['arm_right'] = -breath * 0.8
+				break
+			}
+			case 'breathing_heavy': {
+				// Intense panting breathing rhythm (cycle ~1.2s)
+				const breath = Math.sin(time * 5.2) * 6
+				const breathLift = -Math.sin(time * 5.2) * 2.2
+				const breathScale = 1.0 + Math.sin(time * 5.2) * 0.045
+				if (bodyParts['torso']) {
+					partTranslations['torso'] = { x: 0, y: Number(breathLift.toFixed(2)) }
+					partScales['torso'] = Number(breathScale.toFixed(3))
+					partRotations['torso'] = Number((breath * 0.12).toFixed(2))
+				}
+				if (bodyParts['beast']) {
+					partTranslations['beast'] = { x: 0, y: Number((breathLift * 0.9).toFixed(2)) }
+					partScales['beast'] = Number((1.0 + Math.sin(time * 5.2) * 0.06).toFixed(3))
+				}
+				if (bodyParts['body'] && !bodyParts['torso']) partRotations['body'] = breath * 0.8
+				if (bodyParts['head']) partRotations['head'] = -breath * 0.4
+				if (bodyParts['arm_left']) {
+					partRotations['arm_left'] = breath * 1.2
+					partTranslations['arm_left'] = { x: 0, y: Number(breathLift.toFixed(2)) }
+				}
+				if (bodyParts['arm_right']) {
+					partRotations['arm_right'] = -breath * 1.2
+					partTranslations['arm_right'] = { x: 0, y: Number(breathLift.toFixed(2)) }
+				}
 				break
 			}
 			case 'tremble': {
@@ -1898,6 +2138,9 @@ export function useCharacterRigStudio() {
 			if (p.scale !== undefined && p.scale !== 1 && p.scale !== null) {
 				item.scale = Number(Number(p.scale).toFixed(3))
 			}
+			if (p.screenAngle !== undefined && p.screenAngle !== 0 && p.screenAngle !== null && isFinite(p.screenAngle)) {
+				item.screenAngle = Number(Number(p.screenAngle).toFixed(2))
+			}
 			if (p.offset && (p.offset.x !== 0 || p.offset.y !== 0)) {
 				item.offset = { x: Number(p.offset.x), y: Number(p.offset.y) }
 			}
@@ -1935,6 +2178,9 @@ export function useCharacterRigStudio() {
 			}
 			if (p.scale !== undefined && p.scale !== 1 && p.scale !== null) {
 				item.scale = Number(Number(p.scale).toFixed(3))
+			}
+			if (p.screenAngle !== undefined && p.screenAngle !== 0 && p.screenAngle !== null && isFinite(p.screenAngle)) {
+				item.screenAngle = Number(Number(p.screenAngle).toFixed(2))
 			}
 			if (p.offset && (p.offset.x !== 0 || p.offset.y !== 0)) {
 				item.offset = { x: Number(p.offset.x), y: Number(p.offset.y) }
@@ -2353,12 +2599,17 @@ export function useCharacterRigStudio() {
 		EMOTIONS_LIST,
 		currentEmotion,
 		emotionOverrides,
-		// Eye direction
+		// Eye direction & scale
 		eyeControlMode,
 		eyeLinkedOffset,
 		eyeLeftOffset,
 		eyeRightOffset,
+		eyeScale,
+		eyeLeftScale,
+		eyeRightScale,
 		eyePupilScale,
+		eyePupilLeftScale,
+		eyePupilRightScale,
 		eyeTurnH,
 		eyeTurnV,
 		EYE_PRESETS,
@@ -2366,6 +2617,7 @@ export function useCharacterRigStudio() {
 		resetEyes,
 		// Rotations, Translations, Scales & Posing
 		partRotations,
+		partScreenAngles,
 		partTranslations,
 		partScales,
 		partOpacities,

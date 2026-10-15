@@ -263,6 +263,7 @@ export class CharacterRigRenderer {
 		rootOffset = { x: 0, y: 0 },
 		orientation = 'right', // 'right' | 'left'
 		partRotations = {},
+		partScreenAngles = {},
 		partTranslations = {},
 		partScales = {},
 		partOpacities = {},
@@ -383,7 +384,7 @@ export class CharacterRigRenderer {
 		}
 
 		// Recursive function to process node and its children
-		const processNode = (name, partDef, parentMatrix, parentWidth, parentHeight, isEquip = false) => {
+		const processNode = (name, partDef, parentMatrix, parentWidth, parentHeight, isEquip = false, parentScreenAngle = 0) => {
 			const isRoot = !partDef.parent || name === rootPartName
 
 			const imgPath = isEquip
@@ -447,18 +448,28 @@ export class CharacterRigRenderer {
 					: (isRight && eyeOffset?.right)
 						? eyeOffset.right
 						: eyeOffset
-				const eyeX = off?.x ? (off.x * nodeWidth * 0.15) : 0
-				const eyeY = off?.y ? (off.y * nodeHeight * 0.15) : 0
+				const eyeMultiplier = 0.35
+				const eyeX = off?.x ? (off.x * nodeWidth * eyeMultiplier) : 0
+				const eyeY = off?.y ? (off.y * nodeHeight * eyeMultiplier) : 0
 				if (eyeX || eyeY) {
 					translateMatrix(localMatrix, eyeX, eyeY, localMatrix)
 				}
 			}
 
-			// Part Rotation
+			// Screen Angle (angle of the rotation plane relative to screen: 3/4 puppet view or limb depth angle)
+			const rawDefScreenAngle = partDef.screenAngle ?? partDef.screen_angle ?? partDef.depthAngle
+			const hasExplicitDefAngle = rawDefScreenAngle !== undefined && rawDefScreenAngle !== null && isFinite(rawDefScreenAngle)
+			const baseScreenAngle = hasExplicitDefAngle ? Number(rawDefScreenAngle) : (parentScreenAngle || 0)
+			const dynScreenAngle = Number(partScreenAngles[name]) || 0
+			const effScreenAngle = baseScreenAngle + dynScreenAngle
+
+			// Part Rotation (with optional 3D plane projection relative to screen)
 			const rot = Number(partRotations[name]) || 0
-			if (rot && isFinite(rot)) {
-				const rotRad = (rot * Math.PI) / 180
-				if (isIsometric && isIsometricRotation) {
+			const hasScreenAngle = isFinite(effScreenAngle) && Math.abs(effScreenAngle) > 0.001
+
+			if (isIsometric && isIsometricRotation) {
+				if (rot && isFinite(rot)) {
+					const rotRad = (rot * Math.PI) / 180
 					if (isometricRotationMode === 'dimetric') {
 						const tilt = Number(isometricTiltAngle) || 26.565
 						const skewRad = -Math.sin(rotRad * 2) * (tilt * 0.55 * Math.PI / 180)
@@ -470,9 +481,26 @@ export class CharacterRigRenderer {
 						// Standard 2D rotation fallback for canvas
 						rotateMatrix(localMatrix, rotRad, localMatrix)
 					}
-				} else {
-					rotateMatrix(localMatrix, rotRad, localMatrix)
 				}
+			} else if (hasScreenAngle && rot && isFinite(rot)) {
+				// 3D rotation plane inclined relative to screen (e.g. 3/4 semi-turned body view)
+				const clampedAngle = Math.max(-85, Math.min(85, effScreenAngle))
+				const screenRad = (clampedAngle * Math.PI) / 180
+				const cosAlpha = Math.max(0.08, Math.cos(screenRad))
+
+				const rotRad = (rot * Math.PI) / 180
+				const sinRot = Math.sin(rotRad)
+				const cosRot = Math.cos(rotRad)
+				// Project circular rotation from inclined plane onto 2D screen ellipse
+				const projAngleRad = Math.atan2(sinRot * cosAlpha, cosRot)
+				// Foreshortening of the limb length along its axis
+				const foreshortenScale = Math.sqrt((sinRot * cosAlpha) ** 2 + cosRot ** 2)
+
+				rotateMatrix(localMatrix, projAngleRad, localMatrix)
+				scaleMatrix(localMatrix, 1, foreshortenScale, localMatrix)
+			} else if (rot && isFinite(rot)) {
+				const rotRad = (rot * Math.PI) / 180
+				rotateMatrix(localMatrix, rotRad, localMatrix)
 			}
 
 			// Part Scale & 2D Perspective Deform (rotateX, rotateY, scale)
@@ -566,6 +594,7 @@ export class CharacterRigRenderer {
 				pivot,
 				opacity,
 				zindex: Number(zindex) || 0,
+				screenAngle: effScreenAngle,
 				partDef
 			}
 
@@ -577,14 +606,14 @@ export class CharacterRigRenderer {
 			for (const childName of children) {
 				const childDef = bodyParts[childName]
 				if (childDef) {
-					processNode(childName, childDef, localMatrix, nodeWidth, nodeHeight, false)
+					processNode(childName, childDef, localMatrix, nodeWidth, nodeHeight, false, effScreenAngle)
 				}
 			}
 
 			// Process equipment attached to this part
 			for (const eq of equipPartsList) {
 				if (eq.parent === name) {
-					processNode(eq.name, eq, localMatrix, nodeWidth, nodeHeight, true)
+					processNode(eq.name, eq, localMatrix, nodeWidth, nodeHeight, true, effScreenAngle)
 				}
 			}
 		}
@@ -703,20 +732,10 @@ export class CharacterRigRenderer {
 
 					// Editor selection / bounding boxes
 					if (selectedPartName && node.name === selectedPartName) {
-						ctx.save()
-						ctx.setTransform(ca * dpr, cb * dpr, cc * dpr, cd * dpr, ce * dpr, cf * dpr)
-						ctx.lineWidth = 2
-						ctx.strokeStyle = '#f59e0b'
-						ctx.strokeRect(-node.pivotPixelX, -node.pivotPixelY, node.width, node.height)
-						ctx.restore()
+						this.drawPartSelectionBox(ctx, node, dpr)
 					}
 					if (showBoundingBoxes) {
-						ctx.save()
-						ctx.setTransform(ca * dpr, cb * dpr, cc * dpr, cd * dpr, ce * dpr, cf * dpr)
-						ctx.lineWidth = 1
-						ctx.strokeStyle = 'rgba(16, 185, 129, 0.4)'
-						ctx.strokeRect(-node.pivotPixelX, -node.pivotPixelY, node.width, node.height)
-						ctx.restore()
+						this.drawBoundingBox(ctx, node, 'rgba(16, 185, 129, 0.4)', dpr)
 					}
 					continue
 				}
@@ -752,21 +771,253 @@ export class CharacterRigRenderer {
 
 			// Optional highlight for selected part in editor
 			if (selectedPartName && node.name === selectedPartName) {
-				ctx.lineWidth = 2
-				ctx.strokeStyle = '#f59e0b' // amber
-				ctx.strokeRect(-node.pivotPixelX, -node.pivotPixelY, node.width, node.height)
+				this.drawPartSelectionBox(ctx, node, dpr)
 			}
 
 			if (showBoundingBoxes) {
-				ctx.lineWidth = 1
-				ctx.strokeStyle = 'rgba(16, 185, 129, 0.4)' // emerald
-				ctx.strokeRect(-node.pivotPixelX, -node.pivotPixelY, node.width, node.height)
+				this.drawBoundingBox(ctx, node, 'rgba(16, 185, 129, 0.4)', dpr)
 			}
 
 			ctx.restore()
 		}
 
 		ctx.setTransform(1, 0, 0, 1, 0, 0)
+	}
+
+	/**
+	 * Render 3D-perspective-aware selection gizmo for the currently selected part.
+	 * When screenAngle is 0, renders a classic 2D rectangle.
+	 * When screenAngle != 0, projects the 4 corners in true 3D perspective around the pivot:
+	 * the side closer to the screen enlarges (p > 1), and the side farther shrinks (p < 1).
+	 */
+	drawPartSelectionBox(ctx, node, dpr = 1) {
+		const [ma, mb, mc, md, me, mf] = node.worldMatrix
+		const px = me
+		const py = mf
+
+		const x0 = -node.pivotPixelX
+		const y0 = -node.pivotPixelY
+		const w = node.width
+		const h = node.height
+		const x1 = x0 + w
+		const y1 = y0 + h
+
+		const screenAngle = Number(node.screenAngle) || 0
+
+		ctx.save()
+		ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+		ctx.globalAlpha = 1
+
+		// 4 corners of the sprite in local unrotated space
+		const localCorners = [
+			{ x: x0, y: y0 }, // 0: top-left
+			{ x: x1, y: y0 }, // 1: top-right
+			{ x: x1, y: y1 }, // 2: bottom-right
+			{ x: x0, y: y1 }  // 3: bottom-left
+		]
+
+		// 2D flat world coordinates on screen
+		const fPts = localCorners.map(pt => ({
+			x: ma * pt.x + mc * pt.y + px,
+			y: mb * pt.x + md * pt.y + py
+		}))
+
+		if (Math.abs(screenAngle) < 0.5) {
+			ctx.lineWidth = 2
+			ctx.strokeStyle = '#f59e0b'
+			ctx.beginPath()
+			ctx.moveTo(fPts[0].x, fPts[0].y)
+			ctx.lineTo(fPts[1].x, fPts[1].y)
+			ctx.lineTo(fPts[2].x, fPts[2].y)
+			ctx.lineTo(fPts[3].x, fPts[3].y)
+			ctx.closePath()
+			ctx.stroke()
+			ctx.restore()
+			return
+		}
+
+		// 3D Perspective Projection
+		// Clamped angle in radians
+		const clampedAngle = Math.max(-85, Math.min(85, screenAngle))
+		const rad = (clampedAngle * Math.PI) / 180
+		const sinA = Math.sin(rad)
+		const cosA = Math.max(0.08, Math.cos(rad))
+
+		// Center of the bounding box on screen
+		const cx = (fPts[0].x + fPts[1].x + fPts[2].x + fPts[3].x) / 4
+		const cy = (fPts[0].y + fPts[1].y + fPts[2].y + fPts[3].y) / 4
+
+		// Characteristic dimension of the limb
+		const S = Math.max(w, h, 80)
+		// Camera focal distance scaled to limb dimensions for distinct, visible 3D perspective
+		const D = S * 1.35 + 50
+
+		// Project each corner in 3D relative to bounding box center:
+		// dx is horizontal offset from center
+		// Depth Z = -dx * sinA * 1.4: closer (>0) expands, farther (<0) shrinks
+		const qPts = fPts.map(pt => {
+			const dx = pt.x - cx
+			const dy = pt.y - cy
+			const z = -dx * sinA * 1.4
+			const denom = Math.max(D * 0.25, D - z)
+			const p = D / denom
+			return {
+				x: cx + (dx * cosA) * p,
+				y: cy + dy * p,
+				z
+			}
+		})
+
+		// 1. Ghost reference box for flat 0° screen plane (baseline)
+		ctx.lineWidth = 1
+		ctx.strokeStyle = 'rgba(245, 158, 11, 0.35)'
+		ctx.setLineDash([4, 4])
+		ctx.beginPath()
+		ctx.moveTo(fPts[0].x, fPts[0].y)
+		ctx.lineTo(fPts[1].x, fPts[1].y)
+		ctx.lineTo(fPts[2].x, fPts[2].y)
+		ctx.lineTo(fPts[3].x, fPts[3].y)
+		ctx.closePath()
+		ctx.stroke()
+
+		// 2. Depth connecting lines from flat corners to 3D perspective corners
+		ctx.lineWidth = 1
+		ctx.strokeStyle = 'rgba(245, 158, 11, 0.45)'
+		ctx.setLineDash([2, 3])
+		ctx.beginPath()
+		for (let i = 0; i < 4; i++) {
+			ctx.moveTo(fPts[i].x, fPts[i].y)
+			ctx.lineTo(qPts[i].x, qPts[i].y)
+		}
+		ctx.stroke()
+
+		// 3. 3D Perspective Plane Quad
+		ctx.setLineDash([])
+		ctx.beginPath()
+		ctx.moveTo(qPts[0].x, qPts[0].y)
+		ctx.lineTo(qPts[1].x, qPts[1].y)
+		ctx.lineTo(qPts[2].x, qPts[2].y)
+		ctx.lineTo(qPts[3].x, qPts[3].y)
+		ctx.closePath()
+
+		// Subtle translucent amber fill
+		ctx.fillStyle = 'rgba(245, 158, 11, 0.08)'
+		ctx.fill()
+
+		// Solid 2px amber border
+		ctx.lineWidth = 2
+		ctx.strokeStyle = '#f59e0b'
+		ctx.stroke()
+
+		// 4. Corner vertex handles on the 3D plane
+		ctx.fillStyle = '#f59e0b'
+		for (const pt of qPts) {
+			ctx.beginPath()
+			ctx.arc(pt.x, pt.y, 2.5, 0, Math.PI * 2)
+			ctx.fill()
+		}
+
+		// 5. Angle badge at the top edge of the 3D plane (drawn horizontally in screen space)
+		const topX = (qPts[0].x + qPts[1].x) / 2
+		const topY = Math.min(qPts[0].y, qPts[1].y, qPts[2].y, qPts[3].y)
+		const badgeText = `${Math.round(screenAngle)}°`
+
+		ctx.font = 'bold 11px monospace'
+		ctx.textAlign = 'center'
+		ctx.textBaseline = 'bottom'
+		const badgeW = ctx.measureText(badgeText).width + 10
+		const badgeH = 15
+		const badgeY = topY - 6
+
+		ctx.fillStyle = 'rgba(15, 23, 42, 0.88)'
+		ctx.fillRect(topX - badgeW / 2, badgeY - badgeH, badgeW, badgeH)
+		ctx.lineWidth = 1
+		ctx.strokeStyle = '#f59e0b'
+		ctx.strokeRect(topX - badgeW / 2, badgeY - badgeH, badgeW, badgeH)
+		ctx.fillStyle = '#f59e0b'
+		ctx.fillText(badgeText, topX, badgeY - 2)
+
+		ctx.restore()
+	}
+
+	/**
+	 * Render part bounding box (for showBoundingBoxes mode), supporting 3D perspective if screenAngle is set.
+	 */
+	drawBoundingBox(ctx, node, color = 'rgba(16, 185, 129, 0.4)', dpr = 1) {
+		const [ma, mb, mc, md, me, mf] = node.worldMatrix
+		const px = me
+		const py = mf
+
+		const x0 = -node.pivotPixelX
+		const y0 = -node.pivotPixelY
+		const w = node.width
+		const h = node.height
+		const x1 = x0 + w
+		const y1 = y0 + h
+
+		const screenAngle = Number(node.screenAngle) || 0
+
+		ctx.save()
+		ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+
+		const localCorners = [
+			{ x: x0, y: y0 },
+			{ x: x1, y: y0 },
+			{ x: x1, y: y1 },
+			{ x: x0, y: y1 }
+		]
+
+		const fPts = localCorners.map(pt => ({
+			x: ma * pt.x + mc * pt.y + px,
+			y: mb * pt.x + md * pt.y + py
+		}))
+
+		ctx.lineWidth = 1
+		ctx.strokeStyle = color
+
+		if (Math.abs(screenAngle) < 0.5) {
+			ctx.beginPath()
+			ctx.moveTo(fPts[0].x, fPts[0].y)
+			ctx.lineTo(fPts[1].x, fPts[1].y)
+			ctx.lineTo(fPts[2].x, fPts[2].y)
+			ctx.lineTo(fPts[3].x, fPts[3].y)
+			ctx.closePath()
+			ctx.stroke()
+			ctx.restore()
+			return
+		}
+
+		const clampedAngle = Math.max(-85, Math.min(85, screenAngle))
+		const rad = (clampedAngle * Math.PI) / 180
+		const sinA = Math.sin(rad)
+		const cosA = Math.max(0.08, Math.cos(rad))
+
+		const cx = (fPts[0].x + fPts[1].x + fPts[2].x + fPts[3].x) / 4
+		const cy = (fPts[0].y + fPts[1].y + fPts[2].y + fPts[3].y) / 4
+
+		const S = Math.max(w, h, 80)
+		const D = S * 1.35 + 50
+
+		const qPts = fPts.map(pt => {
+			const dx = pt.x - cx
+			const dy = pt.y - cy
+			const z = -dx * sinA * 1.4
+			const denom = Math.max(D * 0.25, D - z)
+			const p = D / denom
+			return {
+				x: cx + (dx * cosA) * p,
+				y: cy + dy * p
+			}
+		})
+
+		ctx.beginPath()
+		ctx.moveTo(qPts[0].x, qPts[0].y)
+		ctx.lineTo(qPts[1].x, qPts[1].y)
+		ctx.lineTo(qPts[2].x, qPts[2].y)
+		ctx.lineTo(qPts[3].x, qPts[3].y)
+		ctx.closePath()
+		ctx.stroke()
+		ctx.restore()
 	}
 
 	/**

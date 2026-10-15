@@ -69,6 +69,10 @@ const props = defineProps({
 		type: Object,
 		default: () => ({})
 	},
+	partScreenAngles: {
+		type: Object,
+		default: () => ({})
+	},
 	partAnimations: {
 		type: Object,
 		default: null
@@ -254,6 +258,7 @@ const effectivePreserveCanonicalRulerHeight = computed(() => {
 
 // Active animated transforms driven by runtime animation loop
 const activePartRotations = reactive({})
+const activePartScreenAngles = reactive({})
 const activePartTranslations = reactive({})
 const activePartScales = reactive({})
 const activePartOpacities = reactive({})
@@ -266,6 +271,19 @@ const effectivePartRotations = computed(() => {
 	for (const [name, rot] of Object.entries(activePartRotations)) {
 		if (rot !== undefined && rot !== null) {
 			res[name] = (res[name] || 0) + rot
+		}
+	}
+	return res
+})
+
+const effectivePartScreenAngles = computed(() => {
+	const res = { ...props.partScreenAngles }
+	if (props.character?.partScreenAngles) {
+		Object.assign(res, props.character.partScreenAngles)
+	}
+	for (const [name, angle] of Object.entries(activePartScreenAngles)) {
+		if (angle !== undefined && angle !== null) {
+			res[name] = (res[name] || 0) + angle
 		}
 	}
 	return res
@@ -463,6 +481,7 @@ function renderScene() {
 		rootOffset: effectiveRootOffset.value,
 		orientation: effectiveOrientation.value,
 		partRotations: effectivePartRotations.value,
+		partScreenAngles: effectivePartScreenAngles.value,
 		partTranslations: effectivePartTranslations.value,
 		partScales: effectivePartScales.value,
 		partOpacities: effectivePartOpacities.value,
@@ -508,6 +527,9 @@ function clearAnimatedOverrides() {
 	for (const k of Object.keys(activePartRotations)) {
 		delete activePartRotations[k]
 	}
+	for (const k of Object.keys(activePartScreenAngles)) {
+		delete activePartScreenAngles[k]
+	}
 	for (const k of Object.keys(activePartTranslations)) {
 		delete activePartTranslations[k]
 	}
@@ -527,6 +549,21 @@ function getEffectivePartAnimations() {
 	if (props.partAnimations) {
 		Object.assign(res, props.partAnimations)
 	}
+	if (Object.keys(res).length === 0) {
+		const defaultAnim =
+			props.character?.default_animation ||
+			props.character?.defaultAnimation ||
+			props.character?.idleAnimation ||
+			props.character?.values?.default_animation
+		if (defaultAnim) {
+			res['__default_idle__'] = {
+				animation: defaultAnim,
+				class: defaultAnim,
+				repeat: 'loop',
+				duration: 3.2
+			}
+		}
+	}
 	return res
 }
 
@@ -539,7 +576,8 @@ function evaluateAnimation(
 	frameRot,
 	frameTrans,
 	frameScale,
-	frameOpacity
+	frameOpacity,
+	frameScreenAngle = {}
 ) {
 	// 1. Check if anim is a registered animation or has inline tracks/keyframes
 	const animId = anim.animation || anim.id || (typeof anim.class === 'string' && anim.class)
@@ -567,6 +605,9 @@ function evaluateAnimation(
 
 				if (state.rotate !== undefined) {
 					frameRot[actualTarget] = (frameRot[actualTarget] || 0) + state.rotate
+				}
+				if (state.screenAngle !== undefined) {
+					frameScreenAngle[actualTarget] = (frameScreenAngle[actualTarget] || 0) + state.screenAngle
 				}
 				if (state.translateX !== undefined || state.translateY !== undefined) {
 					const prev = frameTrans[actualTarget] || { x: 0, y: 0 }
@@ -698,10 +739,17 @@ function evaluateAnimation(
 		return
 	}
 
-	if (animClass === 'breathing' || anim.animation === 'breathing') {
+	if (animClass === 'breathing' || anim.animation === 'breathing' || animClass === 'breathing_idle' || anim.animation === 'breathing_idle') {
 		const breath = Math.sin(progress * Math.PI * 2) * 3
 		frameRot['body'] = (frameRot['body'] || 0) + breath * 0.5
 		frameRot['head'] = (frameRot['head'] || 0) - breath * 0.3
+		return
+	}
+
+	if (animClass === 'breathing_heavy' || anim.animation === 'breathing_heavy') {
+		const breath = Math.sin(progress * Math.PI * 2) * 6
+		frameRot['body'] = (frameRot['body'] || 0) + breath * 0.8
+		frameRot['head'] = (frameRot['head'] || 0) - breath * 0.6
 		return
 	}
 
@@ -758,6 +806,7 @@ function stepCanvasAnimations(now) {
 	}
 
 	const frameRot = {}
+	const frameScreenAngle = {}
 	const frameTrans = {}
 	const frameScale = {}
 	const frameOpacity = {}
@@ -781,7 +830,8 @@ function stepCanvasAnimations(now) {
 			frameRot,
 			frameTrans,
 			frameScale,
-			frameOpacity
+			frameOpacity,
+			frameScreenAngle
 		)
 
 		if (isFinished !== undefined) {
@@ -801,6 +851,13 @@ function stepCanvasAnimations(now) {
 	}
 	for (const k of Object.keys(activePartRotations)) {
 		if (!(k in frameRot)) delete activePartRotations[k]
+	}
+
+	for (const k of Object.keys(frameScreenAngle)) {
+		activePartScreenAngles[k] = frameScreenAngle[k]
+	}
+	for (const k of Object.keys(activePartScreenAngles)) {
+		if (!(k in frameScreenAngle)) delete activePartScreenAngles[k]
 	}
 
 	for (const k of Object.keys(frameTrans)) {
@@ -916,7 +973,13 @@ watch(
 )
 
 watch(
-	() => [props.character?.partAnimations, props.partAnimations],
+	() => [
+		props.character?.partAnimations,
+		props.partAnimations,
+		props.character?.default_animation,
+		props.character?.defaultAnimation,
+		props.character?.idleAnimation
+	],
 	() => {
 		checkAndStartAnimationLoop()
 	},
@@ -948,6 +1011,7 @@ watch(
 		() => props.rootOffset,
 		() => props.orientation,
 		() => props.partRotations,
+		() => props.partScreenAngles,
 		() => props.partTranslations,
 		() => props.partScales,
 		() => props.partOpacities,

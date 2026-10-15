@@ -337,6 +337,7 @@
 								:character-scale="1"
 								:orientation="isoFlipped ? 'left' : 'right'"
 								:part-rotations="partRotations"
+								:part-screen-angles="partScreenAngles"
 								:part-translations="partTranslations"
 								:part-scales="partScales"
 								:part-opacities="partOpacities"
@@ -458,6 +459,7 @@
 								:root-offset="rootOffset"
 								:orientation="orientation === 'inverted' ? 'left' : 'right'"
 								:part-rotations="partRotations"
+								:part-screen-angles="partScreenAngles"
 								:part-translations="partTranslations"
 								:part-scales="partScales"
 								:part-opacities="partOpacities"
@@ -1182,6 +1184,72 @@
 							</div>
 						</div>
 
+						<!-- Screen / Depth Angle (Degrees) for 3/4 view and depth projection -->
+						<div class="control-field">
+							<div class="field-label-row">
+								<label class="field-label" title="Угол плоскости вращения по отношению к экрану (ракурс полубоком 3/4 или наклон вглубь)">Угол к экрану / Ракурс (Screen Angle):</label>
+								<div class="field-label-actions">
+									<span class="field-val">{{ Math.round(currentPart.screenAngle || 0) }}°</span>
+									<button
+										v-if="currentPart.screenAngle"
+										type="button"
+										class="mini-btn"
+										title="Сбросить угол к экрану в 0° (анфас)"
+										@click="currentPart.screenAngle = 0"
+									>
+										🔄 0°
+									</button>
+								</div>
+							</div>
+							<div class="field-range-row">
+								<input
+									v-model.number="currentPart.screenAngle"
+									type="range"
+									min="-85"
+									max="85"
+									step="1"
+									class="studio-range"
+								/>
+								<input
+									v-model.number="currentPart.screenAngle"
+									type="number"
+									min="-85"
+									max="85"
+									step="1"
+									class="studio-number-input"
+								/>
+							</div>
+							<div class="field-tags-row" style="margin-top: 0.3em; display: flex; gap: 0.35em;">
+								<button
+									type="button"
+									class="mini-btn"
+									:class="{ __active: !currentPart.screenAngle }"
+									title="Анфас (0° — плоскость экрана)"
+									@click="currentPart.screenAngle = 0"
+								>
+									0° Анфас
+								</button>
+								<button
+									type="button"
+									class="mini-btn"
+									:class="{ __active: currentPart.screenAngle === 30 }"
+									title="30° Полубок (легкий ракурс 3/4)"
+									@click="currentPart.screenAngle = 30"
+								>
+									30° Полубок
+								</button>
+								<button
+									type="button"
+									class="mini-btn"
+									:class="{ __active: currentPart.screenAngle === 45 }"
+									title="45° Ракурс (глубокий полуоборот)"
+									@click="currentPart.screenAngle = 45"
+								>
+									45° Ракурс
+								</button>
+							</div>
+						</div>
+
 						<!-- Pivot Point / Anchor -->
 						<div class="control-field">
 							<div class="field-label-row">
@@ -1242,6 +1310,7 @@
 								class="mini-btn"
 								@click="
 									partRotations[selectedPartName] = 0;
+									if (partScreenAngles[selectedPartName] !== undefined) partScreenAngles[selectedPartName] = 0;
 									if (partTranslations[selectedPartName]) { partTranslations[selectedPartName].x = 0; partTranslations[selectedPartName].y = 0; }
 									if (partScales[selectedPartName] !== undefined) partScales[selectedPartName] = 1;
 									if (partOpacities[selectedPartName] !== undefined) partOpacities[selectedPartName] = 1;
@@ -1271,6 +1340,43 @@
 								<input
 									v-model.number="partRotations[selectedPartName]"
 									type="number"
+									class="studio-number-input"
+								/>
+							</div>
+						</div>
+
+						<!-- Dynamic Screen Angle for Selected Part -->
+						<div class="control-field">
+							<div class="field-label-row">
+								<label class="field-label" title="Динамический угол наклона плоскости вращения к экрану в позе">Угол к экрану в позе (Screen Angle):</label>
+								<div class="field-label-actions">
+									<span class="field-val">{{ Math.round(partScreenAngles[selectedPartName] || 0) }}°</span>
+									<button
+										v-if="partScreenAngles[selectedPartName]"
+										type="button"
+										class="mini-btn"
+										title="Сбросить угол в 0°"
+										@click="partScreenAngles[selectedPartName] = 0"
+									>
+										🔄 0°
+									</button>
+								</div>
+							</div>
+							<div class="field-range-row">
+								<input
+									v-model.number="partScreenAngles[selectedPartName]"
+									type="range"
+									min="-85"
+									max="85"
+									step="1"
+									class="studio-range"
+								/>
+								<input
+									v-model.number="partScreenAngles[selectedPartName]"
+									type="number"
+									min="-85"
+									max="85"
+									step="1"
 									class="studio-number-input"
 								/>
 							</div>
@@ -1661,85 +1767,331 @@
 						/>
 					</div>
 
-					<!-- Eye Perspective & Pupil Scale System -->
+					<!-- Eye Perspective & Scale System (Eyes & Pupils) -->
 					<div class="sidebar-section-card">
 						<div class="ssc-header">
-							<span class="ssc-title">Ракурс и размер зрачков</span>
+							<span class="ssc-title">Ракурс и размер глаз и зрачков</span>
 							<button
 								type="button"
 								class="mini-btn"
-								title="Сбросить зрачки в исходное положение"
+								title="Сбросить глаза и зрачки в исходное положение"
 								@click="resetEyes"
 							>
 								🔄 Сброс
 							</button>
 						</div>
 
-						<!-- Pupil Scale Slider -->
-						<div class="control-field">
-							<div class="field-label-row">
-								<label class="field-label">Размер зрачков (Scale):</label>
-								<div class="field-label-actions">
-									<span class="field-val">{{ Number(eyePupilScale).toFixed(2) }}x</span>
-									<button
-										v-if="eyePupilScale !== 1"
-										type="button"
-										class="mini-btn"
-										title="Сбросить размер в 1.0x"
-										@click="eyePupilScale = 1.0"
-									>
-										🔄 1.0x
-									</button>
+						<!-- Linked Mode Controls -->
+						<template v-if="eyeControlMode === 'linked'">
+							<!-- Eye Scale Slider (Linked) -->
+							<div class="control-field">
+								<div class="field-label-row">
+									<label class="field-label">Размер глаз (Eye Scale):</label>
+									<div class="field-label-actions">
+										<span class="field-val">{{ Number(eyeScale).toFixed(2) }}x</span>
+										<button
+											v-if="eyeScale !== 1"
+											type="button"
+											class="mini-btn"
+											title="Сбросить размер глаз в 1.0x"
+											@click="eyeScale = 1.0"
+										>
+											🔄 1.0x
+										</button>
+									</div>
+								</div>
+								<div class="field-range-row">
+									<input
+										v-model.number="eyeScale"
+										type="range"
+										min="0.2"
+										max="3.0"
+										step="0.01"
+										class="studio-range"
+									/>
+									<input
+										v-model.number="eyeScale"
+										type="number"
+										step="0.01"
+										min="0.1"
+										max="3.0"
+										class="studio-number-input"
+									/>
+								</div>
+								<div class="fine-tune-row __compact">
+									<div class="ftr-buttons">
+										<button
+											type="button"
+											class="ftr-btn"
+											title="Уменьшить глаза (0.8x)"
+											@click="eyeScale = 0.8"
+										>
+											0.8x
+										</button>
+										<button
+											type="button"
+											class="ftr-btn __reset"
+											title="Нормальный размер глаз (1.0x)"
+											@click="eyeScale = 1.0"
+										>
+											1.0x (Норма)
+										</button>
+										<button
+											type="button"
+											class="ftr-btn"
+											title="Увеличить глаза (1.2x)"
+											@click="eyeScale = 1.2"
+										>
+											1.2x
+										</button>
+										<button
+											type="button"
+											class="ftr-btn"
+											title="Аниме-глаза (1.5x)"
+											@click="eyeScale = 1.5"
+										>
+											1.5x
+										</button>
+									</div>
 								</div>
 							</div>
-							<div class="field-range-row">
-								<input
-									v-model.number="eyePupilScale"
-									type="range"
-									min="0.2"
-									max="2.5"
-									step="0.01"
-									class="studio-range"
-								/>
-								<input
-									v-model.number="eyePupilScale"
-									type="number"
-									step="0.01"
-									min="0.1"
-									max="3.0"
-									class="studio-number-input"
-								/>
-							</div>
-							<!-- Quick Pupil Presets -->
-							<div class="fine-tune-row __compact">
-								<div class="ftr-buttons">
-									<button
-										type="button"
-										class="ftr-btn"
-										title="Сузить зрачки (подозрение / прищур: 0.5x)"
-										@click="eyePupilScale = 0.5"
-									>
-										0.5x (Подозрение)
-									</button>
-									<button
-										type="button"
-										class="ftr-btn __reset"
-										title="Нормальный размер зрачков (1.0x)"
-										@click="eyePupilScale = 1.0"
-									>
-										1.0x (Норма)
-									</button>
-									<button
-										type="button"
-										class="ftr-btn"
-										title="Расширить зрачки (шок / удивление: 1.4x)"
-										@click="eyePupilScale = 1.4"
-									>
-										1.4x (Удивление)
-									</button>
+
+							<!-- Pupil Scale Slider (Linked) -->
+							<div class="control-field">
+								<div class="field-label-row">
+									<label class="field-label">Размер зрачков (Pupil Scale):</label>
+									<div class="field-label-actions">
+										<span class="field-val">{{ Number(eyePupilScale).toFixed(2) }}x</span>
+										<button
+											v-if="eyePupilScale !== 1"
+											type="button"
+											class="mini-btn"
+											title="Сбросить размер в 1.0x"
+											@click="eyePupilScale = 1.0"
+										>
+											🔄 1.0x
+										</button>
+									</div>
+								</div>
+								<div class="field-range-row">
+									<input
+										v-model.number="eyePupilScale"
+										type="range"
+										min="0.2"
+										max="3.0"
+										step="0.01"
+										class="studio-range"
+									/>
+									<input
+										v-model.number="eyePupilScale"
+										type="number"
+										step="0.01"
+										min="0.1"
+										max="3.0"
+										class="studio-number-input"
+									/>
+								</div>
+								<div class="fine-tune-row __compact">
+									<div class="ftr-buttons">
+										<button
+											type="button"
+											class="ftr-btn"
+											title="Сузить зрачки (подозрение / прищур: 0.5x)"
+											@click="eyePupilScale = 0.5"
+										>
+											0.5x (Подозрение)
+										</button>
+										<button
+											type="button"
+											class="ftr-btn __reset"
+											title="Нормальный размер зрачков (1.0x)"
+											@click="eyePupilScale = 1.0"
+										>
+											1.0x (Норма)
+										</button>
+										<button
+											type="button"
+											class="ftr-btn"
+											title="Расширить зрачки (шок / удивление: 1.4x)"
+											@click="eyePupilScale = 1.4"
+										>
+											1.4x (Удивление)
+										</button>
+									</div>
 								</div>
 							</div>
-						</div>
+						</template>
+
+						<!-- Independent (L / R) Mode Controls -->
+						<template v-else>
+							<div class="dual-eye-scale-grid">
+								<!-- Left Eye Column -->
+								<div class="desc-card">
+									<div class="desc-header">
+										<span class="desc-title">👁️ Левый глаз</span>
+									</div>
+									<div class="control-field">
+										<div class="field-label-row">
+											<label class="field-label">Размер глаза:</label>
+											<span class="field-val">{{ Number(eyeLeftScale).toFixed(2) }}x</span>
+										</div>
+										<div class="field-range-row">
+											<input
+												v-model.number="eyeLeftScale"
+												type="range"
+												min="0.2"
+												max="3.0"
+												step="0.01"
+												class="studio-range"
+											/>
+											<input
+												v-model.number="eyeLeftScale"
+												type="number"
+												step="0.01"
+												min="0.1"
+												max="3.0"
+												class="studio-number-input"
+											/>
+										</div>
+									</div>
+									<div class="control-field">
+										<div class="field-label-row">
+											<label class="field-label">Размер зрачка:</label>
+											<span class="field-val">{{ Number(eyePupilLeftScale).toFixed(2) }}x</span>
+										</div>
+										<div class="field-range-row">
+											<input
+												v-model.number="eyePupilLeftScale"
+												type="range"
+												min="0.2"
+												max="3.0"
+												step="0.01"
+												class="studio-range"
+											/>
+											<input
+												v-model.number="eyePupilLeftScale"
+												type="number"
+												step="0.01"
+												min="0.1"
+												max="3.0"
+												class="studio-number-input"
+											/>
+										</div>
+										<div class="fine-tune-row __compact">
+											<div class="ftr-buttons">
+												<button
+													type="button"
+													class="ftr-btn"
+													title="0.5x"
+													@click="eyePupilLeftScale = 0.5"
+												>
+													0.5x
+												</button>
+												<button
+													type="button"
+													class="ftr-btn __reset"
+													title="1.0x"
+													@click="eyePupilLeftScale = 1.0"
+												>
+													1.0x
+												</button>
+												<button
+													type="button"
+													class="ftr-btn"
+													title="1.4x"
+													@click="eyePupilLeftScale = 1.4"
+												>
+													1.4x
+												</button>
+											</div>
+										</div>
+									</div>
+								</div>
+
+								<!-- Right Eye Column -->
+								<div class="desc-card">
+									<div class="desc-header">
+										<span class="desc-title">👁️ Правый глаз</span>
+									</div>
+									<div class="control-field">
+										<div class="field-label-row">
+											<label class="field-label">Размер глаза:</label>
+											<span class="field-val">{{ Number(eyeRightScale).toFixed(2) }}x</span>
+										</div>
+										<div class="field-range-row">
+											<input
+												v-model.number="eyeRightScale"
+												type="range"
+												min="0.2"
+												max="3.0"
+												step="0.01"
+												class="studio-range"
+											/>
+											<input
+												v-model.number="eyeRightScale"
+												type="number"
+												step="0.01"
+												min="0.1"
+												max="3.0"
+												class="studio-number-input"
+											/>
+										</div>
+									</div>
+									<div class="control-field">
+										<div class="field-label-row">
+											<label class="field-label">Размер зрачка:</label>
+											<span class="field-val">{{ Number(eyePupilRightScale).toFixed(2) }}x</span>
+										</div>
+										<div class="field-range-row">
+											<input
+												v-model.number="eyePupilRightScale"
+												type="range"
+												min="0.2"
+												max="3.0"
+												step="0.01"
+												class="studio-range"
+											/>
+											<input
+												v-model.number="eyePupilRightScale"
+												type="number"
+												step="0.01"
+												min="0.1"
+												max="3.0"
+												class="studio-number-input"
+											/>
+										</div>
+										<div class="fine-tune-row __compact">
+											<div class="ftr-buttons">
+												<button
+													type="button"
+													class="ftr-btn"
+													title="0.5x"
+													@click="eyePupilRightScale = 0.5"
+												>
+													0.5x
+												</button>
+												<button
+													type="button"
+													class="ftr-btn __reset"
+													title="1.0x"
+													@click="eyePupilRightScale = 1.0"
+												>
+													1.0x
+												</button>
+												<button
+													type="button"
+													class="ftr-btn"
+													title="1.4x"
+													@click="eyePupilRightScale = 1.4"
+												>
+													1.4x
+												</button>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</template>
 
 						<!-- Horizontal Turn (Yaw / Rotate Y) -->
 						<div class="control-field">
@@ -2408,13 +2760,19 @@ const {
 	eyeLinkedOffset,
 	eyeLeftOffset,
 	eyeRightOffset,
+	eyeScale,
+	eyeLeftScale,
+	eyeRightScale,
 	eyePupilScale,
+	eyePupilLeftScale,
+	eyePupilRightScale,
 	eyeTurnH,
 	eyeTurnV,
 	updateEyeTransforms,
 	resetEyes,
 	EYE_PRESETS,
 	partRotations,
+	partScreenAngles,
 	partTranslations,
 	partScales,
 	partOpacities,
@@ -2689,7 +3047,7 @@ watch([() => rootOffset.x, () => rootOffset.y], scheduleUpdatePartCenters)
 watch([orientation, isBackView], () => {
 	setTimeout(scheduleUpdatePartCenters, 60)
 })
-watch(partRotations, scheduleUpdatePartCenters, { deep: true })
+watch([partRotations, partScreenAngles], scheduleUpdatePartCenters, { deep: true })
 watch(partTranslations, scheduleUpdatePartCenters, { deep: true })
 watch([partScales, partCustomStyles], scheduleUpdatePartCenters, { deep: true })
 watch(bodyParts, scheduleUpdatePartCenters, { deep: true })
@@ -4172,6 +4530,33 @@ onMounted(async () => {
 .mini-btn.__stop {
 	border-color: #ef4444;
 	color: #ef4444;
+}
+
+.dual-eye-scale-grid {
+	display: flex;
+	gap: 0.6em;
+}
+
+.desc-card {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 0.5em;
+	background: rgba(0, 0, 0, 0.25);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: 0.4em;
+	padding: 0.6em;
+}
+
+.desc-header {
+	border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+	padding-bottom: 0.3em;
+}
+
+.desc-title {
+	font-size: 0.8em;
+	font-weight: bold;
+	color: #f6c445;
 }
 
 /* Decomposition cards */

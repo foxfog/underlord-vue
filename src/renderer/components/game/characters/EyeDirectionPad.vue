@@ -1,8 +1,8 @@
 <template>
 	<div class="eye-direction-pad">
-		<!-- Mode Switcher -->
+		<!-- Mode Switcher & Range Multiplier -->
 		<div class="eye-mode-bar">
-			<span class="emb-title">Режим глаз:</span>
+			<span class="emb-title">Режим:</span>
 			<div class="emb-buttons">
 				<button
 					type="button"
@@ -10,7 +10,7 @@
 					:class="{ __active: modelValueMode === 'linked' }"
 					@click="$emit('update:modelValueMode', 'linked')"
 				>
-					👀 Оба глаза (вместе)
+					👀 Оба глаза
 				</button>
 				<button
 					type="button"
@@ -18,7 +18,24 @@
 					:class="{ __active: modelValueMode === 'independent' }"
 					@click="$emit('update:modelValueMode', 'independent')"
 				>
-					👁️👁️ Раздельно (L / R)
+					👁️👁️ Раздельно
+				</button>
+			</div>
+		</div>
+
+		<!-- Amplitude / Range Multiplier -->
+		<div class="eye-range-bar">
+			<span class="erb-title" title="Максимальный размах смещения зрачков">Размах хода:</span>
+			<div class="erb-buttons">
+				<button
+					v-for="m in [1.0, 1.5, 2.0, 2.5, 3.0]"
+					:key="m"
+					type="button"
+					class="eye-range-btn"
+					:class="{ __active: offsetRangeMultiplier === m }"
+					@click="offsetRangeMultiplier = m"
+				>
+					{{ m.toFixed(1) }}x
 				</button>
 			</div>
 		</div>
@@ -47,6 +64,70 @@
 						<span class="knob-pupil"></span>
 					</div>
 				</div>
+
+				<!-- Precise Numeric Sliders for Linked -->
+				<div class="pad-fine-controls">
+					<div class="pfc-row">
+						<span class="pfc-axis">X:</span>
+						<input
+							type="range"
+							min="-3.0"
+							max="3.0"
+							step="0.01"
+							class="pfc-range"
+							:value="linkedOffset.x || 0"
+							@input="updateCoordAxis('linked', 'x', $event.target.value)"
+						/>
+						<input
+							type="number"
+							min="-3.0"
+							max="3.0"
+							step="0.01"
+							class="pfc-number"
+							:value="linkedOffset.x || 0"
+							@input="updateCoordAxis('linked', 'x', $event.target.value)"
+						/>
+						<button
+							v-if="linkedOffset.x !== 0"
+							type="button"
+							class="pfc-reset-btn"
+							title="Сбросить X в 0"
+							@click="updateCoordAxis('linked', 'x', 0)"
+						>
+							🔄
+						</button>
+					</div>
+					<div class="pfc-row">
+						<span class="pfc-axis">Y:</span>
+						<input
+							type="range"
+							min="-3.0"
+							max="3.0"
+							step="0.01"
+							class="pfc-range"
+							:value="linkedOffset.y || 0"
+							@input="updateCoordAxis('linked', 'y', $event.target.value)"
+						/>
+						<input
+							type="number"
+							min="-3.0"
+							max="3.0"
+							step="0.01"
+							class="pfc-number"
+							:value="linkedOffset.y || 0"
+							@input="updateCoordAxis('linked', 'y', $event.target.value)"
+						/>
+						<button
+							v-if="linkedOffset.y !== 0"
+							type="button"
+							class="pfc-reset-btn"
+							title="Сбросить Y в 0"
+							@click="updateCoordAxis('linked', 'y', 0)"
+						>
+							🔄
+						</button>
+					</div>
+				</div>
 			</div>
 
 			<!-- Independent Dual Pads -->
@@ -73,6 +154,52 @@
 							<span class="knob-pupil"></span>
 						</div>
 					</div>
+
+					<!-- Precise Numeric Sliders for Left -->
+					<div class="pad-fine-controls __compact">
+						<div class="pfc-row">
+							<span class="pfc-axis">X:</span>
+							<input
+								type="range"
+								min="-3.0"
+								max="3.0"
+								step="0.01"
+								class="pfc-range"
+								:value="leftOffset.x || 0"
+								@input="updateCoordAxis('left', 'x', $event.target.value)"
+							/>
+							<input
+								type="number"
+								min="-3.0"
+								max="3.0"
+								step="0.01"
+								class="pfc-number"
+								:value="leftOffset.x || 0"
+								@input="updateCoordAxis('left', 'x', $event.target.value)"
+							/>
+						</div>
+						<div class="pfc-row">
+							<span class="pfc-axis">Y:</span>
+							<input
+								type="range"
+								min="-3.0"
+								max="3.0"
+								step="0.01"
+								class="pfc-range"
+								:value="leftOffset.y || 0"
+								@input="updateCoordAxis('left', 'y', $event.target.value)"
+							/>
+							<input
+								type="number"
+								min="-3.0"
+								max="3.0"
+								step="0.01"
+								class="pfc-number"
+								:value="leftOffset.y || 0"
+								@input="updateCoordAxis('left', 'y', $event.target.value)"
+							/>
+						</div>
+					</div>
 				</div>
 
 				<!-- Right Eye -->
@@ -95,6 +222,52 @@
 							:style="getKnobStyle(rightOffset.x, rightOffset.y)"
 						>
 							<span class="knob-pupil"></span>
+						</div>
+					</div>
+
+					<!-- Precise Numeric Sliders for Right -->
+					<div class="pad-fine-controls __compact">
+						<div class="pfc-row">
+							<span class="pfc-axis">X:</span>
+							<input
+								type="range"
+								min="-3.0"
+								max="3.0"
+								step="0.01"
+								class="pfc-range"
+								:value="rightOffset.x || 0"
+								@input="updateCoordAxis('right', 'x', $event.target.value)"
+							/>
+							<input
+								type="number"
+								min="-3.0"
+								max="3.0"
+								step="0.01"
+								class="pfc-number"
+								:value="rightOffset.x || 0"
+								@input="updateCoordAxis('right', 'x', $event.target.value)"
+							/>
+						</div>
+						<div class="pfc-row">
+							<span class="pfc-axis">Y:</span>
+							<input
+								type="range"
+								min="-3.0"
+								max="3.0"
+								step="0.01"
+								class="pfc-range"
+								:value="rightOffset.y || 0"
+								@input="updateCoordAxis('right', 'y', $event.target.value)"
+							/>
+							<input
+								type="number"
+								min="-3.0"
+								max="3.0"
+								step="0.01"
+								class="pfc-number"
+								:value="rightOffset.y || 0"
+								@input="updateCoordAxis('right', 'y', $event.target.value)"
+							/>
 						</div>
 					</div>
 				</div>
@@ -128,7 +301,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onUnmounted } from 'vue'
 
 const props = defineProps({
 	modelValueMode: {
@@ -165,6 +338,8 @@ const linkedPadRef = ref(null)
 const leftPadRef = ref(null)
 const rightPadRef = ref(null)
 
+const offsetRangeMultiplier = ref(2.0)
+
 let activeTarget = null // 'linked' | 'left' | 'right'
 
 function formatVal(v) {
@@ -173,8 +348,11 @@ function formatVal(v) {
 
 function getKnobStyle(x, y) {
 	// Knob position within circle in %: center is 50%, range +- 38%
-	const px = 50 + (x || 0) * 38
-	const py = 50 + (y || 0) * 38
+	const mult = Number(offsetRangeMultiplier.value) || 2.0
+	const normX = Math.max(-1, Math.min(1, (x || 0) / mult))
+	const normY = Math.max(-1, Math.min(1, (y || 0) / mult))
+	const px = 50 + normX * 38
+	const py = 50 + normY * 38
 	return {
 		left: `${px}%`,
 		top: `${py}%`
@@ -209,8 +387,9 @@ function updateCoordFromPointer(clientX, clientY, target) {
 		ny = dy / distance
 	}
 
-	nx = Math.round(nx * 100) / 100
-	ny = Math.round(ny * 100) / 100
+	const mult = Number(offsetRangeMultiplier.value) || 2.0
+	nx = Math.round(nx * mult * 100) / 100
+	ny = Math.round(ny * mult * 100) / 100
 
 	if (target === 'linked') {
 		emit('update:linkedOffset', { x: nx, y: ny })
@@ -220,6 +399,20 @@ function updateCoordFromPointer(clientX, clientY, target) {
 		emit('update:leftOffset', { x: nx, y: ny })
 	} else if (target === 'right') {
 		emit('update:rightOffset', { x: nx, y: ny })
+	}
+}
+
+function updateCoordAxis(target, axis, val) {
+	const num = Number(val) || 0
+	if (target === 'linked') {
+		const next = { ...props.linkedOffset, [axis]: num }
+		emit('update:linkedOffset', next)
+		emit('update:leftOffset', { ...props.leftOffset, [axis]: num })
+		emit('update:rightOffset', { ...props.rightOffset, [axis]: num })
+	} else if (target === 'left') {
+		emit('update:leftOffset', { ...props.leftOffset, [axis]: num })
+	} else if (target === 'right') {
+		emit('update:rightOffset', { ...props.rightOffset, [axis]: num })
 	}
 }
 
@@ -325,6 +518,119 @@ onUnmounted(() => {
 	border-color: #f6c445;
 	color: #f6c445;
 	font-weight: bold;
+}
+
+.eye-range-bar {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 0.5em;
+	padding-top: 0.3em;
+	border-top: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.erb-title {
+	font-size: 0.78em;
+	color: #94a3b8;
+}
+
+.erb-buttons {
+	display: flex;
+	gap: 0.3em;
+}
+
+.eye-range-btn {
+	background: rgba(255, 255, 255, 0.05);
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	color: #cbd5e1;
+	border-radius: 0.25em;
+	padding: 0.15em 0.45em;
+	font-size: 0.75em;
+	cursor: pointer;
+	transition: all 0.15s;
+}
+
+.eye-range-btn:hover {
+	background: rgba(255, 255, 255, 0.12);
+	color: #fff;
+}
+
+.eye-range-btn.__active {
+	background: rgba(56, 189, 248, 0.2);
+	border-color: #38bdf8;
+	color: #38bdf8;
+	font-weight: bold;
+}
+
+.pad-fine-controls {
+	display: flex;
+	flex-direction: column;
+	gap: 0.3em;
+	width: 100%;
+	max-width: 15em;
+	margin-top: 0.4em;
+	background: rgba(0, 0, 0, 0.25);
+	border: 1px solid rgba(255, 255, 255, 0.06);
+	border-radius: 0.35em;
+	padding: 0.4em 0.5em;
+}
+
+.pad-fine-controls.__compact {
+	max-width: 11em;
+	padding: 0.3em 0.4em;
+	gap: 0.25em;
+}
+
+.pfc-row {
+	display: flex;
+	align-items: center;
+	gap: 0.4em;
+}
+
+.pfc-axis {
+	font-size: 0.75em;
+	font-weight: bold;
+	color: #f6c445;
+	width: 1.2em;
+	text-align: center;
+}
+
+.pfc-range {
+	flex: 1;
+	accent-color: #f6c445;
+	height: 0.3em;
+	cursor: pointer;
+}
+
+.pfc-number {
+	width: 3.8em;
+	background: rgba(15, 23, 42, 0.8);
+	border: 1px solid rgba(255, 255, 255, 0.15);
+	border-radius: 0.25em;
+	color: #e2e8f0;
+	font-size: 0.75em;
+	padding: 0.15em 0.3em;
+	text-align: center;
+	font-family: monospace;
+}
+
+.pad-fine-controls.__compact .pfc-number {
+	width: 3.2em;
+}
+
+.pfc-reset-btn {
+	background: rgba(255, 255, 255, 0.06);
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	color: #94a3b8;
+	border-radius: 0.2em;
+	padding: 0.1em 0.3em;
+	font-size: 0.7em;
+	cursor: pointer;
+}
+
+.pfc-reset-btn:hover {
+	background: rgba(255, 255, 255, 0.15);
+	color: #fff;
 }
 
 .joysticks-container {
