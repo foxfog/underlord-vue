@@ -1,10 +1,20 @@
 // src/preload/index.js
 
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 
 // Создаём объект API
 const api = {
+	getPathForFile: (file) => {
+		try {
+			if (webUtils && typeof webUtils.getPathForFile === 'function') {
+				return webUtils.getPathForFile(file)
+			}
+			return file?.path || ''
+		} catch {
+			return file?.path || ''
+		}
+	},
 	getSettings: (type) => ipcRenderer.invoke('get-settings', type), // type: undefined | 'default'
 	closeWindow: () => ipcRenderer.send('close-window'), //закрыть окно
 	setFullscreen: (flag) => ipcRenderer.send('set-fullscreen', flag),

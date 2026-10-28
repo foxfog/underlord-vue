@@ -111,10 +111,12 @@ export function transformPoint(m, x, y, out = null) {
 // Global Image Cache to prevent flickering and avoid reloading
 const imageCache = new Map()
 const pendingLoads = new Map()
+const failedImages = new Set()
 
 export function clearCharacterRigImageCache() {
 	imageCache.clear()
 	pendingLoads.clear()
+	failedImages.clear()
 }
 
 export function getImageFromCache(src) {
@@ -129,6 +131,7 @@ export function getImageFromCache(src) {
 export function preloadImage(src, onLoaded = null) {
 	if (!src) return Promise.resolve(null)
 	if (typeof Image === 'undefined') return Promise.resolve(null)
+	if (failedImages.has(src)) return Promise.resolve(null)
 	if (imageCache.has(src)) {
 		const img = imageCache.get(src)
 		if (img.complete && img.naturalWidth > 0) {
@@ -157,7 +160,9 @@ export function preloadImage(src, onLoaded = null) {
 			}
 		}
 		img.onerror = () => {
+			failedImages.add(src)
 			pendingLoads.delete(src)
+			if (onLoaded) onLoaded(null)
 			resolve(null)
 		}
 		img.src = src
@@ -228,6 +233,7 @@ export class CharacterRigRenderer {
 		const paths = this.collectAllImagePaths(params)
 		if (paths.length === 0) return true
 		for (const src of paths) {
+			if (failedImages.has(src)) continue
 			const img = getImageFromCache(src)
 			if (!img) return false
 		}
@@ -1099,4 +1105,46 @@ export class CharacterRigRenderer {
 			this.clipCtx = null
 		}
 	}
+}
+
+
+/**
+ * Resolves a selected File object (from an <input type="file">) to the canonical relative sprite path
+ * used throughout the game (e.g. "images/sprites/characters/mc/equipment/boots-rawhide.png").
+ * In Electron, file.path contains the absolute path on disk.
+ */
+export function resolveRelativeSpritePath(file, fallbackFolder = '') {
+	if (!file) return ''
+	let diskPath = ''
+	if (typeof window !== 'undefined' && window.electronAPI?.getPathForFile) {
+		try {
+			diskPath = window.electronAPI.getPathForFile(file)
+		} catch {
+			// ignore
+		}
+	}
+	if (!diskPath && file.path) {
+		diskPath = file.path
+	}
+	if (diskPath) {
+		const norm = String(file.path).replace(/\\/g, '/')
+		const pubIdx = norm.indexOf('/public/')
+		if (pubIdx !== -1) {
+			return norm.slice(pubIdx + '/public/'.length)
+		}
+		const spriteIdx = norm.indexOf('images/sprites/')
+		if (spriteIdx !== -1) {
+			return norm.slice(spriteIdx)
+		}
+		const imgIdx = norm.indexOf('images/')
+		if (imgIdx !== -1) {
+			return norm.slice(imgIdx)
+		}
+	}
+	const fileName = file.name || ''
+	if (fallbackFolder) {
+		const cleanDir = fallbackFolder.replace(/\/+$/, '')
+		return `${cleanDir}/${fileName}`
+	}
+	return `images/sprites/${fileName}`
 }

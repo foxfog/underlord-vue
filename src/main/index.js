@@ -569,7 +569,7 @@ ipcMain.handle('data-editor-read-file', async (_event, relativePath) => {
 		const baseDir = getDataDirectory()
 		const filePath = join(baseDir, relativePath)
 		const content = await fs.readFile(filePath, 'utf-8')
-		return { success: true, data: JSON.parse(content), path: filePath }
+		return { success: true, data: JSON.parse(content.replace(/^\uFEFF/, '')), path: filePath }
 	} catch (error) {
 		if (error.code === 'ENOENT') {
 			return { success: false, notFound: true, error: 'Файл не найден' }

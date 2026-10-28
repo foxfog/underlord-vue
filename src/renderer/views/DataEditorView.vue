@@ -43,6 +43,17 @@
 					<span>Древо</span>
 				</button>
 				<button
+					v-if="activeTab === 'items'"
+					type="button"
+					class="view-mode-btn"
+					:class="{ __active: classRaceViewMode === 'grid' }"
+					title="Каталог предметов квадратиками на всё поле"
+					@click="classRaceViewMode = 'grid'"
+				>
+					<span class="vmb-icon">🔲</span>
+					<span>Сетка</span>
+				</button>
+				<button
 					type="button"
 					class="view-mode-btn"
 					:class="{ __active: classRaceViewMode === 'table' }"
@@ -53,6 +64,7 @@
 					<span>Таблица</span>
 				</button>
 				<button
+					v-if="activeTab !== 'items'"
 					type="button"
 					class="view-mode-btn"
 					:class="{ __active: classRaceViewMode === 'list' }"
@@ -317,7 +329,274 @@
 			</template>
 
 			<!-- ========================================================= -->
-			<!-- TABS: CHARACTERS, CLASSES, FRACTIONS, RACES, ITEMS        -->
+			<!-- TAB: ITEMS CATALOG (when activeTab === 'items' && !isTableMode) -->
+			<!-- ========================================================= -->
+			<template v-else-if="activeTab === 'items' && !isTableMode">
+				<div class="items-catalog-pane">
+					<!-- Top Toolbar -->
+					<div class="items-catalog-toolbar">
+						<div class="ict-row __main">
+							<!-- Search Box -->
+							<div class="search-box ict-search">
+								<span class="search-icon">🔍</span>
+								<input
+									v-model="searchQuery"
+									type="text"
+									class="search-input"
+									placeholder="Поиск по названию, ID, слоту, тегам..."
+								/>
+								<button
+									v-if="searchQuery"
+									class="search-clear-btn"
+									@click="searchQuery = ''"
+								>
+									✕
+								</button>
+							</div>
+
+							<!-- Item Type Filter Pills -->
+							<div class="ict-pills-group">
+								<button
+									type="button"
+									class="ict-pill-btn"
+									:class="{ __active: itemTypeFilter === 'all' }"
+									@click="itemTypeFilter = 'all'"
+								>
+									<span>Все</span>
+									<span class="ict-pill-count">{{ itemsCounts.all }}</span>
+								</button>
+								<button
+									type="button"
+									class="ict-pill-btn"
+									:class="{ __active: itemTypeFilter === 'equipment' }"
+									@click="itemTypeFilter = 'equipment'"
+								>
+									<span>🗡️ Снаряжение</span>
+									<span class="ict-pill-count">{{ itemsCounts.equipment }}</span>
+								</button>
+								<button
+									type="button"
+									class="ict-pill-btn"
+									:class="{ __active: itemTypeFilter === 'other' }"
+									@click="itemTypeFilter = 'other'"
+								>
+									<span>🧪 Расходники</span>
+									<span class="ict-pill-count">{{ itemsCounts.other }}</span>
+								</button>
+							</div>
+
+							<div class="ict-spacer"></div>
+
+							<!-- Create Item Button -->
+							<button
+								type="button"
+								class="editor-btn editor-btn-primary ict-create-btn"
+								@click="onStartCreateItem"
+							>
+								<span>➕ Создать предмет</span>
+							</button>
+						</div>
+
+						<div class="ict-row __secondary">
+							<!-- Slot Filter Selector -->
+							<div class="ict-filter-control">
+								<span class="ict-filter-label">Слот:</span>
+								<select v-model="itemSlotFilter" class="editor-select ict-select">
+									<option value="all">Все слоты</option>
+									<optgroup label="Группы слотов">
+										<option
+											v-for="grp in EQUIPMENT_SLOT_GROUPS"
+											:key="'ict-grp-' + grp.id"
+											:value="'grp:' + grp.id"
+										>
+											{{ grp.icon }} {{ grp.label }}
+										</option>
+									</optgroup>
+									<optgroup label="Конкретные слоты">
+										<option
+											v-for="s in EQUIPMENT_SLOTS_LIST"
+											:key="'ict-slot-' + s.id"
+											:value="s.id"
+										>
+											{{ s.icon }} {{ s.label }} ({{ s.id }})
+										</option>
+									</optgroup>
+								</select>
+							</div>
+
+							<!-- Rarity Filter Selector -->
+							<div class="ict-filter-control">
+								<span class="ict-filter-label">Редкость:</span>
+								<select v-model="itemRarityFilter" class="editor-select ict-select">
+									<option value="all">Все редкости</option>
+									<option
+										v-for="r in ITEM_RARITIES"
+										:key="'ict-rarity-' + r.id"
+										:value="r.id"
+									>
+										{{ r.icon }} {{ r.label }}
+									</option>
+								</select>
+							</div>
+
+							<!-- Sort By Selector -->
+							<div class="ict-filter-control">
+								<span class="ict-filter-label">Сортировка:</span>
+								<select v-model="itemSortBy" class="editor-select ict-select">
+									<option value="order">По умолчанию (файл)</option>
+									<option value="name_asc">Имя (А → Я)</option>
+									<option value="name_desc">Имя (Я → А)</option>
+									<option value="rarity_desc">Редкость (по убыванию)</option>
+									<option value="rarity_asc">Редкость (по возрастанию)</option>
+									<option value="lvl_asc">Уровень (1 → 100)</option>
+									<option value="lvl_desc">Уровень (100 → 1)</option>
+									<option value="id">По ID (A → Z)</option>
+								</select>
+							</div>
+
+							<!-- Reset Filters Button -->
+							<button
+								v-if="isAnyItemFilterActive"
+								type="button"
+								class="ict-reset-btn"
+								title="Сбросить все фильтры и сортировку"
+								@click="resetItemFilters"
+							>
+								✕ Сбросить фильтры
+							</button>
+
+							<div class="ict-spacer"></div>
+
+							<!-- Counter -->
+							<div class="ict-count-badge">
+								Показано: <strong>{{ displayedItems.length }}</strong> из {{ (entities.items || []).length }}
+							</div>
+						</div>
+					</div>
+
+					<!-- Grid Area -->
+					<div class="items-grid-container">
+						<div v-if="displayedItems.length === 0" class="empty-items-catalog">
+							<span class="eic-icon">📦</span>
+							<h3 class="eic-title">Предметы не найдены</h3>
+							<p class="eic-desc">
+								{{ isAnyItemFilterActive ? 'Нет предметов, соответствующих заданным критериям фильтрации.' : 'Каталог предметов пуст.' }}
+							</p>
+							<div class="eic-actions">
+								<button
+									v-if="isAnyItemFilterActive"
+									type="button"
+									class="editor-btn editor-btn-secondary"
+									@click="resetItemFilters"
+								>
+									✕ Сбросить фильтры
+								</button>
+								<button
+									type="button"
+									class="editor-btn editor-btn-primary"
+									@click="onStartCreateItem"
+								>
+									➕ Создать новый предмет
+								</button>
+							</div>
+						</div>
+
+						<div v-else class="items-card-grid">
+							<div
+								v-for="item in displayedItems"
+								:key="'item-tile-' + item.id"
+								class="item-grid-card"
+								:class="[
+									'__rarity-' + (item.rarity || 'common'),
+									{ '__is-rainbow': item.rarity === 'world' }
+								]"
+								:style="{ borderColor: getRarityColor(item.rarity) }"
+								@click="openItemModal(item)"
+							>
+								<!-- Top Card Bar: Slot Icon & Rarity Pill -->
+								<div class="igc-header">
+									<span class="igc-type-icon" :title="item.type === 'equipment' ? (formatSlotDisplay(item.slot) || 'Снаряжение') : 'Расходник'">
+										{{ getSlotOrTypeIcon(item) }}
+									</span>
+									<span
+										class="igc-rarity-pill"
+										:style="getRarityBadgeStyle(item.rarity)"
+										:title="'Редкость: ' + getRarity(item.rarity).label"
+									>
+										{{ getRarity(item.rarity).label }}
+									</span>
+								</div>
+
+								<!-- Center Sprite / Icon -->
+								<div class="igc-visual-box">
+									<img
+										v-if="item.sprite && !failedItemSprites.has(item.id)"
+										:src="resolveAssetPath(item.sprite)"
+										class="igc-sprite-img"
+										:alt="item.name || item.id"
+										@error="onSpriteImgError(item.id, $event)"
+									/>
+									<span v-else class="igc-emoji-icon">
+										{{ item.icon || (item.type === 'equipment' ? '🗡️' : '🧪') }}
+									</span>
+								</div>
+
+								<!-- Bottom Info -->
+								<div class="igc-info-box">
+									<div
+										class="igc-name"
+										:title="getEntityText('items', item.id, 'name') || item.name || item.id"
+									>
+										{{ getEntityText('items', item.id, 'name') || item.name || item.id }}
+									</div>
+
+									<div class="igc-id-code" :title="item.id">
+										{{ item.id }}
+									</div>
+
+									<div class="igc-meta-row">
+										<span v-if="item.lvl && item.lvl > 1" class="igc-pill __lvl" :title="'Уровень: ' + item.lvl">
+											⭐ {{ item.lvl }}
+										</span>
+										<span v-if="item.slot" class="igc-pill __slot" :title="'Слот: ' + formatSlotDisplay(item.slot)">
+											{{ Array.isArray(item.slot) ? item.slot[0] : item.slot }}
+										</span>
+										<span v-if="item.stackable" class="igc-pill __stack" title="Стакаемый в инвентаре">
+											📦
+										</span>
+										<span v-if="item.weight" class="igc-pill __weight" :title="'Вес: ' + item.weight + ' кг'">
+											{{ item.weight }}кг
+										</span>
+									</div>
+								</div>
+
+								<!-- Card Quick Action Hover Buttons -->
+								<div class="igc-hover-actions">
+									<button
+										type="button"
+										class="igc-action-btn __edit"
+										title="Редактировать предмет"
+										@click.stop="openItemModal(item)"
+									>
+										✏️
+									</button>
+									<button
+										type="button"
+										class="igc-action-btn __delete"
+										title="Удалить предмет"
+										@click.stop="promptDelete(item)"
+									>
+										🗑️
+									</button>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</template>
+
+			<!-- ========================================================= -->
+			<!-- TABS: CHARACTERS, CLASSES, FRACTIONS, RACES (+ ITEMS TABLE)-->
 			<!-- ========================================================= -->
 			<template v-else>
 				<!-- Tree Canvas for Classes, Races and Fractions in Tree Mode -->
@@ -652,7 +931,7 @@
 
 				<!-- Right Column: Detail / Edit Form (or Side Drawer in Tree / Table Mode) -->
 				<main
-					v-if="(!isTreeMode && !isTableMode) || selectedEntity"
+					v-if="activeTab !== 'items' && (((!isTreeMode && !isTableMode) || selectedEntity))"
 					class="form-pane"
 					:class="{ '__tree-drawer': isTreeMode, '__table-drawer': isTableMode }"
 				>
@@ -1942,18 +2221,48 @@
 											✕ Сбросить слот
 										</button>
 									</div>
-									<div class="chips-container __slots">
+									<!-- Legacy slot notice if active item has legacy slot -->
+									<div v-if="hasLegacySlot" class="legacy-slot-banner">
+										<div class="lsb-text">
+											<span class="lsb-icon">⚠️</span>
+											<span>У предмета выбран устаревший слот: <code>{{ selectedEntity.slot }}</code></span>
+										</div>
 										<button
-											v-for="s in EQUIPMENT_SLOTS_LIST"
-											:key="'item-slot-' + s.id"
 											type="button"
-											class="chip-toggle-btn __slot"
-											:class="{ __selected: isSlotSelected(s.id) }"
-											@click="toggleItemSlot(s.id)"
+											class="lsb-convert-btn"
+											title="Обновить слот до канонического"
+											@click="convertCurrentLegacySlot"
 										>
-											<span class="chip-check">{{ isSlotSelected(s.id) ? '☑' : '☐' }}</span>
-											<span class="chip-name">{{ s.label }}</span>
+											🔄 Заменить на «{{ getLegacyTargetSlotName(selectedEntity.slot) }}»
 										</button>
+									</div>
+
+									<!-- Slot Groups Grid -->
+									<div class="slot-groups-container">
+										<div
+											v-for="grp in EQUIPMENT_SLOT_GROUPS"
+											:key="'slot-grp-' + grp.id"
+											class="slot-group-card"
+										>
+											<div class="slot-group-header">
+												<span class="sgh-icon">{{ grp.icon }}</span>
+												<span class="sgh-title">{{ grp.label }}</span>
+											</div>
+											<div class="slot-group-chips">
+												<button
+													v-for="s in grp.slots"
+													:key="'item-slot-' + s.id"
+													type="button"
+													class="chip-toggle-btn __slot"
+													:class="{ __selected: isSlotSelected(s.id) }"
+													@click="toggleItemSlot(s.id)"
+												>
+													<span class="chip-check">{{ isSlotSelected(s.id) ? '☑' : '☐' }}</span>
+													<span class="chip-icon">{{ s.icon }}</span>
+													<span class="chip-name">{{ s.label }}</span>
+												</button>
+											</div>
+										</div>
 									</div>
 								</div>
 
@@ -2625,6 +2934,713 @@
 			</template>
 		</div>
 
+		<!-- ========================================================= -->
+		<!-- FULL-SIZE ITEM EDITOR MODAL (when activeTab === 'items')  -->
+		<!-- ========================================================= -->
+		<Transition name="fade">
+			<div
+				v-if="activeTab === 'items' && isItemModalOpen && selectedEntity"
+				class="modal-overlay item-modal-overlay"
+				@click.self="cancelItemEdit"
+			>
+				<div class="item-editor-modal-card">
+					<!-- Modal Header -->
+					<div class="item-modal-header">
+						<div class="imh-left">
+							<span class="imh-status-pill" :class="isCreating ? '__new' : '__edit'">
+								{{ isCreating ? '✨ Новый предмет' : '✏️ Редактирование' }}
+							</span>
+							<div class="imh-title-box">
+								<span class="imh-icon">{{ selectedEntity.icon || (selectedEntity.type === 'equipment' ? '🗡️' : '🧪') }}</span>
+								<div class="imh-names">
+									<h2 class="imh-name">
+										{{ isCreating ? 'Создание нового предмета' : (getEntityText('items', selectedEntity.id, 'name') || selectedEntity.name || selectedEntity.id) }}
+									</h2>
+									<code v-if="selectedEntity.id" class="imh-id-code">id: {{ selectedEntity.id }}</code>
+								</div>
+							</div>
+							<!-- Rarity Badge -->
+							<span
+								v-if="selectedEntity.rarity"
+								class="rel-badge __rarity"
+								:style="getRarityBadgeStyle(selectedEntity.rarity)"
+							>
+								{{ getRarity(selectedEntity.rarity).icon }} {{ getRarity(selectedEntity.rarity).label }}
+							</span>
+							<span class="imh-file-pill">
+								📁 items/{{ selectedEntity.type === 'equipment' ? 'equipment.json' : 'other.json' }}
+							</span>
+						</div>
+
+						<div class="imh-actions">
+							<button
+								type="button"
+								class="editor-btn editor-btn-primary"
+								:disabled="isSaving"
+								@click="handleSave"
+							>
+								<span class="btn-icon">💾</span>
+								<span>{{ isSaving ? 'Сохранение...' : 'Сохранить (Ctrl+S)' }}</span>
+							</button>
+							<button
+								type="button"
+								class="modal-close-icon-btn"
+								title="Закрыть модалку (Esc)"
+								@click="cancelItemEdit"
+							>
+								✕
+							</button>
+						</div>
+					</div>
+
+					<!-- Modal Body (Scrollable, 2-column + full sections) -->
+					<div class="item-modal-body">
+						<!-- Top 2-Column Grid: General Info + Localization -->
+						<div class="item-modal-top-grid">
+							<!-- Left Column: General Info -->
+							<div class="modal-form-card">
+								<div class="mfc-header">
+									<span class="mfc-icon">⚙️</span>
+									<span class="mfc-title">Основные параметры</span>
+								</div>
+								<div class="mfc-body">
+									<!-- ID -->
+									<div class="form-field">
+										<label class="field-label">
+											ID предмета (уникальный ключ) <span class="req-star">*</span>
+										</label>
+										<input
+											v-model="selectedEntity.id"
+											type="text"
+											class="editor-input"
+											:disabled="!isCreating"
+											placeholder="e.g. iron_sword, health_potion"
+										/>
+										<span v-if="isCreating" class="field-hint">
+											Латинские буквы в нижнем регистре, цифры, дефис или подчеркивание.
+										</span>
+									</div>
+
+									<!-- Name RU -->
+									<div class="form-field">
+										<label class="field-label">
+											Название (Основное / RU) <span class="req-star">*</span>
+										</label>
+										<input
+											v-model="selectedEntity.name"
+											type="text"
+											class="editor-input"
+											placeholder="e.g. Железный меч"
+											@input="syncRuLocaleName"
+										/>
+									</div>
+
+									<!-- Item Type Selector -->
+									<div class="form-field">
+										<label class="field-label">Тип предмета (Type) <span class="req-star">*</span></label>
+										<div class="item-type-toggle-row">
+											<button
+												type="button"
+												class="item-type-btn"
+												:class="{ __active: selectedEntity.type === 'equipment' }"
+												@click="selectedEntity.type = 'equipment'"
+											>
+												<span>🗡️ Снаряжение (Equipment)</span>
+											</button>
+											<button
+												type="button"
+												class="item-type-btn"
+												:class="{ __active: selectedEntity.type === 'other' }"
+												@click="selectedEntity.type = 'other'"
+											>
+												<span>🧪 Расходник / Прочее (Other)</span>
+											</button>
+										</div>
+									</div>
+
+									<!-- Icon and Sprite row -->
+									<div class="field-row __split">
+										<div class="form-field __icon-field">
+											<label class="field-label">Иконка (Emoji / Значок)</label>
+											<input
+												v-model="selectedEntity.icon"
+											type="text"
+											class="editor-input"
+											placeholder="🗡️"
+										/>
+									</div>
+
+										<div class="form-field">
+											<div class="field-label-row">
+												<label class="field-label">Файл спрайта предмета (PNG):</label>
+												<label class="btn-picker-upload" title="Выбрать файл изображения на диске">
+													<input
+														type="file"
+														accept="image/png,image/webp,image/jpeg"
+														class="hidden-file-input"
+														@change="onPickItemSprite"
+													/>
+													<span>📁 Выбрать файл...</span>
+												</label>
+											</div>
+											<div class="sprite-input-wrap">
+												<input
+													v-model="selectedEntity.sprite"
+													type="text"
+													class="editor-input"
+													placeholder="images/sprites/items/equipments/..."
+												/>
+												<div v-if="selectedEntity.sprite" class="sprite-preview-thumb">
+													<img
+														:src="resolveAssetPath(selectedEntity.sprite)"
+														alt="Превью"
+														@error="(e) => e.target.style.display = 'none'"
+													/>
+												</div>
+											</div>
+										</div>
+									</div>
+
+									<!-- Rarity Selector -->
+									<div class="form-field">
+										<label class="field-label">Редкость (Rarity)</label>
+										<div class="rarity-selector-grid">
+											<button
+												v-for="r in ITEM_RARITIES"
+												:key="'modal-rarity-' + r.id"
+												type="button"
+												class="rarity-option-btn"
+												:class="{
+													__selected: (selectedEntity.rarity || 'common') === r.id,
+													['__rarity-' + r.id]: true,
+													'__is-rainbow': r.isRainbow
+												}"
+												:style="getRarityBadgeStyle(r.id)"
+												@click="selectedEntity.rarity = r.id"
+											>
+												<span class="rarity-btn-icon">{{ r.icon }}</span>
+												<span class="rarity-btn-label">{{ r.label }}</span>
+											</button>
+										</div>
+									</div>
+
+									<!-- Weight & Stackable -->
+									<div class="field-row __split">
+										<div class="form-field">
+											<label class="field-label">Вес в кг (Weight)</label>
+											<input
+												v-model.number="selectedEntity.weight"
+												type="number"
+												step="0.01"
+												class="editor-input"
+												placeholder="0.5"
+											/>
+										</div>
+										<div class="form-field __checkbox">
+											<label class="checkbox-label">
+												<input v-model="selectedEntity.stackable" type="checkbox" />
+												<span>Стакаемый в инвентаре (Stackable)</span>
+											</label>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<!-- Right Column: Locales & Descriptions -->
+							<div class="modal-form-card">
+								<div class="mfc-header">
+									<span class="mfc-icon">🌐</span>
+									<span class="mfc-title">Локализация и описания</span>
+								</div>
+								<div class="mfc-body">
+									<!-- Locales language tabs -->
+									<div class="locale-pills-row">
+										<button
+											v-for="loc in availableLocales"
+											:key="'modal-loc-' + loc.code"
+											type="button"
+											class="locale-pill-btn"
+											:class="{ __active: activeItemEditLocale === loc.code }"
+											@click="activeItemEditLocale = loc.code"
+										>
+											<span>{{ loc.flag }}</span>
+											<span>{{ loc.label }} ({{ loc.code.toUpperCase() }})</span>
+										</button>
+										<button
+											type="button"
+											class="locale-pill-btn __add"
+											title="Добавить новый язык"
+											@click="openAddLocaleModal"
+										>
+											➕ Добавить язык...
+										</button>
+									</div>
+
+									<!-- Localized name and description for current selected locale -->
+									<div v-if="selectedEntity._locales && selectedEntity._locales[activeItemEditLocale]" class="locale-edit-fields">
+										<div class="form-field">
+											<label class="field-label">Название предмета ({{ activeItemEditLocale.toUpperCase() }})</label>
+											<input
+												v-model="selectedEntity._locales[activeItemEditLocale].name"
+												type="text"
+												class="editor-input"
+												:placeholder="activeItemEditLocale === 'ru' ? 'Железный меч' : 'Iron Sword'"
+												@input="onLocaleNameInput"
+											/>
+										</div>
+
+										<div class="form-field">
+											<label class="field-label">Описание предмета ({{ activeItemEditLocale.toUpperCase() }})</label>
+											<textarea
+												v-model="selectedEntity._locales[activeItemEditLocale].description"
+												class="editor-textarea"
+												rows="6"
+												placeholder="Подробное описание предмета, его истории или свойств..."
+											></textarea>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- Equipment Slot Picker (when type === 'equipment') -->
+						<div v-if="selectedEntity.type === 'equipment'" class="modal-form-card __full-width">
+							<div class="mfc-header">
+								<div class="mfc-title-group">
+									<span class="mfc-icon">🛡️</span>
+									<span class="mfc-title">Слот экипировки (Slot)</span>
+									<span class="mfc-hint">Выберите один или несколько слотов, в которые экипируется предмет</span>
+								</div>
+								<button
+									v-if="selectedEntity.slot"
+									type="button"
+									class="clear-filter-link-btn"
+									@click="selectedEntity.slot = ''"
+								>
+									✕ Сбросить слот
+								</button>
+							</div>
+							<div class="mfc-body">
+								<!-- Legacy slot notice if active item has legacy slot -->
+								<div v-if="hasLegacySlot" class="legacy-slot-banner">
+									<div class="lsb-text">
+										<span class="lsb-icon">⚠️</span>
+										<span>У предмета выбран устаревший слот: <code>{{ selectedEntity.slot }}</code></span>
+									</div>
+									<button
+									type="button"
+									class="lsb-convert-btn"
+									title="Обновить слот до канонического"
+									@click="convertCurrentLegacySlot"
+									>
+										🔄 Заменить на «{{ getLegacyTargetSlotName(selectedEntity.slot) }}»
+									</button>
+								</div>
+
+								<!-- Slot Groups Grid -->
+								<div class="slot-groups-container">
+									<div
+										v-for="grp in EQUIPMENT_SLOT_GROUPS"
+										:key="'modal-slot-grp-' + grp.id"
+										class="slot-group-card"
+									>
+										<div class="slot-group-header">
+											<span class="sgh-icon">{{ grp.icon }}</span>
+											<span class="sgh-title">{{ grp.label }}</span>
+										</div>
+										<div class="slot-group-chips">
+											<button
+												v-for="s in grp.slots"
+											:key="'modal-item-slot-' + s.id"
+											type="button"
+											class="chip-toggle-btn __slot"
+											:class="{ __selected: isSlotSelected(s.id) }"
+											@click="toggleItemSlot(s.id)"
+											>
+												<span class="chip-check">{{ isSlotSelected(s.id) ? '☑' : '☐' }}</span>
+												<span class="chip-icon">{{ s.icon }}</span>
+												<span class="chip-name">{{ s.label }}</span>
+											</button>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- Restrictions Panel (when type === 'equipment') -->
+						<div v-if="selectedEntity.type === 'equipment'" class="modal-form-card __full-width">
+							<div class="mfc-header">
+								<div class="mfc-title-group">
+									<span class="mfc-icon">⚙️</span>
+									<span class="mfc-title">Ограничения на экипирование (Equip Requirements)</span>
+									<span class="mfc-hint">Если ограничение не выбрано — предмет доступен всем без ограничений</span>
+								</div>
+							</div>
+							<div class="mfc-body">
+								<!-- Min Level -->
+								<div class="field-row __split">
+									<div class="form-field">
+										<label class="field-label">Минимальный уровень (lvl)</label>
+										<input
+											v-model.number="selectedEntity.lvl"
+											type="number"
+											min="1"
+											max="100"
+											class="editor-input"
+											placeholder="1"
+										/>
+									</div>
+								</div>
+
+								<!-- Gender Restrictions -->
+								<div class="multi-select-box">
+									<div class="field-label-row">
+										<label class="field-label">
+											Ограничение по полу (Gender):
+											<span class="field-hint">{{ (selectedEntity.genders || []).length === 0 ? 'Разрешено любому полу' : 'Только выбранные' }}</span>
+										</label>
+										<button
+											v-if="(selectedEntity.genders || []).length > 0"
+											type="button"
+											class="clear-filter-link-btn"
+											@click="selectedEntity.genders = []"
+										>
+											✕ Сбросить (Любой пол)
+										</button>
+									</div>
+									<div class="chips-container">
+										<button
+											v-for="g in GENDER_OPTIONS"
+											:key="'modal-req-g-' + g.id"
+											type="button"
+											class="chip-toggle-btn __gender"
+											:class="{ __selected: (selectedEntity.genders || []).includes(g.id), ['__' + g.id]: true }"
+											@click="toggleRelationItem(selectedEntity.genders, g.id)"
+										>
+											<span class="chip-check">{{ (selectedEntity.genders || []).includes(g.id) ? '☑' : '☐' }}</span>
+											<span class="chip-icon">{{ g.icon }}</span>
+											<span class="chip-name">{{ g.label }}</span>
+										</button>
+									</div>
+								</div>
+
+								<!-- Classes Restrictions -->
+								<EntityTagPicker
+									v-model="selectedEntity.classs"
+									:options="entities.classes"
+									type="class"
+									label="Разрешенные классы (Classes):"
+									empty-hint="Разрешено любому классу (без ограничений)"
+									placeholder="Поиск и добавление класса..."
+									:get-name="(id) => getClassName(id)"
+									:get-icon="(c) => c?.icon || '⚔️'"
+								/>
+
+								<!-- Races Restrictions -->
+								<EntityTagPicker
+									v-model="selectedEntity.races"
+									:options="entities.races"
+									type="race"
+									label="Разрешенные расы (Races):"
+									empty-hint="Разрешено любой расе (без ограничений)"
+									placeholder="Поиск и добавление расы..."
+									:get-name="(id) => getRaceName(id)"
+									:get-icon="(r) => r?.icon || '🧬'"
+								/>
+
+								<!-- Characters Restrictions -->
+								<EntityTagPicker
+									v-model="selectedEntity.characters"
+									:options="entities.characters"
+									type="character"
+									label="Разрешенные персонажи (Characters):"
+									empty-hint="Разрешено любому персонажу (без ограничений)"
+									placeholder="Поиск и добавление персонажа..."
+									:get-name="(id) => getCharacterName(id)"
+									:get-icon="(char) => char?.icon || '👤'"
+								/>
+
+								<!-- Categories Picker -->
+								<EntityTagPicker
+									v-model="selectedEntity.categories"
+									:options="itemCategories"
+									type="category"
+									label="Категории предмета (Categories):"
+									empty-hint="Категории не указаны (предмет общего назначения)"
+									placeholder="Поиск и добавление категории (оружие, броня, зелье, материал...)"
+									:get-name="(id) => getItemCategoryName(id)"
+									:get-icon="(cat) => cat?.icon || '🏷️'"
+								/>
+							</div>
+						</div>
+
+						<!-- Item Skills & Enchantments -->
+						<div class="modal-form-card __full-width">
+							<div class="mfc-header">
+								<div class="mfc-title-group">
+									<span class="mfc-icon">⚔️</span>
+									<span class="mfc-title">Встроенные навыки предмета (Item Skills & Enchantments)</span>
+									<span class="mfc-hint">Способности и зачарования, даруемые носителю предмета</span>
+								</div>
+							</div>
+							<div class="mfc-body">
+								<div class="current-skills-chips">
+									<span
+										v-for="skId in (selectedEntity.skills || [])"
+										:key="'modal-item-sk-' + skId"
+										class="interactive-tag-chip __skill"
+									>
+										<span class="chip-icon">{{ getItemSkillIcon(skId) }}</span>
+										<span class="chip-text">{{ getItemSkillName(skId) }}</span>
+										<button
+											type="button"
+											class="chip-remove-btn"
+											title="Удалить навык из предмета"
+											@click="removeItemSkillFromEntity(skId)"
+										>
+											✕
+										</button>
+									</span>
+									<span v-if="!(selectedEntity.skills && selectedEntity.skills.length > 0)" class="no-tags-hint">
+										Встроенные навыки не назначены
+									</span>
+								</div>
+
+								<div class="skill-suggestions-box" v-if="itemSkills.length > 0">
+									<span class="suggestions-label">Быстрый выбор из skills/items/items.json:</span>
+									<div class="suggestion-pills-list">
+										<button
+											v-for="sk in itemSkills"
+											:key="'modal-add-isk-' + sk.id"
+											type="button"
+											class="suggestion-pill"
+											:class="{ __already: (selectedEntity.skills || []).includes(sk.id) }"
+											:disabled="(selectedEntity.skills || []).includes(sk.id)"
+											@click="addItemSkillToEntity(sk.id)"
+										>
+											{{ sk.icon || '⚔️' }} {{ sk.name }}
+										</button>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- Tags Management Section -->
+						<div class="modal-form-card __full-width">
+							<div class="mfc-header">
+								<div class="mfc-title-group">
+									<span class="mfc-icon">🏷️</span>
+									<span class="mfc-title">Теги предмета</span>
+									<span class="mfc-hint">(сохраняются в JSON предмета и реестре tags.json)</span>
+								</div>
+							</div>
+							<div class="mfc-body">
+								<div class="current-tags-chips">
+									<span
+										v-for="t in (selectedEntity.tags || [])"
+										:key="'modal-own-tag-' + t"
+										class="interactive-tag-chip __own"
+									>
+										<span class="chip-text">{{ t }}</span>
+										<button
+											type="button"
+											class="chip-remove-btn"
+											title="Удалить тег"
+											@click="removeTagFromEntity(t)"
+										>
+											✕
+										</button>
+									</span>
+									<span v-if="(selectedEntity.tags || []).length === 0" class="no-tags-hint">
+										Теги пока не добавлены
+									</span>
+								</div>
+
+								<div class="tag-autocomplete-wrapper">
+									<div class="tag-input-row">
+										<input
+											v-model="newTagField"
+											type="text"
+											class="editor-input tag-text-input"
+											placeholder="Введите тег для автодополнения..."
+											autocomplete="off"
+											@focus="isTagDropdownOpen = true"
+											@blur="onTagInputBlur"
+											@input="onTagInput"
+											@keydown.down.prevent="onTagNavigateDown"
+											@keydown.up.prevent="onTagNavigateUp"
+											@keydown.enter.prevent="onTagEnter"
+											@keydown.esc="isTagDropdownOpen = false"
+										/>
+										<button
+											type="button"
+											class="editor-btn editor-btn-secondary"
+											:disabled="!newTagField.trim()"
+											@click="onTagEnter"
+										>
+											➕ Добавить
+										</button>
+								</div>
+									<div
+										v-if="isTagDropdownOpen && tagSuggestions.length > 0"
+										class="tag-autocomplete-dropdown"
+									>
+										<div
+											v-for="(sug, idx) in tagSuggestions"
+											:key="sug.tag"
+											class="autocomplete-item"
+											:class="{ __highlighted: highlightedTagIndex === idx }"
+											@mousedown.prevent="selectTagSuggestion(sug.tag)"
+											@mouseenter="highlightedTagIndex = idx"
+										>
+											<div class="ac-item-left">
+												<span class="ac-tag-icon">🏷️</span>
+												<span class="ac-tag-name">
+													<strong class="ac-match-highlight">{{ sug.matchPrefix }}</strong>{{ sug.matchSuffix }}
+												</span>
+											</div>
+											<div class="ac-item-right">
+												<span v-if="sug.isNew" class="ac-new-pill">новый тег</span>
+												<span v-else-if="sug.usageCount > 0" class="ac-usage-pill">{{ sug.usageCount }}</span>
+											</div>
+										</div>
+									</div>
+								</div>
+
+								<div class="tag-suggestions-box">
+									<span class="suggestions-label">Быстрый выбор из tags.json:</span>
+									<div class="suggestion-pills-list">
+										<button
+											v-for="gt in availableGlobalTagSuggestions"
+											:key="'modal-sug-' + gt"
+											type="button"
+											class="suggestion-pill"
+											@click="addTagToEntity(gt)"
+										>
+											+ {{ gt }}
+										</button>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- Custom Fields Section (JSON) -->
+						<div class="modal-form-card __full-width">
+							<div class="mfc-header">
+								<div class="mfc-title-group">
+									<span class="mfc-icon">🧩</span>
+									<span class="mfc-title">Пользовательские JSON-поля (Custom Fields)</span>
+									<span v-if="!customFieldsError" class="custom-fields-badge-tag __valid">
+										✔ Валидный JSON ({{ customFieldsValidCount }} {{ customFieldsValidCount === 1 ? 'поле' : 'полей' }})
+									</span>
+									<span v-else class="custom-fields-badge-tag __invalid">
+										❌ Ошибка синтаксиса
+									</span>
+								</div>
+								<div class="cf-header-tools">
+									<button
+										type="button"
+										class="cf-tool-btn"
+										title="Выровнять отступы и отформатировать JSON"
+										:disabled="!!customFieldsError"
+										@click="formatCustomFieldsJson"
+									>
+										🪄 Форматировать JSON
+									</button>
+									<button
+										type="button"
+										class="cf-tool-btn"
+										title="Вставить типовой шаблон пользовательских полей"
+										@click="insertCustomFieldsTemplate"
+									>
+										➕ Шаблон
+									</button>
+									<button
+										type="button"
+										class="cf-tool-btn __danger"
+										title="Очистить все пользовательские поля"
+										@click="clearCustomFields"
+									>
+										🗑️ Очистить
+									</button>
+								</div>
+							</div>
+							<div class="mfc-body">
+								<p class="custom-fields-desc">
+									Произвольные свойства предмета в формате JSON (например, <code>stats</code>, <code>price</code>, <code>durability</code>).
+								</p>
+
+								<!-- Error Alert if invalid JSON -->
+								<div v-if="customFieldsError" class="custom-fields-alert __error">
+									<span class="alert-icon">⚠️</span>
+									<span class="alert-text">{{ customFieldsError }}</span>
+								</div>
+
+								<!-- Collision Warning if managed keys written in custom fields -->
+								<div v-if="customFieldsWarning" class="custom-fields-alert __warning">
+									<span class="alert-icon">ℹ️</span>
+									<span class="alert-text">{{ customFieldsWarning }}</span>
+								</div>
+
+								<!-- JSON Code Editor Textarea -->
+								<div class="custom-fields-code-wrapper">
+									<textarea
+										v-model="customFieldsJson"
+										class="custom-fields-code-editor"
+										rows="6"
+										spellcheck="false"
+										autocomplete="off"
+										placeholder="{\n  \n}"
+										@input="onCustomFieldsInput"
+										@keydown.tab.prevent="onCodeTabKey"
+									></textarea>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- Modal Footer -->
+					<div class="item-modal-footer">
+						<div class="imf-left">
+							<button
+								v-if="!isCreating"
+								type="button"
+								class="editor-btn editor-btn-danger"
+								@click="promptDelete(selectedEntity)"
+							>
+								🗑️ Удалить предмет
+							</button>
+						</div>
+						<div class="imf-right">
+							<button
+								type="button"
+								class="editor-btn editor-btn-secondary"
+								@click="cancelItemEdit"
+							>
+								✕ Отмена
+							</button>
+							<button
+								type="button"
+								class="editor-btn editor-btn-secondary"
+								:disabled="isSaving"
+								@click="handleSaveAndClose"
+							>
+								💾 Сохранить и закрыть
+							</button>
+							<button
+								type="button"
+								class="editor-btn editor-btn-primary"
+								:disabled="isSaving"
+								@click="handleSave"
+							>
+								<span class="btn-icon">💾</span>
+								<span>{{ isSaving ? 'Сохранение...' : 'Сохранить (Ctrl+S)' }}</span>
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</Transition>
+
 		<!-- Delete Entity Confirmation Modal -->
 		<Transition name="fade">
 			<div v-if="entityToDelete" class="modal-overlay" @click.self="entityToDelete = null">
@@ -3106,7 +4122,10 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useDataEditor } from '@/composables/useDataEditor'
+import { LEGACY_SLOT_ALIASES } from '@/constants/equipmentSlots'
 import EntityTagPicker from '@/components/tests/EntityTagPicker.vue'
+import { resolveRelativeSpritePath } from '@/utils/character/characterRigRenderer'
+import { useRegisterModal, handleEscape } from '@/composables/useModalStack'
 import ClassRaceTreeCanvas from '@/components/game/dataEditor/ClassRaceTreeCanvas.vue'
 import DataTableEditor from '@/components/game/dataEditor/DataTableEditor.vue'
 import CharacterEquipmentTab from '@/components/game/dataEditor/CharacterEquipmentTab.vue'
@@ -3188,6 +4207,7 @@ const {
 	getCharacterTypeIcon,
 	GENDER_OPTIONS,
 	EQUIPMENT_SLOTS_LIST,
+	EQUIPMENT_SLOT_GROUPS,
 	getGenderLabel,
 	getGenderIcon,
 	getGenderOption,
@@ -3206,6 +4226,241 @@ const {
 	getRarityBadgeStyle,
 	saveAllEntities
 } = useDataEditor()
+
+// --- ITEMS CATALOG & MODAL STATE ---
+const isItemModalOpen = ref(false)
+const activeItemEditLocale = ref('ru')
+const itemTypeFilter = ref('all') // 'all' | 'equipment' | 'other'
+const itemSlotFilter = ref('all') // 'all' | 'grp:...' | slotId
+const itemRarityFilter = ref('all') // 'all' | rarityId
+const itemSortBy = ref('order') // 'order' | 'name_asc' | 'name_desc' | 'rarity_desc' | 'rarity_asc' | 'lvl_asc' | 'lvl_desc' | 'id'
+const failedItemSprites = ref(new Set())
+
+const RARITY_ORDER = {
+	junk: 0,
+	common: 1,
+	uncommon: 2,
+	rare: 3,
+	epic: 4,
+	legendary: 5,
+	ancient: 6,
+	divine: 7,
+	world: 8
+}
+
+const itemsCounts = computed(() => {
+	const all = entities.value?.items || []
+	let equip = 0
+	let other = 0
+	for (const it of all) {
+		if (it.type === 'equipment') equip++
+		else other++
+	}
+	return {
+		all: all.length,
+		equipment: equip,
+		other
+	}
+})
+
+const isAnyItemFilterActive = computed(() => {
+	return (
+		Boolean(searchQuery.value) ||
+		itemTypeFilter.value !== 'all' ||
+		itemSlotFilter.value !== 'all' ||
+		itemRarityFilter.value !== 'all' ||
+		itemSortBy.value !== 'order'
+	)
+})
+
+function resetItemFilters() {
+	searchQuery.value = ''
+	itemTypeFilter.value = 'all'
+	itemSlotFilter.value = 'all'
+	itemRarityFilter.value = 'all'
+	itemSortBy.value = 'order'
+}
+
+const displayedItems = computed(() => {
+	if (activeTab.value !== 'items') return []
+	let list = [...(entities.value?.items || [])]
+
+	// 1. Search Query
+	const q = searchQuery.value.trim().toLowerCase()
+	if (q) {
+		list = list.filter((item) => {
+			const id = (item.id || '').toLowerCase()
+			const rawName = (item.name || '').toLowerCase()
+			const rawDesc = (item.description || '').toLowerCase()
+			const slot = Array.isArray(item.slot) ? item.slot.join(' ').toLowerCase() : (item.slot || '').toLowerCase()
+			const tags = Array.isArray(item.tags) ? item.tags.join(' ').toLowerCase() : ''
+			const ruName = (localesData.value.ru?.items?.[item.id]?.name || '').toLowerCase()
+			const ruDesc = (localesData.value.ru?.items?.[item.id]?.description || '').toLowerCase()
+			const enName = (localesData.value.en?.items?.[item.id]?.name || '').toLowerCase()
+
+			return (
+				id.includes(q) ||
+				rawName.includes(q) ||
+				rawDesc.includes(q) ||
+				slot.includes(q) ||
+				tags.includes(q) ||
+				ruName.includes(q) ||
+				ruDesc.includes(q) ||
+				enName.includes(q)
+			)
+		})
+	}
+
+	// 2. Type Filter
+	if (itemTypeFilter.value !== 'all') {
+		list = list.filter((item) => item.type === itemTypeFilter.value)
+	}
+
+	// 3. Rarity Filter
+	if (itemRarityFilter.value !== 'all') {
+		list = list.filter((item) => (item.rarity || 'common') === itemRarityFilter.value)
+	}
+
+	// 4. Slot Filter
+	if (itemSlotFilter.value !== 'all') {
+		if (itemSlotFilter.value.startsWith('grp:')) {
+			const grpId = itemSlotFilter.value.slice(4)
+			const grp = EQUIPMENT_SLOT_GROUPS.find((g) => g.id === grpId)
+			const allowedSlots = grp ? grp.slots.map((s) => s.id) : []
+			list = list.filter((item) => {
+				if (!item.slot) return false
+				const slots = Array.isArray(item.slot) ? item.slot : [item.slot]
+				return slots.some((s) => allowedSlots.includes(s))
+			})
+		} else {
+			list = list.filter((item) => {
+				if (!item.slot) return false
+				const slots = Array.isArray(item.slot) ? item.slot : [item.slot]
+				return slots.includes(itemSlotFilter.value)
+			})
+		}
+	}
+
+	// 5. Sorting
+	if (itemSortBy.value === 'name_asc') {
+		list.sort((a, b) => {
+			const nameA = getEntityText('items', a.id, 'name') || a.name || a.id
+			const nameB = getEntityText('items', b.id, 'name') || b.name || b.id
+			return nameA.localeCompare(nameB, 'ru')
+		})
+	} else if (itemSortBy.value === 'name_desc') {
+		list.sort((a, b) => {
+			const nameA = getEntityText('items', a.id, 'name') || a.name || a.id
+			const nameB = getEntityText('items', b.id, 'name') || b.name || b.id
+			return nameB.localeCompare(nameA, 'ru')
+		})
+	} else if (itemSortBy.value === 'rarity_asc') {
+		list.sort((a, b) => {
+			const rA = RARITY_ORDER[a.rarity || 'common'] ?? 1
+			const rB = RARITY_ORDER[b.rarity || 'common'] ?? 1
+			return rA - rB
+		})
+	} else if (itemSortBy.value === 'rarity_desc') {
+		list.sort((a, b) => {
+			const rA = RARITY_ORDER[a.rarity || 'common'] ?? 1
+			const rB = RARITY_ORDER[b.rarity || 'common'] ?? 1
+			return rB - rA
+		})
+	} else if (itemSortBy.value === 'lvl_asc') {
+		list.sort((a, b) => (a.lvl || 1) - (b.lvl || 1))
+	} else if (itemSortBy.value === 'lvl_desc') {
+		list.sort((a, b) => (b.lvl || 1) - (a.lvl || 1))
+	} else if (itemSortBy.value === 'id') {
+		list.sort((a, b) => (a.id || '').localeCompare(b.id || ''))
+	}
+
+	return list
+})
+
+function resolveAssetPath(p) {
+	if (!p) return ''
+	if (p.startsWith('http://') || p.startsWith('https://') || p.startsWith('file://')) return p
+	const clean = p.replace(/^\/+/, '')
+	return '/' + clean
+}
+
+function onSpriteImgError(itemId, event) {
+	failedItemSprites.value.add(itemId)
+	if (event?.target) {
+		event.target.style.display = 'none'
+	}
+}
+
+function onPickItemSprite(event) {
+	const file = event.target?.files?.[0]
+	if (!file || !selectedEntity.value) return
+	const defaultDir = 'images/sprites/items/equipments'
+	const resolvedPath = resolveRelativeSpritePath(file, defaultDir)
+	if (resolvedPath) {
+		selectedEntity.value.sprite = resolvedPath
+	}
+	event.target.value = ''
+}
+
+function openItemModal(item) {
+	onSelectEntity(item)
+	activeItemEditLocale.value = activeLocale.value || 'ru'
+	isItemModalOpen.value = true
+}
+
+function onStartCreateItem() {
+	onStartCreate()
+	activeItemEditLocale.value = activeLocale.value || 'ru'
+	isItemModalOpen.value = true
+}
+
+function cancelItemEdit() {
+	cancelEdit()
+	isItemModalOpen.value = false
+}
+
+async function handleSaveAndClose() {
+	await handleSave()
+	if (statusMessage.value?.type !== 'error') {
+		isItemModalOpen.value = false
+	}
+}
+
+function syncRuLocaleName() {
+	if (selectedEntity.value) {
+		if (!selectedEntity.value._locales) selectedEntity.value._locales = {}
+		if (!selectedEntity.value._locales.ru) selectedEntity.value._locales.ru = {}
+		selectedEntity.value._locales.ru.name = selectedEntity.value.name || ''
+	}
+}
+
+function onLocaleNameInput() {
+	if (selectedEntity.value && activeItemEditLocale.value === 'ru') {
+		selectedEntity.value.name = selectedEntity.value._locales?.ru?.name || ''
+	}
+}
+
+function getSlotOrTypeIcon(item) {
+	if (!item) return '📦'
+	if (item.type !== 'equipment') {
+		return item.icon || '🧪'
+	}
+	if (!item.slot) {
+		return item.icon || '🗡️'
+	}
+	const primarySlot = Array.isArray(item.slot) ? item.slot[0] : item.slot
+	const foundSlot = EQUIPMENT_SLOTS_LIST.find((s) => s.id === primarySlot)
+	return foundSlot?.icon || item.icon || '🗡️'
+}
+
+function formatSlotDisplay(slot) {
+	if (!slot) return ''
+	if (Array.isArray(slot)) {
+		return slot.map((s) => getSlotDisplayName(s)).join(', ')
+	}
+	return getSlotDisplayName(slot)
+}
+
 
 function getItemSkillName(skId) {
 	const sk = itemSkills.value.find((s) => s.id === skId)
@@ -3263,12 +4518,39 @@ function removeTalentFromCharacter(tId) {
 	}
 }
 
+const hasLegacySlot = computed(() => {
+	const cur = selectedEntity.value?.slot
+	if (!cur) return false
+	if (Array.isArray(cur)) {
+		return cur.some((s) => Boolean(LEGACY_SLOT_ALIASES[s]))
+	}
+	return Boolean(LEGACY_SLOT_ALIASES[cur])
+})
+
+function getLegacyTargetSlotName(rawSlot) {
+	if (!rawSlot) return ''
+	const s = Array.isArray(rawSlot) ? rawSlot.find((x) => LEGACY_SLOT_ALIASES[x]) : rawSlot
+	const targetId = LEGACY_SLOT_ALIASES[s] || s
+	const opt = EQUIPMENT_SLOTS_LIST.find((x) => x.id === targetId)
+	return opt ? opt.label : targetId
+}
+
+function convertCurrentLegacySlot() {
+	if (!selectedEntity.value?.slot) return
+	const cur = selectedEntity.value.slot
+	if (Array.isArray(cur)) {
+		selectedEntity.value.slot = cur.map((s) => LEGACY_SLOT_ALIASES[s] || s)
+	} else if (LEGACY_SLOT_ALIASES[cur]) {
+		selectedEntity.value.slot = LEGACY_SLOT_ALIASES[cur]
+	}
+}
+
 function isSlotSelected(slotId) {
 	if (!selectedEntity.value?.slot) return false
 	if (Array.isArray(selectedEntity.value.slot)) {
-		return selectedEntity.value.slot.includes(slotId)
+		return selectedEntity.value.slot.some((s) => s === slotId || LEGACY_SLOT_ALIASES[s] === slotId)
 	}
-	return selectedEntity.value.slot === slotId
+	return selectedEntity.value.slot === slotId || LEGACY_SLOT_ALIASES[selectedEntity.value.slot] === slotId
 }
 
 function toggleItemSlot(slotId) {
@@ -4008,8 +5290,26 @@ const availableGlobalTagSuggestions = computed(() => {
 	return globalTags.value.filter((gt) => !currentOwn.includes(gt)).slice(0, 14)
 })
 
+function onGlobalKeydown(e) {
+	if (e.key === 'Escape') {
+		const handled = handleEscape()
+		if (handled) {
+			e.preventDefault()
+			e.stopPropagation()
+		}
+	} else if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'ы' || e.key === 'S')) {
+		e.preventDefault()
+		if (selectedEntity.value) {
+			handleSave()
+		} else if (saveAllEntities) {
+			saveAllEntities()
+		}
+	}
+}
+
 onMounted(async () => {
 	window.addEventListener('click', onWindowClick)
+	window.addEventListener('keydown', onGlobalKeydown)
 	await init()
 
 	// Deep link routing from query params (e.g. from Sprite Studio)
@@ -4029,17 +5329,24 @@ onMounted(async () => {
 
 onUnmounted(() => {
 	window.removeEventListener('click', onWindowClick)
+	window.removeEventListener('keydown', onGlobalKeydown)
 })
 
 function switchTab(tabId) {
 	activeTab.value = tabId
 	activeCharacterSubTab.value = 'profile'
 	cancelEdit()
+	isItemModalOpen.value = false
 	searchQuery.value = ''
 	if (tabId !== 'characters') {
 		characterTypeFilter.value = 'all'
 	}
 	selectedTagForInspector.value = null
+	if (tabId === 'items') {
+		classRaceViewMode.value = 'grid'
+	} else if (classRaceViewMode.value === 'grid') {
+		classRaceViewMode.value = ['classes', 'races', 'fractions'].includes(tabId) ? 'tree' : 'list'
+	}
 }
 
 function onStartCreate() {
@@ -4051,8 +5358,16 @@ function onStartCreate() {
 		} else if (characterTypeFilter.value === 'individual') {
 			preset.character_type = 'individual'
 		}
+	} else if (activeTab.value === 'items') {
+		if (itemTypeFilter.value === 'equipment' || itemTypeFilter.value === 'other') {
+			preset.type = itemTypeFilter.value
+		}
 	}
 	startCreate(preset)
+	if (activeTab.value === 'items') {
+		activeItemEditLocale.value = activeLocale.value || 'ru'
+		isItemModalOpen.value = true
+	}
 }
 
 function onSelectEntity(item) {
@@ -4060,6 +5375,10 @@ function onSelectEntity(item) {
 		activeCharacterSubTab.value = 'profile'
 	}
 	startEdit(item)
+	if (activeTab.value === 'items') {
+		activeItemEditLocale.value = activeLocale.value || 'ru'
+		isItemModalOpen.value = true
+	}
 }
 
 function returnToTests() {
@@ -4218,7 +5537,11 @@ function promptDelete(item) {
 async function confirmDelete() {
 	if (!entityToDelete.value) return
 	try {
-		await deleteEntity(activeTab.value, entityToDelete.value.id)
+		const targetId = entityToDelete.value.id
+		await deleteEntity(activeTab.value, targetId)
+		if (selectedEntity.value && selectedEntity.value.id === targetId) {
+			isItemModalOpen.value = false
+		}
 		entityToDelete.value = null
 	} catch (err) {
 		console.error('Ошибка удаления сущности:', err)
@@ -4599,6 +5922,27 @@ function removeSkill(skillId) {
 		}
 	}
 }
+
+// Modal stack registration for Esc key
+useRegisterModal('data-editor-item-modal', isItemModalOpen, () => {
+	cancelItemEdit()
+})
+useRegisterModal('data-editor-delete-entity', () => Boolean(entityToDelete.value), () => {
+	entityToDelete.value = null
+})
+useRegisterModal('data-editor-delete-tag', () => Boolean(tagToDelete.value), () => {
+	tagToDelete.value = null
+})
+useRegisterModal('data-editor-add-locale', isAddLocaleModalOpen, () => {
+	isAddLocaleModalOpen.value = false
+})
+useRegisterModal('data-editor-branch-modal', isBranchModalOpen, () => {
+	isBranchModalOpen.value = false
+})
+useRegisterModal('data-editor-skill-modal', isSkillModalOpen, () => {
+	isSkillModalOpen.value = false
+})
+
 </script>
 
 <style scoped>
@@ -5674,6 +7018,99 @@ function removeSkill(skillId) {
 	border-color: #6366f1;
 	color: #a5b4fc;
 	font-weight: bold;
+}
+
+
+/* Slot Groups & Categories */
+.slot-groups-container {
+	display: flex;
+	flex-direction: column;
+	gap: 0.65em;
+	margin-top: 0.45em;
+}
+
+.slot-group-card {
+	background: rgba(15, 23, 42, 0.5);
+	border: 1px solid rgba(148, 163, 184, 0.15);
+	border-radius: 0.5em;
+	padding: 0.55em 0.75em;
+	transition: border-color 0.15s ease;
+}
+
+.slot-group-card:hover {
+	border-color: rgba(148, 163, 184, 0.28);
+}
+
+.slot-group-header {
+	display: flex;
+	align-items: center;
+	gap: 0.45em;
+	font-size: 0.78em;
+	font-weight: 700;
+	color: #94a3b8;
+	margin-bottom: 0.45em;
+	letter-spacing: 0.03em;
+	text-transform: uppercase;
+}
+
+.sgh-icon {
+	font-size: 1.15em;
+}
+
+.sgh-title {
+	color: #cbd5e1;
+}
+
+.slot-group-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.4em;
+}
+
+.legacy-slot-banner {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.8em;
+	background: rgba(245, 158, 11, 0.12);
+	border: 1px solid rgba(245, 158, 11, 0.35);
+	border-radius: 0.45em;
+	padding: 0.45em 0.75em;
+	margin-bottom: 0.6em;
+	font-size: 0.82em;
+	color: #fbbf24;
+}
+
+.lsb-text {
+	display: flex;
+	align-items: center;
+	gap: 0.45em;
+}
+
+.lsb-text code {
+	background: rgba(0, 0, 0, 0.3);
+	padding: 0.1em 0.4em;
+	border-radius: 0.25em;
+	color: #fde68a;
+	font-family: monospace;
+}
+
+.lsb-convert-btn {
+	background: rgba(245, 158, 11, 0.22);
+	border: 1px solid #f59e0b;
+	color: #ffffff;
+	font-weight: 600;
+	font-size: 0.82em;
+	padding: 0.22em 0.6em;
+	border-radius: 0.35em;
+	cursor: pointer;
+	white-space: nowrap;
+	transition: all 0.15s ease;
+}
+
+.lsb-convert-btn:hover {
+	background: #f59e0b;
+	color: #0b111e;
 }
 
 .chip-toggle-btn.__selected.__slot {
@@ -8195,5 +9632,724 @@ function removeSkill(skillId) {
 	font-size: 0.85em !important;
 	text-align: center;
 	border-radius: 0.25em;
+}
+
+/* ========================================================= */
+/* ITEMS CATALOG GRID VIEW (FULL WORKSPACE)                  */
+/* ========================================================= */
+.items-catalog-pane {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	min-width: 0;
+	background: #0b101b;
+	overflow: hidden;
+}
+
+.items-catalog-toolbar {
+	background: #111827;
+	border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+	padding: 0.6em 1.2em;
+	display: flex;
+	flex-direction: column;
+	gap: 0.5em;
+	flex-shrink: 0;
+}
+
+.ict-row {
+	display: flex;
+	align-items: center;
+	gap: 0.8em;
+	flex-wrap: wrap;
+}
+
+.ict-row.__main {
+	gap: 0.9em;
+}
+
+.ict-row.__secondary {
+	padding-top: 0.2em;
+	border-top: 1px solid rgba(148, 163, 184, 0.08);
+}
+
+.ict-search {
+	width: 22em;
+	min-width: 14em;
+}
+
+.ict-pills-group {
+	display: flex;
+	align-items: center;
+	background: rgba(15, 23, 42, 0.8);
+	border: 1px solid rgba(148, 163, 184, 0.18);
+	border-radius: 0.45em;
+	padding: 0.15em;
+	gap: 0.2em;
+}
+
+.ict-pill-btn {
+	background: transparent;
+	border: none;
+	border-radius: 0.35em;
+	color: #94a3b8;
+	font-size: 0.78em;
+	font-weight: 600;
+	padding: 0.35em 0.7em;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	gap: 0.4em;
+	transition: all 0.15s ease;
+}
+
+.ict-pill-btn:hover {
+	color: #f1f5f9;
+	background: rgba(255, 255, 255, 0.05);
+}
+
+.ict-pill-btn.__active {
+	color: #ffffff;
+	background: #2563eb;
+}
+
+.ict-pill-count {
+	background: rgba(0, 0, 0, 0.28);
+	border-radius: 0.3em;
+	padding: 0.05em 0.35em;
+	font-size: 0.85em;
+}
+
+.ict-spacer {
+	flex: 1;
+}
+
+.ict-create-btn {
+	padding: 0.45em 0.9em;
+	font-size: 0.82em;
+	font-weight: 700;
+	white-space: nowrap;
+}
+
+.ict-filter-control {
+	display: flex;
+	align-items: center;
+	gap: 0.4em;
+	font-size: 0.75em;
+	color: #94a3b8;
+}
+
+.ict-filter-label {
+	font-weight: 600;
+}
+
+.ict-select {
+	padding: 0.25em 0.6em;
+	font-size: 0.95em;
+	min-width: 9em;
+}
+
+.ict-reset-btn {
+	background: rgba(239, 68, 68, 0.12);
+	border: 1px solid rgba(239, 68, 68, 0.3);
+	color: #f87171;
+	border-radius: 0.35em;
+	font-size: 0.72em;
+	padding: 0.25em 0.55em;
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.ict-reset-btn:hover {
+	background: #ef4444;
+	color: #ffffff;
+}
+
+.ict-count-badge {
+	font-size: 0.75em;
+	color: #64748b;
+	margin-left: auto;
+	white-space: nowrap;
+}
+
+.ict-count-badge strong {
+	color: #cbd5e1;
+}
+
+/* Grid Scroll Area */
+.items-grid-container {
+	flex: 1;
+	overflow-y: auto;
+	padding: 1.2em;
+	min-height: 0;
+}
+
+.empty-items-catalog {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 5em 2em;
+	text-align: center;
+	gap: 0.8em;
+	color: #94a3b8;
+}
+
+.eic-icon {
+	font-size: 3.5em;
+	opacity: 0.6;
+}
+
+.eic-title {
+	font-size: 1.2em;
+	color: #f8fafc;
+	font-weight: 700;
+	margin: 0;
+}
+
+.eic-desc {
+	font-size: 0.85em;
+	color: #64748b;
+	max-width: 25em;
+	margin: 0;
+}
+
+.eic-actions {
+	display: flex;
+	gap: 0.8em;
+	margin-top: 0.8em;
+}
+
+/* Square Items Grid */
+.items-card-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(9em, 1fr));
+	gap: 0.8em;
+}
+
+.item-grid-card {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	min-height: 10.5em;
+	background: rgba(15, 23, 42, 0.75);
+	border: 1px solid rgba(148, 163, 184, 0.15);
+	border-radius: 0.65em;
+	padding: 0.6em;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	overflow: hidden;
+}
+
+.item-grid-card:hover {
+	transform: translateY(-0.2em);
+	box-shadow: 0 0.5em 1.5em rgba(0, 0, 0, 0.6);
+	background: rgba(30, 41, 59, 0.9);
+}
+
+.item-grid-card.__is-rainbow {
+	border-image: linear-gradient(135deg, #ef4444, #eab308, #3b82f6, #a855f7) 1;
+}
+
+.igc-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.3em;
+	width: 100%;
+}
+
+.igc-type-icon {
+	font-size: 1em;
+	line-height: 1;
+}
+
+.igc-rarity-pill {
+	font-size: 0.6em;
+	font-weight: 700;
+	text-transform: uppercase;
+	padding: 0.1em 0.4em;
+	border-radius: 0.3em;
+	letter-spacing: 0.03em;
+	border: 1px solid transparent;
+}
+
+.igc-visual-box {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 3.6em;
+	margin: 0.3em 0;
+}
+
+.igc-sprite-img {
+	max-width: 3.4em;
+	max-height: 3.4em;
+	object-fit: contain;
+	filter: drop-shadow(0 0.15em 0.3em rgba(0, 0, 0, 0.7));
+}
+
+.igc-emoji-icon {
+	font-size: 2.2em;
+	line-height: 1;
+}
+
+.igc-info-box {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+	gap: 0.2em;
+	width: 100%;
+	min-width: 0;
+}
+
+.igc-name {
+	font-size: 0.76em;
+	font-weight: 700;
+	color: #f8fafc;
+	line-height: 1.25;
+	word-break: break-word;
+	overflow-wrap: break-word;
+	text-align: center;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+	max-height: 2.5em;
+}
+
+.igc-id-code {
+	font-family: monospace;
+	font-size: 0.62em;
+	color: #64748b;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 100%;
+}
+
+.igc-meta-row {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.3em;
+	flex-wrap: wrap;
+	margin-top: 0.25em;
+}
+
+.igc-pill {
+	font-size: 0.6em;
+	font-weight: 600;
+	padding: 0.1em 0.35em;
+	border-radius: 0.25em;
+	background: rgba(30, 41, 59, 0.8);
+	color: #94a3b8;
+	border: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.igc-pill.__lvl {
+	color: #facc15;
+	background: rgba(250, 204, 21, 0.12);
+	border-color: rgba(250, 204, 21, 0.25);
+}
+
+.igc-pill.__slot {
+	color: #38bdf8;
+	background: rgba(56, 189, 248, 0.12);
+	border-color: rgba(56, 189, 248, 0.25);
+	max-width: 6em;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.igc-hover-actions {
+	position: absolute;
+	top: 0.4em;
+	right: 0.4em;
+	display: flex;
+	gap: 0.25em;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 0.15s ease;
+	z-index: 2;
+}
+
+.item-grid-card:hover .igc-hover-actions {
+	opacity: 1;
+	pointer-events: auto;
+}
+
+.igc-action-btn {
+	width: 1.8em;
+	height: 1.8em;
+	border-radius: 0.3em;
+	border: 1px solid rgba(255, 255, 255, 0.15);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 0.72em;
+	cursor: pointer;
+	backdrop-filter: blur(0.2em);
+	transition: all 0.12s ease;
+}
+
+.igc-action-btn.__edit {
+	background: rgba(14, 165, 233, 0.85);
+	color: #ffffff;
+}
+
+.igc-action-btn.__edit:hover {
+	background: #0284c7;
+}
+
+.igc-action-btn.__delete {
+	background: rgba(239, 68, 68, 0.85);
+	color: #ffffff;
+}
+
+.igc-action-btn.__delete:hover {
+	background: #dc2626;
+}
+
+/* ========================================================= */
+/* FULL-SIZE ITEM EDITOR MODAL                               */
+/* ========================================================= */
+.item-modal-overlay {
+	position: absolute;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.78);
+	backdrop-filter: blur(0.25em);
+	z-index: 120;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.item-editor-modal-card {
+	position: absolute;
+	inset: 1.2em;
+	background: #0f172a;
+	border: 1px solid rgba(148, 163, 184, 0.25);
+	border-radius: 0.75em;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	box-shadow: 0 1em 3.5em rgba(0, 0, 0, 0.85);
+	z-index: 122;
+}
+
+.item-modal-header {
+	background: #182236;
+	border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+	padding: 0.8em 1.4em;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1em;
+	flex-shrink: 0;
+}
+
+.imh-left {
+	display: flex;
+	align-items: center;
+	gap: 0.8em;
+	min-width: 0;
+	flex-wrap: wrap;
+}
+
+.imh-status-pill {
+	font-size: 0.7em;
+	font-weight: 700;
+	padding: 0.2em 0.6em;
+	border-radius: 0.35em;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.imh-status-pill.__new {
+	background: rgba(34, 197, 94, 0.2);
+	color: #4ade80;
+	border: 1px solid rgba(34, 197, 94, 0.35);
+}
+
+.imh-status-pill.__edit {
+	background: rgba(14, 165, 233, 0.2);
+	color: #38bdf8;
+	border: 1px solid rgba(14, 165, 233, 0.35);
+}
+
+.imh-title-box {
+	display: flex;
+	align-items: center;
+	gap: 0.6em;
+	min-width: 0;
+}
+
+.imh-icon {
+	font-size: 1.6em;
+	line-height: 1;
+}
+
+.imh-names {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+.imh-name {
+	font-size: 1.05em;
+	font-weight: 700;
+	color: #f8fafc;
+	margin: 0;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.imh-id-code {
+	font-size: 0.68em;
+	color: #94a3b8;
+	font-family: monospace;
+}
+
+.imh-file-pill {
+	font-size: 0.68em;
+	color: #64748b;
+	background: rgba(15, 23, 42, 0.6);
+	border: 1px solid rgba(148, 163, 184, 0.12);
+	padding: 0.15em 0.5em;
+	border-radius: 0.3em;
+	font-family: monospace;
+}
+
+.imh-actions {
+	display: flex;
+	align-items: center;
+	gap: 0.6em;
+	flex-shrink: 0;
+}
+
+.item-modal-body {
+	flex: 1;
+	overflow-y: auto;
+	padding: 1.4em;
+	display: flex;
+	flex-direction: column;
+	gap: 1.2em;
+	min-height: 0;
+}
+
+.item-modal-top-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 1.2em;
+}
+
+.modal-form-card {
+	background: rgba(15, 23, 42, 0.65);
+	border: 1px solid rgba(148, 163, 184, 0.15);
+	border-radius: 0.6em;
+	overflow: hidden;
+}
+
+.modal-form-card.__full-width {
+	width: 100%;
+}
+
+.mfc-header {
+	background: rgba(30, 41, 59, 0.6);
+	border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+	padding: 0.6em 1em;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.6em;
+}
+
+.mfc-title-group {
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+	flex-wrap: wrap;
+}
+
+.mfc-icon {
+	font-size: 1.1em;
+}
+
+.mfc-title {
+	font-size: 0.88em;
+	font-weight: 700;
+	color: #f1f5f9;
+}
+
+.mfc-hint {
+	font-size: 0.72em;
+	color: #64748b;
+}
+
+.mfc-body {
+	padding: 1em;
+	display: flex;
+	flex-direction: column;
+	gap: 0.9em;
+}
+
+.item-type-toggle-row {
+	display: flex;
+	gap: 0.5em;
+}
+
+.item-type-btn {
+	flex: 1;
+	padding: 0.5em 0.8em;
+	font-size: 0.8em;
+	font-weight: 600;
+	border-radius: 0.4em;
+	border: 1px solid rgba(148, 163, 184, 0.2);
+	background: rgba(15, 23, 42, 0.8);
+	color: #94a3b8;
+	cursor: pointer;
+	transition: all 0.15s ease;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.item-type-btn:hover {
+	color: #f8fafc;
+	border-color: rgba(148, 163, 184, 0.35);
+}
+
+.item-type-btn.__active {
+	background: #2563eb;
+	color: #ffffff;
+	border-color: #3b82f6;
+}
+
+.sprite-input-wrap {
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+}
+
+.sprite-preview-thumb {
+	width: 2.2em;
+	height: 2.2em;
+	border-radius: 0.35em;
+	background: rgba(0, 0, 0, 0.4);
+	border: 1px solid rgba(148, 163, 184, 0.2);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	overflow: hidden;
+}
+
+.sprite-preview-thumb img {
+	max-width: 100%;
+	max-height: 100%;
+	object-fit: contain;
+}
+
+.rarity-selector-grid {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35em;
+}
+
+.rarity-option-btn {
+	padding: 0.3em 0.6em;
+	border-radius: 0.35em;
+	font-size: 0.72em;
+	font-weight: 700;
+	cursor: pointer;
+	border: 1px solid transparent;
+	display: flex;
+	align-items: center;
+	gap: 0.35em;
+	transition: all 0.15s ease;
+	opacity: 0.75;
+}
+
+.rarity-option-btn:hover {
+	opacity: 1;
+}
+
+.rarity-option-btn.__selected {
+	opacity: 1;
+	box-shadow: 0 0 0.5em rgba(255, 255, 255, 0.25);
+	transform: scale(1.04);
+}
+
+.locale-pills-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35em;
+	margin-bottom: 0.5em;
+}
+
+.locale-pill-btn {
+	padding: 0.3em 0.6em;
+	border-radius: 0.35em;
+	font-size: 0.74em;
+	font-weight: 600;
+	background: rgba(15, 23, 42, 0.6);
+	border: 1px solid rgba(148, 163, 184, 0.2);
+	color: #94a3b8;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	gap: 0.35em;
+	transition: all 0.15s ease;
+}
+
+.locale-pill-btn:hover {
+	color: #f1f5f9;
+	border-color: rgba(148, 163, 184, 0.35);
+}
+
+.locale-pill-btn.__active {
+	background: #0284c7;
+	color: #ffffff;
+	border-color: #38bdf8;
+}
+
+.locale-pill-btn.__add {
+	border-style: dashed;
+}
+
+.locale-edit-fields {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75em;
+}
+
+.item-modal-footer {
+	background: #0b1120;
+	border-top: 1px solid rgba(148, 163, 184, 0.18);
+	padding: 0.8em 1.4em;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 1em;
+	flex-shrink: 0;
+}
+
+.imf-left,
+.imf-right {
+	display: flex;
+	align-items: center;
+	gap: 0.6em;
+}
+
+.empty-custom-fields-notice {
+	font-size: 0.78em;
+	color: #64748b;
+	font-style: italic;
+	padding: 0.5em 0;
 }
 </style>

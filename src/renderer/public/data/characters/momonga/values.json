@@ -1,93 +1,93 @@
 {
-	"id": "momonga",
-	"name": "Момонга",
-	"character_type": "individual",
-	"nickname": "",
-	"title": "",
-	"names": [
-		"Аинз Оал Гоун",
-		"Владыка Назарика",
-		"Высшее Существо"
-	],
-	"icon": "images/sprites/characters/momonga/icometric/char.png",
-	"gender": "male",
-	"race": "overlord",
-	"races": [
-		"overlord",
-		"skeleton"
-	],
-	"classs": [
-		"master-of-death",
-		"wizard"
-	],
-	"fractions": [
-		"ainz-ooal-gown",
-		"nazarick",
-		"sorcerer-kingdom"
-	],
-	"tags": [
-		"gamer",
-		"guildmaster",
-		"undead",
-		"supreme-being",
-		"nazarick-leader",
-		"sorcerer-kingdom-king"
-	],
-	"description": "Глава гильдии Аинз Оал Гоун и верховный правитель Великой Гробницы Назарик.",
-	"size": 1,
-	"root_offset": {
-		"x": 0,
-		"y": 0
-	},
-	"hpmax": 100000,
-	"mpmax": 100000,
-	"hp": 100000,
-	"mp": 100000,
-	"attack": 2,
-	"defense": 1,
-	"weight": 90,
-	"lvl": 100,
-	"exp": 9000201,
-	"skill_points": 1,
-	"stat_points": 90,
-	"equipment_slots": {
-		"head": null,
-		"neck_1": "pendant-zen",
-		"torso-1": "tshirt-red",
-		"torso-2": null,
-		"torso-3": null,
-		"legs": null,
-		"feet": null,
-		"weapon-hand-1": "sword-diamond",
-		"weapon-hand-2": null,
-		"hands": null,
-		"weapon_off": null
-	},
-	"inventory": {
-		"items": [
-			{
-				"itemId": "potion-health-small",
-				"quantity": 10
-			}
-		]
-	},
-	"abilities": [
-		{
-			"id": "staff_hit",
-			"name": "Удар посохом",
-			"description": "Базовая магическая атака посохом"
-		},
-		{
-			"id": "fire_bolt",
-			"name": "Огненный болт",
-			"description": "Мощный магический снаряд"
-		},
-		{
-			"id": "heal_allies",
-			"name": "Исцеление",
-			"description": "Восстановить здоровье союзнику"
-		}
-	],
-	"height": 177,
-	"age": 30
+  "id": "momonga",
+  "character_type": "individual",
+  "name": "Момонга",
+  "nickname": "",
+  "title": "",
+  "names": [
+    "Аинз Оал Гоун",
+    "Владыка Назарика",
+    "Высшее Существо"
+  ],
+  "icon": "images/sprites/characters/momonga/icometric/char.png",
+  "gender": "male",
+  "race": "overlord",
+  "races": [
+    "overlord",
+    "skeleton"
+  ],
+  "classs": [
+    "master-of-death",
+    "wizard"
+  ],
+  "fractions": [
+    "ainz-ooal-gown",
+    "nazarick",
+    "sorcerer-kingdom"
+  ],
+  "tags": [
+    "gamer",
+    "guildmaster",
+    "undead",
+    "supreme-being",
+    "nazarick-leader",
+    "sorcerer-kingdom-king"
+  ],
+  "description": "Глава гильдии Аинз Оал Гоун и верховный правитель Великой Гробницы Назарик.",
+  "size": 1,
+  "root_offset": {
+    "x": 0,
+    "y": 0
+  },
+  "hpmax": 100000,
+  "mpmax": 100000,
+  "hp": 100000,
+  "mp": 100000,
+  "attack": 2,
+  "defense": 1,
+  "weight": 90,
+  "lvl": 100,
+  "exp": 9000201,
+  "skill_points": 1,
+  "stat_points": 90,
+  "equipment_slots": {
+    "head": null,
+    "neck_1": "pendant-zen",
+    "torso-1": "tshirt-red",
+    "torso-2": null,
+    "torso-3": null,
+    "legs": null,
+    "feet": null,
+    "weapon-hand-1": "sword-diamond",
+    "weapon-hand-2": null,
+    "hands": null,
+    "weapon_off": null
+  },
+  "inventory": {
+    "items": [
+      {
+        "itemId": "potion-health-small",
+        "quantity": 10
+      }
+    ]
+  },
+  "abilities": [
+    {
+      "id": "staff_hit",
+      "name": "Удар посохом",
+      "description": "Базовая магическая атака посохом"
+    },
+    {
+      "id": "fire_bolt",
+      "name": "Огненный болт",
+      "description": "Мощный магический снаряд"
+    },
+    {
+      "id": "heal_allies",
+      "name": "Исцеление",
+      "description": "Восстановить здоровье союзнику"
+    }
+  ],
+  "height": 177,
+  "age": 30
 }

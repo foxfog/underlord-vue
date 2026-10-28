@@ -62,7 +62,7 @@
   {
     "id": "iron_ingot",
     "name": "Железный слиток",
-    "weight": 1.0,
+    "weight": 1,
     "stackable": true,
     "categories": [
       "material"

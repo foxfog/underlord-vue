@@ -1,8 +1,4 @@
 {
-  "underpants": {
-    "name": "Трусы",
-    "description": "Базовое нижнее бельё из хлопка."
-  },
   "tshirt": {
     "name": "Футболка",
     "description": "Простая лёгкая футболка повседневного кроя."
@@ -78,5 +74,41 @@
   "adamantite_sword": {
     "name": "Адамантиевый меч",
     "description": "Тяжелый и несокрушимый меч из чистого адамантия."
+  },
+  "fluder_stiletto": {
+    "name": "Зачарованный стилет",
+    "description": "Кинжал-стилет, зачарованный главным придворным магом Империи Багарут Флюдером Парадайном по заказу Момона (Аинза)."
+  },
+  "swimsuit_onepiece": {
+    "name": "Сплошной купальник",
+    "description": ""
+  },
+  "iron_ring": {
+    "name": "Железное кольцо",
+    "description": ""
+  },
+  "silver_ring": {
+    "name": "Серебряное кольцо",
+    "description": ""
+  },
+  "greatsword_iron": {
+    "name": "Железный двуручный меч",
+    "description": ""
+  },
+  "work_gloves": {
+    "name": "Рабочие перчатки",
+    "description": ""
+  },
+  "underpants-m": {
+    "name": "Мужские трусы",
+    "description": ""
+  },
+  "trousers-linen": {
+    "name": "Штаны",
+    "description": ""
+  },
+  "boots-rawhide": {
+    "name": "Кожанные ботинки",
+    "description": ""
   }
 }

@@ -10,13 +10,6 @@
 			"effect": "cough",
 			"duration": 0.6
 		},
-		{
-			"type": "part-animate",
-			"character": "mc",
-			"part": "neck",
-			"class": "cough-head",
-			"duration": 0.5
-		},
 
 		{
 			"type": "dialogue",

@@ -169,8 +169,8 @@
         "targetMode": "single",
         "keyframes": [
           { "time": 0,    "transform": { "rotate": 0,   "translateX": 0, "translateY": 0,    "scale": 1 },     "easing": "ease-out" },
-          { "time": 0.45, "transform": { "rotate": 0.8, "translateX": 0, "translateY": -1.8, scale: 1.03 },   "easing": "ease-in" },
-          { "time": 0.75, "transform": { "rotate": 0.3, "translateX": 0, "translateY": -0.8, scale: 1.015 },  "easing": "ease-in-out" },
+          { "time": 0.45, "transform": { "rotate": 0.8, "translateX": 0, "translateY": -1.8, "scale": 1.03 },   "easing": "ease-in" },
+          { "time": 0.75, "transform": { "rotate": 0.3, "translateX": 0, "translateY": -0.8, "scale": 1.015 },  "easing": "ease-in-out" },
           { "time": 1.2,  "transform": { "rotate": 0,   "translateX": 0, "translateY": 0,    "scale": 1 },     "easing": "ease-out" }
         ]
       },

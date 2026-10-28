@@ -1,6 +1,7 @@
 [
   {
     "id": "gasmask",
+    "equipped": false,
     "zindex": 1,
     "parts": [
       {
@@ -11,6 +12,7 @@
   },
   {
     "id": "medicalmask",
+    "equipped": false,
     "zindex": 1,
     "parts": [
       {
@@ -21,6 +23,7 @@
   },
   {
     "id": "neuro_helmet",
+    "equipped": false,
     "zindex": 2,
     "parts": [
       {
@@ -31,16 +34,29 @@
   },
   {
     "id": "underpants",
+    "equipped": false,
     "zindex": 1,
     "parts": [
       {
         "parent": "body",
-        "image": "images/sprites/characters/mc/equipment/underpants.png"
+        "image": "images/sprites/characters/mc/equipment/underpants-1-m.png"
+      }
+    ]
+  },
+  {
+    "id": "underpants-m",
+    "equipped": true,
+    "zindex": 1,
+    "parts": [
+      {
+        "parent": "body",
+        "image": "images/sprites/characters/mc/equipment/underpants-m.png"
       }
     ]
   },
   {
     "id": "tshirt",
+    "equipped": false,
     "zindex": 3,
     "parts": [
       {
@@ -60,11 +76,23 @@
   },
   {
     "id": "jeans",
+    "equipped": false,
     "zindex": 2,
     "parts": [
       {
         "parent": "body",
         "image": "images/sprites/characters/mc/equipment/jeans.png"
+      }
+    ]
+  },
+  {
+    "id": "trousers-linen",
+    "equipped": true,
+    "zindex": 1,
+    "parts": [
+      {
+        "parent": "body",
+        "image": "images/sprites/characters/mc/equipment/trousers-linen.png"
       }
     ]
   }

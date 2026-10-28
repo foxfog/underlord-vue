@@ -1,8 +1,4 @@
 {
-  "underpants": {
-    "name": "Underpants",
-    "description": "Basic cotton undergarment."
-  },
   "tshirt": {
     "name": "T-Shirt",
     "description": "Simple and comfortable casual shirt."
@@ -78,5 +74,17 @@
   "adamantite_sword": {
     "name": "Adamantite Sword",
     "description": "Heavy and unbreakable sword forged from pure adamantite."
+  },
+  "underpants-m": {
+    "name": "",
+    "description": ""
+  },
+  "trousers-linen": {
+    "name": "",
+    "description": ""
+  },
+  "boots-rawhide": {
+    "name": "",
+    "description": ""
   }
 }

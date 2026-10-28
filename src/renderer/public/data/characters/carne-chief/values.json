@@ -1,66 +1,66 @@
 {
-	"id": "carne-chief",
-	"name": "Староста Карна",
-	"character_type": "individual",
-	"surname": "",
-	"nickname": "",
-	"title": "Староста деревни Карн",
-	"names": [
-		"Староста",
-		"Глава деревни"
-	],
-	"icon": "images/sprites/characters/carne-chief/avatar.png",
-	"gender": "male",
-	"race": "human",
-	"races": [
-		"human"
-	],
-	"classs": [
-		"cleric"
-	],
-	"fractions": [
-		"carne-village"
-	],
-	"tags": [
-		"elder",
-		"npc",
-		"villager",
-		"carne",
-		"chief"
-	],
-	"description": "Мудрый и рассудительный староста пограничной деревни Карн, заботящийся о выживании односельчан.",
-	"size": 1,
-	"root_offset": {
-		"x": 0,
-		"y": 0
-	},
-	"hpmax": 20,
-	"mpmax": 0,
-	"attack": 1,
-	"defense": 1,
-	"weight": 72,
-	"hp": 20,
-	"mp": 0,
-	"lvl": 2,
-	"exp": 0,
-	"skill_points": 0,
-	"stat_points": 0,
-	"equipment_slots": {
-		"head": null,
-		"neck_1": null,
-		"torso-1": null,
-		"torso-2": null,
-		"torso-3": null,
-		"legs": null,
-		"feet": null,
-		"weapon-hand-1": null,
-		"weapon-hand-2": null,
-		"hands": null,
-		"weapon_off": null
-	},
-	"inventory": {
-		"items": []
-	},
-	"height": 168,
-	"age": 62
+  "id": "carne-chief",
+  "character_type": "individual",
+  "name": "Староста Карна",
+  "surname": "",
+  "nickname": "",
+  "title": "Староста деревни Карн",
+  "names": [
+    "Староста",
+    "Глава деревни"
+  ],
+  "icon": "images/sprites/characters/carne-chief/avatar.png",
+  "gender": "male",
+  "race": "human",
+  "races": [
+    "human"
+  ],
+  "classs": [
+    "cleric"
+  ],
+  "fractions": [
+    "carne-village"
+  ],
+  "tags": [
+    "elder",
+    "npc",
+    "villager",
+    "carne",
+    "chief"
+  ],
+  "description": "Мудрый и рассудительный староста пограничной деревни Карн, заботящийся о выживании односельчан.",
+  "size": 1,
+  "root_offset": {
+    "x": 0,
+    "y": 0
+  },
+  "hpmax": 20,
+  "mpmax": 0,
+  "attack": 1,
+  "defense": 1,
+  "weight": 72,
+  "hp": 20,
+  "mp": 0,
+  "lvl": 2,
+  "exp": 0,
+  "skill_points": 0,
+  "stat_points": 0,
+  "equipment_slots": {
+    "head": null,
+    "neck_1": null,
+    "torso-1": null,
+    "torso-2": null,
+    "torso-3": null,
+    "legs": null,
+    "feet": null,
+    "weapon-hand-1": null,
+    "weapon-hand-2": null,
+    "hands": null,
+    "weapon_off": null
+  },
+  "inventory": {
+    "items": []
+  },
+  "height": 168,
+  "age": 62
 }

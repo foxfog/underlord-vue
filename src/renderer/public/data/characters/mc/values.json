@@ -1,7 +1,7 @@
 {
   "id": "mc",
-  "name": "Анон",
   "character_type": "individual",
+  "name": "Анон",
   "surname": "Фокс",
   "nickname": "",
   "title": "",
@@ -27,11 +27,6 @@
   ],
   "description": "Главный герой, попавший в новый неизведанный мир через интерфейс шлема виртуальной реальности.",
   "size": 1.296,
-  "orientation": "left",
-  "root_offset": {
-    "x": 0,
-    "y": 0
-  },
   "hpmax": 10,
   "mpmax": 10,
   "attack": 2,
@@ -47,16 +42,16 @@
     "head": null,
     "mask": null,
     "neck_1": null,
-    "torso-1": "tshirt",
+    "torso-1": null,
     "torso-2": null,
     "torso-3": null,
-    "legs-2": "jeans",
+    "legs-2": null,
     "feet": null,
-    "weapon-hand-1": null,
+    "weapon-hand-1": "trousers-linen",
     "weapon-hand-2": null,
     "hands": null,
     "weapon_off": null,
-    "underpants": "underpants"
+    "underpants": "underpants-m"
   },
   "inventory": {
     "items": [
@@ -66,11 +61,6 @@
       },
       {
         "itemId": "medicalmask"
-      },
-      {
-        "itemId": "neuro_helmet",
-        "can_drop": false,
-        "can_equip": false
       }
     ]
   },
@@ -93,5 +83,12 @@
   ],
   "height": 175,
   "age": 24,
+  "skills": {},
+  "class_levels": {},
+  "race_levels": {},
+  "root_offset": {
+    "x": 0,
+    "y": 0
+  },
   "scale": 1.296
 }

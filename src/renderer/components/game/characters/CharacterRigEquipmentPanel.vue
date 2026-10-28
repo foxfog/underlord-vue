@@ -52,16 +52,7 @@
 						<span>🔄</span>
 						<span>По умолч.</span>
 					</button>
-					<button
-						type="button"
-						class="btn-studio-action __save-equip"
-						title="Сохранить файл characters/[id]/equipment.json"
-						@click="emit('save-equipment')"
-					>
-						<span>💾</span>
-						<span>Сохранить</span>
-					</button>
-				</div>
+					</div>
 			</div>
 		</div>
 
@@ -208,14 +199,12 @@
 							<!-- Center Info -->
 							<div class="item-info-box">
 								<div class="item-title-row">
-									<span class="item-name">{{ item.name || item.id }}</span>
-									<span v-if="item.rarity" class="item-rarity-badge" :class="`__${item.rarity}`">
-										{{ item.rarity }}
-									</span>
+									<span class="item-name" :title="item.name || item.id">{{ item.name || item.id }}</span>
 								</div>
 
 								<div class="item-meta-row">
-									<span class="item-id-pill">{{ item.id }}</span>
+									<span v-if="item.rarity" class="item-rarity-badge" :class="`__${item.rarity}`">{{ item.rarity }}</span>
+									<span class="item-id-pill" :title="item.id">{{ item.id }}</span>
 									<span class="item-slot-pill">{{ formatSlotPill(item.slot) }}</span>
 								</div>
 
@@ -408,7 +397,18 @@
 
 									<!-- Sprite Image Path Selector -->
 									<div class="plc-row">
+										<div class="plc-label-row">
 										<label class="plc-label">Путь к файлу спрайта (PNG):</label>
+										<label class="btn-picker-upload" title="Выбрать файл изображения на диске через окно выбора">
+											<input
+												type="file"
+												accept="image/png,image/webp,image/jpeg"
+												class="hidden-file-input"
+												@change="onPickPartImage(idx, $event)"
+											/>
+											<span>📁 Выбрать файл...</span>
+										</label>
+									</div>
 										<div class="image-field-wrap">
 											<!-- Dropdown for scanned images if any -->
 											<select
@@ -584,18 +584,7 @@
 						</div>
 					</div>
 
-					<!-- Inspector Footer Action -->
-					<div class="insp-footer">
-						<button
-							type="button"
-							class="insp-save-btn"
-							@click="emit('save-equipment')"
-						>
-							<span>💾</span>
-							<span>Сохранить в characters/{{ characterId }}/equipment.json</span>
-						</button>
 					</div>
-				</div>
 
 				<!-- If no item selected -->
 				<div v-else class="inspector-card __empty">
@@ -613,6 +602,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { resolveRelativeSpritePath } from '@/utils/character/characterRigRenderer'
 
 const props = defineProps({
 	characterId: {
@@ -675,13 +665,13 @@ const slotCategories = [
 	{ id: 'all', label: 'Все', icon: '✨', slots: [] },
 	{ id: 'head', label: 'Голова', icon: '🪖', slots: ['head'] },
 	{ id: 'mask', label: 'Маска', icon: '🎭', slots: ['mask'] },
-	{ id: 'neck', label: 'Шея', icon: '📿', slots: ['neck_1', 'neck-1'] },
-	{ id: 'torso', label: 'Торс', icon: '👕', slots: ['torso-1', 'torso-2', 'torso-3'] },
-	{ id: 'underpants', label: 'Бельё', icon: '🩲', slots: ['underpants'] },
-	{ id: 'hands', label: 'Руки', icon: '🧤', slots: ['hands'] },
-	{ id: 'legs', label: 'Ноги', icon: '👖', slots: ['legs', 'legs-2'] },
-	{ id: 'feet', label: 'Ступни', icon: '👢', slots: ['feet'] },
-	{ id: 'weapon', label: 'Оружие', icon: '⚔️', slots: ['weapon-hand-1', 'weapon-hand-2', 'weapon_off'] }
+	{ id: 'neck', label: 'Шея', icon: '📿', slots: ['neck_1', 'neck-1', 'neck'] },
+	{ id: 'torso', label: 'Торс', icon: '👕', slots: ['torso-1', 'torso-2', 'torso-3', 'top_mid', 'top_outer', 'cloak'] },
+	{ id: 'underpants', label: 'Бельё', icon: '🩲', slots: ['underpants', 'bottom_underwear', 'top_underwear', 'underwear'] },
+	{ id: 'hands', label: 'Руки', icon: '🧤', slots: ['hands', 'glove', 'glove_L', 'glove_R', 'wrist_L', 'wrist_R'] },
+	{ id: 'legs', label: 'Ноги', icon: '👖', slots: ['legs', 'legs-2', 'bottom_outer', 'leg', 'leg_L', 'leg_R'] },
+	{ id: 'feet', label: 'Ступни', icon: '👢', slots: ['feet', 'shoes', 'sock', 'sock_L', 'sock_R'] },
+	{ id: 'weapon', label: 'Оружие', icon: '⚔️', slots: ['weapon-hand-1', 'weapon-hand-2', 'weapon_off', 'hand_L', 'hand_R', 'hand'] }
 ]
 
 // Active equipped count
@@ -903,6 +893,20 @@ function adjustItemZIndex(delta) {
 	if (!selectedItemConfig.value) return
 	const cur = Number(selectedItemConfig.value.zindex ?? 1)
 	emit('update-item', selectedItemConfig.value.id, { zindex: cur + delta })
+}
+
+function onPickPartImage(partIndex, event) {
+	const file = event.target?.files?.[0]
+	if (!file) return
+	const defaultDir = `images/sprites/characters/${props.characterId || 'default'}/equipment`
+	const resolvedPath = resolveRelativeSpritePath(file, defaultDir)
+	if (resolvedPath) {
+		updatePartField(partIndex, 'image', resolvedPath)
+		if (Array.isArray(props.availableEquipmentImages) && !props.availableEquipmentImages.includes(resolvedPath)) {
+			props.availableEquipmentImages.push(resolvedPath)
+		}
+	}
+	event.target.value = ''
 }
 
 function updatePartField(partIndex, field, value) {
@@ -1327,11 +1331,11 @@ function handleCreateCustomItem() {
 .item-card {
 	display: flex;
 	align-items: center;
-	gap: 0.6em;
+	gap: 0.5em;
 	background: rgba(15, 23, 42, 0.65);
 	border: 1px solid rgba(148, 163, 184, 0.12);
 	border-radius: 0.55em;
-	padding: 0.5em 0.65em;
+	padding: 0.45em 0.55em;
 	cursor: pointer;
 	transition: all 0.15s ease;
 	min-width: 0;
@@ -1349,8 +1353,8 @@ function handleCreateCustomItem() {
 }
 
 .item-icon-box {
-	width: 2.2em;
-	height: 2.2em;
+	width: 2.1em;
+	height: 2.1em;
 	background: rgba(2, 6, 23, 0.6);
 	border: 1px solid rgba(148, 163, 184, 0.15);
 	border-radius: 0.45em;
@@ -1382,30 +1386,50 @@ function handleCreateCustomItem() {
 }
 
 .item-title-row {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 0.4em;
+	display: block;
 	min-width: 0;
 }
 
 .item-name {
-	font-size: 0.82em;
+	font-size: 0.74em;
 	font-weight: 600;
 	color: #f1f5f9;
+	line-height: 1.25;
+	word-break: break-word;
+	overflow-wrap: break-word;
+	white-space: normal;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
 	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
 	min-width: 0;
 }
 
 .item-rarity-badge {
-	font-size: 0.65em;
+	font-size: 0.58em;
 	text-transform: uppercase;
 	padding: 0.05em 0.35em;
-	border-radius: 0.3em;
+	border-radius: 0.25em;
 	font-weight: 700;
 	flex-shrink: 0;
+	letter-spacing: 0.03em;
+	background: rgba(148, 163, 184, 0.15);
+	color: #94a3b8;
+}
+
+.item-rarity-badge.__junk {
+	background: rgba(148, 163, 184, 0.15);
+	color: #94a3b8;
+}
+
+.item-rarity-badge.__common {
+	background: rgba(148, 163, 184, 0.12);
+	color: #cbd5e1;
+}
+
+.item-rarity-badge.__uncommon {
+	background: rgba(74, 222, 128, 0.15);
+	color: #4ade80;
 }
 
 .item-rarity-badge.__rare {
@@ -1418,11 +1442,32 @@ function handleCreateCustomItem() {
 	color: #c084fc;
 }
 
+.item-rarity-badge.__legendary {
+	background: rgba(245, 158, 11, 0.2);
+	color: #fbbf24;
+}
+
+.item-rarity-badge.__ancient {
+	background: rgba(226, 232, 240, 0.15);
+	color: #f1f5f9;
+	border: 1px solid rgba(226, 232, 240, 0.3);
+}
+
+.item-rarity-badge.__divine {
+	background: rgba(239, 68, 68, 0.2);
+	color: #f87171;
+}
+
+.item-rarity-badge.__world {
+	background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(59, 130, 246, 0.25), rgba(168, 85, 247, 0.25));
+	color: #f472b6;
+}
+
 .item-meta-row {
 	display: flex;
 	align-items: center;
-	gap: 0.35em;
-	font-size: 0.7em;
+	gap: 0.3em;
+	font-size: 0.64em;
 	color: #94a3b8;
 	min-width: 0;
 	flex-wrap: wrap;
@@ -1433,7 +1478,7 @@ function handleCreateCustomItem() {
 	padding: 0.05em 0.35em;
 	border-radius: 0.25em;
 	font-family: monospace;
-	max-width: 10em;
+	max-width: 9em;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
@@ -1445,7 +1490,7 @@ function handleCreateCustomItem() {
 }
 
 .item-status-row {
-	font-size: 0.68em;
+	font-size: 0.62em;
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -1487,9 +1532,9 @@ function handleCreateCustomItem() {
 	border: 1px solid rgba(14, 165, 233, 0.4);
 	border-radius: 0.35em;
 	color: #38bdf8;
-	font-size: 0.7em;
+	font-size: 0.65em;
 	font-weight: 600;
-	padding: 0.25em 0.5em;
+	padding: 0.2em 0.45em;
 	cursor: pointer;
 	white-space: nowrap;
 }
@@ -1819,6 +1864,39 @@ function handleCreateCustomItem() {
 	display: flex;
 	flex-direction: column;
 	gap: 0.25em;
+}
+
+.plc-label-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.4em;
+}
+
+.btn-picker-upload {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.3em;
+	background: rgba(14, 165, 233, 0.15);
+	border: 1px solid rgba(14, 165, 233, 0.4);
+	border-radius: 0.35em;
+	color: #38bdf8;
+	font-size: 0.68em;
+	font-weight: 600;
+	padding: 0.15em 0.5em;
+	cursor: pointer;
+	white-space: nowrap;
+	transition: all 0.15s ease;
+}
+
+.btn-picker-upload:hover {
+	background: #0ea5e9;
+	color: #ffffff;
+	border-color: #0ea5e9;
+}
+
+.hidden-file-input {
+	display: none;
 }
 
 .plc-row.__zindex-row {

@@ -71,49 +71,88 @@ export const GENDER_OPTIONS = [
 	{ id: 'hermaphrodite', label: 'Гермафродит', shortLabel: 'Гермафродит', icon: '⚧' }
 ]
 
-export const EQUIPMENT_SLOTS_LIST = [
-	{ id: 'head', label: 'Голова (head)' },
-	{ id: 'glasses', label: 'Очки (glasses)' },
-	{ id: 'mask', label: 'Маска / Лицо (mask)' },
-	{ id: 'ears_1', label: 'Левое ухо (ears_1)' },
-	{ id: 'ears_2', label: 'Правое ухо (ears_2)' },
-	{ id: 'neck', label: 'Шея / Ожерелье (neck)' },
-	{ id: 'shoulder_L', label: 'Левое плечо (shoulder_L)' },
-	{ id: 'shoulder_R', label: 'Правое плечо (shoulder_R)' },
-	{ id: 'top_underwear', label: 'Верх бельё (top_underwear)' },
-	{ id: 'top_mid', label: 'Верх одежда (top_mid)' },
-	{ id: 'top_outer', label: 'Верх внешний / Броня (top_outer)' },
-	{ id: 'bottom_underwear', label: 'Низ бельё (bottom_underwear)' },
-	{ id: 'bottom_outer', label: 'Низ одежда (bottom_outer)' },
-	{ id: 'wrist_L', label: 'Левое запястье (wrist_L)' },
-	{ id: 'wrist_R', label: 'Правое запястье (wrist_R)' },
-	{ id: 'glove_L', label: 'Левая перчатка (glove_L)' },
-	{ id: 'glove_R', label: 'Правая перчатка (glove_R)' },
-	{ id: 'ring_1', label: 'Кольцо 1 (ring_1)' },
-	{ id: 'ring_2', label: 'Кольцо 2 (ring_2)' },
-	{ id: 'sock_L', label: 'Левый носок (sock_L)' },
-	{ id: 'sock_R', label: 'Правый носок (sock_R)' },
-	{ id: 'shoes', label: 'Обувь (shoes)' },
-	{ id: 'cloak', label: 'Плащ (cloak)' },
-	{ id: 'leg_L', label: 'Левая нога (leg_L)' },
-	{ id: 'leg_R', label: 'Правая нога (leg_R)' },
-	{ id: 'hand_L', label: 'Левая рука (hand_L)' },
-	{ id: 'hand_R', label: 'Правая рука (hand_R)' },
-	{ id: 'belt', label: 'Пояс (belt)' },
-	{ id: 'back', label: 'Спина (back)' },
-	{ id: 'misc', label: 'Разное (misc)' },
-	// Legacy aliases:
-	{ id: 'neck_1', label: 'Шея (legacy neck_1)' },
-	{ id: 'torso-1', label: 'Рубашка (legacy torso-1)' },
-	{ id: 'torso-2', label: 'Броня (legacy torso-2)' },
-	{ id: 'torso-3', label: 'Плащ (legacy torso-3)' },
-	{ id: 'hands', label: 'Руки (legacy hands)' },
-	{ id: 'legs-2', label: 'Штаны (legacy legs-2)' },
-	{ id: 'feet', label: 'Обувь (legacy feet)' },
-	{ id: 'weapon-hand-1', label: 'Оружие 1 (legacy weapon-hand-1)' },
-	{ id: 'weapon-hand-2', label: 'Оружие 2 (legacy weapon-hand-2)' },
-	{ id: 'underpants', label: 'Бельё (legacy underpants)' }
+export const EQUIPMENT_SLOT_GROUPS = [
+	{
+		id: 'head',
+		label: 'Голова и лицо',
+		icon: '🪖',
+		slots: [
+			{ id: 'head', label: 'Голова (head)', shortLabel: 'Голова', icon: '🪖' },
+			{ id: 'glasses', label: 'Очки (glasses)', shortLabel: 'Очки', icon: '👓' },
+			{ id: 'mask', label: 'Маска / Лицо (mask)', shortLabel: 'Маска', icon: '🎭' },
+			{ id: 'neck', label: 'Шея / Ожерелье (neck)', shortLabel: 'Шея', icon: '📿' },
+			{ id: 'ears_1', label: 'Левое ухо (ears_1)', shortLabel: 'Левое ухо', icon: '👂' },
+			{ id: 'ears_2', label: 'Правое ухо (ears_2)', shortLabel: 'Правое ухо', icon: '👂' }
+		]
+	},
+	{
+		id: 'torso',
+		label: 'Торс и верхняя одежда',
+		icon: '👕',
+		slots: [
+			{ id: 'top_underwear', label: 'Верх бельё (top_underwear)', shortLabel: 'Верх бельё', icon: '🩱' },
+			{ id: 'top_mid', label: 'Верх одежда (top_mid)', shortLabel: 'Верх одежда', icon: '👕' },
+			{ id: 'top_outer', label: 'Верх внешний / Броня (top_outer)', shortLabel: 'Броня', icon: '🥋' },
+			{ id: 'cloak', label: 'Плащ (cloak)', shortLabel: 'Плащ', icon: '🧥' },
+			{ id: 'back', label: 'Спина / Рюкзак (back)', shortLabel: 'Спина', icon: '🎒' },
+			{ id: 'belt', label: 'Пояс (belt)', shortLabel: 'Пояс', icon: '🪢' }
+		]
+	},
+	{
+		id: 'arms',
+		label: 'Руки и оружие',
+		icon: '⚔️',
+		slots: [
+			{ id: 'hand_R', label: 'Правая рука / Оружие (hand_R)', shortLabel: 'Оружие 1', icon: '⚔️' },
+			{ id: 'hand_L', label: 'Левая рука / Оружие (hand_L)', shortLabel: 'Оружие 2', icon: '🛡️' },
+			{ id: 'glove_L', label: 'Левая перчатка (glove_L)', shortLabel: 'Лев. перчатка', icon: '🧤' },
+			{ id: 'glove_R', label: 'Правая перчатка (glove_R)', shortLabel: 'Прав. перчатка', icon: '🧤' },
+			{ id: 'wrist_L', label: 'Левое запястье (wrist_L)', shortLabel: 'Лев. запястье', icon: '⌚' },
+			{ id: 'wrist_R', label: 'Правое запястье (wrist_R)', shortLabel: 'Прав. запястье', icon: '⌚' },
+			{ id: 'shoulder_L', label: 'Левое плечо (shoulder_L)', shortLabel: 'Лев. плечо', icon: '🛡️' },
+			{ id: 'shoulder_R', label: 'Правое плечо (shoulder_R)', shortLabel: 'Прав. плечо', icon: '🛡️' }
+		]
+	},
+	{
+		id: 'legs',
+		label: 'Низ и ноги',
+		icon: '👖',
+		slots: [
+			{ id: 'bottom_underwear', label: 'Низ бельё (bottom_underwear)', shortLabel: 'Низ бельё', icon: '🩲' },
+			{ id: 'bottom_outer', label: 'Низ одежда (bottom_outer)', shortLabel: 'Штаны', icon: '👖' },
+			{ id: 'leg_L', label: 'Левая нога (leg_L)', shortLabel: 'Лев. нога', icon: '🦿' },
+			{ id: 'leg_R', label: 'Правая нога (leg_R)', shortLabel: 'Прав. нога', icon: '🦿' },
+			{ id: 'sock_L', label: 'Левый носок (sock_L)', shortLabel: 'Лев. носок', icon: '🧦' },
+			{ id: 'sock_R', label: 'Правый носок (sock_R)', shortLabel: 'Прав. носок', icon: '🧦' },
+			{ id: 'shoes', label: 'Обувь (shoes)', shortLabel: 'Обувь', icon: '👢' }
+		]
+	},
+	{
+		id: 'accessories',
+		label: 'Кольца и аксессуары',
+		icon: '💍',
+		slots: [
+			{ id: 'ring_1', label: 'Кольцо 1 (ring_1)', shortLabel: 'Кольцо 1', icon: '💍' },
+			{ id: 'ring_2', label: 'Кольцо 2 (ring_2)', shortLabel: 'Кольцо 2', icon: '💍' },
+			{ id: 'misc', label: 'Разное (misc)', shortLabel: 'Разное', icon: '🔮' }
+		]
+	}
 ]
+
+export const EQUIPMENT_SLOTS_LIST = EQUIPMENT_SLOT_GROUPS.flatMap((g) => g.slots)
+
+export const LEGACY_SLOT_LABELS = {
+	neck_1: 'Шея (legacy neck_1)',
+	'torso-1': 'Рубашка (legacy torso-1)',
+	'torso-2': 'Броня (legacy torso-2)',
+	'torso-3': 'Плащ (legacy torso-3)',
+	hands: 'Руки (legacy hands)',
+	'legs-2': 'Штаны (legacy legs-2)',
+	feet: 'Обувь (legacy feet)',
+	'weapon-hand-1': 'Оружие 1 (legacy weapon-hand-1)',
+	'weapon-hand-2': 'Оружие 2 (legacy weapon-hand-2)',
+	underpants: 'Бельё (legacy underpants)'
+}
 
 export function getGenderLabel(gender) {
 	const opt = GENDER_OPTIONS.find((g) => g.id === gender)
@@ -130,8 +169,10 @@ export function getGenderOption(gender) {
 }
 
 export function getSlotDisplayName(slotId) {
+	if (!slotId) return ''
 	const opt = EQUIPMENT_SLOTS_LIST.find((s) => s.id === slotId)
-	return opt ? opt.label : slotId
+	if (opt) return `${opt.icon ? opt.icon + ' ' : ''}${opt.label}`
+	return LEGACY_SLOT_LABELS[slotId] || slotId
 }
 
 // Helper to parse parent ID(s) which can be null, string (single or comma-separated), or array
@@ -2224,6 +2265,8 @@ export function useDataEditor() {
 		getCharacterTypeIcon,
 		GENDER_OPTIONS,
 		EQUIPMENT_SLOTS_LIST,
+		EQUIPMENT_SLOT_GROUPS,
+		LEGACY_SLOT_LABELS,
 		getGenderLabel,
 		getGenderIcon,
 		getGenderOption,

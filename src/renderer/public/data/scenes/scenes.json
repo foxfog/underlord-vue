@@ -3,6 +3,7 @@
 		{
 			"id": "city_street",
 			"bg": "images/sprites/backgrounds/2138/street.jpg",
+			"clearCharacters": true,
 			"worldMap": "cybercity",
 			"localMap": "cybercity",
 			"locationId": "factory"
@@ -10,6 +11,7 @@
 		{
 			"id": "mc_apartment",
 			"bg": "images/sprites/backgrounds/mc-apartment/default.jpg",
+			"clearCharacters": true,
 			"worldMap": "cybercity",
 			"localMap": "cybercity",
 			"locationId": "home",
@@ -18,6 +20,7 @@
 		{
 			"id": "mc_apartment_door",
 			"bg": "images/sprites/backgrounds/mc-apartment/door.png",
+			"clearCharacters": true,
 			"worldMap": "cybercity",
 			"localMap": "cybercity",
 			"locationId": "home",
@@ -26,6 +29,7 @@
 		{
 			"id": "mc_apartment_door_open",
 			"bg": "images/sprites/backgrounds/mc-apartment/door-open.png",
+			"clearCharacters": true,
 			"worldMap": "cybercity",
 			"localMap": "cybercity",
 			"locationId": "home",

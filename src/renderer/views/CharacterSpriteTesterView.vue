@@ -58,33 +58,17 @@
 				</button>
 			</div>
 
-			<!-- Header Actions -->
+			<!-- Header Actions: Single Master Save Button -->
 			<div class="header-right">
 				<button
-					class="action-btn __save"
-					:title="viewMode === 'isometric' ? 'Сохранить структуру частей тела в iso_body.json' : 'Сохранить структуру частей тела в body.json'"
-					@click="saveBodyJson"
+					type="button"
+					class="action-btn __save-all"
+					:title="`Сохранить все изменения персонажа (${selectedCharacterId}): тело, скейл, экипировка • Ctrl+S`"
+					@click="saveAllChanges"
 				>
-					<span>💾</span>
-					<span>{{ viewMode === 'isometric' ? 'Сохранить iso_body.json' : 'Сохранить body.json' }}</span>
-				</button>
-				<button
-					v-if="viewMode !== 'isometric'"
-					class="action-btn __save-alt"
-					title="Сохранить визуальный скейл (size) в values.json"
-					@click="saveValuesJson"
-				>
-					<span>📏</span>
-					<span>Сохранить скейл</span>
-				</button>
-				<button
-					v-if="activeSidebarTab === 'equipment'"
-					class="action-btn __save-equip"
-					title="Сохранить структуру одежды и экипировки в characters/[id]/equipment.json"
-					@click="saveEquipmentJson"
-				>
-					<span>👗</span>
-					<span>Сохранить экипировку</span>
+					<span class="btn-icon">💾</span>
+					<span class="btn-label">Сохранить всё</span>
+					<span class="btn-shortcut">Ctrl+S</span>
 				</button>
 			</div>
 		</header>
@@ -644,7 +628,7 @@
 							<button type="button" class="mini-btn" title="Уменьшить масштаб модели на 0.01" @click="adjustScale(-0.01)">-0.01</button>
 							<button type="button" class="mini-btn __reset" title="Сбросить масштаб в 1.000" @click="characterScale = 1.0">1.0</button>
 							<button type="button" class="mini-btn" title="Увеличить масштаб модели на 0.01" @click="adjustScale(0.01)">+0.01</button>
-							<button type="button" class="mini-btn __save" title="Сохранить скейл в values.json" @click="saveValuesJson">💾</button>
+							<button type="button" class="mini-btn __save" title="Сохранить всё (тело, скейл, экипировка) • Ctrl+S" @click="saveAllChanges">💾</button>
 						</div>
 					</div>
 
@@ -681,6 +665,15 @@
 										Крепить к: {{ name }}
 									</option>
 								</select>
+								<label class="btn-browse-file __sm" title="Выбрать файл спрайта (имя части заполнится автоматически)">
+									<input
+										type="file"
+										accept="image/png,image/webp,image/jpeg"
+										class="hidden-file-input"
+										@change="onBrowseNewPartFile($event)"
+									/>
+									<span>📁 Из файла...</span>
+								</label>
 							</div>
 							<div class="form-actions">
 								<button
@@ -774,16 +767,37 @@
 
 						<!-- Image Source -->
 						<div class="control-field">
-							<label class="field-label">Файл спрайта:</label>
-							<select
-								:value="currentPart.image"
-								class="studio-select"
-								@change="currentPart.image = $event.target.value"
-							>
-								<option v-for="img in availableImages" :key="img" :value="img">
-									{{ img }}
-								</option>
-							</select>
+							<div class="field-label-row">
+								<label class="field-label">Файл спрайта:</label>
+								<label class="btn-browse-file" title="Выбрать файл изображения через окно выбора">
+									<input
+										type="file"
+										accept="image/png,image/webp,image/jpeg"
+										class="hidden-file-input"
+										@change="onBrowsePartImage($event)"
+									/>
+									<span>📁 Выбрать файл...</span>
+								</label>
+							</div>
+							<div class="field-image-select-row">
+								<select
+									:value="currentPart.image"
+									class="studio-select"
+									@change="currentPart.image = $event.target.value"
+								>
+									<option v-for="img in availableImages" :key="img" :value="img">
+										{{ img }}
+									</option>
+								</select>
+								<div v-if="currentPart.image" class="part-preview-thumb-box" title="Превью спрайта">
+									<img
+										:src="`/${currentPart.image.replace(/^\/+/, '')}`"
+										class="part-preview-thumb-img"
+										alt=""
+										@error="(e) => (e.target.style.opacity = '0.3')"
+									/>
+								</div>
+							</div>
 							<input
 								v-model="currentPart.image"
 								type="text"
@@ -987,9 +1001,9 @@
 									type="button"
 									class="action-btn __save-alt __sm __w-full"
 									title="Сохранить размер модели (size) в values.json"
-									@click="saveValuesJson"
+									@click="saveAllChanges"
 								>
-									<span>💾</span> Сохранить скейл в values.json
+									<span>💾</span> Сохранить всё в файлы персонажа
 								</button>
 							</div>
 						</div>
@@ -1724,7 +1738,18 @@
 								</select>
 							</div>
 							<div class="control-field">
-								<label class="field-label">Спрайт для этой эмоции:</label>
+								<div class="field-label-row">
+									<label class="field-label">Спрайт для этой эмоции:</label>
+									<label class="btn-browse-file" title="Выбрать файл оверрайда эмоции через окно выбора">
+										<input
+											type="file"
+											accept="image/png,image/webp,image/jpeg"
+											class="hidden-file-input"
+											@change="onBrowseEmotionOverride(currentEmotion, emotionTargetPart, $event)"
+										/>
+										<span>📁 Выбрать файл...</span>
+									</label>
+								</div>
 								<select
 									:value="
 										emotionOverrides[currentEmotion]?.[emotionTargetPart] || ''
@@ -2646,10 +2671,10 @@
 								type="button"
 								class="action-btn __save-alt __w-full"
 								title="Сохранить визуальный скейл (size) и смещение аватара (root_offset) в values.json"
-								@click="saveValuesJson"
+								@click="saveAllChanges"
 							>
 								<span>💾</span>
-								<span>Сохранить скейл и смещение в values.json</span>
+								<span>Сохранить все изменения</span>
 							</button>
 						</div>
 					</div>
@@ -2676,7 +2701,7 @@
 						@remove-part="removeEquipmentPart"
 						@update-part="updateEquipmentPart"
 						@update-item="updateEquipmentItem"
-						@save-equipment="saveEquipmentJson"
+						@save-equipment="saveAllChanges"
 						@toggle-sidebar-width="toggleSidebarPresetWidth"
 					/>
 				</div>
@@ -2708,6 +2733,7 @@ import EyeDirectionPad from '@/components/game/characters/EyeDirectionPad.vue'
 import CharacterCanvas from '@/components/game/characters/CharacterCanvas.vue'
 import CharacterAnimationEditorModal from '@/components/game/characters/CharacterAnimationEditorModal.vue'
 import CharacterRigEquipmentPanel from '@/components/game/characters/CharacterRigEquipmentPanel.vue'
+import { resolveRelativeSpritePath } from '@/utils/character/characterRigRenderer'
 
 const router = useRouter()
 const route = useRoute()
@@ -2795,6 +2821,7 @@ const {
 	updateEquipmentPart,
 	updateEquipmentItem,
 	saveEquipmentJson,
+	saveAllChanges,
 	BUILTIN_ANIMATIONS,
 	customAnimations,
 	animationGroups,
@@ -3461,10 +3488,67 @@ function onPartImgError(e, partName) {
 	e.target.src = `images/sprites/characters/default/${partName}.png`
 }
 
+const newPartImagePath = ref('')
+
+function onBrowsePartImage(event) {
+	const file = event.target?.files?.[0]
+	if (!file || !currentPart.value) return
+	const isIso = viewMode.value === 'isometric'
+	const subDir = isIso ? 'isometric' : ''
+	const defaultDir = subDir
+		? `images/sprites/characters/${selectedCharacterId.value}/${subDir}`
+		: `images/sprites/characters/${selectedCharacterId.value}`
+	const resolvedPath = resolveRelativeSpritePath(file, defaultDir)
+	if (resolvedPath) {
+		currentPart.value.image = resolvedPath
+		if (Array.isArray(availableImages.value) && !availableImages.value.includes(resolvedPath)) {
+			availableImages.value.push(resolvedPath)
+		}
+	}
+	event.target.value = ''
+}
+
+function onBrowseNewPartFile(event) {
+	const file = event.target?.files?.[0]
+	if (!file) return
+	const isIso = viewMode.value === 'isometric'
+	const subDir = isIso ? 'isometric' : ''
+	const defaultDir = subDir
+		? `images/sprites/characters/${selectedCharacterId.value}/${subDir}`
+		: `images/sprites/characters/${selectedCharacterId.value}`
+	const resolvedPath = resolveRelativeSpritePath(file, defaultDir)
+	if (resolvedPath) {
+		newPartImagePath.value = resolvedPath
+		const rawName = file.name.replace(/\.[^/.]+$/, '').trim()
+		if (!newPartName.value.trim() && rawName) {
+			newPartName.value = rawName
+		}
+		if (Array.isArray(availableImages.value) && !availableImages.value.includes(resolvedPath)) {
+			availableImages.value.push(resolvedPath)
+		}
+	}
+	event.target.value = ''
+}
+
+function onBrowseEmotionOverride(emotion, targetPart, event) {
+	const file = event.target?.files?.[0]
+	if (!file) return
+	const defaultDir = `images/sprites/characters/${selectedCharacterId.value}`
+	const resolvedPath = resolveRelativeSpritePath(file, defaultDir)
+	if (resolvedPath) {
+		setEmotionOverride(emotion, targetPart, resolvedPath)
+		if (Array.isArray(availableImages.value) && !availableImages.value.includes(resolvedPath)) {
+			availableImages.value.push(resolvedPath)
+		}
+	}
+	event.target.value = ''
+}
+
 function handleAddNewPart() {
 	if (!newPartName.value.trim()) return
-	addBodyPart(newPartName.value, newPartParent.value)
+	addBodyPart(newPartName.value, newPartParent.value, newPartImagePath.value)
 	newPartName.value = ''
+	newPartImagePath.value = ''
 	isAddingPart.value = false
 }
 
@@ -3708,6 +3792,42 @@ onMounted(async () => {
 	align-items: center;
 	gap: 0.4em;
 	transition: all 0.2s;
+}
+
+
+.action-btn.__save-all {
+	background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+	color: #ffffff;
+	border: 1px solid #34d399;
+	font-weight: 600;
+	display: inline-flex;
+	align-items: center;
+	gap: 0.45em;
+	padding: 0.45em 0.85em;
+	border-radius: 0.4em;
+	box-shadow: 0 0.2em 0.7em rgba(16, 185, 129, 0.25);
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.action-btn.__save-all:hover {
+	filter: brightness(1.1);
+	box-shadow: 0 0.3em 0.9em rgba(16, 185, 129, 0.4);
+	transform: translateY(-0.05em);
+}
+
+.action-btn.__save-all:active {
+	transform: translateY(0.05em);
+}
+
+.action-btn.__save-all .btn-shortcut {
+	font-size: 0.75em;
+	opacity: 0.85;
+	padding: 0.1em 0.35em;
+	border-radius: 0.25em;
+	background: rgba(0, 0, 0, 0.25);
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	margin-left: 0.2em;
 }
 
 .action-btn.__save {
@@ -4855,6 +4975,63 @@ onMounted(async () => {
 .field-label {
 	font-size: 0.78em;
 	color: #94a3b8;
+}
+
+.btn-browse-file {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.3em;
+	background: rgba(14, 165, 233, 0.15);
+	border: 1px solid rgba(14, 165, 233, 0.4);
+	border-radius: 0.35em;
+	color: #38bdf8;
+	font-size: 0.72em;
+	font-weight: 600;
+	padding: 0.18em 0.55em;
+	cursor: pointer;
+	white-space: nowrap;
+	transition: all 0.15s ease;
+}
+
+.btn-browse-file:hover {
+	background: #0ea5e9;
+	color: #ffffff;
+	border-color: #0ea5e9;
+}
+
+.btn-browse-file.__sm {
+	font-size: 0.68em;
+	padding: 0.15em 0.45em;
+}
+
+.field-image-select-row {
+	display: flex;
+	align-items: center;
+	gap: 0.4em;
+}
+
+.part-preview-thumb-box {
+	width: 2.2em;
+	height: 2.2em;
+	background: rgba(2, 6, 23, 0.6);
+	border: 1px solid rgba(148, 163, 184, 0.2);
+	border-radius: 0.35em;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	overflow: hidden;
+}
+
+.part-preview-thumb-img {
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+	image-rendering: pixelated;
+}
+
+.hidden-file-input {
+	display: none;
 }
 
 .field-label-row {

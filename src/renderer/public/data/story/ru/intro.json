@@ -2,6 +2,9 @@
 	"id": "intro",
 	"steps": [
 		{
+			"type": "clear-characters"
+		},
+		{
 			"type": "variables",
 			"operations": [
 				"global.calendarType = 'real'",
@@ -130,15 +133,6 @@
 		},
 
 		{
-			"type": "show",
-			"character": "mc",
-			"orientation": "left",
-			"position": { "l": 20, "r": "auto" },
-			"from": { "l": -25, "r": "auto" },
-			"duration": 0.8
-		},
-
-		{
 			"type": "dialogue",
 			"character": "mc",
 			"text": "..."
@@ -235,7 +229,8 @@
 		},
 		{
 			"type": "scene",
-			"id": "mc_apartment"
+			"id": "mc_apartment",
+			"clearCharacters": true
 		},
 		{
 			"variable": "global.toxic_gas = 0"
@@ -250,6 +245,9 @@
 			"type": "dialogue",
 			"character": "mc",
 			"text": "Наконец-то дома... Можно снять защитную маску и попытаться перевести дух."
+		},
+		{
+			"variable": "character.mc.equipment_slots.mask = null"
 		},
 		{
 			"type": "dialogue",
@@ -275,12 +273,6 @@
 			"text": "Завтра снова на завод. А пока... можно попробовать запустить его."
 		},
 		{
-			"type": "inventory-item-update",
-			"character": "mc",
-			"itemId": "neuro_helmet",
-			"removeProperty": "can_equip"
-		},
-		{
 			"variable": "delete global.mapOverrides.cybercity.home"
 		},
 		{
@@ -289,11 +281,11 @@
 			"id": "try_neuro_helmet",
 			"parentId": "end_and_beginning",
 			"title": "Опробовать нейрошлем",
-			"description": "Коллега с завода отдал свой старый нейрошлем перед закрытием игры. Нужно экипировать его в инвентаре и проверить работоспособность.",
+			"description": "Коллега с завода отдал свой старый нейрошлем перед закрытием игры. Нужно надеть его и проверить работоспособность.",
 			"tasks": [
 				{
 					"id": "equip_helmet_step",
-					"text": "Экипировать нейрошлем через инвентарь",
+					"text": "Надеть нейрошлем, лежащий на кровати",
 					"required": true,
 					"completed": false
 				},

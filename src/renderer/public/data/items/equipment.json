@@ -1,16 +1,5 @@
 [
   {
-    "id": "underpants",
-    "slot": "underpants",
-    "name": "трусы",
-    "characters": [
-      "mc"
-    ],
-    "stackable": false,
-    "sprite": "images/sprites/items/equipments/underpants.png",
-    "weight": 0.3
-  },
-  {
     "id": "tshirt",
     "slot": "torso-1",
     "characters": [
@@ -257,5 +246,53 @@
     "stats": {
       "defense": 1
     }
+  },
+  {
+    "id": "underpants-m",
+    "name": "Мужские трусы",
+    "icon": "🩲🚹",
+    "rarity": "common",
+    "slot": "bottom_underwear",
+    "weight": 0.3,
+    "stackable": false,
+    "lvl": 1,
+    "genders": [
+      "male"
+    ],
+    "tags": [],
+    "description": "",
+    "stats": {
+      "defense": 0.1
+    }
+  },
+  {
+    "id": "trousers-linen",
+    "name": "Штаны",
+    "icon": "👖",
+    "rarity": "common",
+    "slot": "weapon-hand-1",
+    "weight": 1,
+    "stackable": false,
+    "lvl": 1,
+    "genders": [
+      "male"
+    ],
+    "tags": [],
+    "description": "",
+    "stats": {
+      "defense": 0.2
+    }
+  },
+  {
+    "id": "boots-rawhide",
+    "name": "Кожанные ботинки",
+    "icon": "👞",
+    "rarity": "common",
+    "slot": "shoes",
+    "weight": 1,
+    "stackable": false,
+    "lvl": 1,
+    "tags": [],
+    "description": ""
   }
 ]

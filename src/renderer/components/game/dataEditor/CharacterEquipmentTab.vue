@@ -628,6 +628,7 @@ import {
 	getEquipRestrictionReasons
 } from '@/utils/equipment.js'
 import { getRarityColor, getRarityBadgeStyle } from '@/constants/rarity.js'
+import { LEGACY_SLOT_ALIASES } from '@/constants/equipmentSlots.js'
 
 const props = defineProps({
 	character: {
@@ -650,32 +651,88 @@ const availableSlotsList = EQUIPMENT_SLOTS_LIST
 
 const SLOT_ICONS = {
 	head: '🪖',
+	glasses: '👓',
 	mask: '🎭',
+	neck: '📿',
 	neck_1: '📿',
+	ears_1: '👂',
+	ears_2: '👂',
+	top_underwear: '🩱',
+	top_mid: '👕',
+	top_outer: '🥋',
 	'torso-1': '👕',
 	'torso-2': '🥋',
 	'torso-3': '🧥',
-	hands: '🧤',
-	'legs-2': '👖',
-	feet: '👢',
+	cloak: '🧥',
+	back: '🎒',
+	belt: '🪢',
+	hand_R: '⚔️',
+	hand_L: '🛡️',
 	'weapon-hand-1': '⚔️',
 	'weapon-hand-2': '🛡️',
-	underpants: '🩲'
+	glove_L: '🧤',
+	glove_R: '🧤',
+	hands: '🧤',
+	wrist_L: '⌚',
+	wrist_R: '⌚',
+	shoulder_L: '🛡️',
+	shoulder_R: '🛡️',
+	bottom_underwear: '🩲',
+	underpants: '🩲',
+	bottom_outer: '👖',
+	'legs-2': '👖',
+	leg_L: '🦿',
+	leg_R: '🦿',
+	sock_L: '🧦',
+	sock_R: '🧦',
+	shoes: '👢',
+	feet: '👢',
+	ring_1: '💍',
+	ring_2: '💍',
+	misc: '🔮'
 }
 
 const SLOT_SHORT_NAMES = {
 	head: 'Голова',
+	glasses: 'Очки',
 	mask: 'Маска',
+	neck: 'Шея',
 	neck_1: 'Шея',
+	ears_1: 'Лев. ухо',
+	ears_2: 'Прав. ухо',
+	top_underwear: 'Верх бельё',
+	top_mid: 'Верх одежда',
+	top_outer: 'Броня',
 	'torso-1': 'Тело 1',
 	'torso-2': 'Тело 2',
 	'torso-3': 'Плащ',
-	hands: 'Руки',
-	'legs-2': 'Ноги',
-	feet: 'Ступни',
+	cloak: 'Плащ',
+	back: 'Спина',
+	belt: 'Пояс',
+	hand_R: 'Оружие 1',
+	hand_L: 'Оружие 2',
 	'weapon-hand-1': 'Оружие 1',
 	'weapon-hand-2': 'Оружие 2',
-	underpants: 'Бельё'
+	glove_L: 'Лев. перчатка',
+	glove_R: 'Прав. перчатка',
+	hands: 'Руки',
+	wrist_L: 'Лев. запястье',
+	wrist_R: 'Прав. запястье',
+	shoulder_L: 'Лев. плечо',
+	shoulder_R: 'Прав. плечо',
+	bottom_underwear: 'Низ бельё',
+	underpants: 'Бельё',
+	bottom_outer: 'Штаны',
+	'legs-2': 'Ноги',
+	leg_L: 'Лев. нога',
+	leg_R: 'Прав. нога',
+	sock_L: 'Лев. носок',
+	sock_R: 'Прав. носок',
+	shoes: 'Обувь',
+	feet: 'Ступни',
+	ring_1: 'Кольцо 1',
+	ring_2: 'Кольцо 2',
+	misc: 'Разное'
 }
 
 const MIN_INVENTORY_GRID_CELLS = 24
@@ -842,6 +899,18 @@ function openSlotPicker(slotId) {
 	pickerSearchQuery.value = ''
 }
 
+function isSlotCompatible(itemSlot, targetSlot) {
+	if (!itemSlot || !targetSlot) return false
+	const slots = Array.isArray(itemSlot) ? itemSlot : [itemSlot]
+	return slots.some((s) => {
+		if (s === targetSlot) return true
+		if (LEGACY_SLOT_ALIASES?.[s] === targetSlot) return true
+		if (LEGACY_SLOT_ALIASES?.[targetSlot] === s) return true
+		if (LEGACY_SLOT_ALIASES?.[s] && LEGACY_SLOT_ALIASES[s] === LEGACY_SLOT_ALIASES?.[targetSlot]) return true
+		return false
+	})
+}
+
 const compatibleSlotItems = computed(() => {
 	if (!activePickerSlot.value) return []
 	const slotId = activePickerSlot.value
@@ -850,7 +919,7 @@ const compatibleSlotItems = computed(() => {
 	return props.itemsList.filter((item) => {
 		if (!item || !item.id) return false
 		const itemSlot = item.slot
-		const matchesSlot = Array.isArray(itemSlot) ? itemSlot.includes(slotId) : itemSlot === slotId
+		const matchesSlot = isSlotCompatible(itemSlot, slotId)
 		if (!matchesSlot) return false
 
 		if (!q) return true

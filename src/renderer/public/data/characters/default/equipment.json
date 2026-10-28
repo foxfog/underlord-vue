@@ -1,1 +1,13 @@
-[]
+[
+  {
+    "id": "underpants-m",
+    "equipped": false,
+    "zindex": 1,
+    "parts": [
+      {
+        "parent": "body",
+        "image": "images/sprites/characters/default/equipment/underpants-m.png"
+      }
+    ]
+  }
+]

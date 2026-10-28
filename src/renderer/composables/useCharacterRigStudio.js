@@ -52,13 +52,13 @@ export function useCharacterRigStudio() {
 		{ id: 'all', label: 'Все', icon: '✨', slots: [] },
 		{ id: 'head', label: 'Голова', icon: '🪖', slots: ['head'] },
 		{ id: 'mask', label: 'Маска', icon: '🎭', slots: ['mask'] },
-		{ id: 'neck', label: 'Шея', icon: '📿', slots: ['neck_1', 'neck-1'] },
-		{ id: 'torso', label: 'Торс', icon: '👕', slots: ['torso-1', 'torso-2', 'torso-3'] },
-		{ id: 'underpants', label: 'Бельё', icon: '🩲', slots: ['underpants'] },
-		{ id: 'hands', label: 'Руки', icon: '🧤', slots: ['hands'] },
-		{ id: 'legs', label: 'Ноги', icon: '👖', slots: ['legs', 'legs-2'] },
-		{ id: 'feet', label: 'Ступни', icon: '👢', slots: ['feet'] },
-		{ id: 'weapon', label: 'Оружие', icon: '⚔️', slots: ['weapon-hand-1', 'weapon-hand-2', 'weapon_off'] }
+		{ id: 'neck', label: 'Шея', icon: '📿', slots: ['neck_1', 'neck-1', 'neck'] },
+		{ id: 'torso', label: 'Торс', icon: '👕', slots: ['torso-1', 'torso-2', 'torso-3', 'top_mid', 'top_outer', 'cloak'] },
+		{ id: 'underpants', label: 'Бельё', icon: '🩲', slots: ['underpants', 'bottom_underwear', 'top_underwear', 'underwear'] },
+		{ id: 'hands', label: 'Руки', icon: '🧤', slots: ['hands', 'glove', 'glove_L', 'glove_R', 'wrist_L', 'wrist_R'] },
+		{ id: 'legs', label: 'Ноги', icon: '👖', slots: ['legs', 'legs-2', 'bottom_outer', 'leg', 'leg_L', 'leg_R'] },
+		{ id: 'feet', label: 'Ступни', icon: '👢', slots: ['feet', 'shoes', 'sock', 'sock_L', 'sock_R'] },
+		{ id: 'weapon', label: 'Оружие', icon: '⚔️', slots: ['weapon-hand-1', 'weapon-hand-2', 'weapon_off', 'hand_L', 'hand_R', 'hand'] }
 	]
 
 	const equipmentBySlotForCanvas = computed(() => {
@@ -980,16 +980,8 @@ export function useCharacterRigStudio() {
 			vnScale.value = loadedScale
 			rootOffset.x = Number(characterValues.value.root_offset?.x || 0)
 			rootOffset.y = Number(characterValues.value.root_offset?.y || 0)
-			if (
-				characterValues.value.orientation === 'left' ||
-				characterValues.value.orientation === 'inverted' ||
-				characterValues.value.defaultOrientation === 'left' ||
-				characterValues.value.defaultOrientation === 'inverted'
-			) {
-				orientation.value = 'inverted'
-			} else {
-				orientation.value = 'default'
-			}
+			orientation.value = 'default'
+			isBackView.value = false
 
 			// 1. Load 2D body.json
 			let body = await readDataFile(`characters/${charId}/body.json`)
@@ -2125,7 +2117,7 @@ export function useCharacterRigStudio() {
 		return jsonString
 	}
 
-	async function saveIsoBodyJson() {
+	async function saveIsoBodyJson(notify = true) {
 		const charId = selectedCharacterId.value
 		const jsonToSave = {}
 		for (const [name, p] of Object.entries(bodyParts)) {
@@ -2153,19 +2145,19 @@ export function useCharacterRigStudio() {
 		try {
 			await writeDataFile(`characters/${charId}/iso_body.json`, jsonToSave)
 			copyParts(bodyParts, isoBodyParts)
-			setStatus(`Файл characters/${charId}/iso_body.json успешно сохранен!`)
+			if (notify) setStatus(`Файл characters/${charId}/iso_body.json успешно сохранен!`)
 			return true
 		} catch (err) {
 			console.error('Ошибка сохранения iso_body.json:', err)
-			setStatus(`Ошибка сохранения iso_body.json: ${err.message}`, 'error')
+			if (notify) setStatus(`Ошибка сохранения iso_body.json: ${err.message}`, 'error')
 			return false
 		}
 	}
 
 	// Save body.json (saves iso_body.json in isometric mode, body.json in 2D mode)
-	async function saveBodyJson() {
+	async function saveBodyJson(notify = true) {
 		if (viewMode.value === 'isometric') {
-			return await saveIsoBodyJson()
+			return await saveIsoBodyJson(notify)
 		}
 		const charId = selectedCharacterId.value
 		const jsonToSave = {}
@@ -2200,19 +2192,56 @@ export function useCharacterRigStudio() {
 				const scaledSize = Number(characterScale.value.toFixed(3))
 				characterValues.value.size = scaledSize
 				characterValues.value.scale = scaledSize
+				delete characterValues.value.orientation
+				syncEquipmentSlotsWithActiveEquipped()
 				await writeDataFile(`characters/${charId}/values.json`, characterValues.value)
 			}
-			setStatus(`Файл characters/${charId}/body.json и скейл (${characterScale.value.toFixed(3)}x) успешно сохранены!`)
+			if (notify) setStatus(`Файл characters/${charId}/body.json и скейл (${characterScale.value.toFixed(3)}x) успешно сохранены!`)
 			return true
 		} catch (err) {
 			console.error('Ошибка сохранения body.json:', err)
-			setStatus(`Ошибка сохранения body.json: ${err.message}`, 'error')
+			if (notify) setStatus(`Ошибка сохранения body.json: ${err.message}`, 'error')
 			return false
 		}
 	}
 
+	
+	function syncEquipmentSlotsWithActiveEquipped() {
+		if (!characterValues.value) return
+		if (!characterValues.value.equipment_slots || typeof characterValues.value.equipment_slots !== 'object') {
+			characterValues.value.equipment_slots = {}
+		}
+		const slots = characterValues.value.equipment_slots
+		const activeIds = activeEquippedIds.value
+
+		for (const eq of characterEquipment.value) {
+			if (!eq || !eq.id) continue
+			const isEquipped = activeIds.has(eq.id)
+			const catItem = itemsCatalog.value.find((x) => x.id === eq.id)
+			const rawSlot = catItem?.slot
+			const slot = Array.isArray(rawSlot) ? rawSlot[0] : rawSlot
+
+			if (slot) {
+				if (isEquipped) {
+					if (slot === 'bottom_underwear' && 'underpants' in slots) {
+						slots.underpants = eq.id
+					} else {
+						slots[slot] = eq.id
+					}
+				} else {
+					if (slots[slot] === eq.id) {
+						slots[slot] = null
+					}
+					if (slots.underpants === eq.id) {
+						slots.underpants = null
+					}
+				}
+			}
+		}
+	}
+
 	// Save values.json (with updated visual size / scale and root avatar offset, preserving canonical biometric height)
-	async function saveValuesJson() {
+	async function saveValuesJson(notify = true) {
 		if (viewMode.value === 'isometric') {
 			setStatus('В изометрии скейлинг отключен (пиксельная графика 1:1) и не сохраняется в values.json', 'info')
 			return { success: true, skipped: true }
@@ -2226,13 +2255,14 @@ export function useCharacterRigStudio() {
 				x: Number(rootOffset.x.toFixed(2)),
 				y: Number(rootOffset.y.toFixed(2))
 			}
-			characterValues.value.orientation = orientation.value === 'inverted' ? 'left' : 'right'
+			delete characterValues.value.orientation
+			syncEquipmentSlotsWithActiveEquipped()
 			await writeDataFile(`characters/${charId}/values.json`, characterValues.value)
-			setStatus(`Скейл (${scaledSize}x) и смещение аватара сохранены в values.json!`)
+			if (notify) setStatus(`Скейл (${scaledSize}x) и смещение аватара сохранены в values.json!`)
 			return { success: true }
 		} catch (err) {
 			console.error('Ошибка сохранения values.json:', err)
-			setStatus(`Ошибка сохранения values.json: ${err.message}`, 'error')
+			if (notify) setStatus(`Ошибка сохранения values.json: ${err.message}`, 'error')
 			return { success: false, error: err }
 		}
 	}
@@ -2243,7 +2273,21 @@ export function useCharacterRigStudio() {
 	function extractDefaultEquippedIds(values, equipmentList = []) {
 		const result = new Set()
 
-		// 1. Check equipment_slots in values.json (e.g. { "torso-1": "tshirt", "legs-2": "jeans", "head": null })
+		// 1. If equipmentList has explicit boolean equipped flags, that is the primary source of truth for the studio
+		const hasExplicitFlags = Array.isArray(equipmentList) && equipmentList.some(
+			(eq) => eq && (typeof eq.equipped === 'boolean' || typeof eq.is_equipped === 'boolean')
+		)
+
+		if (hasExplicitFlags) {
+			for (const eq of equipmentList) {
+				if (eq && (eq.equipped === true || eq.is_equipped === true)) {
+					if (eq.id) result.add(String(eq.id))
+				}
+			}
+			return result
+		}
+
+		// 2. Fallback: equipment_slots in values.json
 		if (values?.equipment_slots && typeof values.equipment_slots === 'object') {
 			for (const slotVal of Object.values(values.equipment_slots)) {
 				if (!slotVal) continue
@@ -2256,7 +2300,7 @@ export function useCharacterRigStudio() {
 			}
 		}
 
-		// 2. Check character inventory items with isEquipped: true
+		// 3. Fallback: inventory items with isEquipped: true
 		if (Array.isArray(values?.inventory?.items)) {
 			for (const invItem of values.inventory.items) {
 				if (invItem && (invItem.isEquipped || invItem.is_equipped)) {
@@ -2266,7 +2310,7 @@ export function useCharacterRigStudio() {
 			}
 		}
 
-		// 3. Check default_equipment or equipment in values.json if defined
+		// 4. Fallback: direct default_equipment array
 		const directEquip =
 			values?.default_equipment ||
 			values?.defaultEquipment ||
@@ -2283,10 +2327,10 @@ export function useCharacterRigStudio() {
 			}
 		}
 
-		// 4. Check items in equipment.json explicitly marked as default or equipped
+		// 5. Fallback: default flags in equipmentList
 		if (Array.isArray(equipmentList)) {
 			for (const eq of equipmentList) {
-				if (eq && (eq.default || eq.is_default || eq.isDefault || eq.equipped || eq.is_equipped || eq.isEquipped)) {
+				if (eq && (eq.default || eq.is_default || eq.isDefault)) {
 					if (eq.id) result.add(String(eq.id))
 				}
 			}
@@ -2370,7 +2414,9 @@ export function useCharacterRigStudio() {
 			const defaultEquipped = extractDefaultEquippedIds(characterValues.value, characterEquipment.value)
 			const initialActive = new Set()
 			for (const item of characterEquipment.value) {
-				if (item?.id && defaultEquipped.has(item.id)) {
+				const isWorn = defaultEquipped.has(item.id)
+				item.equipped = isWorn
+				if (item?.id && isWorn) {
 					initialActive.add(item.id)
 				}
 			}
@@ -2446,26 +2492,29 @@ export function useCharacterRigStudio() {
 
 	function toggleEquipPreview(itemId) {
 		const nextSet = new Set(activeEquippedIds.value)
-		if (nextSet.has(itemId)) {
-			nextSet.delete(itemId)
-		} else {
+		const willEquip = !nextSet.has(itemId)
+		if (willEquip) {
 			nextSet.add(itemId)
+		} else {
+			nextSet.delete(itemId)
 		}
 		activeEquippedIds.value = nextSet
+		const item = characterEquipment.value.find((x) => x.id === itemId)
+		if (item) {
+			item.equipped = willEquip
+		}
 	}
 
 	function setAllEquippedPreview(enable) {
-		if (enable) {
-			const nextSet = new Set()
-			for (const it of characterEquipment.value) {
-				if (it && it.id) nextSet.add(it.id)
+		const nextSet = new Set()
+		for (const it of characterEquipment.value) {
+			if (it && it.id) {
+				if (enable) nextSet.add(it.id)
+				it.equipped = enable
 			}
-			activeEquippedIds.value = nextSet
-			setStatus('Все предметы надеты на кукле')
-		} else {
-			activeEquippedIds.value = new Set()
-			setStatus('Все предметы сняты (персонаж голышом)')
 		}
+		activeEquippedIds.value = nextSet
+		setStatus(enable ? 'Все предметы надеты на кукле' : 'Все предметы сняты (персонаж голышом)')
 	}
 
 	function resetToDefaultEquippedPreview() {
@@ -2517,12 +2566,14 @@ export function useCharacterRigStudio() {
 		characterEquipment.value = [...characterEquipment.value]
 	}
 
-	async function saveEquipmentJson() {
+	async function saveEquipmentJson(notify = true) {
 		const charId = selectedCharacterId.value
 		try {
 			const cleanData = characterEquipment.value.map((eq) => {
+				const isEquipped = activeEquippedIds.value.has(eq.id)
 				const itemObj = {
-					id: eq.id
+					id: eq.id,
+					equipped: isEquipped
 				}
 				if (eq.zindex !== undefined && eq.zindex !== null && eq.zindex !== 0) {
 					itemObj.zindex = Number(eq.zindex)
@@ -2547,13 +2598,61 @@ export function useCharacterRigStudio() {
 			})
 
 			await writeDataFile(`characters/${charId}/equipment.json`, cleanData)
-			setStatus(`Файл characters/${charId}/equipment.json успешно сохранен!`)
+			if (notify) setStatus(`Файл characters/${charId}/equipment.json успешно сохранен!`)
 			return true
 		} catch (err) {
 			console.error(`Ошибка сохранения equipment.json для ${charId}:`, err)
-			setStatus(`Ошибка сохранения equipment.json: ${err.message}`, 'error')
+			if (notify) setStatus(`Ошибка сохранения equipment.json: ${err.message}`, 'error')
 			return false
 		}
+	}
+
+	
+	// Unified Save: saves all modified character state (body, scale/values, equipment) in one operation
+	async function saveAllChanges() {
+		const charId = selectedCharacterId.value
+		const savedFiles = []
+		const errors = []
+
+		// 1. Save body.json (or iso_body.json in isometric view) + values.json
+		try {
+			const okBody = viewMode.value === 'isometric'
+				? await saveIsoBodyJson(false)
+				: await saveBodyJson(false)
+			if (okBody) {
+				savedFiles.push(viewMode.value === 'isometric' ? 'iso_body.json' : 'body.json')
+				if (viewMode.value !== 'isometric') {
+					savedFiles.push('values.json')
+				}
+			} else {
+				errors.push('body.json')
+			}
+		} catch (e) {
+			errors.push(`body.json (${e.message})`)
+		}
+
+		// 2. Save equipment.json if equipment is loaded
+		if (Array.isArray(characterEquipment.value)) {
+			try {
+				const okEquip = await saveEquipmentJson(false)
+				if (okEquip) {
+					savedFiles.push('equipment.json')
+				} else {
+					errors.push('equipment.json')
+				}
+			} catch (e) {
+				errors.push(`equipment.json (${e.message})`)
+			}
+		}
+
+		if (errors.length > 0) {
+			setStatus(`Сохранено: ${savedFiles.join(', ')}. Ошибки: ${errors.join(', ')}`, 'error')
+			return false
+		}
+
+		const filesStr = savedFiles.join(', ')
+		setStatus(`✔ Все изменения сохранены (${charId}): ${filesStr}!`)
+		return true
 	}
 
 	if (getCurrentInstance()) {
@@ -2643,6 +2742,7 @@ export function useCharacterRigStudio() {
 		updateEquipmentPart,
 		updateEquipmentItem,
 		saveEquipmentJson,
+		saveAllChanges,
 		// Animations
 		BUILTIN_ANIMATIONS,
 		customAnimations,

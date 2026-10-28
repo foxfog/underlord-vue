@@ -43,7 +43,7 @@
   "arm_left3": {
     "image": "images/sprites/characters/mc/arm_left3.png",
     "parent": "arm_left2",
-    "zindex": 10,
+    "zindex": 9,
     "offset": {
       "x": -69.85,
       "y": 77.5
@@ -70,7 +70,7 @@
   "arm_right3": {
     "image": "images/sprites/characters/mc/arm_right3.png",
     "parent": "arm_right2",
-    "zindex": -1,
+    "zindex": -2,
     "offset": {
       "x": -52.6,
       "y": 96
